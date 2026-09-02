@@ -635,7 +635,13 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                               className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
                               title="Configured with verified MTGJSON contents"
                             >
-                              {box.contents.variable ? 'Variable Collation' : box.contents.deck ? 'Precon Deck' : 'Contents'}
+                              {box.contents.note?.includes('1 of them is foil')
+                                ? '8 Cards (1 Foil)'
+                                : box.contents.variable
+                                ? 'Variable Collation'
+                                : box.contents.deck
+                                ? 'Precon Deck'
+                                : 'Contents'}
                             </span>
                           )}
                         </div>

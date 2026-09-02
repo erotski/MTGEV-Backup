@@ -680,6 +680,18 @@ class DatabaseBoosterEVEngine:
         'exact_pct': direct_all[11],
     }
 
+  def get_card_price(self, uuid: str, requested_finish: str, use_reprints: bool, vendor: str = 'all'):
+    """Helper to resolve card price with on-demand prefetch if needed."""
+    if uuid not in self.card_cache:
+      try:
+        self.prefetch_cards([uuid])
+      except Exception:
+        pass
+    if vendor == 'all':
+      return self.resolve_card_price_global(uuid, requested_finish, use_reprints)
+    else:
+      return self.resolve_card_price(uuid, requested_finish, vendor, use_reprints)
+
   def calculate_sealed_product_ev(self, contents: dict, mode: str = 'direct', vendor: str = 'all') -> float:
     """Calculates EV for a sealedProduct with JSON `contents` (deck, variable, booster, card)."""
     if not contents:
@@ -688,7 +700,7 @@ class DatabaseBoosterEVEngine:
     total_ev = 0.0
     use_reprints = (mode == 'cheapest_reprint')
 
-    # 1. Guaranteed cards (e.g. promo cards)
+    # 1. Guaranteed cards (e.g. promo cards, box toppers)
     if 'card' in contents and isinstance(contents['card'], list):
       for c in contents['card']:
         uuid = c.get('uuid')
@@ -699,6 +711,8 @@ class DatabaseBoosterEVEngine:
             total_ev += p
 
     # 2. Preconstructed decks (e.g. Signature Spellbook deck, Commander deck)
+    deck_cards_ev = 0.0
+    deck_card_count = 0
     if 'deck' in contents and isinstance(contents['deck'], list):
       for d in contents['deck']:
         deck_name = d.get('name')
@@ -722,11 +736,59 @@ class DatabaseBoosterEVEngine:
               finish = 'foil' if r.get('isFoil') else 'normal'
               p, _ = self.get_card_price(r['uuid'], finish, use_reprints, vendor)
               if p:
-                total_ev += p * count
+                deck_cards_ev += p * count
+              deck_card_count += count
           except Exception:
             pass
 
-    # 3. Variable weighted slots (e.g. Signature Spellbook 1-of-8 foil slot)
+    # If the product logic specifies that 1 card is foil (replaces a card, not +1 bonus card)
+    # e.g., Signature Spellbooks where 1 of the 8 cards is upgraded to foil (7 normal + 1 foil = 8 cards total)
+    foil_replaces_card = contents.get('foil_replaces_card') or (
+      contents.get('note') and 'not +1' in contents.get('note', '').lower()
+    )
+    if foil_replaces_card and deck_card_count > 0:
+      # Each card has (deck_card_count - 1) / deck_card_count chance of being regular finish
+      total_ev += (deck_cards_ev * (deck_card_count - 1)) / deck_card_count
+    else:
+      total_ev += deck_cards_ev
+
+    # 3. Booster packs contained (e.g. Booster box, Bundles, Prerelease kits)
+    if 'pack' in contents and isinstance(contents['pack'], list):
+      for p in contents['pack']:
+        p_code = p.get('code') or 'play'
+        p_set = (p.get('set') or '').upper()
+        p_count = int(p.get('count', 1) or 1)
+        try:
+          self.cursor.execute(
+            """
+            SELECT ev_average 
+            FROM booster_ev_results 
+            WHERE set_code = %s AND booster_name = %s AND price_mode = %s AND vendor = %s
+            LIMIT 1
+            """,
+            (p_set, p_code, mode, vendor)
+          )
+          row = self.cursor.fetchone()
+          if row and row.get('ev_average'):
+            total_ev += float(row['ev_average']) * p_count
+          else:
+            self.cursor.execute(
+              """
+              SELECT ev_average 
+              FROM booster_ev_results 
+              WHERE set_code = %s AND price_mode = %s AND vendor = %s
+              ORDER BY ev_average DESC
+              LIMIT 1
+              """,
+              (p_set, mode, vendor)
+            )
+            row2 = self.cursor.fetchone()
+            if row2 and row2.get('ev_average'):
+              total_ev += float(row2['ev_average']) * p_count
+        except Exception:
+          pass
+
+    # 4. Variable weighted slots (e.g. Signature Spellbook 1-of-8 foil slot)
     if 'variable' in contents and isinstance(contents['variable'], list):
       for var_slot in contents['variable']:
         configs = var_slot.get('configs', [])
@@ -747,6 +809,26 @@ class DatabaseBoosterEVEngine:
               p, _ = self.get_card_price(uuid, finish, use_reprints, vendor)
               if p:
                 weighted_sum += p * weight
+
+          # Contained pack option inside variable slot
+          elif 'pack' in cfg and cfg['pack']:
+            p_obj = cfg['pack'][0]
+            p_code = p_obj.get('code') or 'play'
+            p_set = (p_obj.get('set') or '').upper()
+            try:
+              self.cursor.execute(
+                """
+                SELECT ev_average FROM booster_ev_results 
+                WHERE set_code = %s AND booster_name = %s AND price_mode = %s AND vendor = %s LIMIT 1
+                """,
+                (p_set, p_code, mode, vendor)
+              )
+              row = self.cursor.fetchone()
+              if row and row.get('ev_average'):
+                weighted_sum += float(row['ev_average']) * weight
+            except Exception:
+              pass
+
         if total_weight > 0:
           total_ev += weighted_sum / total_weight
 

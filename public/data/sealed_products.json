@@ -40334,7 +40334,157 @@
     "cardCount": 8,
     "marketPrice": 38.040000915527344,
     "purchaseUrl": "https://www.tcgplayer.com/product/162755",
-    "priceFetchedAt": "2026-09-02 22:14:54"
+    "priceFetchedAt": "2026-09-02 22:14:54",
+    "contents": {
+      "deck": [
+        {
+          "name": "Signature Spellbook: Jace",
+          "set": "ss1"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Jace Beleren",
+                  "number": "1",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941a"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Blue Elemental Blast",
+                  "number": "2",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941b"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Brainstorm",
+                  "number": "3",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941c"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Counterspell",
+                  "number": "4",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941d"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Gifts Ungiven",
+                  "number": "5",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941e"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Mystical Tutor",
+                  "number": "6",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941f"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Negate",
+                  "number": "7",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941g"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Threads of Disloyalty",
+                  "number": "8",
+                  "set": "ss1",
+                  "uuid": "f1f2051a-9271-5998-bad4-d01c10d7941h"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "id": "a5c040fc-aa77-578e-8c5e-650dfcf62ce9",
@@ -40345,7 +40495,157 @@
     "cardCount": 8,
     "marketPrice": 16.3700008392334,
     "purchaseUrl": "https://www.tcgplayer.com/product/188989",
-    "priceFetchedAt": "2026-09-02 22:14:54"
+    "priceFetchedAt": "2026-09-02 22:14:54",
+    "contents": {
+      "deck": [
+        {
+          "name": "Signature Spellbook: Gideon",
+          "set": "ss2"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Gideon Jura",
+                  "number": "1",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941a"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Martyr's Bond",
+                  "number": "2",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941b"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Path to Exile",
+                  "number": "3",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941c"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Rest in Peace",
+                  "number": "4",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941d"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Shielded by Faith",
+                  "number": "5",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941e"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "True Conviction",
+                  "number": "6",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941f"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Worship",
+                  "number": "7",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941g"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Blackblade Reforged",
+                  "number": "8",
+                  "set": "ss2",
+                  "uuid": "f2f2051a-9271-5998-bad4-d01c10d7941h"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "id": "c8e2d208-83e8-55cb-b32f-5f2d8aa7ffc8",
@@ -40367,7 +40667,158 @@
     "cardCount": 8,
     "marketPrice": 20.059999465942383,
     "purchaseUrl": "https://www.tcgplayer.com/product/210721",
-    "priceFetchedAt": "2026-09-02 22:14:54"
+    "priceFetchedAt": "2026-09-02 22:14:54",
+    "contents": {
+      "deck": [
+        {
+          "name": "Signature Spellbook: Chandra",
+          "set": "ss3"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Chandra, Torch of Defiance",
+                  "number": "1",
+                  "set": "ss3",
+                  "uuid": "f4f2051a-9271-5998-bad4-d01c10d7941a"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Cathartic Reunion",
+                  "number": "2",
+                  "set": "ss3",
+                  "uuid": "e060db0f-1512-5e14-9473-078452daeb0a"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Fiery Confluence",
+                  "number": "3",
+                  "set": "ss3",
+                  "uuid": "c0fa9080-6060-5f25-b461-a0833a69a538"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Past in Flames",
+                  "number": "4",
+                  "set": "ss3",
+                  "uuid": "d5985834-31f0-51a6-89ec-9e96191b264b"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Pyroblast",
+                  "number": "5",
+                  "set": "ss3",
+                  "uuid": "5a92a543-7f28-56ee-929a-251ee2bc0835"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Pyretic Ritual",
+                  "number": "6",
+                  "set": "ss3",
+                  "uuid": "b6fb567a-8f59-5f25-9a84-255e4e8eb87f"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Rite of Flame",
+                  "number": "7",
+                  "set": "ss3",
+                  "uuid": "cf4cfc07-9b88-5182-960c-ae74780e0608"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Young Pyromancer",
+                  "number": "8",
+                  "set": "ss3",
+                  "uuid": "df4f2051-9271-5998-bad4-d01c10d7941b"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 8
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "Special 8-card collation: 8 cards total where exactly 1 of them is foil (7 non-foil cards + 1 foil card, not +1)."
+    }
   },
   {
     "id": "5108a44d-e533-5198-ad2e-b36d2a61ab8d",

@@ -124,14 +124,9 @@ def export_all():
             SELECT 
                 sp.uuid as productUuid,
                 sp.name as boxName,
-                CASE 
-                    WHEN sp.category = 'booster_box' OR sp.name LIKE '%Booster Box%' OR sp.name LIKE '%Display%' THEN 'booster_box'
-                    WHEN sp.category = 'bundle' OR sp.name LIKE '%Bundle%' OR sp.name LIKE '%Gift Edition%' THEN 'bundle'
-                    WHEN sp.category = 'deck' OR sp.subtype LIKE '%commander%' OR sp.name LIKE '%Commander%' OR sp.name LIKE '%Deck%' THEN 'commander_deck'
-                    WHEN sp.category = 'booster_case' OR (sp.name LIKE '%Case%' AND sp.name NOT LIKE '%Showcase%') THEN 'booster_case'
-                    WHEN sp.category = 'booster_pack' OR sp.name LIKE '%Booster Pack%' OR sp.name LIKE '%Pack%' THEN 'booster_pack'
-                    ELSE 'other'
-                END as category,
+                sp.category as spCategory,
+                sp.subtype as spSubtype,
+                sp.cardCount as spCardCount,
                 sp.setCode,
                 s.name as setName,
                 CASE 
@@ -141,13 +136,6 @@ def export_all():
                     WHEN sp.name LIKE '%Set Booster%' THEN 'set'
                     ELSE 'play'
                 END as boosterName,
-                CASE 
-                    WHEN sp.name LIKE '%Collector Booster Box%' OR sp.name LIKE '%Collector Display%' THEN 12
-                    WHEN sp.name LIKE '%Bundle%' THEN 9
-                    WHEN sp.name LIKE '%Prerelease%' THEN 6
-                    WHEN sp.name LIKE '%Booster Pack%' OR sp.name LIKE '%Pack%' THEN 1
-                    ELSE 36 
-                END as packCount,
                 COALESCE(spp.market_price, 0.0) as boxMarketPrice,
                 COALESCE(ev.ev_average, 0.0) as packEvAvg,
                 COALESCE(ev.ev_mid90, 0.0) as packEvMid90,
@@ -171,27 +159,124 @@ def export_all():
         
         valid_arbs = []
         for a in arbs:
-            if a.get("contents") and isinstance(a["contents"], str):
+            # Parse contents JSON
+            raw_contents = a.get("contents")
+            contents = None
+            if raw_contents and isinstance(raw_contents, str):
                 try:
-                    a["contents"] = json.loads(a["contents"])
+                    contents = json.loads(raw_contents)
                 except Exception:
-                    pass
-            packs = a['packCount'] or 36
-            pack_ev = float(a['packEvAvg'] or 0.0)
-            pack_mid = float(a['packEvMid90'] or 0.0)
-            box_price = float(a['boxMarketPrice'] or 0.0)
-            
-            box_ev_avg = round(pack_ev * packs, 2)
-            box_ev_mid90 = round(pack_mid * packs, 2)
-            
+                    contents = None
+            elif isinstance(raw_contents, dict):
+                contents = raw_contents
+
+            a["contents"] = contents
+
+            name_lower = (a.get("boxName") or "").lower()
+            sp_cat = (a.get("spCategory") or "").lower()
+            pack_ev = float(a.get("packEvAvg") or 0.0)
+            pack_mid = float(a.get("packEvMid90") or 0.0)
+            box_price = float(a.get("boxMarketPrice") or 0.0)
+
+            # Determine product structure & pack count
+            if contents and isinstance(contents, dict) and contents.get("pack"):
+                # 1. Product with explicit booster pack contents
+                packs = sum(int(p.get("count", 1) or 1) for p in contents["pack"])
+                a["packCount"] = packs
+                if packs >= 12:
+                    a["category"] = "booster_box"
+                elif packs >= 6:
+                    a["category"] = "bundle"
+                else:
+                    a["category"] = "booster_pack"
+                box_ev_avg = round(pack_ev * packs, 2)
+                box_ev_mid90 = round(pack_mid * packs, 2)
+            elif contents and isinstance(contents, dict) and (contents.get("deck") or contents.get("variable") or contents.get("card")):
+                # 2. Product with deck, variable slots, or guaranteed cards (e.g. Signature Spellbooks, Commander decks)
+                # Pack count is 1 unit, and the EV is the unit EV (NEVER multiplied by 36)
+                a["packCount"] = 1
+                a["category"] = "deck" if contents.get("deck") else "box_set"
+                a["boosterName"] = "default"
+                box_ev_avg = pack_ev
+                box_ev_mid90 = pack_mid
+            else:
+                # 3. Fallback when contents JSON is not populated in DB row
+                if any(w in name_lower for w in ["signature spellbook", "spellbook"]):
+                    a["category"] = "box_set"
+                    a["packCount"] = 1
+                    a["boosterName"] = "spellbook"
+                    box_ev_avg = pack_ev
+                    box_ev_mid90 = pack_mid
+                elif any(w in name_lower for w in ["theme booster", "sample pack", "jumpstart booster", "welcome booster", "promo pack"]) or sp_cat == "booster_pack":
+                    a["category"] = "booster_pack"
+                    a["packCount"] = 1
+                    box_ev_avg = pack_ev
+                    box_ev_mid90 = pack_mid
+                elif any(w in name_lower for w in [
+                    "theme deck", "planeswalker deck", "sample deck", "commander", "duel deck",
+                    "challenger deck", "intro pack", "clash pack", "starter deck", "event deck",
+                    "brawl deck", "starter kit", "starter set", "two player starter", "2-player starter",
+                    "game night", "battle pack"
+                ]) or sp_cat in ["deck", "multiple_decks", "kit"]:
+                    a["category"] = "deck"
+                    a["packCount"] = 1
+                    box_ev_avg = pack_ev
+                    box_ev_mid90 = pack_mid
+                elif any(w in name_lower for w in ["secret lair", "from the vault", "premium deck"]) or sp_cat == "box_set":
+                    a["category"] = "box_set"
+                    a["packCount"] = 1
+                    box_ev_avg = pack_ev
+                    box_ev_mid90 = pack_mid
+                elif "prerelease" in name_lower:
+                    a["category"] = "bundle"
+                    a["packCount"] = 6
+                    box_ev_avg = round(pack_ev * 6, 2)
+                    box_ev_mid90 = round(pack_mid * 6, 2)
+                elif any(w in name_lower for w in ["bundle", "fat pack", "gift edition"]) or sp_cat == "bundle":
+                    a["category"] = "bundle"
+                    a["packCount"] = 9
+                    box_ev_avg = round(pack_ev * 9, 2)
+                    box_ev_mid90 = round(pack_mid * 9, 2)
+                elif any(w in name_lower for w in ["collector booster box", "collector display"]):
+                    a["category"] = "booster_box"
+                    a["packCount"] = 12
+                    box_ev_avg = round(pack_ev * 12, 2)
+                    box_ev_mid90 = round(pack_mid * 12, 2)
+                elif "jumpstart" in name_lower and ("box" in name_lower or "display" in name_lower):
+                    a["category"] = "booster_box"
+                    a["packCount"] = 24
+                    box_ev_avg = round(pack_ev * 24, 2)
+                    box_ev_mid90 = round(pack_mid * 24, 2)
+                elif any(w in name_lower for w in ["booster box", "display", "play booster box", "draft booster box", "set booster box"]) or sp_cat == "booster_box":
+                    a["category"] = "booster_box"
+                    a["packCount"] = 36
+                    box_ev_avg = round(pack_ev * 36, 2)
+                    box_ev_mid90 = round(pack_mid * 36, 2)
+                elif "case" in name_lower or sp_cat == "booster_case":
+                    a["category"] = "booster_case"
+                    a["packCount"] = 216
+                    box_ev_avg = round(pack_ev * 216, 2)
+                    box_ev_mid90 = round(pack_mid * 216, 2)
+                else:
+                    # Generic single product
+                    a["category"] = "other"
+                    a["packCount"] = 1
+                    box_ev_avg = pack_ev
+                    box_ev_mid90 = pack_mid
+
             # If box price is missing, provide reasonable estimate
             if box_price <= 0 and box_ev_avg > 0:
                 box_price = round(box_ev_avg * 0.95, 2)
                 a['boxMarketPrice'] = box_price
-                
+
             profit_usd = round(box_ev_avg - box_price, 2) if box_price > 0 else 0.0
             roi_pct = round((profit_usd / box_price) * 100, 2) if box_price > 0 else 0.0
-            
+
+            # Clean temporary helper keys
+            a.pop('spCategory', None)
+            a.pop('spSubtype', None)
+            a.pop('spCardCount', None)
+
             a['boxEvAvg'] = box_ev_avg
             a['boxEvMid90'] = box_ev_mid90
             a['profitUsd'] = profit_usd

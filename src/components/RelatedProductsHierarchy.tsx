@@ -96,27 +96,41 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           );
           if (matching.length > 0) {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
-              const pName = sp.name || 'Sealed Product';
+              const pName = sp.displayName || sp.name || 'Sealed Product';
               const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
               const category = (sp.category || '').toLowerCase();
               const subtype = (sp.subtype || '').toLowerCase();
+              const nameLower = pName.toLowerCase();
 
               let packType: ProductPackagingType = 'bundle';
-              if (category.includes('booster_box') || subtype.includes('booster_box') || pName.toLowerCase().includes('booster box')) {
-                packType = 'box';
-              } else if (category.includes('case') || pName.toLowerCase().includes('case')) {
-                packType = 'case';
-              } else if (category.includes('deck') || subtype.includes('deck') || pName.toLowerCase().includes('deck') || pName.toLowerCase().includes('spellbook')) {
+              if (sp.contents?.deck || category.includes('deck') || subtype.includes('deck') || nameLower.includes('deck') || nameLower.includes('spellbook')) {
                 packType = 'starter_deck';
-              } else if (category.includes('pack') || pName.toLowerCase().includes('pack')) {
+              } else if (category.includes('booster_box') || subtype.includes('booster_box') || nameLower.includes('booster box') || nameLower.includes('display')) {
+                packType = 'box';
+              } else if (category.includes('case') || nameLower.includes('case')) {
+                packType = 'case';
+              } else if (category.includes('pack') || nameLower.includes('pack') || nameLower.includes('booster')) {
                 packType = 'pack';
+              } else if (category.includes('bundle') || nameLower.includes('bundle')) {
+                packType = 'bundle';
+              }
+
+              let pCount = 1;
+              if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
+                pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
+              } else if (sp.contents?.deck || sp.contents?.variable || packType === 'starter_deck' || packType === 'pack') {
+                pCount = 1;
+              } else if (packType === 'box') {
+                pCount = nameLower.includes('collector') ? 12 : (nameLower.includes('jumpstart') ? 24 : 36);
+              } else if (packType === 'bundle') {
+                pCount = nameLower.includes('prerelease') ? 6 : 9;
               }
 
               const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 29.99);
               const ev = Number(sp.estimatedEv || sp.ev || mPrice * 0.95);
 
               return {
-                id: sp.uuid || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
+                id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
                 setCode: sCode,
                 setName: sp.setName || setName,
                 releaseDate: sp.releaseDate || '2024-01-01',
@@ -127,10 +141,22 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 marketPrice: mPrice,
                 estimatedEv: ev,
                 cardCount: sp.cardCount || 100,
-                packsCount: sp.boosterCount || (packType === 'box' ? 36 : packType === 'bundle' ? 9 : 1),
-                badge: sp.contents?.variable ? 'Variable Collation' : sp.contents?.deck ? 'Fixed Deck' : 'Factory Sealed',
-                specialFeatures: sp.contents?.variable
+                packsCount: pCount,
+                badge: sp.contents?.note?.includes('1 of them is foil')
+                  ? '8 Cards (1 Foil)'
+                  : sp.contents?.variable
+                  ? 'Variable Collation'
+                  : sp.contents?.deck
+                  ? 'Fixed Deck'
+                  : sp.category === 'box_set'
+                  ? 'Box Set'
+                  : 'Factory Sealed',
+                specialFeatures: sp.contents?.note?.includes('1 of them is foil')
+                  ? ['8 Cards Total', '1 Guaranteed Foil (1-of-8)', '7 Non-Foil Cards']
+                  : sp.contents?.variable
                   ? ['MTGJSON contents Variable Slots', 'Probabilistic Pool', 'Authentic Database Collation']
+                  : sp.contents?.deck
+                  ? ['Preconstructed Deck', 'Guaranteed Card List']
                   : ['Authentic MTGJSON Sealed Product'],
                 rawContents: sp.contents,
               };
@@ -1254,6 +1280,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   </div>
                 </div>
               </div>
+
+              {activeProduct.rawContents.note && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Collation Logic: </span>
+                    <span>{activeProduct.rawContents.note}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {/* 1. Preconstructed Decks contained */}

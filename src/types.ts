@@ -53,10 +53,13 @@ export interface ProductContentsVariableSlot {
 export interface ProductContents {
   deck?: ProductContentsDeck[];
   card?: ProductContentsCard[];
+  pack?: { code?: string; count?: number; set?: string }[];
   booster?: { count?: number; set?: string; type?: string }[];
   sealed?: { count?: number; name?: string; set?: string; uuid?: string }[];
   variable?: ProductContentsVariableSlot[];
   other?: { name?: string }[];
+  note?: string;
+  foil_replaces_card?: boolean;
 }
 
 export interface BoxArbitrageRecord {
