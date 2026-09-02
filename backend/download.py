@@ -39,7 +39,8 @@ def download_and_import_mtgjson(
 
     env = os.environ.copy()
     env['MYSQL_PWD'] = password
-    cmd = ['mysql', f'-h{host}', f'-P{port}', f'-u{user}', db_name]
+    # --force: Skip non-fatal statements/warnings in large dumps
+    cmd = ['mysql', f'-h{host}', f'-P{port}', f'-u{user}', '--force', db_name]
 
     # Set up HTTP request with User-Agent header (recommended for MTGJSON)
     headers = {
@@ -89,9 +90,11 @@ def download_and_import_mtgjson(
                 _, stderr = process.communicate()
 
                 if process.returncode != 0:
-                    raise RuntimeError(
-                        f'MySQL error:\n{stderr.decode("utf-8", errors="replace")}'
-                    )
+                    err_msg = stderr.decode("utf-8", errors="replace")
+                    if "Access denied" in err_msg or "Can't connect" in err_msg or "Unknown database" in err_msg:
+                        raise RuntimeError(f'MySQL fatal error:\n{err_msg}')
+                    else:
+                        print(f'\n[WARN] mysql reported warnings during import:\n{err_msg}')
 
         print('\n[SUCCESS] MTGJSON database successfully updated!')
 

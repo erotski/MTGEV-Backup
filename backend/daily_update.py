@@ -58,6 +58,10 @@ def run_all() -> bool:
     for script, description in SCRIPTS:
         if not run_script(script, description):
             failures.append(script)
+            # Fail-fast: If download or price ingestion fails, downstream computation cannot proceed
+            if script in ("download.py", "download_prices_today.py", "lowest_prices.py"):
+                log.error("Critical prerequisite %s failed. Aborting downstream pipeline.", script)
+                break
     if failures:
         log.error("Completed with failures: %s", ", ".join(failures))
         return False
