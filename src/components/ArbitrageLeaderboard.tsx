@@ -525,7 +525,22 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredRecords.map((box, i) => {
+              {filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-12 px-4 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <div className="text-sm font-bold text-slate-800">No sealed products found</div>
+                      <p className="text-xs text-slate-500 max-w-sm">
+                        Products will populate automatically once the GitHub Actions pipeline runs and exports current market data.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRecords.map((box, i) => {
                 const isPositive = box.profitUsd > 0;
                 return (
                   <tr
@@ -582,7 +597,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

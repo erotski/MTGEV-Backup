@@ -34,6 +34,10 @@ export default function App() {
         if (setsRes.sets && setsRes.sets.length > 0) {
           setAvailableSets(setsRes.sets);
           setIsLiveDatabase(setsRes.isLive);
+          setSelectedSetCode((prev) => {
+            const exists = setsRes.sets.some((s) => s.code === prev);
+            return exists ? prev : setsRes.sets[0].code;
+          });
         }
         if (arbsRes && arbsRes.length > 0) {
           setArbitrageRecords(arbsRes);

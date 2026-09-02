@@ -41,8 +41,9 @@ def export_all():
                 EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code AND sp.category = 'bundle') as hasBundle,
                 EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code AND (sp.category = 'deck' OR sp.subtype LIKE '%commander%')) as hasCommanderDecks
             FROM sets s
-            JOIN booster_ev_results bev ON s.code = bev.set_code
-            WHERE s.isOnlineOnly = 0 OR s.isOnlineOnly IS NULL
+            LEFT JOIN booster_ev_results bev ON s.code = bev.set_code
+            WHERE (s.isOnlineOnly = 0 OR s.isOnlineOnly IS NULL)
+              AND EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code)
             ORDER BY s.releaseDate DESC;
         """)
         sets = cursor.fetchall()

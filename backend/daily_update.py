@@ -52,16 +52,18 @@ def run_script(script_name: str, description: str) -> bool:
         return False
 
 
-def run_all():
+def run_all() -> bool:
     log.info("═══ Daily update started at %s ═══", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     failures = []
     for script, description in SCRIPTS:
         if not run_script(script, description):
             failures.append(script)
     if failures:
-        log.warning("Completed with failures: %s", ", ".join(failures))
+        log.error("Completed with failures: %s", ", ".join(failures))
+        return False
     else:
         log.info("═══ All scripts completed successfully ═══")
+        return True
 
 
 def print_schedule_instructions():
@@ -127,4 +129,6 @@ if __name__ == "__main__":
             log.info("Sleeping for %d seconds …", INTERVAL_SECONDS)
             time.sleep(INTERVAL_SECONDS)
     else:
-        run_all()
+        success = run_all()
+        if not success:
+            sys.exit(1)
