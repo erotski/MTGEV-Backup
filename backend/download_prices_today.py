@@ -76,7 +76,7 @@ def download_prices_today(
                             process.stdin.write(decompressed)
 
                 process.stdin.write(FINAL_COMMANDS)
-                process.stdin.close()
+                process.stdin.flush()
 
                 print('\n[INFO] Finalizing and committing price tables...')
                 _, stderr = process.communicate()

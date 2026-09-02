@@ -82,7 +82,7 @@ def download_and_import_mtgjson(
 
                 # 2. Finalize transactions
                 process.stdin.write(FINAL_COMMANDS)
-                process.stdin.close()
+                process.stdin.flush()
 
                 print(
                     '\n[INFO] Download finished. Finalizing database tables & indices...'
@@ -90,7 +90,7 @@ def download_and_import_mtgjson(
                 _, stderr = process.communicate()
 
                 if process.returncode != 0:
-                    err_msg = stderr.decode("utf-8", errors="replace")
+                    err_msg = stderr.decode("utf-8", errors="replace") if stderr else ""
                     if "Access denied" in err_msg or "Can't connect" in err_msg or "Unknown database" in err_msg:
                         raise RuntimeError(f'MySQL fatal error:\n{err_msg}')
                     else:
