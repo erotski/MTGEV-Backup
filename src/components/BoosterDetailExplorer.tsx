@@ -1,0 +1,888 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo } from '../types';
+import { SetSymbolIcon } from './SetSymbolIcon';
+import { 
+  ShieldCheck, 
+  CheckCircle2, 
+  AlertCircle, 
+  Sparkles, 
+  TrendingUp, 
+  BarChart3, 
+  Image as ImageIcon,
+  Calendar,
+  Layers,
+  Globe,
+  Hash,
+  Coins,
+  ExternalLink,
+  Tag,
+  Boxes,
+  Compass
+} from 'lucide-react';
+import { PackDistributionCurve } from './PackDistributionCurve';
+import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
+import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct } from '../ecommerceBoosterData';
+
+interface BoosterDetailExplorerProps {
+  selectedSetCode: string;
+  onSelectSetCode: (code: string) => void;
+  availableSets: SetOption[];
+  boosterRecords: BoosterEVRecord[];
+  chaseCards: ChaseCard[];
+  priceMode: PriceMode;
+  onPriceModeChange: (mode: PriceMode) => void;
+  vendor: Vendor;
+  onVendorChange: (vendor: Vendor) => void;
+}
+
+const getBoosterPackMarketPrice = (setCode: string, boosterName: string): number => {
+  const isCollector = boosterName.toLowerCase().includes('collector');
+  if (setCode === 'MH3') return isCollector ? 39.99 : 7.99;
+  if (setCode === 'BLB') return isCollector ? 26.99 : 4.49;
+  if (setCode === 'OTJ') return isCollector ? 24.99 : 4.25;
+  if (setCode === 'MOM') return isCollector ? 28.50 : 4.85;
+  if (setCode === 'WOE') return isCollector ? 22.99 : 4.50;
+  if (setCode === 'LCI') return isCollector ? 25.00 : 4.50;
+  if (setCode === 'FDN') return isCollector ? 29.99 : 4.49;
+  if (setCode === 'FIN') return isCollector ? 42.99 : 6.99;
+  return isCollector ? 28.00 : 4.99;
+};
+
+export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
+  selectedSetCode,
+  onSelectSetCode,
+  availableSets,
+  boosterRecords,
+  chaseCards,
+  priceMode,
+  onPriceModeChange,
+  vendor,
+  onVendorChange,
+}) => {
+  const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
+  
+  // Calculate dynamically adjusted booster records based on priceMode & vendor
+  const rawSetBoosters = boosterRecords.filter((b) => b.setCode === selectedSetCode);
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
+  const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
+  const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
+
+  // Deduplicate by boosterName so each booster type (e.g. 'play', 'collector', 'draft') appears cleanly
+  // Prefer exact match for priceMode if available in mock data
+  const uniqueBoostersMap = new Map<string, BoosterEVRecord>();
+  const exactModeBoosters = rawSetBoosters.filter((b) => b.priceMode === priceMode);
+  const fallbackBoosters = rawSetBoosters.filter((b) => b.priceMode === 'direct');
+  const sourceBoosters = exactModeBoosters.length > 0 ? exactModeBoosters : fallbackBoosters.length > 0 ? fallbackBoosters : rawSetBoosters;
+
+  (sourceBoosters.length > 0 ? sourceBoosters : boosterRecords.slice(0, 2)).forEach((b) => {
+    if (!uniqueBoostersMap.has(b.boosterName)) {
+      uniqueBoostersMap.set(b.boosterName, b);
+    }
+  });
+
+  const currentBoosters = Array.from(uniqueBoostersMap.values()).map((b) => {
+    const mult = b.priceMode === priceMode ? 1.0 : reprintMultiplier;
+    return {
+      ...b,
+      evAverage: Number((b.evAverage * mult * vendorEvMultiplier).toFixed(2)),
+      evMid90: Number((b.evMid90 * mult * vendorEvMultiplier).toFixed(2)),
+      evMin: Number((b.evMin * mult * vendorEvMultiplier).toFixed(2)),
+      evMax: Number((b.evMax * mult * vendorEvMultiplier).toFixed(2)),
+      evMin5: Number((b.evMin5 * mult * vendorEvMultiplier).toFixed(2)),
+      evMax5: Number((b.evMax5 * mult * vendorEvMultiplier).toFixed(2)),
+      priceMode,
+      vendor,
+    };
+  });
+
+  // Catalog products for this set, with prices and EV scaled by active priceMode and vendor
+  const setCatalogProducts = useMemo(() => {
+    const prods = ECOMMERCE_CATALOG_PACKS.filter(
+      (p) => p.setCode.toUpperCase() === selectedSetCode.toUpperCase()
+    );
+    return prods.map((p) => ({
+      ...p,
+      marketPrice: Number((p.marketPrice * vendorPriceMultiplier).toFixed(2)),
+      estimatedEv: Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+    }));
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, vendorPriceMultiplier]);
+
+  // Track the actively selected product ID from the Related Products catalog
+  const [selectedProductId, setSelectedProductId] = useState<string>(
+    setCatalogProducts[0]?.id || ''
+  );
+
+  const [activeBoosterName, setActiveBoosterName] = useState<string>(
+    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
+  );
+
+  // Sync when set changes
+  useEffect(() => {
+    const prods = ECOMMERCE_CATALOG_PACKS.filter(
+      (p) => p.setCode.toUpperCase() === selectedSetCode.toUpperCase()
+    );
+    if (prods.length > 0) {
+      setSelectedProductId(prods[0].id);
+      setActiveBoosterName(prods[0].boosterName || 'play');
+    } else if (currentBoosters.length > 0) {
+      setActiveBoosterName(currentBoosters[0].boosterName);
+    }
+  }, [selectedSetCode]);
+
+  const activeBooster = useMemo(() => {
+    return (
+      currentBoosters.find((b) => b.boosterName === activeBoosterName) ||
+      currentBoosters[0] ||
+      boosterRecords[0]
+    );
+  }, [currentBoosters, activeBoosterName, boosterRecords]);
+
+  const cleanProductName = (name: string) => {
+    if (!name) return '';
+    let cleaned = name;
+    if (currentSet?.name) {
+      const escaped = currentSet.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`^${escaped}\\s*[-:–—]?\\s*`, 'i');
+      cleaned = cleaned.replace(regex, '');
+    }
+    if (selectedSetCode) {
+      const escapedCode = selectedSetCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const codeRegex = new RegExp(`^${escapedCode}\\b\\s*[-:–—]?\\s*`, 'i');
+      cleaned = cleaned.replace(codeRegex, '');
+    }
+    return cleaned.trim() || name;
+  };
+
+  // Find active product details
+  const activeProduct: CatalogPackProduct | undefined = useMemo(() => {
+    return setCatalogProducts.find((p) => p.id === selectedProductId) || setCatalogProducts[0];
+  }, [setCatalogProducts, selectedProductId]);
+
+  const isPreconProduct = useMemo(() => {
+    if (!activeProduct) return false;
+    return (
+      activeProduct.packagingType === 'starter_deck' ||
+      activeProduct.boosterName === 'starter' ||
+      activeProduct.id.toLowerCase().includes('deck') ||
+      activeProduct.id.toLowerCase().includes('starter') ||
+      activeProduct.displayName.toLowerCase().includes('commander') ||
+      activeProduct.displayName.toLowerCase().includes('starter deck')
+    );
+  }, [activeProduct]);
+
+  const packMarketPrice = Number((getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play') * vendorPriceMultiplier).toFixed(2));
+
+  // Product level scaled metrics
+  const productPacksCount = activeProduct?.packsCount || 1;
+  const productMarketPrice = activeProduct?.marketPrice || packMarketPrice;
+  // Calculate dynamic product EV from pack EV and pack count (plus bundle bonuses if applicable)
+  // Preconstructed decks have deterministic fixed EV
+  const bundleBonusVal = activeProduct?.packagingType === 'bundle' ? 3.50 : 0;
+  const productEstimatedEv = isPreconProduct && activeProduct
+    ? Number(activeProduct.estimatedEv.toFixed(2))
+    : Number(((activeBooster.evAverage * productPacksCount) + (bundleBonusVal * reprintMultiplier * vendorEvMultiplier)).toFixed(2));
+  const productMid90Ev = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2));
+  const productMin5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2));
+  const productMax5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2));
+  const productMin = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2));
+  const productMax = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2));
+
+  const getRarityBadge = (rarity: string) => {
+    switch (rarity) {
+      case 'mythic':
+        return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+      case 'rare':
+        return 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20';
+      case 'uncommon':
+        return 'bg-slate-500/10 text-slate-600 border-slate-500/20';
+      default:
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const formatReleaseDate = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const childSetsList: ChildSetInfo[] = currentSet?.childSets || [
+    { code: currentSet?.tokenSetCode || `T${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Tokens`, type: 'Tokens' },
+    { code: `A${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Art Series`, type: 'Art Series' },
+  ];
+
+  return (
+    <div id="booster-explorer-container" className="space-y-6">
+      {/* Set Selector Header Bar & Generic Set Information */}
+      <div
+        id="set-selector-bar"
+        className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5"
+      >
+        {/* Top Row: Big Set Icon, Name, Key Badges, and Set Dropdown */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-4">
+            {/* Enlarged Parent Set Symbol Icon */}
+            <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-center justify-center p-2.5 shadow-2xs">
+              <SetSymbolIcon setCode={currentSet?.code || selectedSetCode} size="xl" className="w-full h-full object-contain" />
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="font-mono font-bold text-xs uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white tracking-wider">
+                  {currentSet?.code || selectedSetCode}
+                </span>
+                {currentSet?.type && (
+                  <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                    {currentSet.type}
+                  </span>
+                )}
+                {currentSet?.block && (
+                  <span className="text-[11px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                    {currentSet.block}
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>{currentSet?.name || selectedSetCode}</span>
+                <a
+                  href={`https://scryfall.com/sets/${(currentSet?.code || selectedSetCode).toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-400 hover:text-indigo-600 transition"
+                  title="View set hierarchy on Scryfall"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </h2>
+
+              <p className="text-xs text-slate-500 mt-0.5">
+                Monte Carlo EV simulation across MTGJSON print sheets with live vendor prices.
+              </p>
+            </div>
+          </div>
+
+          {/* Set Selector Dropdown */}
+          <div className="w-full sm:w-auto shrink-0">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Select MTG Set
+            </label>
+            <select
+              id="set-picker-select"
+              value={selectedSetCode}
+              onChange={(e) => {
+                onSelectSetCode(e.target.value);
+              }}
+              className="w-full sm:w-64 text-sm font-semibold bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-2xs"
+            >
+              {availableSets.map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.name} ({s.code})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Middle Row: Generic Set Information Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100">
+          {/* 1. Set Code & Token Code */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Hash className="w-3 h-3 text-slate-500" />
+              <span>Set Codes</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+              <span className="font-mono">{currentSet?.code || selectedSetCode}</span>
+              <span className="text-slate-300">/</span>
+              <span className="inline-flex items-center gap-1 font-mono text-slate-600" title="Token Set Code">
+                <SetSymbolIcon setCode={currentSet?.tokenSetCode || `T${selectedSetCode}`} size="xs" />
+                {currentSet?.tokenSetCode || `T${selectedSetCode}`}
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Release Date */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-slate-500" />
+              <span>Release Date</span>
+            </div>
+            <div className="text-xs font-bold text-slate-800">
+              {formatReleaseDate(currentSet?.releaseDate)}
+            </div>
+          </div>
+
+          {/* 3. Set Type */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Layers className="w-3 h-3 text-slate-500" />
+              <span>Set Type</span>
+            </div>
+            <div className="text-xs font-bold text-slate-800 truncate" title={currentSet?.type || 'Expansion'}>
+              {currentSet?.type || 'Expansion'}
+            </div>
+          </div>
+
+          {/* 4. Total Set Size */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Boxes className="w-3 h-3 text-slate-500" />
+              <span>Total Set Size</span>
+            </div>
+            <div className="text-xs font-bold text-slate-800 flex items-baseline gap-1">
+              <span>{currentSet?.totalSetSize || 281} cards</span>
+              {currentSet?.regularCardCount && (
+                <span className="text-[10px] text-slate-400 font-normal font-mono">
+                  ({currentSet.regularCardCount} base)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 5. Block / Group */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Compass className="w-3 h-3 text-slate-500" />
+              <span>Block / Arc</span>
+            </div>
+            <div className="text-xs font-bold text-slate-800 truncate" title={currentSet?.block || 'Standard Legal'}>
+              {currentSet?.block || 'Standard Legal'}
+            </div>
+          </div>
+
+          {/* 6. Languages */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Globe className="w-3 h-3 text-slate-500" />
+              <span>Languages</span>
+            </div>
+            <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
+              <span>{currentSet?.languages?.length || 8} Languages</span>
+              <span
+                className="text-[10px] text-slate-400 font-normal cursor-help truncate"
+                title={currentSet?.languages?.join(', ') || 'English, Japanese, German, French, Italian, Spanish, Portuguese, Chinese'}
+              >
+                (EN, JA, DE...)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Row: Child Sets Hierarchy (Scryfall Structure) */}
+        {childSetsList.length > 0 && (
+          <div className="pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Child & Associated Sub-Sets
+                </span>
+                <span className="text-[10px] font-bold font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded border border-slate-200">
+                  {childSetsList.length} linked sets
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 hidden sm:inline">
+                Sub-sets, bonus sheets, tokens & commander products linked to {currentSet?.code || selectedSetCode}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              {childSetsList.map((child) => (
+                <a
+                  key={child.code}
+                  href={`https://scryfall.com/sets/${child.code.toLowerCase()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-50/90 hover:bg-indigo-50/60 hover:border-indigo-200 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2.5 transition group cursor-pointer"
+                  title={`View ${child.name} (${child.code}) on Scryfall`}
+                >
+                  {/* Smaller Child Set Icon */}
+                  <div className="w-6 h-6 shrink-0 bg-white group-hover:border-indigo-200 rounded-lg border border-slate-200 flex items-center justify-center p-1 shadow-2xs transition">
+                    <SetSymbolIcon setCode={child.iconCode || child.code} size="xs" className="w-full h-full object-contain" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-mono text-[11px] font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1">
+                        {child.code}
+                        <ExternalLink className="w-2.5 h-2.5 text-slate-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition" />
+                      </span>
+                      {child.cardCount && (
+                        <span className="text-[9px] font-mono font-medium text-slate-400">
+                          {child.cardCount} cards
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] font-semibold text-slate-700 group-hover:text-slate-900 truncate transition" title={child.name}>
+                      {child.name}
+                    </div>
+                    <div className="text-[9px] text-slate-400 font-medium capitalize">
+                      {child.type}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 1. Related Products & Containment Hierarchy Selector (Primary Product Catalog for Set) */}
+      {activeBooster && (
+        <RelatedProductsHierarchy
+          setCode={selectedSetCode}
+          setName={currentSet?.name || activeBooster.setName || selectedSetCode}
+          activeBooster={activeBooster}
+          priceMode={priceMode}
+          vendor={vendor}
+          selectedProductId={selectedProductId}
+          onPriceModeChange={onPriceModeChange}
+          onVendorChange={onVendorChange}
+          onSelectProduct={(prodId, bName, product) => {
+            setSelectedProductId(prodId);
+            if (bName) {
+              setActiveBoosterName(bName);
+            }
+          }}
+        />
+      )}
+
+      {/* 2. Active Selected Product Detailed Stats Grid */}
+      {activeBooster && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Expected Value / Precon Total */}
+            <div
+              id="card-stat-ev"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct
+                    ? 'Precon Singles Total'
+                    : productPacksCount > 1
+                    ? `${cleanProductName(activeProduct?.displayName || 'Product')} EV`
+                    : 'Average Pack EV'}
+                </span>
+                <Sparkles className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
+                ${productEstimatedEv.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>
+                  {isPreconProduct
+                    ? `${activeProduct?.cardCount || 400} Fixed Cards`
+                    : productPacksCount > 1
+                    ? `${productPacksCount} Packs Total`
+                    : 'Single Pack Expectation'}
+                </span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-emerald-700">
+                    100% Fixed Collation
+                  </span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-slate-700">
+                      ${activeBooster.evAverage.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+
+            {/* Card 2: Mid 90% Trimmed Mean / Median */}
+            <div
+              id="card-stat-mid90"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct ? 'Median Singles Value' : 'Mid 90% EV'}
+                </span>
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="text-3xl font-black text-emerald-600 font-mono tracking-tight">
+                ${productMid90Ev.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>{isPreconProduct ? 'Constant across all copies' : '5% trimmed mean'}</span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-emerald-700">0% Variance</span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-emerald-700">
+                      ${activeBooster.evMid90.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+
+            {/* Card 3: Floor (Bottom 5% / Dud Floor) */}
+            <div
+              id="card-stat-floor"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct ? 'Dud Floor (0% Risk)' : 'Bottom 5% Floor'}
+                </span>
+                <AlertCircle className="w-4 h-4 text-rose-500" />
+              </div>
+              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-rose-600'}`}>
+                ${productMin5.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>{isPreconProduct ? 'No dud risk (fixed list)' : 'Worst 5% dud distribution'}</span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-slate-700">Guaranteed</span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-rose-700">
+                      ${activeBooster.evMin5.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+
+            {/* Card 4: Ceiling (Top 5% / Max Value) */}
+            <div
+              id="card-stat-ceiling"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct ? 'Singles Value Ceiling' : 'Top 5% Ceiling'}
+                </span>
+                <BarChart3 className="w-4 h-4 text-indigo-500" />
+              </div>
+              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-indigo-600'}`}>
+                ${productMax5.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>{isPreconProduct ? 'Equal to fixed collation' : 'God packs & chase hits'}</span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-slate-700">Fixed List</span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-indigo-700">
+                      ${activeBooster.evMax5.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Top 10 Chase Cards Artwork Gallery */}
+          <div
+            id="chase-cards-gallery-section"
+            className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-amber-500" />
+                <h3 className="text-lg font-bold text-slate-900">
+                  Top Chase Cards ({currentSet?.name || selectedSetCode})
+                </h3>
+              </div>
+              <span className="text-xs font-medium text-slate-400">Scryfall CDN Direct</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
+              {chaseCards.map((card) => {
+                const imageUrl = `https://cards.scryfall.io/normal/front/${card.scryfallId.charAt(0)}/${card.scryfallId.charAt(1)}/${card.scryfallId}.jpg`;
+                const displayPriceNormal = priceMode === 'cheapest_reprint' ? Number((card.priceNormal * 0.74).toFixed(2)) : card.priceNormal;
+                const displayPriceFoil = card.priceFoil ? (priceMode === 'cheapest_reprint' ? Number((card.priceFoil * 0.78).toFixed(2)) : card.priceFoil) : undefined;
+
+                return (
+                  <div
+                    key={card.uuid}
+                    id={`chase-card-${card.uuid}`}
+                    className="group bg-slate-50 rounded-xl p-2.5 border border-slate-200 hover:border-slate-400 hover:shadow-md transition flex flex-col"
+                  >
+                    <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2.5">
+                      <img
+                        src={imageUrl}
+                        alt={card.name}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
+                        }}
+                      />
+                      <span
+                        className={`absolute top-1.5 right-1.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md bg-white/90 ${getRarityBadge(
+                          card.rarity
+                        )}`}
+                      >
+                        {card.rarity}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-amber-600 transition">
+                        {card.name}
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/80">
+                        <span className="text-[11px] font-mono text-slate-500">#{card.number}</span>
+                        <div className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <span className="text-xs font-black font-mono text-emerald-600">
+                              ${displayPriceNormal.toFixed(2)}
+                            </span>
+                            {priceMode === 'cheapest_reprint' && (
+                              <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 rounded font-sans">
+                                Reprint
+                              </span>
+                            )}
+                          </div>
+                          {priceMode === 'cheapest_reprint' && (
+                            <span className="text-[9px] font-mono text-slate-400 line-through block">
+                              Orig: ${card.priceNormal.toFixed(2)}
+                            </span>
+                          )}
+                          {displayPriceFoil && (
+                            <span className="text-[10px] font-mono text-amber-500 block">
+                              Foil: ${displayPriceFoil.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Graphical Product Price Quantile Distribution Curve */}
+          {activeBooster && (
+            <PackDistributionCurve
+              productTitle={activeProduct?.displayName || `${currentSet?.name || selectedSetCode} ${activeBooster.fullBoosterName || activeBooster.boosterName}`}
+              activeBooster={activeBooster}
+              defaultPackSealedPrice={productMarketPrice}
+              multiplier={productPacksCount}
+              priceMode={priceMode}
+              vendor={vendor}
+              isPreconstructed={isPreconProduct}
+              preconSinglesEv={productEstimatedEv}
+              cardCount={activeProduct?.cardCount}
+            />
+          )}
+
+          {/* Detailed Statistical Distribution & Audit Telemetry */}
+          {activeBooster && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Distribution Range Card */}
+              <div
+                id="ev-range-card"
+                className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      {isPreconProduct ? 'Deterministic Collation & Value Guarantee' : 'Variance & Value Distribution'}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {isPreconProduct
+                        ? `Fixed cardlist (${activeProduct?.cardCount || 400} cards) value breakdown for ${activeProduct?.displayName || 'Preconstructed Deck'}`
+                        : `Visualizing value boundaries for ${activeProduct?.displayName || 'Active Product'}`}
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 font-mono">
+                    Mode: {priceMode === 'direct' ? 'Direct Set Price' : 'Cheapest Reprint'}
+                  </span>
+                </div>
+
+                {isPreconProduct ? (
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-700 px-1">
+                      <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span className="font-medium text-emerald-600">Fixed Singles EV:</span>
+                        <span className="font-black">${productEstimatedEv.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="font-medium text-slate-500">Lottery Variance:</span>
+                        <span className="font-bold text-slate-900">$0.00 (0%)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="font-medium text-slate-500">Sealed Market:</span>
+                        <span className="font-bold text-rose-600 font-mono">${productMarketPrice.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Preconstructed Solid Deterministic Bar */}
+                    <div className="h-14 w-full bg-emerald-600 rounded-xl overflow-hidden flex items-center justify-between px-4 text-white border-2 border-emerald-700 shadow-inner select-none">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+                        <div>
+                          <div className="text-xs font-extrabold uppercase tracking-wide">100% Fixed Deck Collation</div>
+                          <div className="text-[10px] text-emerald-100">Every copy yields identical contents</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase font-bold text-emerald-200">Total Singles Value</div>
+                        <div className="font-mono font-black text-sm text-white">${productEstimatedEv.toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Visual Distribution Bar with Clean Top/Bottom Labels and Diamond Sealed Cost Marker */
+                  <div className="space-y-4 pt-2">
+                    {/* Top Indicators: Absolute Min, Average, Absolute Max (clean, without arrow clutter) */}
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-700 px-1">
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="font-medium text-slate-500">Absolute Min:</span>
+                        <span className="font-bold text-slate-900">${productMin.toFixed(2)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span className="font-medium text-emerald-600">Average EV:</span>
+                        <span className="font-black">${productEstimatedEv.toFixed(2)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="font-medium text-slate-500">Absolute Max:</span>
+                        <span className="font-bold text-slate-900">${productMax.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Distribution Bar Container with Sealed Price positioned just above/on top with Diamond */}
+                    <div className="relative pt-7 pb-1">
+                      {/* Bright Red Sealed Product Marker with Diamond sitting right on top of the bar */}
+                      {(() => {
+                        let sealedPos = 50;
+                        if (productMarketPrice <= productMin) sealedPos = 4;
+                        else if (productMarketPrice >= productMax) sealedPos = 96;
+                        else if (productMarketPrice < productMid90Ev) {
+                          const ratio = (productMarketPrice - productMin) / Math.max(0.01, productMid90Ev - productMin);
+                          sealedPos = Math.max(4, Math.min(48, 5 + ratio * 45));
+                        } else {
+                          const ratio = (productMarketPrice - productMid90Ev) / Math.max(0.01, productMax - productMid90Ev);
+                          sealedPos = Math.max(52, Math.min(96, 50 + ratio * 45));
+                        }
+
+                        return (
+                          <div
+                            style={{ left: `${sealedPos}%` }}
+                            className="absolute top-0 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none"
+                          >
+                            {/* Bright Red Badge */}
+                            <div className="bg-red-600 text-white font-mono text-[10px] font-black px-2 py-0.5 rounded-full shadow-md whitespace-nowrap flex items-center gap-1 border-2 border-white ring-1 ring-red-600/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                              Sealed Cost: ${productMarketPrice.toFixed(2)}
+                            </div>
+                            {/* Diamond pointer touching the top edge of the price bar */}
+                            <div className="w-2.5 h-2.5 rotate-45 bg-red-600 border border-white -mt-1 shadow-xs"></div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* The 3-Segment Distribution Bar with embedded metrics */}
+                      <div className="h-14 w-full bg-slate-100 rounded-xl overflow-hidden flex relative border-2 border-slate-300 shadow-inner select-none">
+                        {/* Duds: Bottom 5% & Value */}
+                        <div
+                          style={{ width: '20%' }}
+                          className="bg-rose-500 hover:bg-rose-600 transition h-full flex flex-col items-center justify-center text-center px-1 text-white border-r border-rose-600/40"
+                          title={`Duds (Bottom 5%): $${productMin5.toFixed(2)}`}
+                        >
+                          <span className="text-[11px] font-extrabold uppercase tracking-tight leading-tight">Duds</span>
+                          <span className="text-[9px] font-medium opacity-90 leading-tight">Bottom 5%</span>
+                          <span className="font-mono font-bold text-xs leading-tight mt-0.5">${productMin5.toFixed(2)}</span>
+                        </div>
+
+                        {/* Mid 90% & Value underneath */}
+                        <div
+                          style={{ width: '60%' }}
+                          className="bg-emerald-600 hover:bg-emerald-700 transition h-full flex flex-col items-center justify-center text-center px-2 text-white"
+                          title={`Mid 90% (Trimmed Mean): $${productMid90Ev.toFixed(2)}`}
+                        >
+                          <span className="text-xs font-black tracking-wide leading-tight drop-shadow-xs">Mid 90%</span>
+                          <span className="font-mono font-bold text-xs leading-tight mt-0.5 opacity-95">${productMid90Ev.toFixed(2)}</span>
+                        </div>
+
+                        {/* Hits: Top 5% & Value */}
+                        <div
+                          style={{ width: '20%' }}
+                          className="bg-indigo-600 hover:bg-indigo-700 transition h-full flex flex-col items-center justify-center text-center px-1 text-white border-l border-indigo-700/40"
+                          title={`Hits (Top 5%): $${productMax5.toFixed(2)}`}
+                        >
+                          <span className="text-[11px] font-extrabold uppercase tracking-tight leading-tight">Hits</span>
+                          <span className="text-[9px] font-medium opacity-90 leading-tight">Top 5%</span>
+                          <span className="font-mono font-bold text-xs leading-tight mt-0.5">${productMax5.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Data Quality & Audit Card */}
+              <div
+                id="audit-telemetry-card"
+                className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                  <h3 className="text-base font-bold text-slate-900">Data Quality & Audit</h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Strict pricing resolution check verifying cards in simulated packs.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                    <span className="text-slate-600 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Valid Complete Packs
+                    </span>
+                    <span className="font-mono font-bold text-emerald-600">
+                      {activeBooster.completeBoosterPct.toFixed(2)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                    <span className="text-slate-600">Exact Match (Vendor+Finish)</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      {activeBooster.exactMatchPct.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                    <span className="text-slate-600">Finish Fallback (Foil/Normal)</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      {activeBooster.differentFinishPct.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                    <span className="text-slate-600">Cross-Vendor Fallback</span>
+                    <span className="font-mono font-semibold text-slate-800">
+                      {activeBooster.differentVendorPct.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-500">Discarded Incomplete Packs</span>
+                    <span className="font-mono font-bold text-slate-900">{activeBooster.failedBoosters} / 5,000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

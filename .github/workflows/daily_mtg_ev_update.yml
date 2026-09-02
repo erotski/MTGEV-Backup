@@ -1,0 +1,61 @@
+name: Daily MTG Booster EV & Pricing Pipeline
+
+on:
+  schedule:
+    # Runs daily at 04:00 UTC (12:00 AM EST)
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Allows manual one-click runs from GitHub Actions UI
+
+jobs:
+  update-ev-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    # Provision temporary MySQL service for zero database hosting costs
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_for_cards
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install MySQL Client & Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          pip install mysql-connector-python requests tqdm numpy
+
+      - name: Execute Daily Update Pipeline & JSON Export
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: rootpassword
+          DB_NAME: test_for_cards
+        run: |
+          python backend/daily_update.py
+
+      - name: Commit & Push Updated Datasets
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/
+          if git diff --staged --quiet; then
+            echo "No data changes to commit."
+          else
+            git commit -m "Auto-update MTG booster EV & market prices [skip ci]"
+            git push
+          fi

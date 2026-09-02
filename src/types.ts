@@ -1,0 +1,185 @@
+export interface BoosterEVRecord {
+  id: number;
+  setCode: string;
+  setName: string;
+  boosterName: string;
+  fullBoosterName: string;
+  priceMode: 'direct' | 'cheapest_reprint';
+  vendor: 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
+  evAverage: number;
+  evMid90: number;
+  evMin: number;
+  evMax: number;
+  evMin5: number;
+  evMax5: number;
+  completeBoosterPct: number;
+  exactMatchPct: number;
+  differentFinishPct: number;
+  differentVendorPct: number;
+  failedBoosters: number;
+  simulatedPacks: number;
+  updatedAt: string;
+}
+
+export interface BoxArbitrageRecord {
+  productUuid: string;
+  boxName: string;
+  category: 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle';
+  setCode: string;
+  setName: string;
+  boosterName: string;
+  packCount: number;
+  boxMarketPrice: number;
+  packEvAvg: number;
+  packEvMid90: number;
+  boxEvAvg: number;
+  boxEvMid90: number;
+  profitUsd: number;
+  roiPct: number;
+  vendor: string;
+  priceMode: string;
+  completePct: number;
+}
+
+export interface ChaseCard {
+  uuid: string;
+  name: string;
+  scryfallId: string;
+  setCode: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'mythic' | 'special';
+  number: string;
+  priceNormal: number;
+  priceFoil?: number;
+  finish: string;
+}
+
+export interface CustomSlot {
+  id: string;
+  name: string;
+  sheetCode?: string;
+  type:
+    | 'common'
+    | 'uncommon'
+    | 'rare_mythic'
+    | 'foil_wildcard'
+    | 'special_guest'
+    | 'basic_land'
+    | 'art_card'
+    | 'token_ad'
+    | 'showcase_slot'
+    | 'list_slot';
+  picks: number;
+  rareOdds?: number; // e.g. 0.85 rare / 0.15 mythic
+  foilChance?: number; // 0 to 1
+  showcaseChance?: number; // 0 to 1
+  boosterIndex?: number;
+  sheetWeight?: number;
+}
+
+export type DuplicateLimitMode = 'singleton' | 'max_2' | 'max_4' | 'unlimited';
+
+export interface AncillaryInclusions {
+  includeBasicLands: boolean;
+  includeArtCards: boolean;
+  includeTokens: boolean;
+  includeTheList: boolean;
+  includeSpecialGuests: boolean;
+  includeSerialized: boolean;
+}
+
+export type EraCategory =
+  | 'Classic 3-Set Blocks (1995-2015)'
+  | 'Two-Set Paradigm (2015-2018)'
+  | 'Modern Standalone & Play Boosters (2018-Present)'
+  | 'Masters & Horizons Power Cubes';
+
+export type BoosterTypeCategory =
+  | 'draft'
+  | 'play'
+  | 'set'
+  | 'collector'
+  | 'jumpstart'
+  | 'tournament_deck';
+
+export interface PackTemplate {
+  id: string;
+  name: string;
+  category: 'per_set' | 'booster_type' | 'block';
+  blockName?: string;
+  boosterType: BoosterTypeCategory;
+  setCode: string;
+  setName: string;
+  era: EraCategory;
+  description: string;
+  defaultSlots: CustomSlot[];
+  defaultInclusions: AncillaryInclusions;
+  defaultDuplicateLimit: DuplicateLimitMode;
+  packCostEstimate: number;
+}
+
+export interface CustomCube {
+  id: string;
+  name: string;
+  description: string;
+  targetPacksPerPlayer: number;
+  slots: CustomSlot[];
+  cardPoolSize: number;
+  duplicateLimit: DuplicateLimitMode;
+  inclusions: AncillaryInclusions;
+}
+
+export interface ChildSetInfo {
+  code: string;
+  name: string;
+  type: string;
+  cardCount?: number;
+  iconCode?: string;
+}
+
+export interface SetOption {
+  code: string;
+  name: string;
+  tokenSetCode?: string;
+  releaseDate?: string;
+  type?: string;
+  totalSetSize?: number;
+  regularCardCount?: number;
+  languages?: string[];
+  block?: string;
+  childSets?: ChildSetInfo[];
+  boosterCount: number;
+  boosters: string[];
+}
+
+export type PriceMode = 'direct' | 'cheapest_reprint';
+export type Vendor = 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
+export type ProductCategory = 'all' | 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle';
+
+export interface DraftCartItem {
+  cartItemId: string;
+  productId: string;
+  quantity: number;
+  selectedBoosterIndex: number | 'weighted_auto';
+  sheetPicksOverride: Record<string, number>;
+  disabledSheets: string[];
+}
+
+export interface PodSimulationResult {
+  totalPacks: number;
+  totalCards: number;
+  totalCostUsd: number;
+  totalEvUsd: number;
+  evRoiPct: number;
+  raresAndMythicsCount: number;
+  mythicCount: number;
+  foilCount: number;
+  specialSheetCount: number;
+  packBreakdown: {
+    packTitle: string;
+    quantity: number;
+    cardsPerPack: number;
+    boosterIndexUsed: string;
+    sheetsOpened: { sheetName: string; count: number; category: string }[];
+  }[];
+}
+
