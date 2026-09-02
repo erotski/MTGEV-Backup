@@ -13846,7 +13846,17 @@
     "cardCount": null,
     "marketPrice": 0.0,
     "purchaseUrl": "https://www.tcgplayer.com/product/249639",
-    "priceFetchedAt": "2026-09-02 22:20:28"
+    "priceFetchedAt": "2026-09-02 22:20:28",
+    "contents": {
+      "sealed": [
+        {
+          "count": 120,
+          "name": "Ikoria Lair of Behemoths Collector Booster Hanger Pack",
+          "set": "iko",
+          "uuid": "8bb2388d-aa52-5a5f-9b7e-35ac51d0830c"
+        }
+      ]
+    }
   },
   {
     "id": "ae6b7945-ac26-51b5-8bc0-b9c04a4e2e56",

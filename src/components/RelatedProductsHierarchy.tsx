@@ -118,16 +118,50 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               let pCount = 1;
               if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
                 pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
+              } else if (sp.contents?.sealed && Array.isArray(sp.contents.sealed)) {
+                const first = sp.contents.sealed[0];
+                const sCount = sp.contents.sealed.reduce((sum: number, s: any) => sum + (s.count || 1), 0);
+                const sName = (first?.name || '').toLowerCase();
+                if (sName.includes('hanger') || sName.includes('pack')) {
+                  pCount = sCount;
+                } else if (sName.includes('collector') && (sName.includes('box') || sName.includes('display'))) {
+                  pCount = sCount * 12;
+                } else if (sName.includes('scene')) {
+                  pCount = sCount * 3;
+                } else if (sName.includes('beginner') || sName.includes('starter') || sName.includes('deck')) {
+                  pCount = sCount;
+                } else {
+                  pCount = sName.includes('box') || sName.includes('display') ? sCount * 36 : sCount;
+                }
               } else if (sp.contents?.deck || sp.contents?.variable || packType === 'starter_deck' || packType === 'pack') {
                 pCount = 1;
               } else if (packType === 'box') {
                 pCount = nameLower.includes('collector') ? 12 : (nameLower.includes('jumpstart') ? 24 : 36);
+              } else if (packType === 'case') {
+                if (nameLower.includes('collector')) {
+                  pCount = nameLower.includes('hanger') ? 120 : 72;
+                } else if (nameLower.includes('jumpstart')) {
+                  pCount = 144;
+                } else if (nameLower.includes('scene')) {
+                  pCount = 18;
+                } else if (nameLower.includes('clue')) {
+                  pCount = 64;
+                } else if (nameLower.includes('turtle')) {
+                  pCount = 24;
+                } else if (nameLower.includes('draft night')) {
+                  pCount = 48;
+                } else {
+                  pCount = 216;
+                }
               } else if (packType === 'bundle') {
                 pCount = nameLower.includes('prerelease') ? 6 : 9;
               }
 
-              const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 29.99);
-              const ev = Number(sp.estimatedEv || sp.ev || mPrice * 0.95);
+              const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
+              const computedEv = pCount > 0 && activeBooster.evAverage > 0 
+                ? Number((pCount * activeBooster.evAverage).toFixed(2))
+                : 0;
+              const ev = Number(sp.estimatedEv || sp.ev || computedEv);
 
               return {
                 id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
@@ -1019,9 +1053,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                       <div className="w-full pt-2 border-t border-slate-200/80 font-mono flex items-end justify-between">
                         <div>
                           <div className="text-xs font-black text-slate-900">
-                            ${prod.marketPrice.toFixed(2)}
+                            {prod.marketPrice > 0 ? `$${prod.marketPrice.toFixed(2)}` : 'Unlisted'}
                           </div>
-                          {prod.packsCount > 1 && (
+                          {prod.packsCount > 1 && prod.marketPrice > 0 && (
                             <div className="text-[9px] text-slate-400">
                               (${(prod.marketPrice / prod.packsCount).toFixed(2)}/pk)
                             </div>
@@ -1031,9 +1065,15 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                           <div className="text-[10px] font-bold text-emerald-600">
                             EV ${prod.estimatedEv.toFixed(2)}
                           </div>
-                          <div className={`text-[9px] font-bold ${evRoi >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                            {evRoi >= 0 ? `+${evRoi}%` : `${evRoi}%`} ROI
-                          </div>
+                          {prod.marketPrice > 0 ? (
+                            <div className={`text-[9px] font-bold ${evRoi >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                              {evRoi >= 0 ? `+${evRoi}%` : `${evRoi}%`} ROI
+                            </div>
+                          ) : (
+                            <div className="text-[9px] font-medium text-slate-400">
+                              No Market Price
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -1097,29 +1137,37 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                           </td>
                           <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{p.cardCount} cards</td>
                           <td className="p-3 font-mono font-bold text-slate-900 whitespace-nowrap">
-                            ${p.marketPrice.toFixed(2)}
+                            {p.marketPrice > 0 ? `$${p.marketPrice.toFixed(2)}` : <span className="text-slate-400 font-normal text-[11px]">Unlisted</span>}
                           </td>
                           <td className="p-3 font-mono font-bold text-emerald-600 whitespace-nowrap">
                             ${p.estimatedEv.toFixed(2)}
                           </td>
                           <td className="p-3 font-mono font-bold whitespace-nowrap">
-                            <span className={margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                              {margin >= 0 ? `+$${margin.toFixed(2)}` : `-$${Math.abs(margin).toFixed(2)}`}
-                            </span>
+                            {p.marketPrice > 0 ? (
+                              <span className={margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                                {margin >= 0 ? `+$${margin.toFixed(2)}` : `-$${Math.abs(margin).toFixed(2)}`}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-normal text-[11px]">—</span>
+                            )}
                           </td>
                           <td className="p-3 font-mono font-bold whitespace-nowrap">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] ${
-                                roi >= 0
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
-                              }`}
-                            >
-                              {roi >= 0 ? `+${roi.toFixed(1)}%` : `${roi.toFixed(1)}%`}
-                            </span>
+                            {p.marketPrice > 0 ? (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] ${
+                                  roi >= 0
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                }`}
+                              >
+                                {roi >= 0 ? `+${roi.toFixed(1)}%` : `${roi.toFixed(1)}%`}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-normal text-[11px]">N/A</span>
+                            )}
                           </td>
                           <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
-                            ${(p.marketPrice / (p.packsCount || 1)).toFixed(2)}/pack
+                            {p.marketPrice > 0 ? `$${(p.marketPrice / (p.packsCount || 1)).toFixed(2)}/pack` : <span className="text-slate-400 text-[11px]">—</span>}
                           </td>
                         </tr>
                       );
