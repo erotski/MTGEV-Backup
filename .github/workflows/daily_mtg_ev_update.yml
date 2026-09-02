@@ -9,6 +9,8 @@ on:
 jobs:
   update-ev-data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 60
 
     # Provision temporary MySQL service for zero database hosting costs
@@ -30,7 +32,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install MySQL Client & Dependencies
         run: |
