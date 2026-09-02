@@ -48,7 +48,7 @@ def sync_all_sealed_prices():
   # Fetch all products that have identifiers
   cursor.execute("""
         SELECT uuid, name, setCode, category, identifiers
-        FROM sealedproducts
+        FROM sealedProducts
         WHERE identifiers IS NOT NULL AND identifiers != ''
         ORDER BY setCode DESC, name;
     """)

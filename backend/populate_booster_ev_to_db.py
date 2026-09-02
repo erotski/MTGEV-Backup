@@ -361,7 +361,7 @@ class DatabaseBoosterEVEngine:
     self.cursor.execute(
         """
             SELECT boosterIndex, boosterWeight 
-            FROM setboostercontentweights 
+            FROM setBoosterContentWeights 
             WHERE setCode = %s AND boosterName = %s
             ORDER BY boosterIndex
         """,
@@ -378,7 +378,7 @@ class DatabaseBoosterEVEngine:
     self.cursor.execute(
         """
             SELECT boosterIndex, sheetName, sheetPicks 
-            FROM setboostercontents 
+            FROM setBoosterContents 
             WHERE setCode = %s AND boosterName = %s
         """,
         (set_code, booster_name),
@@ -397,7 +397,7 @@ class DatabaseBoosterEVEngine:
     self.cursor.execute(
         """
             SELECT sheetName, sheetIsFoil 
-            FROM setboostersheets 
+            FROM setBoosterSheets 
             WHERE setCode = %s AND boosterName = %s
         """,
         (set_code, booster_name),
@@ -410,7 +410,7 @@ class DatabaseBoosterEVEngine:
     self.cursor.execute(
         """
             SELECT sheetName, cardUuid, cardWeight 
-            FROM setboostersheetcards 
+            FROM setBoosterSheetCards 
             WHERE setCode = %s AND boosterName = %s
         """,
         (set_code, booster_name),
@@ -692,7 +692,7 @@ def run_full_pipeline():
   # Fetch distinct paper booster configurations
   engine.cursor.execute("""
         SELECT DISTINCT sbc.setCode, sbc.boosterName, s.name as setName
-        FROM setboostercontents sbc
+        FROM setBoosterContents sbc
         JOIN sets s ON sbc.setCode = s.code
         WHERE (s.isOnlineOnly = 0 OR s.isOnlineOnly IS NULL)
           AND sbc.boosterName NOT IN ('arena', 'mtgo')

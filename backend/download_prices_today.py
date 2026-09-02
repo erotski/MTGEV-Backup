@@ -71,9 +71,13 @@ def download_prices_today(
                 ) as pbar:
                     while chunk := response.read(chunk_size):
                         pbar.update(len(chunk))
-                        decompressed = decompressor.decompress(chunk)
-                        if decompressed:
-                            process.stdin.write(decompressed)
+                        while chunk:
+                            if decompressor.eof:
+                                decompressor = bz2.BZ2Decompressor()
+                            decompressed = decompressor.decompress(chunk)
+                            if decompressed:
+                                process.stdin.write(decompressed)
+                            chunk = decompressor.unused_data
 
                 process.stdin.write(FINAL_COMMANDS)
                 process.stdin.flush()

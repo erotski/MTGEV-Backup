@@ -75,10 +75,14 @@ def download_and_import_mtgjson(
                     while chunk := response.read(chunk_size):
                         pbar.update(len(chunk))
 
-                        # Decompress and feed straight to MySQL
-                        decompressed = decompressor.decompress(chunk)
-                        if decompressed:
-                            process.stdin.write(decompressed)
+                        # Decompress and feed straight to MySQL, handling concatenated/multi-stream bzip2
+                        while chunk:
+                            if decompressor.eof:
+                                decompressor = bz2.BZ2Decompressor()
+                            decompressed = decompressor.decompress(chunk)
+                            if decompressed:
+                                process.stdin.write(decompressed)
+                            chunk = decompressor.unused_data
 
                 # 2. Finalize transactions
                 process.stdin.write(FINAL_COMMANDS)

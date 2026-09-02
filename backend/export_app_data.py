@@ -37,14 +37,14 @@ def export_all():
                 s.type, 
                 s.baseSetSize, 
                 s.totalSetSize,
-                EXISTS(SELECT 1 FROM setboostercontents sbc WHERE sbc.setCode = s.code AND sbc.boosterName LIKE '%play%') as hasPlayBooster,
-                EXISTS(SELECT 1 FROM setboostercontents sbc WHERE sbc.setCode = s.code AND sbc.boosterName LIKE '%collector%') as hasCollectorBooster,
-                EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code AND sp.category = 'bundle') as hasBundle,
-                EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code AND (sp.category = 'deck' OR sp.subtype LIKE '%commander%')) as hasCommanderDecks
+                EXISTS(SELECT 1 FROM setBoosterContents sbc WHERE sbc.setCode = s.code AND sbc.boosterName LIKE '%play%') as hasPlayBooster,
+                EXISTS(SELECT 1 FROM setBoosterContents sbc WHERE sbc.setCode = s.code AND sbc.boosterName LIKE '%collector%') as hasCollectorBooster,
+                EXISTS(SELECT 1 FROM sealedProducts sp WHERE sp.setCode = s.code AND sp.category = 'bundle') as hasBundle,
+                EXISTS(SELECT 1 FROM sealedProducts sp WHERE sp.setCode = s.code AND (sp.category = 'deck' OR sp.subtype LIKE '%commander%')) as hasCommanderDecks
             FROM sets s
             LEFT JOIN booster_ev_results bev ON s.code = bev.set_code
             WHERE (s.isOnlineOnly = 0 OR s.isOnlineOnly IS NULL)
-              AND EXISTS(SELECT 1 FROM sealedproducts sp WHERE sp.setCode = s.code)
+              AND EXISTS(SELECT 1 FROM sealedProducts sp WHERE sp.setCode = s.code)
             ORDER BY s.releaseDate DESC;
         """)
         sets = cursor.fetchall()
@@ -68,7 +68,7 @@ def export_all():
                 COALESCE(spp.market_price, 0.0) as marketPrice,
                 spp.purchase_url as purchaseUrl,
                 spp.fetched_at as priceFetchedAt
-            FROM sealedproducts sp
+            FROM sealedProducts sp
             LEFT JOIN sealedproducts_prices spp ON sp.uuid = spp.sealedproduct_uuid
             ORDER BY sp.setCode, sp.category, sp.name;
         """)
@@ -145,7 +145,7 @@ def export_all():
                 COALESCE(ev.ev_mid90, 0.0) as packEvMid90,
                 COALESCE(ev.exact_match_pct, 100.0) as completePct,
                 COALESCE(ev.updated_at, CURRENT_TIMESTAMP) as updatedAt
-            FROM sealedproducts sp
+            FROM sealedProducts sp
             JOIN sets s ON sp.setCode = s.code
             LEFT JOIN sealedproducts_prices spp ON sp.uuid = spp.sealedproduct_uuid
             LEFT JOIN booster_ev_results ev ON sp.setCode = ev.set_code 
