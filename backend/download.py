@@ -101,11 +101,4 @@ def download_and_import_mtgjson(
 
 
 if __name__ == '__main__':
-    download_and_import_mtgjson(
-        url='https://mtgjson.com/api/v5/AllPrintings.sql.bz2',
-        db_name='test_for_cards',  # Name of your MTG database
-        user='root',
-        password='HaionKala13!',
-        host='127.0.0.1',
-        port=3306,
-    )
+    download_and_import_mtgjson()

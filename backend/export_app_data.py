@@ -23,7 +23,8 @@ def export_all():
         cursor = conn.cursor(dictionary=True)
     except Exception as e:
         print(f"[ERROR] Could not connect to MySQL database: {e}")
-        return
+        raise
+
 
     # 1. Export Sets List
     print("▶ 1. Exporting sets.json...")
