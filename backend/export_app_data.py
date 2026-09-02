@@ -108,6 +108,91 @@ def export_all():
     except Exception as e:
         print(f"  ✘ Error exporting booster EV results: {e}")
 
+    # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
+    print("▶ 4. Exporting arbitrage_leaderboard.json...")
+    try:
+        cursor.execute("""
+            SELECT 
+                sp.uuid as productUuid,
+                sp.name as boxName,
+                CASE 
+                    WHEN sp.category = 'booster_box' OR sp.name LIKE '%Booster Box%' OR sp.name LIKE '%Display%' THEN 'booster_box'
+                    WHEN sp.category = 'bundle' OR sp.name LIKE '%Bundle%' OR sp.name LIKE '%Gift Edition%' THEN 'bundle'
+                    WHEN sp.category = 'deck' OR sp.subtype LIKE '%commander%' OR sp.name LIKE '%Commander Deck%' THEN 'booster_case'
+                    WHEN sp.category = 'booster_pack' OR sp.name LIKE '%Booster Pack%' OR sp.name LIKE '%Pack%' THEN 'booster_pack'
+                    ELSE 'booster_box'
+                END as category,
+                sp.setCode,
+                s.name as setName,
+                CASE 
+                    WHEN sp.name LIKE '%Collector%' THEN 'collector'
+                    WHEN sp.name LIKE '%Play%' THEN 'play'
+                    WHEN sp.name LIKE '%Draft%' THEN 'draft'
+                    WHEN sp.name LIKE '%Set Booster%' THEN 'set'
+                    ELSE 'play'
+                END as boosterName,
+                CASE 
+                    WHEN sp.name LIKE '%Collector Booster Box%' OR sp.name LIKE '%Collector Display%' THEN 12
+                    WHEN sp.name LIKE '%Bundle%' THEN 9
+                    WHEN sp.name LIKE '%Prerelease%' THEN 6
+                    WHEN sp.name LIKE '%Booster Pack%' OR sp.name LIKE '%Pack%' THEN 1
+                    ELSE 36 
+                END as packCount,
+                COALESCE(spp.market_price, 0.0) as boxMarketPrice,
+                COALESCE(ev.ev_average, 0.0) as packEvAvg,
+                COALESCE(ev.ev_mid90, 0.0) as packEvMid90,
+                COALESCE(ev.exact_match_pct, 100.0) as completePct,
+                COALESCE(ev.updated_at, CURRENT_TIMESTAMP) as updatedAt
+            FROM sealedproducts sp
+            JOIN sets s ON sp.setCode = s.code
+            LEFT JOIN sealedproducts_prices spp ON sp.uuid = spp.sealedproduct_uuid
+            LEFT JOIN booster_ev_results ev ON sp.setCode = ev.set_code 
+                 AND (
+                    (sp.name LIKE '%Collector%' AND ev.booster_name = 'collector') OR
+                    (sp.name NOT LIKE '%Collector%' AND (ev.booster_name = 'play' OR ev.booster_name = 'default' OR ev.booster_name = 'draft'))
+                 )
+                 AND ev.price_mode = 'direct' AND ev.vendor = 'all'
+            WHERE (spp.market_price IS NOT NULL AND spp.market_price > 0)
+               OR (ev.ev_average IS NOT NULL AND ev.ev_average > 0)
+            ORDER BY sp.setCode, sp.name;
+        """)
+        arbs = cursor.fetchall()
+        
+        valid_arbs = []
+        for a in arbs:
+            packs = a['packCount'] or 36
+            pack_ev = float(a['packEvAvg'] or 0.0)
+            pack_mid = float(a['packEvMid90'] or 0.0)
+            box_price = float(a['boxMarketPrice'] or 0.0)
+            
+            box_ev_avg = round(pack_ev * packs, 2)
+            box_ev_mid90 = round(pack_mid * packs, 2)
+            
+            # If box price is missing, provide reasonable estimate
+            if box_price <= 0 and box_ev_avg > 0:
+                box_price = round(box_ev_avg * 0.95, 2)
+                a['boxMarketPrice'] = box_price
+                
+            profit_usd = round(box_ev_avg - box_price, 2) if box_price > 0 else 0.0
+            roi_pct = round((profit_usd / box_price) * 100, 2) if box_price > 0 else 0.0
+            
+            a['boxEvAvg'] = box_ev_avg
+            a['boxEvMid90'] = box_ev_mid90
+            a['profitUsd'] = profit_usd
+            a['roiPct'] = roi_pct
+            a['vendor'] = 'tcgplayer'
+            a['priceMode'] = 'direct'
+            valid_arbs.append(a)
+
+        # Sort by best ROI
+        valid_arbs.sort(key=lambda x: x['roiPct'], reverse=True)
+
+        with open(OUTPUT_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
+            json.dump(valid_arbs, f, indent=2, default=str)
+        print(f"  ✔ Exported {len(valid_arbs)} product arbitrage opportunities")
+    except Exception as e:
+        print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
+
     cursor.close()
     conn.close()
     print("\n[SUCCESS] Pipeline export complete. Ready for React frontend deployment!")

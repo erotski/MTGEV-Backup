@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CHASE_CARDS_BY_SET, INITIAL_BOX_ARBITRAGE, INITIAL_SETS, MOCK_BOOSTER_EV_DATA } from './data';
-import { PriceMode, Vendor } from './types';
+import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord } from './types';
+import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
 import { CubeBuilderStudio } from './components/CubeBuilderStudio';
 import { AdminPortal } from './components/AdminPortal';
-import { TrendingUp, Layers, Sparkles, Box, Sliders, Dices, Package } from 'lucide-react';
+import { TrendingUp, Layers, Sparkles, Box, Sliders, Dices, Package, Database } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'cube' | 'admin'>('arbitrage');
@@ -13,8 +14,45 @@ export default function App() {
   const [priceMode, setPriceMode] = useState<PriceMode>('direct');
   const [vendor, setVendor] = useState<Vendor>('all');
 
+  // Dynamic state loaded from pipeline JSON files
+  const [availableSets, setAvailableSets] = useState<SetOption[]>(INITIAL_SETS);
+  const [arbitrageRecords, setArbitrageRecords] = useState<BoxArbitrageRecord[]>(INITIAL_BOX_ARBITRAGE);
+  const [boosterEvMap, setBoosterEvMap] = useState<Record<string, BoosterEVRecord[]>>(MOCK_BOOSTER_EV_DATA);
+  const [isLiveDatabase, setIsLiveDatabase] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function loadPipelineData() {
+      try {
+        setIsLoading(true);
+        const [setsRes, arbsRes, evRes] = await Promise.all([
+          dataService.getSets(),
+          dataService.getArbitrageRecords(),
+          dataService.getBoosterEVs()
+        ]);
+
+        if (setsRes.sets && setsRes.sets.length > 0) {
+          setAvailableSets(setsRes.sets);
+          setIsLiveDatabase(setsRes.isLive);
+        }
+        if (arbsRes && arbsRes.length > 0) {
+          setArbitrageRecords(arbsRes);
+        }
+        if (evRes && Object.keys(evRes).length > 0) {
+          setBoosterEvMap(evRes);
+        }
+      } catch (err) {
+        console.warn('Error loading dynamic pipeline data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadPipelineData();
+  }, []);
+
   // Flattened Booster EV records for exploration
-  const allBoosterRecords = Object.values(MOCK_BOOSTER_EV_DATA).flat();
+  const allBoosterRecords = Object.values(boosterEvMap).flat();
   const currentChaseCards = CHASE_CARDS_BY_SET[selectedSetCode] || CHASE_CARDS_BY_SET['MH3'] || [];
 
   const handleSelectSetFromArbitrage = (setCode: string) => {
@@ -39,8 +77,12 @@ export default function App() {
             <div>
               <div className="text-sm font-black tracking-tight text-white flex items-center gap-2">
                 MTG Booster EV & Cube Studio
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-                  Live TCG Engine
+                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                  isLiveDatabase 
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}>
+                  {isLiveDatabase ? `Live Cloud DB (${arbitrageRecords.length} Products)` : 'Live TCG Engine'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">Monte Carlo Expected Value & Products Overview</p>
@@ -108,7 +150,7 @@ export default function App() {
         {/* View Switcher */}
         {activeTab === 'arbitrage' && (
           <ArbitrageLeaderboard
-            records={INITIAL_BOX_ARBITRAGE}
+            records={arbitrageRecords}
             onSelectSet={handleSelectSetFromArbitrage}
             priceMode={priceMode}
             onPriceModeChange={setPriceMode}
@@ -121,7 +163,7 @@ export default function App() {
           <BoosterDetailExplorer
             selectedSetCode={selectedSetCode}
             onSelectSetCode={setSelectedSetCode}
-            availableSets={INITIAL_SETS}
+            availableSets={availableSets}
             boosterRecords={allBoosterRecords}
             chaseCards={currentChaseCards}
             priceMode={priceMode}
