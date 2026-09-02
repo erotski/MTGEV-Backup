@@ -65,6 +65,7 @@ def export_all():
                 sp.category,
                 sp.subtype,
                 sp.cardCount,
+                sp.contents,
                 COALESCE(spp.market_price, 0.0) as marketPrice,
                 spp.purchase_url as purchaseUrl,
                 spp.fetched_at as priceFetchedAt
@@ -73,6 +74,12 @@ def export_all():
             ORDER BY sp.setCode, sp.category, sp.name;
         """)
         products = cursor.fetchall()
+        for p in products:
+            if p.get("contents") and isinstance(p["contents"], str):
+                try:
+                    p["contents"] = json.loads(p["contents"])
+                except Exception:
+                    pass
         with open(OUTPUT_DIR / "sealed_products.json", "w", encoding="utf-8") as f:
             json.dump(products, f, indent=2, default=str)
         print(f"  ✔ Exported {len(products)} sealed products")
@@ -120,9 +127,10 @@ def export_all():
                 CASE 
                     WHEN sp.category = 'booster_box' OR sp.name LIKE '%Booster Box%' OR sp.name LIKE '%Display%' THEN 'booster_box'
                     WHEN sp.category = 'bundle' OR sp.name LIKE '%Bundle%' OR sp.name LIKE '%Gift Edition%' THEN 'bundle'
-                    WHEN sp.category = 'deck' OR sp.subtype LIKE '%commander%' OR sp.name LIKE '%Commander Deck%' THEN 'booster_case'
+                    WHEN sp.category = 'deck' OR sp.subtype LIKE '%commander%' OR sp.name LIKE '%Commander%' OR sp.name LIKE '%Deck%' THEN 'commander_deck'
+                    WHEN sp.category = 'booster_case' OR (sp.name LIKE '%Case%' AND sp.name NOT LIKE '%Showcase%') THEN 'booster_case'
                     WHEN sp.category = 'booster_pack' OR sp.name LIKE '%Booster Pack%' OR sp.name LIKE '%Pack%' THEN 'booster_pack'
-                    ELSE 'booster_box'
+                    ELSE 'other'
                 END as category,
                 sp.setCode,
                 s.name as setName,
@@ -144,7 +152,8 @@ def export_all():
                 COALESCE(ev.ev_average, 0.0) as packEvAvg,
                 COALESCE(ev.ev_mid90, 0.0) as packEvMid90,
                 COALESCE(ev.exact_match_pct, 100.0) as completePct,
-                COALESCE(ev.updated_at, CURRENT_TIMESTAMP) as updatedAt
+                COALESCE(ev.updated_at, CURRENT_TIMESTAMP) as updatedAt,
+                sp.contents as contents
             FROM sealedProducts sp
             JOIN sets s ON sp.setCode = s.code
             LEFT JOIN sealedproducts_prices spp ON sp.uuid = spp.sealedproduct_uuid
@@ -162,6 +171,11 @@ def export_all():
         
         valid_arbs = []
         for a in arbs:
+            if a.get("contents") and isinstance(a["contents"], str):
+                try:
+                    a["contents"] = json.loads(a["contents"])
+                except Exception:
+                    pass
             packs = a['packCount'] or 36
             pack_ev = float(a['packEvAvg'] or 0.0)
             pack_mid = float(a['packEvMid90'] or 0.0)

@@ -128,6 +128,24 @@ class DataService {
     this.boosterEvCache = {};
     return {};
   }
+
+  /**
+   * Loads raw sealed products with contents column from /data/sealed_products.json
+   */
+  public async getSealedProducts(): Promise<any[]> {
+    try {
+      const response = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
+      if (response.ok) {
+        const raw = await response.json();
+        if (Array.isArray(raw)) {
+          return raw;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch /data/sealed_products.json:', e);
+    }
+    return [];
+  }
 }
 
 export const dataService = new DataService();

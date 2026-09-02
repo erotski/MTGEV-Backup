@@ -21,10 +21,48 @@ export interface BoosterEVRecord {
   updatedAt: string;
 }
 
+export interface ProductContentsCard {
+  foil?: boolean;
+  name: string;
+  number?: string;
+  set?: string;
+  uuid: string;
+}
+
+export interface ProductContentsDeck {
+  name: string;
+  set: string;
+}
+
+export interface ProductContentsVariableConfig {
+  chance?: number;
+  weight?: number;
+}
+
+export interface ProductContentsVariableOption {
+  card?: ProductContentsCard[];
+  deck?: ProductContentsDeck[];
+  booster?: { count?: number; set?: string; type?: string }[];
+  variable_config?: ProductContentsVariableConfig[];
+}
+
+export interface ProductContentsVariableSlot {
+  configs: ProductContentsVariableOption[];
+}
+
+export interface ProductContents {
+  deck?: ProductContentsDeck[];
+  card?: ProductContentsCard[];
+  booster?: { count?: number; set?: string; type?: string }[];
+  sealed?: { count?: number; name?: string; set?: string; uuid?: string }[];
+  variable?: ProductContentsVariableSlot[];
+  other?: { name?: string }[];
+}
+
 export interface BoxArbitrageRecord {
   productUuid: string;
   boxName: string;
-  category: 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle';
+  category: 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle' | 'commander_deck' | 'other' | string;
   setCode: string;
   setName: string;
   boosterName: string;
@@ -39,6 +77,7 @@ export interface BoxArbitrageRecord {
   vendor: string;
   priceMode: string;
   completePct: number;
+  contents?: ProductContents;
 }
 
 export interface ChaseCard {
@@ -153,7 +192,7 @@ export interface SetOption {
 
 export type PriceMode = 'direct' | 'cheapest_reprint';
 export type Vendor = 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
-export type ProductCategory = 'all' | 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle';
+export type ProductCategory = 'all' | 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle' | 'commander_deck' | 'other';
 
 export interface DraftCartItem {
   cartItemId: string;

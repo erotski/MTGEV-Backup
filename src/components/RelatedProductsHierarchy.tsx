@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor } from '../types';
+import { dataService } from '../services/dataService';
 import {
   ECOMMERCE_CATALOG_PACKS,
   CatalogPackProduct,
@@ -33,6 +34,8 @@ import {
   Crown,
   Filter,
   List,
+  Dices,
+  HelpCircle,
 } from 'lucide-react';
 
 interface RelatedProductsHierarchyProps {
@@ -78,6 +81,72 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const existingSetProducts = ECOMMERCE_CATALOG_PACKS.filter(
     (p) => p.setCode.toUpperCase() === setCode.toUpperCase()
   );
+
+  // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
+  const [dbSealedProducts, setDbSealedProducts] = useState<CatalogPackProduct[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDbProducts() {
+      try {
+        const raw = await dataService.getSealedProducts();
+        if (isMounted && Array.isArray(raw) && raw.length > 0) {
+          const matching = raw.filter(
+            (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === setCode.toUpperCase()
+          );
+          if (matching.length > 0) {
+            const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
+              const pName = sp.name || 'Sealed Product';
+              const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
+              const category = (sp.category || '').toLowerCase();
+              const subtype = (sp.subtype || '').toLowerCase();
+
+              let packType: ProductPackagingType = 'bundle';
+              if (category.includes('booster_box') || subtype.includes('booster_box') || pName.toLowerCase().includes('booster box')) {
+                packType = 'box';
+              } else if (category.includes('case') || pName.toLowerCase().includes('case')) {
+                packType = 'case';
+              } else if (category.includes('deck') || subtype.includes('deck') || pName.toLowerCase().includes('deck') || pName.toLowerCase().includes('spellbook')) {
+                packType = 'starter_deck';
+              } else if (category.includes('pack') || pName.toLowerCase().includes('pack')) {
+                packType = 'pack';
+              }
+
+              const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 29.99);
+              const ev = Number(sp.estimatedEv || sp.ev || mPrice * 0.95);
+
+              return {
+                id: sp.uuid || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
+                setCode: sCode,
+                setName: sp.setName || setName,
+                releaseDate: sp.releaseDate || '2024-01-01',
+                block: `${setName} Products`,
+                packagingType: packType,
+                boosterName: (sp.boosterType || 'play') as any,
+                displayName: pName,
+                marketPrice: mPrice,
+                estimatedEv: ev,
+                cardCount: sp.cardCount || 100,
+                packsCount: sp.boosterCount || (packType === 'box' ? 36 : packType === 'bundle' ? 9 : 1),
+                badge: sp.contents?.variable ? 'Variable Collation' : sp.contents?.deck ? 'Fixed Deck' : 'Factory Sealed',
+                specialFeatures: sp.contents?.variable
+                  ? ['MTGJSON contents Variable Slots', 'Probabilistic Pool', 'Authentic Database Collation']
+                  : ['Authentic MTGJSON Sealed Product'],
+                rawContents: sp.contents,
+              };
+            });
+            setDbSealedProducts(mapped);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load db sealed products:', e);
+      }
+    }
+    loadDbProducts();
+    return () => {
+      isMounted = false;
+    };
+  }, [setCode, setName]);
 
   // Helper to synthesize a product if none exists in catalog for this set
   const getSyntheticProducts = (): CatalogPackProduct[] => {
@@ -316,7 +385,19 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
   const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
 
-  const rawProducts = existingSetProducts.length > 0 ? existingSetProducts : getSyntheticProducts();
+  const combinedCatalogProducts = useMemo(() => {
+    if (dbSealedProducts.length > 0) {
+      // Merge dbSealedProducts with any existing hardcoded products, prioritizing dbSealedProducts
+      const dbNames = new Set(dbSealedProducts.map((p) => p.displayName.toLowerCase()));
+      const filteredExisting = existingSetProducts.filter(
+        (p) => !dbNames.has(p.displayName.toLowerCase())
+      );
+      return [...dbSealedProducts, ...filteredExisting];
+    }
+    return existingSetProducts;
+  }, [dbSealedProducts, existingSetProducts]);
+
+  const rawProducts = combinedCatalogProducts.length > 0 ? combinedCatalogProducts : getSyntheticProducts();
 
   // Dynamically scale products for active PriceMode (Direct vs Cheapest Reprint) & Vendor
   const setProducts = useMemo(() => {
@@ -1155,6 +1236,156 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               </div>
             );
           })()}
+
+          {/* MTGJSON Sealed Product Contents Specification (Decks, Guaranteed Cards, and Variable Weighted Foil/Card Slots) */}
+          {activeProduct.rawContents && (
+            <div className="bg-white p-5 rounded-xl border border-indigo-200 shadow-sm space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-indigo-600" />
+                    <span>MTGJSON Factory Sealed Contents Specification</span>
+                    <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                      sealedProducts.contents
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    Verified database configuration for {cleanProductName(activeProduct.displayName)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* 1. Preconstructed Decks contained */}
+                {activeProduct.rawContents.deck && activeProduct.rawContents.deck.length > 0 && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Layers3 className="w-4 h-4 text-amber-600" />
+                      Contained Preconstructed Deck Lists ({activeProduct.rawContents.deck.length}):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activeProduct.rawContents.deck.map((d: any, idx: number) => (
+                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+                          <span className="font-semibold text-slate-800">{d.name}</span>
+                          <span className="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
+                            Set: {d.set?.toUpperCase() || setCode}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Guaranteed Fixed Promo Cards */}
+                {activeProduct.rawContents.card && activeProduct.rawContents.card.length > 0 && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      Guaranteed Fixed Cards & Promos ({activeProduct.rawContents.card.length}):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {activeProduct.rawContents.card.map((c: any, idx: number) => (
+                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+                          <span className="font-semibold text-slate-800 truncate pr-2">{c.name}</span>
+                          <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
+                            {c.foil && (
+                              <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">FOIL</span>
+                            )}
+                            {c.number && (
+                              <span className="text-slate-500">#{c.number}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Variable Weighted Slots (e.g. Signature Spellbook 1-of-8 Foil Slot) */}
+                {activeProduct.rawContents.variable && activeProduct.rawContents.variable.length > 0 && (
+                  <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-200/80 space-y-3">
+                    <div className="text-xs font-bold text-amber-900 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Dices className="w-4 h-4 text-amber-600" />
+                        <span>Variable Weighted Collation Slots ({activeProduct.rawContents.variable.length})</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-200">
+                        Probabilistic Pool
+                      </span>
+                    </div>
+
+                    {activeProduct.rawContents.variable.map((slot: any, vIdx: number) => {
+                      const totalWeight = (slot.configs || []).reduce(
+                        (sum: number, cfg: any) => sum + (cfg.variable_config?.[0]?.weight || 1),
+                        0
+                      );
+
+                      return (
+                        <div key={vIdx} className="bg-white rounded-lg border border-amber-200/70 p-3 space-y-2">
+                          <div className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                            <span>Slot {vIdx + 1}: 1 Card Chosen Randomly from {slot.configs?.length || 0} Options</span>
+                            <span className="font-mono text-[11px] text-slate-500">Total Pool Weight: {totalWeight}</span>
+                          </div>
+
+                          <div className="overflow-x-auto rounded border border-slate-100">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500">
+                                <tr>
+                                  <th className="py-1.5 px-2.5">Card / Option</th>
+                                  <th className="py-1.5 px-2.5 text-center">Finish</th>
+                                  <th className="py-1.5 px-2.5 text-right font-mono">Weight</th>
+                                  <th className="py-1.5 px-2.5 text-right font-mono text-amber-700">Pull Chance</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {slot.configs?.map((cfg: any, cIdx: number) => {
+                                  const cardItem = cfg.card?.[0];
+                                  const weight = cfg.variable_config?.[0]?.weight || 1;
+                                  const chancePct = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0.0';
+
+                                  return (
+                                    <tr key={cIdx} className="hover:bg-amber-50/30">
+                                      <td className="py-1.5 px-2.5 font-medium text-slate-800">
+                                        {cardItem ? (
+                                          <div className="flex items-center gap-1.5">
+                                            <span>{cardItem.name}</span>
+                                            {cardItem.number && (
+                                              <span className="font-mono text-[10px] text-slate-400">#{cardItem.number}</span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          cfg.deck?.[0]?.name || cfg.booster?.[0]?.type || 'Option'
+                                        )}
+                                      </td>
+                                      <td className="py-1.5 px-2.5 text-center">
+                                        {cardItem?.foil ? (
+                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                                            Foil
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400 text-[11px]">Regular</span>
+                                        )}
+                                      </td>
+                                      <td className="py-1.5 px-2.5 text-right font-mono text-slate-600">
+                                        {weight}
+                                      </td>
+                                      <td className="py-1.5 px-2.5 text-right font-mono font-bold text-amber-700">
+                                        {chancePct}%
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* MTGJSON Collation Sheet Breakdown for this Tier */}
           {activeProduct.variations && activeProduct.variations[0]?.sheets && (

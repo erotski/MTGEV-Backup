@@ -680,6 +680,78 @@ class DatabaseBoosterEVEngine:
         'exact_pct': direct_all[11],
     }
 
+  def calculate_sealed_product_ev(self, contents: dict, mode: str = 'direct', vendor: str = 'all') -> float:
+    """Calculates EV for a sealedProduct with JSON `contents` (deck, variable, booster, card)."""
+    if not contents:
+      return 0.0
+    
+    total_ev = 0.0
+    use_reprints = (mode == 'cheapest_reprint')
+
+    # 1. Guaranteed cards (e.g. promo cards)
+    if 'card' in contents and isinstance(contents['card'], list):
+      for c in contents['card']:
+        uuid = c.get('uuid')
+        finish = 'foil' if c.get('foil') else 'normal'
+        if uuid:
+          p, _ = self.get_card_price(uuid, finish, use_reprints, vendor)
+          if p:
+            total_ev += p
+
+    # 2. Preconstructed decks (e.g. Signature Spellbook deck, Commander deck)
+    if 'deck' in contents and isinstance(contents['deck'], list):
+      for d in contents['deck']:
+        deck_name = d.get('name')
+        deck_set = d.get('set')
+        if deck_name and deck_set:
+          # Fetch cards in this deck from the database deck cards table or card associations
+          try:
+            self.cursor.execute(
+              """
+              SELECT c.uuid, dc.count, dc.isFoil
+              FROM deckCards dc
+              JOIN decks dk ON dc.deckId = dk.id
+              JOIN cards c ON dc.cardUuid = c.uuid
+              WHERE dk.name = %s AND dk.code = %s
+              """,
+              (deck_name, deck_set)
+            )
+            rows = self.cursor.fetchall()
+            for r in rows:
+              count = r.get('count', 1) or 1
+              finish = 'foil' if r.get('isFoil') else 'normal'
+              p, _ = self.get_card_price(r['uuid'], finish, use_reprints, vendor)
+              if p:
+                total_ev += p * count
+          except Exception:
+            pass
+
+    # 3. Variable weighted slots (e.g. Signature Spellbook 1-of-8 foil slot)
+    if 'variable' in contents and isinstance(contents['variable'], list):
+      for var_slot in contents['variable']:
+        configs = var_slot.get('configs', [])
+        total_weight = 0.0
+        weighted_sum = 0.0
+        for cfg in configs:
+          weight = 1.0
+          if 'variable_config' in cfg and cfg['variable_config']:
+            weight = float(cfg['variable_config'][0].get('weight', 1.0))
+          total_weight += weight
+
+          # Card option
+          if 'card' in cfg and cfg['card']:
+            c = cfg['card'][0]
+            uuid = c.get('uuid')
+            finish = 'foil' if c.get('foil') else 'normal'
+            if uuid:
+              p, _ = self.get_card_price(uuid, finish, use_reprints, vendor)
+              if p:
+                weighted_sum += p * weight
+        if total_weight > 0:
+          total_ev += weighted_sum / total_weight
+
+    return round(total_ev, 2)
+
 
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE

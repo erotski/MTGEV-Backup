@@ -72,7 +72,7 @@ export interface CatalogPackProduct {
   packsCount: number; // number of booster packs inside (1 for pack, 9 for bundle, 36 for box, 216 for case)
   imageUrl?: string;
   badge?: string;
-  variations: BoosterVariation[];
+  variations?: BoosterVariation[];
   specialFeatures: string[];
   identifiers?: ProductIdentifiers;
   tcgplayerLink?: string;
@@ -80,6 +80,7 @@ export interface CatalogPackProduct {
   contains?: ProductContainmentItem[]; // Sub-products inside this container
   containedIn?: ProductContainmentItem[]; // Parent containers this product belongs to
   bonusAccessories?: string[];
+  rawContents?: any; // MTGJSON sealedProducts.contents JSON
 }
 
 export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [

@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   Flame,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  Shield,
+  HelpCircle
 } from 'lucide-react';
 
 interface ArbitrageLeaderboardProps {
@@ -79,6 +81,43 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     });
   }, [records, priceMode, vendor]);
 
+  const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
+    if (category === 'all') return true;
+
+    const cat = (record.category || '').toLowerCase();
+    const name = (record.boxName || '').toLowerCase();
+
+    const isCommander =
+      cat === 'commander_deck' ||
+      cat === 'deck' ||
+      cat === 'starter_deck' ||
+      name.includes('commander') ||
+      (name.includes('deck') && !name.includes('box'));
+
+    const isPack =
+      cat === 'booster_pack' ||
+      (name.includes('booster pack') ||
+        (name.includes('pack') &&
+          !name.includes('box') &&
+          !name.includes('case') &&
+          !name.includes('bundle') &&
+          !name.includes('deck')));
+
+    const isBox = cat === 'booster_box' || name.includes('booster box') || name.includes('display');
+    const isCase = cat === 'booster_case' || (name.includes('case') && !name.includes('showcase'));
+    const isBundle = cat === 'bundle' || name.includes('bundle') || name.includes('gift edition') || name.includes('gift set');
+
+    if (category === 'commander_deck') return isCommander;
+    if (category === 'booster_pack') return isPack;
+    if (category === 'booster_box') return isBox;
+    if (category === 'booster_case') return isCase;
+    if (category === 'bundle') return isBundle;
+    if (category === 'other') {
+      return !isCommander && !isPack && !isBox && !isCase && !isBundle;
+    }
+    return cat === category;
+  };
+
   const filteredRecords = useMemo(() => {
     return adjustedRecords
       .filter((r) => {
@@ -86,7 +125,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
           r.boxName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           r.setCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
           r.setName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCat = selectedCategory === 'all' || r.category === selectedCategory;
+        const matchesCat = isCategoryMatch(r, selectedCategory);
         return matchesSearch && matchesCat;
       })
       .sort((a, b) => {
@@ -127,34 +166,43 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     }
   };
 
-  const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-      case 'booster_box':
-        return <Box className="w-4 h-4 text-amber-500" />;
-      case 'booster_pack':
-        return <Package className="w-4 h-4 text-emerald-500" />;
-      case 'booster_case':
-        return <Archive className="w-4 h-4 text-indigo-500" />;
-      case 'bundle':
-        return <Gift className="w-4 h-4 text-rose-500" />;
-      default:
-        return <Layers className="w-4 h-4 text-slate-400" />;
+  const getCategoryIcon = (cat: string, name: string = '') => {
+    const c = (cat || '').toLowerCase();
+    const n = name.toLowerCase();
+    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || n.includes('commander') || (n.includes('deck') && !n.includes('box'))) {
+      return <Shield className="w-4 h-4 text-violet-500" />;
     }
+    if (c === 'booster_box' || n.includes('booster box') || n.includes('display')) {
+      return <Box className="w-4 h-4 text-amber-500" />;
+    }
+    if (c === 'booster_pack' || n.includes('booster pack') || (n.includes('pack') && !n.includes('box') && !n.includes('case') && !n.includes('bundle'))) {
+      return <Package className="w-4 h-4 text-emerald-500" />;
+    }
+    if (c === 'booster_case' || (n.includes('case') && !n.includes('showcase'))) {
+      return <Archive className="w-4 h-4 text-indigo-500" />;
+    }
+    if (c === 'bundle' || n.includes('bundle') || n.includes('gift edition') || n.includes('gift set')) {
+      return <Gift className="w-4 h-4 text-rose-500" />;
+    }
+    return <HelpCircle className="w-4 h-4 text-slate-400" />;
   };
 
-  const mapCategoryToPackagingType = (cat: string): ProductPackagingType => {
-    switch (cat) {
-      case 'booster_box':
-        return 'box';
-      case 'booster_pack':
-        return 'pack';
-      case 'booster_case':
-        return 'case';
-      case 'bundle':
-        return 'bundle';
-      default:
-        return 'box';
+  const mapCategoryToPackagingType = (cat: string, name: string = ''): ProductPackagingType => {
+    const c = (cat || '').toLowerCase();
+    const n = name.toLowerCase();
+    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || n.includes('commander') || n.includes('deck')) {
+      return 'starter_deck';
     }
+    if (c === 'booster_pack' || n.includes('booster pack')) {
+      return 'pack';
+    }
+    if (c === 'booster_case' || n.includes('case')) {
+      return 'case';
+    }
+    if (c === 'bundle' || n.includes('bundle')) {
+      return 'bundle';
+    }
+    return 'box';
   };
 
   return (
@@ -348,9 +396,28 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         </div>
       </div>
 
-      {/* 3. ORDERED FORMAT FILTER PILLS */}
+      {/* 3. SEARCH BAR */}
+      <div
+        id="arbitrage-controls-bar"
+        className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm"
+      >
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            id="arbitrage-search-input"
+            type="text"
+            placeholder="Search sealed products by name or set code (e.g. MOM, MH3, BLB, OTJ)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
+          />
+        </div>
+      </div>
+
+      {/* 4. ORDERED FORMAT FILTER PILLS (Underneath Search Bar) */}
       <div id="category-pills" className="flex flex-wrap items-center gap-2">
         <button
+          id="category-pill-all"
           onClick={() => setSelectedCategory('all')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
             selectedCategory === 'all'
@@ -362,6 +429,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         </button>
 
         <button
+          id="category-pill-pack"
           onClick={() => setSelectedCategory('booster_pack')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
             selectedCategory === 'booster_pack'
@@ -373,6 +441,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         </button>
 
         <button
+          id="category-pill-box"
           onClick={() => setSelectedCategory('booster_box')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
             selectedCategory === 'booster_box'
@@ -384,6 +453,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         </button>
 
         <button
+          id="category-pill-case"
           onClick={() => setSelectedCategory('booster_case')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
             selectedCategory === 'booster_case'
@@ -395,6 +465,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         </button>
 
         <button
+          id="category-pill-bundle"
           onClick={() => setSelectedCategory('bundle')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
             selectedCategory === 'bundle'
@@ -404,63 +475,30 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         >
           <Gift className="w-3.5 h-3.5 text-rose-500" /> Bundles & Gift Sets
         </button>
-      </div>
 
-      {/* 4. SEARCH & PRICING ENGINE CONTROLS BAR */}
-      <div
-        id="arbitrage-controls-bar"
-        className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4"
-      >
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            id="arbitrage-search-input"
-            type="text"
-            placeholder="Search sealed products by name or set code (e.g. MOM, MH3, BLB, OTJ)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
-          />
-        </div>
+        <button
+          id="category-pill-commander"
+          onClick={() => setSelectedCategory('commander_deck')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            selectedCategory === 'commander_deck'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Shield className="w-3.5 h-3.5 text-violet-500" /> Commander Decks
+        </button>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Price Mode Selector */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200">
-            <button
-              id="mode-direct-btn"
-              onClick={() => onPriceModeChange('direct')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                priceMode === 'direct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Direct Set Price
-            </button>
-            <button
-              id="mode-reprints-btn"
-              onClick={() => onPriceModeChange('cheapest_reprint')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                priceMode === 'cheapest_reprint'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Cheapest Reprint (-18%)
-            </button>
-          </div>
-
-          {/* Vendor Selector */}
-          <select
-            id="vendor-select-dropdown"
-            value={vendor}
-            onChange={(e) => onVendorChange(e.target.value as Vendor)}
-            className="text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
-          >
-            <option value="all">All Vendors (Consensus)</option>
-            <option value="tcgplayer">TCGplayer Live Market (12.5% Fee)</option>
-            <option value="cardmarket">Cardmarket (EUR / 5% Fee)</option>
-            <option value="cardkingdom">Card Kingdom (Retail Spread)</option>
-          </select>
-        </div>
+        <button
+          id="category-pill-other"
+          onClick={() => setSelectedCategory('other')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            selectedCategory === 'other'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <HelpCircle className="w-3.5 h-3.5 text-slate-400" /> Other
+        </button>
       </div>
 
       {/* 5. PRODUCTS OVERVIEW TABLE */}
@@ -468,12 +506,51 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         id="arbitrage-table-card"
         className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
       >
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
           <div>
             <h3 className="text-sm font-black text-slate-900">Products Overview</h3>
             <p className="text-xs text-slate-500">
-              Showing {filteredRecords.length} sealed items • Mode: <span className="font-semibold text-slate-800">{priceMode === 'direct' ? 'Direct Set Price' : 'Cheapest Reprint'}</span> • Vendor: <span className="font-semibold text-slate-800">{vendor.toUpperCase()}</span>
+              Showing {filteredRecords.length} sealed items
             </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Price Mode Selector */}
+            <div className="flex items-center bg-white p-1 rounded-xl text-xs font-bold border border-slate-200 shadow-xs">
+              <button
+                id="mode-direct-btn"
+                onClick={() => onPriceModeChange('direct')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  priceMode === 'direct' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Direct Set Price
+              </button>
+              <button
+                id="mode-reprints-btn"
+                onClick={() => onPriceModeChange('cheapest_reprint')}
+                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  priceMode === 'cheapest_reprint'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Cheapest Reprint (-18%)
+              </button>
+            </div>
+
+            {/* Vendor Selector */}
+            <select
+              id="vendor-select-dropdown"
+              value={vendor}
+              onChange={(e) => onVendorChange(e.target.value as Vendor)}
+              className="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-xs cursor-pointer"
+            >
+              <option value="all">All Vendors (Consensus)</option>
+              <option value="tcgplayer">TCGplayer Live Market (12.5% Fee)</option>
+              <option value="cardmarket">Cardmarket (EUR / 5% Fee)</option>
+              <option value="cardkingdom">Card Kingdom (Retail Spread)</option>
+            </select>
           </div>
         </div>
 
@@ -549,8 +626,20 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     className="hover:bg-slate-50/80 transition group"
                   >
                     <td className="py-3.5 px-4 font-medium text-slate-900 flex items-center gap-2">
-                      {getCategoryIcon(box.category)}
-                      <span>{box.boxName}</span>
+                      {getCategoryIcon(box.category, box.boxName)}
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{box.boxName}</span>
+                          {box.contents && (
+                            <span
+                              className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              title="Configured with verified MTGJSON contents"
+                            >
+                              {box.contents.variable ? 'Variable Collation' : box.contents.deck ? 'Precon Deck' : 'Contents'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3.5 px-3 font-mono font-semibold text-xs text-slate-600">
                       <span className="px-2 py-1 bg-slate-100 rounded-md flex items-center gap-1.5 w-fit border border-slate-200/80">
