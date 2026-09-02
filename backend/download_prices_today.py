@@ -5,13 +5,16 @@ import urllib.request
 from tqdm import tqdm
 
 
+from config import DB_CONFIG
+
+
 def download_prices_today(
     url: str = 'https://mtgjson.com/api/v5/AllPricesToday.sql.bz2',
-    host: str = '127.0.0.1',
-    user: str = 'root',
-    password: str = 'HaionKala13!',
-    database: str = 'test_for_cards',
-    port: int = 3306,
+    host: str = DB_CONFIG['host'],
+    user: str = DB_CONFIG['user'],
+    password: str = DB_CONFIG['password'],
+    database: str = DB_CONFIG['database'],
+    port: int = DB_CONFIG['port'],
     chunk_size: int = 2 * 1024 * 1024,  # 2 MB buffer
 ):
     """Streams MTGJSON's AllPricesToday.sql.bz2 directly into MySQL (table `card_prices_today`)."""

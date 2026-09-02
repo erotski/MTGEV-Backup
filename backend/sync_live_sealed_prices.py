@@ -2,6 +2,7 @@ import json
 import time
 import mysql.connector
 import requests
+from config import DB_CONFIG
 
 
 def ensure_table(cursor):
@@ -38,12 +39,7 @@ def ensure_table(cursor):
 
 
 def sync_all_sealed_prices():
-  db_config = {
-      'host': '127.0.0.1',
-      'user': 'root',
-      'password': 'HaionKala13!',
-      'database': 'test_for_cards',
-  }
+  db_config = DB_CONFIG
 
   conn = mysql.connector.connect(**db_config, autocommit=True)
   cursor = conn.cursor(dictionary=True)

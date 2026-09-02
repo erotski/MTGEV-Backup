@@ -5,6 +5,7 @@ from pathlib import Path
 import time
 import mysql.connector
 import numpy as np
+from config import DB_CONFIG
 
 
 def convert_time(seconds: float) -> str:
@@ -683,12 +684,7 @@ class DatabaseBoosterEVEngine:
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
 def run_full_pipeline():
-  db_config = {
-      'host': '127.0.0.1',
-      'user': 'root',
-      'password': 'HaionKala13!',
-      'database': 'test_for_cards',
-  }
+  db_config = DB_CONFIG
 
   engine = DatabaseBoosterEVEngine(db_config, sample_size=5000)
 

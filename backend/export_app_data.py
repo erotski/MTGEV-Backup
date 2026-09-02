@@ -6,18 +6,11 @@ import json
 import os
 from pathlib import Path
 import mysql.connector
+from config import DB_CONFIG
 
 # Target output directory: public/data in root
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "public" / "data"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'port': int(os.getenv('DB_PORT', 3306)),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'HaionKala13!'),
-    'database': os.getenv('DB_NAME', 'test_for_cards'),
-}
 
 def export_all():
     print("=" * 70)

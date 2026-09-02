@@ -5,13 +5,16 @@ import urllib.request
 from tqdm import tqdm
 
 
+from config import DB_CONFIG
+
+
 def download_and_import_mtgjson(
     url: str = 'https://mtgjson.com/api/v5/AllPrintings.sql.bz2',
-    db_name: str = 'mtgjson',
-    user: str = 'root',
-    password: str = 'your_password',
-    host: str = 'localhost',
-    port: int = 3306,
+    db_name: str = DB_CONFIG['database'],
+    user: str = DB_CONFIG['user'],
+    password: str = DB_CONFIG['password'],
+    host: str = DB_CONFIG['host'],
+    port: int = DB_CONFIG['port'],
     chunk_size: int = 2 * 1024 * 1024,  # 2 MB buffer
 ):
     """Directly streams the remote MTGJSON .sql.bz2 download into MySQL without saving to disk."""
