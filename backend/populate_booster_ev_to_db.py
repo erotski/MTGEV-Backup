@@ -144,11 +144,11 @@ class DatabaseBoosterEVEngine:
       placeholders = ','.join(['%s'] * len(batch))
       self.cursor.execute(
           f"""
-                SELECT uuid, seller, cardfinish AS finish, price 
+                SELECT uuid, provider AS seller, finish, price 
                 FROM prices 
                 WHERE uuid IN ({placeholders}) 
-                  AND (gametype = 'paper' OR gametype IS NULL)
-                  AND (sellertype = 'retail' OR sellertype IS NULL)
+                  AND (source = 'paper' OR source IS NULL)
+                  AND (priceType = 'retail' OR priceType IS NULL)
                   AND price > 0
             """,
           batch,
@@ -157,11 +157,12 @@ class DatabaseBoosterEVEngine:
         u = row['uuid']
         if u not in self.price_cache:
           self.price_cache[u] = defaultdict(dict)
-        if row['price'] is not None:
-          f_name = row['finish'].strip().replace('nonfoil', 'normal').lower()
-          self.price_cache[u][row['seller'].lower()][f_name] = float(
+        if row['price'] is not None and row.get('seller') and row.get('finish'):
+          f_name = str(row['finish']).strip().replace('nonfoil', 'normal').lower()
+          self.price_cache[u][str(row['seller']).lower()][f_name] = float(
               row['price']
           )
+
 
     # C. Lowest Reprint Prices (from lowest_prices table)
     names = list(
