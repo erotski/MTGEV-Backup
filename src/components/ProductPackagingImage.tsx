@@ -211,49 +211,95 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           sealText: '6 BOOSTERS + DATE PROMO',
           sub: 'Deck Box & Spindown',
         };
+      case 'box_set': {
+        const isSldBundle = displayName.toLowerCase().includes('bundle') || displayName.toLowerCase().includes('superdrop');
+        const isSld = displayName.toLowerCase().includes('secret lair');
+        if (isSldBundle) {
+          return {
+            label: 'Secret Lair Bundle',
+            icon: Sparkles,
+            gradient: 'from-amber-950 via-purple-950 to-indigo-950',
+            accent: 'border-amber-400/50 text-amber-300',
+            badgeBg: 'bg-amber-950/90 text-amber-200 border-amber-500/60',
+            sealText: 'SUPERDROP BUNDLE',
+            sub: 'Curated Secret Lair Collection',
+          };
+        }
+        if (isSld) {
+          return {
+            label: 'Secret Lair Drop',
+            icon: Sparkles,
+            gradient: 'from-purple-950 via-slate-900 to-indigo-950',
+            accent: 'border-purple-400/50 text-purple-300',
+            badgeBg: 'bg-purple-950/90 text-purple-200 border-purple-500/60',
+            sealText: 'CURATED DROP BOX',
+            sub: 'Special Collector Cards',
+          };
+        }
+        return {
+          label: 'Box Set',
+          icon: Sparkles,
+          gradient: 'from-slate-900 via-indigo-950 to-slate-950',
+          accent: 'border-indigo-400/40 text-indigo-300',
+          badgeBg: 'bg-indigo-950/80 text-indigo-200 border-indigo-700/60',
+          sealText: 'FACTORY SEALED BOX SET',
+          sub: 'Collector Edition',
+        };
+      }
+      case 'kit':
+        return {
+          label: 'Specialty Kit',
+          icon: Sparkles,
+          gradient: 'from-teal-950 via-slate-900 to-slate-950',
+          accent: 'border-teal-500/40 text-teal-300',
+          badgeBg: 'bg-teal-950/80 text-teal-300 border-teal-700/60',
+          sealText: 'TOOLKIT & ACCESSORIES',
+          sub: 'Cards & Supplies',
+        };
       case 'starter_deck': {
+        const isCommander = displayName.toLowerCase().includes('commander');
         const isSinglePrecon = !displayName.toLowerCase().includes('set of') && !displayName.toLowerCase().includes('4 decks') && !displayName.toLowerCase().includes('(4x)');
         if (isCollector) {
           if (isSinglePrecon) {
             return {
-              label: "Collector's Precon Deck",
+              label: isCommander ? "Collector's Precon Deck" : "Collector's Deck",
               icon: Crown,
               gradient: 'from-amber-950 via-purple-950 to-slate-950',
               accent: 'border-amber-500/50 text-amber-300',
               badgeBg: 'bg-amber-950/90 text-amber-200 border-amber-500/60',
-              sealText: '100% RIPPLE FOIL (100 CARDS)',
-              sub: 'Deck Box + 2-Card Sample Pack',
+              sealText: isCommander ? '100% RIPPLE FOIL (100 CARDS)' : 'PRECONSTRUCTED FOIL DECK',
+              sub: 'Deck Box + Promos',
             };
           }
           return {
-            label: "Collector's Commander Set",
+            label: "Collector's Deck Set",
             icon: Crown,
             gradient: 'from-amber-950 via-purple-950 to-slate-950',
             accent: 'border-amber-500/50 text-amber-300',
             badgeBg: 'bg-amber-950/90 text-amber-200 border-amber-500/60',
-            sealText: '100% RIPPLE FOIL (4 DECKS)',
-            sub: '400 Foil Commander Cards',
+            sealText: '100% RIPPLE FOIL SET',
+            sub: 'Collector Foil Decks',
           };
         }
         if (isSinglePrecon) {
           return {
-            label: 'Commander Precon Deck',
+            label: isCommander ? 'Commander Precon Deck' : 'Preconstructed Deck',
             icon: Layers3,
             gradient: 'from-amber-950 via-slate-900 to-stone-900',
             accent: 'border-amber-500/40 text-amber-300',
             badgeBg: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-            sealText: '100-CARD READY-TO-PLAY DECK',
-            sub: 'Deck Box + 2-Card Sample Pack',
+            sealText: isCommander ? '100-CARD READY-TO-PLAY DECK' : 'READY-TO-PLAY DECK',
+            sub: 'Complete Precon Deck',
           };
         }
         return {
-          label: 'Commander Decks (Set of 4)',
+          label: isCommander ? 'Commander Decks (Set of 4)' : 'Preconstructed Decks (Multi-Pack)',
           icon: Layers3,
           gradient: 'from-amber-950 via-slate-900 to-stone-900',
           accent: 'border-amber-500/40 text-amber-300',
           badgeBg: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-          sealText: '4 PRECONSTRUCTED DECKS',
-          sub: '400 MTG Cards Total',
+          sealText: 'MULTIPLE DECKS INCLUDED',
+          sub: 'Multi-Deck Box Set',
         };
       }
       default:

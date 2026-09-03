@@ -160,14 +160,21 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const isPreconProduct = useMemo(() => {
     if (!activeProduct) return false;
+    const cat = (activeProduct.rawCategory || '').toLowerCase();
+    const packaging = activeProduct.packagingType;
     return (
-      activeProduct.packagingType === 'starter_deck' ||
-      activeProduct.boosterName === 'starter' ||
-      activeProduct.id.toLowerCase().includes('deck') ||
-      activeProduct.id.toLowerCase().includes('starter') ||
-      activeProduct.displayName.toLowerCase().includes('commander') ||
-      activeProduct.displayName.toLowerCase().includes('starter deck')
+      packaging === 'starter_deck' ||
+      cat === 'deck' ||
+      cat === 'commander_deck' ||
+      cat === 'multiple_decks' ||
+      cat === 'deck_box'
     );
+  }, [activeProduct]);
+
+  const isBoxSetProduct = useMemo(() => {
+    if (!activeProduct) return false;
+    const cat = (activeProduct.rawCategory || '').toLowerCase();
+    return activeProduct.packagingType === 'box_set' || cat === 'box_set';
   }, [activeProduct]);
 
   const packMarketPrice = Number((getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play') * vendorPriceMultiplier).toFixed(2));
@@ -480,7 +487,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
                 <span>
                   {isPreconProduct
-                    ? `${activeProduct?.cardCount || 400} Fixed Cards`
+                    ? activeProduct?.cardCount && activeProduct.cardCount > 0
+                      ? `${activeProduct.cardCount} Fixed Cards`
+                      : 'Fixed Decklist'
+                    : isBoxSetProduct
+                    ? activeProduct?.cardCount && activeProduct.cardCount > 0
+                      ? `${activeProduct.cardCount} Curated Cards`
+                      : 'Curated Box Set'
                     : productPacksCount > 1
                     ? `${productPacksCount} Packs Total`
                     : 'Single Pack Expectation'}
@@ -697,7 +710,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {isPreconProduct
-                        ? `Fixed cardlist (${activeProduct?.cardCount || 400} cards) value breakdown for ${activeProduct?.displayName || 'Preconstructed Deck'}`
+                        ? `Fixed cardlist${activeProduct?.cardCount ? ` (${activeProduct.cardCount} cards)` : ''} value breakdown for ${activeProduct?.displayName || 'Preconstructed Deck'}`
                         : `Visualizing value boundaries for ${activeProduct?.displayName || 'Active Product'}`}
                     </p>
                   </div>

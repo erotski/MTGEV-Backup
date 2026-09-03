@@ -255,7 +255,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {isPreconstructed
-              ? `Deterministic fixed collation (${cardCount || 400} cards) with 0% lottery variance across copies vs. Sealed Product Price.`
+              ? `Deterministic fixed collation${cardCount ? ` (${cardCount} cards)` : ''} with 0% lottery variance across copies vs. Sealed Product Price.`
               : 'Simulated 5,000 packs sorted by value (0% dud floor → 100% top hit) vs. Pack Sealed Market Price.'}
           </p>
         </div>

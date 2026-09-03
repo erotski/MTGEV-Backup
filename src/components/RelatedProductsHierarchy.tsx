@@ -22,6 +22,8 @@ import {
   TrendingUp,
   ArrowRight,
   ShieldCheck,
+  Shield,
+  Wrench,
   CheckCircle2,
   Percent,
   Sliders,
@@ -100,61 +102,59 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
               const category = (sp.category || '').toLowerCase();
               const subtype = (sp.subtype || '').toLowerCase();
-              const nameLower = pName.toLowerCase();
 
-              let packType: ProductPackagingType = 'bundle';
-              if (sp.contents?.deck || category.includes('deck') || subtype.includes('deck') || nameLower.includes('deck') || nameLower.includes('spellbook')) {
-                packType = 'starter_deck';
-              } else if (category.includes('booster_box') || subtype.includes('booster_box') || nameLower.includes('booster box') || nameLower.includes('display')) {
+              // Strictly database-driven packaging type assignment
+              let packType: ProductPackagingType = 'other';
+              if (category === 'box_set') {
+                packType = 'box_set';
+              } else if (category === 'booster_box') {
                 packType = 'box';
-              } else if (category.includes('case') || nameLower.includes('case')) {
+              } else if (category === 'booster_case' || category === 'limited_aid_case') {
                 packType = 'case';
-              } else if (category.includes('pack') || nameLower.includes('pack') || nameLower.includes('booster')) {
+              } else if (category === 'bundle_case') {
+                packType = 'bundle_case';
+              } else if (category === 'booster_pack') {
                 packType = 'pack';
-              } else if (category.includes('bundle') || nameLower.includes('bundle')) {
+              } else if (category === 'bundle') {
                 packType = 'bundle';
+              } else if (category === 'deck' || category === 'multiple_decks' || category === 'deck_box') {
+                packType = 'starter_deck';
+              } else if (category === 'limited_aid_tool') {
+                packType = 'limited_aid_tool';
+              } else if (category === 'kit') {
+                packType = 'kit';
+              } else {
+                packType = 'other';
               }
 
+              // Strictly database-driven pack and item count
               let pCount = 1;
               if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
                 pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
               } else if (sp.contents?.sealed && Array.isArray(sp.contents.sealed)) {
-                const first = sp.contents.sealed[0];
-                const sCount = sp.contents.sealed.reduce((sum: number, s: any) => sum + (s.count || 1), 0);
-                const sName = (first?.name || '').toLowerCase();
-                if (sName.includes('hanger') || sName.includes('pack')) {
-                  pCount = sCount;
-                } else if (sName.includes('collector') && (sName.includes('box') || sName.includes('display'))) {
-                  pCount = sCount * 12;
-                } else if (sName.includes('scene')) {
-                  pCount = sCount * 3;
-                } else if (sName.includes('beginner') || sName.includes('starter') || sName.includes('deck')) {
-                  pCount = sCount;
-                } else {
-                  pCount = sName.includes('box') || sName.includes('display') ? sCount * 36 : sCount;
-                }
-              } else if (sp.contents?.deck || sp.contents?.variable || packType === 'starter_deck' || packType === 'pack') {
-                pCount = 1;
+                pCount = sp.contents.sealed.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
               } else if (packType === 'box') {
-                pCount = nameLower.includes('collector') ? 12 : (nameLower.includes('jumpstart') ? 24 : 36);
+                pCount = subtype === 'collector' ? 12 : (subtype === 'jumpstart' ? 24 : 36);
               } else if (packType === 'case') {
-                if (nameLower.includes('collector')) {
-                  pCount = nameLower.includes('hanger') ? 120 : 72;
-                } else if (nameLower.includes('jumpstart')) {
-                  pCount = 144;
-                } else if (nameLower.includes('scene')) {
-                  pCount = 18;
-                } else if (nameLower.includes('clue')) {
-                  pCount = 64;
-                } else if (nameLower.includes('turtle')) {
-                  pCount = 24;
-                } else if (nameLower.includes('draft night')) {
-                  pCount = 48;
-                } else {
-                  pCount = 216;
-                }
+                pCount = subtype === 'collector' ? 72 : (subtype === 'jumpstart' ? 144 : 216);
               } else if (packType === 'bundle') {
-                pCount = nameLower.includes('prerelease') ? 6 : 9;
+                pCount = 9;
+              } else if (packType === 'bundle_case') {
+                pCount = 54;
+              } else {
+                pCount = 1;
+              }
+
+              // Strictly database-driven card count (NEVER inject fake 100 for box sets!)
+              let determinedCardCount: number | undefined = undefined;
+              if (sp.cardCount !== null && sp.cardCount !== undefined && Number(sp.cardCount) > 0) {
+                determinedCardCount = Number(sp.cardCount);
+              } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
+                determinedCardCount = sp.contents.card.length;
+              } else if (category === 'deck' && subtype === 'commander') {
+                determinedCardCount = 100;
+              } else if (category === 'deck' && subtype === 'brawl') {
+                determinedCardCount = 60;
               }
 
               const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
@@ -163,8 +163,29 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 : 0;
               const ev = Number(sp.estimatedEv || sp.ev || computedEv);
 
+              let badgeText = 'Factory Sealed';
+              if (category === 'box_set') {
+                badgeText = subtype === 'secret_lair_bundle' ? 'Secret Lair Bundle' : (subtype === 'secret_lair' ? 'Secret Lair Drop' : 'Box Set');
+              } else if (category === 'deck') {
+                badgeText = subtype === 'commander' ? 'Commander Deck' : 'Preconstructed Deck';
+              } else if (category === 'booster_box') {
+                badgeText = subtype === 'collector' ? 'Collector Box' : 'Booster Box';
+              } else if (category === 'booster_case') {
+                badgeText = subtype === 'collector' ? 'Collector Case' : 'Master Case';
+              } else if (category === 'bundle') {
+                badgeText = subtype === 'gift' ? 'Gift Bundle' : 'Bundle';
+              } else if (sp.contents?.note?.includes('1 of them is foil')) {
+                badgeText = '8 Cards (1 Foil)';
+              } else if (sp.contents?.variable) {
+                badgeText = 'Variable Collation';
+              } else if (sp.contents?.deck) {
+                badgeText = 'Fixed Deck';
+              }
+
               return {
                 id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
+                rawCategory: category,
+                rawSubtype: subtype,
                 setCode: sCode,
                 setName: sp.setName || setName,
                 releaseDate: sp.releaseDate || '2024-01-01',
@@ -174,23 +195,17 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 displayName: pName,
                 marketPrice: mPrice,
                 estimatedEv: ev,
-                cardCount: sp.cardCount || 100,
+                cardCount: determinedCardCount,
                 packsCount: pCount,
-                badge: sp.contents?.note?.includes('1 of them is foil')
-                  ? '8 Cards (1 Foil)'
-                  : sp.contents?.variable
-                  ? 'Variable Collation'
-                  : sp.contents?.deck
-                  ? 'Fixed Deck'
-                  : sp.category === 'box_set'
-                  ? 'Box Set'
-                  : 'Factory Sealed',
+                badge: badgeText,
                 specialFeatures: sp.contents?.note?.includes('1 of them is foil')
                   ? ['8 Cards Total', '1 Guaranteed Foil (1-of-8)', '7 Non-Foil Cards']
                   : sp.contents?.variable
                   ? ['MTGJSON contents Variable Slots', 'Probabilistic Pool', 'Authentic Database Collation']
                   : sp.contents?.deck
                   ? ['Preconstructed Deck', 'Guaranteed Card List']
+                  : category === 'box_set'
+                  ? ['Curated Box Set', 'Factory Sealed Collection']
                   : ['Authentic MTGJSON Sealed Product'],
                 rawContents: sp.contents,
               };
@@ -555,8 +570,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   const getPackagingBadge = (prod: CatalogPackProduct) => {
     const name = (prod.displayName || '').toLowerCase();
-    const isCollector = name.includes('collector') || prod.boosterName === 'collector';
-    const isGift = name.includes('gift');
+    const isCollector = name.includes('collector') || prod.boosterName === 'collector' || prod.rawSubtype === 'collector';
+    const isGift = name.includes('gift') || prod.rawSubtype === 'gift';
     const isBlister = name.includes('blister') || name.includes('3-pack');
 
     switch (prod.packagingType) {
@@ -580,22 +595,32 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           return { label: 'Gift Bundle (10x)', icon: Sparkles, bg: 'bg-amber-50 text-amber-800 border-amber-300' };
         }
         return { label: 'Bundle Box (9x)', icon: Gift, bg: 'bg-purple-50 text-purple-700 border-purple-200' };
+      case 'box_set': {
+        const isSecretBundle = prod.rawSubtype === 'secret_lair_bundle' || name.includes('bundle');
+        if (isSecretBundle) {
+          return { label: 'Secret Lair Bundle', icon: Sparkles, bg: 'bg-amber-50 text-amber-900 border-amber-300' };
+        }
+        return { label: 'Secret Lair Drop', icon: Sparkles, bg: 'bg-indigo-50 text-indigo-900 border-indigo-300' };
+      }
       case 'starter_deck': {
-        const isSingle = !prod.displayName.toLowerCase().includes('set of') && !prod.displayName.toLowerCase().includes('4 decks') && !prod.displayName.toLowerCase().includes('(4x)');
-        if (isCollector) {
+        const isCommander = prod.rawSubtype === 'commander' || name.includes('commander');
+        const isSingle = !name.includes('set of') && !name.includes('4 decks') && !name.includes('(4x)');
+        if (isCommander) {
           return isSingle
-            ? { label: "Collector's Precon (100x)", icon: Crown, bg: 'bg-amber-50 text-amber-900 border-amber-300' }
-            : { label: "Collector's Set (4 Decks)", icon: Crown, bg: 'bg-amber-50 text-amber-900 border-amber-300' };
+            ? { label: 'Commander Deck (100x)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' }
+            : { label: 'Commander Set (4 Decks)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' };
         }
         return isSingle
-          ? { label: 'Commander Deck (100x)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' }
-          : { label: 'Commander Set (4 Decks)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' };
+          ? { label: 'Precon Deck', icon: Layers3, bg: 'bg-violet-50 text-violet-800 border-violet-200' }
+          : { label: 'Deck Collection', icon: Layers3, bg: 'bg-violet-50 text-violet-800 border-violet-200' };
       }
       case 'sample_pack':
         return { label: 'Sample Pack (2 Cards)', icon: Sparkles, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
       case 'limited_aid_tool':
       case 'prerelease':
-        return { label: 'Prerelease Kit (6x)', icon: Sparkles, bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        return { label: 'Prerelease Kit (6x)', icon: Shield, bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+      case 'kit':
+        return { label: 'Specialty Kit', icon: Wrench, bg: 'bg-teal-50 text-teal-800 border-teal-200' };
       default:
         if (isBlister) {
           return { label: '3-Pack Blister (3x)', icon: Package, bg: 'bg-blue-50 text-blue-700 border-blue-200' };
@@ -611,47 +636,103 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Subtype-based product lines / groups (Pack -> Box -> Case progression)
+  // Strictly database-driven category groupings (No fragile title-string matching!)
   const productSubtypeGroups = useMemo(() => {
-    const playGroup = setProducts.filter(
-      (p) =>
-        p.boosterName === 'play' ||
-        p.boosterName === 'draft' ||
-        p.boosterName === 'default' ||
-        ((p.displayName.toLowerCase().includes('play') || p.displayName.toLowerCase().includes('draft')) &&
-          !p.displayName.toLowerCase().includes('bundle') &&
-          !p.displayName.toLowerCase().includes('prerelease') &&
-          !p.displayName.toLowerCase().includes('commander'))
-    );
+    const categoryConfigs: Record<
+      string,
+      { title: string; subtitle: string; badge: string; icon: any }
+    > = {
+      booster_box: {
+        title: 'Booster Boxes',
+        subtitle: 'Factory-sealed booster display boxes',
+        badge: 'Booster Boxes',
+        icon: BoxIcon,
+      },
+      booster_pack: {
+        title: 'Booster Packs',
+        subtitle: 'Individual sealed booster packs & blister packs',
+        badge: 'Booster Packs',
+        icon: Package,
+      },
+      booster_case: {
+        title: 'Booster Cases',
+        subtitle: 'Wholesale master cases of sealed booster boxes',
+        badge: 'Master Cases',
+        icon: Archive,
+      },
+      bundle: {
+        title: 'Bundles & Fat Packs',
+        subtitle: 'Curated boxes containing booster packs, foil promos, and storage boxes',
+        badge: 'Bundles',
+        icon: Gift,
+      },
+      bundle_case: {
+        title: 'Bundle Cases',
+        subtitle: 'Wholesale master cases of sealed bundles',
+        badge: 'Bundle Cases',
+        icon: Archive,
+      },
+      box_set: {
+        title: 'Box Sets & Secret Lairs',
+        subtitle: 'Curated box sets, Secret Lair drops, and superdrop collections',
+        badge: 'Box Sets',
+        icon: Sparkles,
+      },
+      deck: {
+        title: 'Preconstructed Decks',
+        subtitle: 'Ready-to-play preconstructed decks (Commander, Challenger, Planeswalker)',
+        badge: 'Precons',
+        icon: Layers3,
+      },
+      multiple_decks: {
+        title: 'Multi-Deck Sets',
+        subtitle: 'Multi-player sets containing two or more complete decks',
+        badge: 'Multi-Deck Sets',
+        icon: Layers,
+      },
+      limited_aid_tool: {
+        title: 'Prerelease & Limited Kits',
+        subtitle: 'Prerelease packs, seed packs, and tournament kits',
+        badge: 'Prerelease',
+        icon: Shield,
+      },
+      kit: {
+        title: 'Toolkits & Stations',
+        subtitle: "Deck Builder's Toolkits, Land Stations, and Guild Kits",
+        badge: 'Toolkits',
+        icon: Wrench,
+      },
+      other: {
+        title: 'Other Products',
+        subtitle: 'Specialty and ancillary sealed products',
+        badge: 'Other Products',
+        icon: BoxIcon,
+      },
+    };
 
-    const collectorGroup = setProducts.filter(
-      (p) =>
-        (p.boosterName === 'collector' || p.displayName.toLowerCase().includes('collector')) &&
-        !p.displayName.toLowerCase().includes('gift') &&
-        !p.displayName.toLowerCase().includes('commander')
-    );
+    const normalizeCat = (p: CatalogPackProduct): string => {
+      const raw = (p.rawCategory || '').toLowerCase();
+      if (raw && categoryConfigs[raw]) return raw;
+      if (p.packagingType === 'box') return 'booster_box';
+      if (p.packagingType === 'pack') return 'booster_pack';
+      if (p.packagingType === 'case') return 'booster_case';
+      if (p.packagingType === 'bundle') return 'bundle';
+      if (p.packagingType === 'bundle_case') return 'bundle_case';
+      if (p.packagingType === 'box_set') return 'box_set';
+      if (p.packagingType === 'starter_deck') return 'deck';
+      if (p.packagingType === 'limited_aid_tool' || p.packagingType === 'prerelease') return 'limited_aid_tool';
+      if (p.packagingType === 'kit') return 'kit';
+      return 'other';
+    };
 
-    const bundlesAndKits = setProducts.filter(
-      (p) =>
-        p.packagingType === 'bundle' ||
-        p.packagingType === 'prerelease' ||
-        p.displayName.toLowerCase().includes('bundle') ||
-        p.displayName.toLowerCase().includes('prerelease') ||
-        p.displayName.toLowerCase().includes('gift')
-    );
-
-    const commanderGroup = setProducts.filter(
-      (p) => p.packagingType === 'starter_deck' || p.displayName.toLowerCase().includes('commander')
-    );
-
-    // Any remaining
-    const otherProducts = setProducts.filter(
-      (p) =>
-        !playGroup.includes(p) &&
-        !collectorGroup.includes(p) &&
-        !bundlesAndKits.includes(p) &&
-        !commanderGroup.includes(p)
-    );
+    const groupedMap = new Map<string, CatalogPackProduct[]>();
+    for (const p of setProducts) {
+      const cat = normalizeCat(p);
+      if (!groupedMap.has(cat)) {
+        groupedMap.set(cat, []);
+      }
+      groupedMap.get(cat)!.push(p);
+    }
 
     const groups: {
       id: string;
@@ -662,142 +743,69 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       products: CatalogPackProduct[];
     }[] = [];
 
-    if (playGroup.length > 0) {
-      groups.push({
-        id: 'play-line',
-        title: 'Play Booster Progression (Pack → Blister → Box → Case)',
-        subtitle: 'Main draft & play booster tier scaling from single packs to master distribution cases',
-        badge: 'Core Draft & Play',
-        icon: Package,
-        products: playGroup,
-      });
+    const orderedKeys = [
+      'booster_box',
+      'booster_pack',
+      'booster_case',
+      'bundle',
+      'bundle_case',
+      'box_set',
+      'deck',
+      'multiple_decks',
+      'limited_aid_tool',
+      'kit',
+      'other',
+    ];
+
+    for (const key of orderedKeys) {
+      const prods = groupedMap.get(key);
+      if (prods && prods.length > 0) {
+        const conf = categoryConfigs[key] || categoryConfigs.other;
+        groups.push({
+          id: key,
+          title: `${conf.title} (${prods.length})`,
+          subtitle: conf.subtitle,
+          badge: conf.badge,
+          icon: conf.icon,
+          products: prods,
+        });
+      }
     }
 
-    if (collectorGroup.length > 0) {
-      groups.push({
-        id: 'collector-line',
-        title: 'Collector Booster Progression (Pack → Box → Case)',
-        subtitle: 'Premium high-foil & serial treatment tier scaling up to master cases',
-        badge: 'Premium Collector',
-        icon: Crown,
-        products: collectorGroup,
-      });
-    }
-
-    if (bundlesAndKits.length > 0) {
-      groups.push({
-        id: 'bundles-kits',
-        title: 'Bundles, Gift Boxes & Prerelease Kits',
-        subtitle: 'Curated box sets with bonus accessories, foils, spindown dice & storage boxes',
-        badge: 'Bundles & Kits',
-        icon: Gift,
-        products: bundlesAndKits,
-      });
-    }
-
-    if (commanderGroup.length > 0) {
-      groups.push({
-        id: 'commander-decks',
-        title: 'Commander Preconstructed Decks & Collector Sets',
-        subtitle: 'Complete 100-card ready-to-play precons (Regular & 100% Ripple Foil Collector)',
-        badge: 'Preconstructed Decks',
-        icon: Layers3,
-        products: commanderGroup,
-      });
-    }
-
-    if (otherProducts.length > 0) {
-      groups.push({
-        id: 'other-line',
-        title: 'Additional Products',
-        subtitle: 'Other related sets & specialty packaging',
-        badge: 'Specialty',
-        icon: BoxIcon,
-        products: otherProducts,
-      });
+    for (const [key, prods] of groupedMap.entries()) {
+      if (!orderedKeys.includes(key) && prods.length > 0) {
+        groups.push({
+          id: key,
+          title: `${key.replace(/_/g, ' ')} (${prods.length})`,
+          subtitle: 'Sealed product collection',
+          badge: key,
+          icon: BoxIcon,
+          products: prods,
+        });
+      }
     }
 
     return groups;
   }, [setProducts]);
 
   const productCategories = useMemo(() => {
-    return [
-      { id: 'all', label: 'All Products', count: setProducts.length },
-      {
-        id: 'play',
-        label: 'Play Line',
-        count: setProducts.filter(
-          (p) =>
-            !p.displayName.toLowerCase().includes('collector') &&
-            !p.displayName.toLowerCase().includes('commander') &&
-            p.packagingType !== 'bundle' &&
-            p.packagingType !== 'prerelease'
-        ).length,
-      },
-      {
-        id: 'collector',
-        label: 'Collector Line',
-        count: setProducts.filter(
-          (p) =>
-            (p.displayName.toLowerCase().includes('collector') || p.boosterName === 'collector') &&
-            !p.displayName.toLowerCase().includes('commander')
-        ).length,
-      },
-      {
-        id: 'bundles',
-        label: 'Bundles & Kits',
-        count: setProducts.filter(
-          (p) =>
-            p.packagingType === 'bundle' ||
-            p.packagingType === 'prerelease' ||
-            p.displayName.toLowerCase().includes('bundle') ||
-            p.displayName.toLowerCase().includes('prerelease')
-        ).length,
-      },
-      {
-        id: 'commander',
-        label: 'Commander',
-        count: setProducts.filter(
-          (p) => p.packagingType === 'starter_deck' || p.displayName.toLowerCase().includes('commander')
-        ).length,
-      },
-    ].filter((cat) => cat.id === 'all' || cat.count > 0);
-  }, [setProducts]);
+    const cats = [{ id: 'all', label: 'All Products', count: setProducts.length }];
+    for (const group of productSubtypeGroups) {
+      cats.push({
+        id: group.id,
+        label: group.title,
+        count: group.products.length,
+      });
+    }
+    return cats;
+  }, [setProducts, productSubtypeGroups]);
 
   const displayedProducts = useMemo(() => {
     if (activeCategory === 'all') return setProducts;
-    if (activeCategory === 'play') {
-      return setProducts.filter(
-        (p) =>
-          !p.displayName.toLowerCase().includes('collector') &&
-          !p.displayName.toLowerCase().includes('commander') &&
-          p.packagingType !== 'bundle' &&
-          p.packagingType !== 'prerelease'
-      );
-    }
-    if (activeCategory === 'collector') {
-      return setProducts.filter(
-        (p) =>
-          (p.displayName.toLowerCase().includes('collector') || p.boosterName === 'collector') &&
-          !p.displayName.toLowerCase().includes('commander')
-      );
-    }
-    if (activeCategory === 'bundles') {
-      return setProducts.filter(
-        (p) =>
-          p.packagingType === 'bundle' ||
-          p.packagingType === 'prerelease' ||
-          p.displayName.toLowerCase().includes('bundle') ||
-          p.displayName.toLowerCase().includes('prerelease')
-      );
-    }
-    if (activeCategory === 'commander') {
-      return setProducts.filter(
-        (p) => p.packagingType === 'starter_deck' || p.displayName.toLowerCase().includes('commander')
-      );
-    }
+    const matchingGroup = productSubtypeGroups.find((g) => g.id === activeCategory);
+    if (matchingGroup) return matchingGroup.products;
     return setProducts;
-  }, [setProducts, activeCategory]);
+  }, [setProducts, activeCategory, productSubtypeGroups]);
 
   // Calculator calculations
   const calcTotalCards = calculatorPacks * 14;
@@ -1045,7 +1053,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                         </div>
 
                         <div className="text-[10px] text-slate-500 font-medium">
-                          {prod.cardCount} Cards Total
+                          {prod.cardCount
+                            ? `${prod.cardCount} Cards Total`
+                            : prod.packsCount > 1
+                            ? `${prod.packsCount} Packs Total`
+                            : 'Sealed Item'}
                         </div>
                       </div>
 
@@ -1135,7 +1147,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                           <td className="p-3 font-mono font-bold text-slate-700 whitespace-nowrap">
                             {p.packsCount > 1 ? `${p.packsCount}x Packs` : '1x Pack'}
                           </td>
-                          <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{p.cardCount} cards</td>
+                          <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
+                            {p.cardCount ? `${p.cardCount} cards` : '—'}
+                          </td>
                           <td className="p-3 font-mono font-bold text-slate-900 whitespace-nowrap">
                             {p.marketPrice > 0 ? `$${p.marketPrice.toFixed(2)}` : <span className="text-slate-400 font-normal text-[11px]">Unlisted</span>}
                           </td>
@@ -1340,7 +1354,75 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               )}
 
               <div className="space-y-4">
-                {/* 1. Preconstructed Decks contained */}
+                {/* 1. Contained Sealed Products / Secret Lair Drops */}
+                {activeProduct.rawContents.sealed && activeProduct.rawContents.sealed.length > 0 && (
+                  <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 space-y-2.5">
+                    <div className="text-xs font-bold text-indigo-950 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Archive className="w-4 h-4 text-indigo-600" />
+                        <span>Contained Sealed Drops & Products ({activeProduct.rawContents.sealed.length}):</span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
+                        Sealed Collation
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activeProduct.rawContents.sealed.map((s: any, idx: number) => (
+                        <div key={idx} className="bg-white p-3 rounded-lg border border-indigo-200 text-xs flex items-center justify-between gap-2 shadow-2xs">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-slate-800 truncate" title={s.name}>
+                              {s.name}
+                            </div>
+                            {s.uuid && (
+                              <div className="text-[10px] font-mono text-slate-400 truncate mt-0.5" title={`UUID: ${s.uuid}`}>
+                                id: {s.uuid.slice(0, 8)}...
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {s.count > 1 && (
+                              <span className="font-mono text-[10px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
+                                {s.count}x Copies
+                              </span>
+                            )}
+                            <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase">
+                              {s.set || setCode}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Contained Booster Packs */}
+                {activeProduct.rawContents.pack && activeProduct.rawContents.pack.length > 0 && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Package className="w-4 h-4 text-indigo-600" />
+                      Contained Booster Packs ({activeProduct.rawContents.pack.length}):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                      {activeProduct.rawContents.pack.map((pk: any, idx: number) => (
+                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+                          <span className="font-semibold text-slate-800 capitalize">
+                            {pk.code ? `${pk.code.replace(/_/g, ' ')} Booster` : 'Booster Pack'}
+                          </span>
+                          <div className="flex items-center gap-1 font-mono text-[10px]">
+                            <span className="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded border border-indigo-200">
+                              {pk.count}x Packs
+                            </span>
+                            {pk.set && (
+                              <span className="text-slate-500 uppercase">({pk.set})</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Preconstructed Decks contained */}
                 {activeProduct.rawContents.deck && activeProduct.rawContents.deck.length > 0 && (
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
                     <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -1360,7 +1442,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   </div>
                 )}
 
-                {/* 2. Guaranteed Fixed Promo Cards */}
+                {/* 4. Guaranteed Fixed Promo Cards */}
                 {activeProduct.rawContents.card && activeProduct.rawContents.card.length > 0 && (
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
                     <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">

@@ -83,37 +83,16 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;
-
     const cat = (record.category || '').toLowerCase();
-    const name = (record.boxName || '').toLowerCase();
 
-    const isCommander =
-      cat === 'commander_deck' ||
-      cat === 'deck' ||
-      cat === 'starter_deck' ||
-      name.includes('commander') ||
-      (name.includes('deck') && !name.includes('box'));
-
-    const isPack =
-      cat === 'booster_pack' ||
-      (name.includes('booster pack') ||
-        (name.includes('pack') &&
-          !name.includes('box') &&
-          !name.includes('case') &&
-          !name.includes('bundle') &&
-          !name.includes('deck')));
-
-    const isBox = cat === 'booster_box' || name.includes('booster box') || name.includes('display');
-    const isCase = cat === 'booster_case' || (name.includes('case') && !name.includes('showcase'));
-    const isBundle = cat === 'bundle' || name.includes('bundle') || name.includes('gift edition') || name.includes('gift set');
-
-    if (category === 'commander_deck') return isCommander;
-    if (category === 'booster_pack') return isPack;
-    if (category === 'booster_box') return isBox;
-    if (category === 'booster_case') return isCase;
-    if (category === 'bundle') return isBundle;
+    if (category === 'deck' || category === 'commander_deck') {
+      return cat === 'commander_deck' || cat === 'deck' || cat === 'starter_deck' || cat === 'multiple_decks';
+    }
+    if (category === 'box_set') {
+      return cat === 'box_set';
+    }
     if (category === 'other') {
-      return !isCommander && !isPack && !isBox && !isCase && !isBundle;
+      return !['booster_box', 'booster_pack', 'booster_case', 'bundle', 'deck', 'commander_deck', 'box_set'].includes(cat);
     }
     return cat === category;
   };
@@ -166,43 +145,53 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     }
   };
 
-  const getCategoryIcon = (cat: string, name: string = '') => {
+  const getCategoryIcon = (cat: string) => {
     const c = (cat || '').toLowerCase();
-    const n = name.toLowerCase();
-    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || n.includes('commander') || (n.includes('deck') && !n.includes('box'))) {
+    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || c === 'multiple_decks') {
       return <Shield className="w-4 h-4 text-violet-500" />;
     }
-    if (c === 'booster_box' || n.includes('booster box') || n.includes('display')) {
+    if (c === 'box_set') {
+      return <Sparkles className="w-4 h-4 text-amber-500" />;
+    }
+    if (c === 'booster_box') {
       return <Box className="w-4 h-4 text-amber-500" />;
     }
-    if (c === 'booster_pack' || n.includes('booster pack') || (n.includes('pack') && !n.includes('box') && !n.includes('case') && !n.includes('bundle'))) {
+    if (c === 'booster_pack') {
       return <Package className="w-4 h-4 text-emerald-500" />;
     }
-    if (c === 'booster_case' || (n.includes('case') && !n.includes('showcase'))) {
+    if (c === 'booster_case' || c === 'bundle_case' || c === 'limited_aid_case') {
       return <Archive className="w-4 h-4 text-indigo-500" />;
     }
-    if (c === 'bundle' || n.includes('bundle') || n.includes('gift edition') || n.includes('gift set')) {
+    if (c === 'bundle') {
       return <Gift className="w-4 h-4 text-rose-500" />;
     }
     return <HelpCircle className="w-4 h-4 text-slate-400" />;
   };
 
-  const mapCategoryToPackagingType = (cat: string, name: string = ''): ProductPackagingType => {
+  const mapCategoryToPackagingType = (cat: string): ProductPackagingType => {
     const c = (cat || '').toLowerCase();
-    const n = name.toLowerCase();
-    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || n.includes('commander') || n.includes('deck')) {
+    if (c === 'box_set') {
+      return 'box_set';
+    }
+    if (c === 'kit') {
+      return 'kit';
+    }
+    if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || c === 'multiple_decks' || c === 'deck_box') {
       return 'starter_deck';
     }
-    if (c === 'booster_pack' || n.includes('booster pack')) {
+    if (c === 'booster_pack') {
       return 'pack';
     }
-    if (c === 'booster_case' || n.includes('case')) {
+    if (c === 'booster_case' || c === 'bundle_case' || c === 'limited_aid_case') {
       return 'case';
     }
-    if (c === 'bundle' || n.includes('bundle')) {
+    if (c === 'bundle' || c === 'limited_aid_tool') {
       return 'bundle';
     }
-    return 'box';
+    if (c === 'booster_box') {
+      return 'box';
+    }
+    return 'other';
   };
 
   return (
@@ -478,14 +467,26 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
         <button
           id="category-pill-commander"
-          onClick={() => setSelectedCategory('commander_deck')}
+          onClick={() => setSelectedCategory('deck')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'commander_deck'
+            selectedCategory === 'deck' || selectedCategory === 'commander_deck'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
-          <Shield className="w-3.5 h-3.5 text-violet-500" /> Commander Decks
+          <Shield className="w-3.5 h-3.5 text-violet-500" /> Preconstructed Decks
+        </button>
+
+        <button
+          id="category-pill-boxset"
+          onClick={() => setSelectedCategory('box_set')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+            selectedCategory === 'box_set'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Box Sets & Secret Lairs
         </button>
 
         <button
@@ -626,7 +627,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     className="hover:bg-slate-50/80 transition group"
                   >
                     <td className="py-3.5 px-4 font-medium text-slate-900 flex items-center gap-2">
-                      {getCategoryIcon(box.category, box.boxName)}
+                      {getCategoryIcon(box.category)}
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span>{box.boxName}</span>

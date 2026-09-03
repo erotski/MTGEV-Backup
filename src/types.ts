@@ -195,7 +195,16 @@ export interface SetOption {
 
 export type PriceMode = 'direct' | 'cheapest_reprint';
 export type Vendor = 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
-export type ProductCategory = 'all' | 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle' | 'commander_deck' | 'other';
+export type ProductCategory =
+  | 'all'
+  | 'booster_box'
+  | 'booster_pack'
+  | 'booster_case'
+  | 'bundle'
+  | 'deck'
+  | 'commander_deck'
+  | 'box_set'
+  | 'other';
 
 export interface DraftCartItem {
   cartItemId: string;

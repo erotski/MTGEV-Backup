@@ -26,7 +26,10 @@ export type ProductPackagingType =
   | 'prerelease'
   | 'starter_deck'
   | 'sample_pack'
-  | 'limited_aid_tool';
+  | 'limited_aid_tool'
+  | 'box_set'
+  | 'kit'
+  | 'other';
 
 export interface ProductIdentifiers {
   tcgplayerProductId?: string;
@@ -68,7 +71,7 @@ export interface CatalogPackProduct {
   displayName: string;
   marketPrice: number;
   estimatedEv: number;
-  cardCount: number; // total cards in this single item or container
+  cardCount?: number; // total cards in this single item or container (optional if unspecified in database)
   packsCount: number; // number of booster packs inside (1 for pack, 9 for bundle, 36 for box, 216 for case)
   imageUrl?: string;
   badge?: string;
