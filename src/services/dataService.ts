@@ -139,7 +139,33 @@ class DataService {
       if (response.ok) {
         const raw = await response.json();
         if (Array.isArray(raw) && raw.length > 0) {
-          this.arbitrageCache = raw;
+          const sealedResponse = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
+          const sealedProducts = sealedResponse.ok ? await sealedResponse.json() : [];
+          const cardCountByUuid = new Map<string, number>();
+          const productsWithoutExactEv = new Set<string>();
+          if (Array.isArray(sealedProducts)) {
+            for (const product of sealedProducts) {
+              const uuid = product.id || product.uuid;
+              const cardCount = Number(product.cardCount);
+              if (uuid && Number.isFinite(cardCount) && cardCount >= 0) {
+                cardCountByUuid.set(uuid, cardCount);
+              }
+              const packCodes = Array.isArray(product.contents?.pack)
+                ? product.contents.pack.map((pack: any) => String(pack.code || '').toLowerCase()).filter(Boolean)
+                : [];
+              const record = raw.find((item: BoxArbitrageRecord) => item.productUuid === uuid);
+              if (uuid && packCodes.some((code: string) => code.includes('sample')) && record?.boosterName !== 'collector-sample') {
+                productsWithoutExactEv.add(uuid);
+              }
+            }
+          }
+
+          this.arbitrageCache = raw.filter((record: BoxArbitrageRecord) => !productsWithoutExactEv.has(record.productUuid)).map((record: BoxArbitrageRecord) => {
+            const authoritativeCardCount = cardCountByUuid.get(record.productUuid);
+            return authoritativeCardCount === undefined
+              ? record
+              : { ...record, cardCount: authoritativeCardCount };
+          });
           return this.arbitrageCache;
         }
       }

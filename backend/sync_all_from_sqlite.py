@@ -137,23 +137,24 @@ def run_sync():
     # 5. Strict recursive composite product EV, pack, and card resolution engine
     def get_pack_ev(set_code, booster_code):
         s_code = (set_code or "").lower()
-        b_key = (booster_code or "draft").lower()
-        if "collector" in b_key: b_key = "collector"
-        elif "play" in b_key: b_key = "play"
-        elif "jumpstart" in b_key: b_key = "jumpstart"
-        elif "set" in b_key and "booster" in b_key: b_key = "set"
-        elif "draft" in b_key or "prerelease" in b_key: b_key = "draft"
+        b_key = (booster_code or "").lower()
+
+        # MTGJSON contents codes are authoritative. Do not turn promotional
+        # codes such as collector-sample into regular collector boosters.
+        aliases = {
+            "set-booster": "set",
+            "set_booster": "set",
+            "draft-booster": "draft",
+            "draft_booster": "draft",
+            "play-booster": "play",
+            "play_booster": "play",
+        }
+        b_key = aliases.get(b_key, b_key)
         
         # Standard lookup
         ev_row = (
             booster_ev_lookup.get((s_code, b_key, "direct", "tcgplayer"))
             or booster_ev_lookup.get((s_code, b_key, "direct", "all"))
-            or booster_ev_lookup.get((s_code, "draft", "direct", "tcgplayer"))
-            or booster_ev_lookup.get((s_code, "draft", "direct", "all"))
-            or booster_ev_lookup.get((s_code, "play", "direct", "tcgplayer"))
-            or booster_ev_lookup.get((s_code, "play", "direct", "all"))
-            or booster_ev_lookup.get((s_code, "default", "direct", "tcgplayer"))
-            or booster_ev_lookup.get((s_code, "default", "direct", "all"))
         )
         return ev_row
 
@@ -235,7 +236,7 @@ def run_sync():
                     ev_max += pcnt * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
                     booster_names.add(ev_row.get("boosterName", pcode))
                 total_packs += pcnt
-                total_cards += pcnt * 15
+                total_cards += pcnt * int(prod.get("cardCount") or 0)
 
         # 3. Cards directly in contents (promos / singles)
         if c.get("card") and isinstance(c["card"], list) and len(c["card"]) > 0:
@@ -306,8 +307,8 @@ def run_sync():
                     ev_max = packs * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
                     booster_names.add(ev_row.get("boosterName", b_key))
 
-        # Fallback for Secret Lair Drops or non-pack products when ev_avg is 0
-        if ev_avg == 0.0:
+        # Do not invent EV for products with explicit MTGJSON contents.
+        if ev_avg == 0.0 and not c:
             m_price = float(prod.get("marketPrice", 0) or 0)
             if m_price > 0:
                 ev_avg = m_price
@@ -317,8 +318,7 @@ def run_sync():
 
         # Authoritative card count override if MTGJSON specifies cardCount explicitly
         if prod.get("cardCount") and int(prod["cardCount"]) > 0:
-            if total_packs == 0 or is_secret_lair:
-                total_cards = int(prod["cardCount"])
+            total_cards = int(prod["cardCount"])
 
         bname = ", ".join(sorted(booster_names)) if booster_names else ("deck" if total_packs == 0 else "draft")
         return {

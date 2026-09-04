@@ -226,23 +226,6 @@ def export_all():
                     if total_packs > 0:
                         return total_packs, b_code
 
-            # Fallback category defaults ONLY when MTGJSON contents is absent
-            cat = (prod.get("category") or "").lower()
-            sub = (prod.get("subtype") or "").lower()
-            pname = (prod.get("displayName") or "").lower()
-
-            if cat == "booster_pack":
-                return 1, sub or "draft"
-            elif cat == "booster_box":
-                return (12 if sub == "collector" else (24 if sub == "jumpstart" else 36)), sub or "draft"
-            elif cat == "booster_case":
-                return (72 if sub == "collector" else (144 if sub == "jumpstart" else 216)), sub or "draft"
-            elif cat == "bundle":
-                return 9, sub or "draft"
-            elif cat == "bundle_case":
-                return 54, sub or "draft"
-            elif sub == "prerelease_kit" or "prerelease" in pname:
-                return 6, "prerelease"
             return 0, None
 
         # Collect card UUIDs from contents to query prices
@@ -402,6 +385,10 @@ def export_all():
             matched_booster = None
             if resolved_booster_code and resolved_booster_code in set_boosters:
                 matched_booster = resolved_booster_code
+            elif resolved_booster_code:
+                # Explicit MTGJSON pack code has no matching simulation.
+                # Do not substitute a different booster type.
+                continue
             elif sp_sub in set_boosters:
                 matched_booster = sp_sub
             elif sp_cat == "booster_box" and "play" in set_boosters:
