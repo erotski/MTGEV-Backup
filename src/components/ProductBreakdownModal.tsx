@@ -75,6 +75,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 setName={product.setName}
                 packagingType={product.packagingType}
                 displayName={product.displayName}
+                cardCount={product.cardCount}
                 imageUrl={product.imageUrl}
                 size="sm"
               />

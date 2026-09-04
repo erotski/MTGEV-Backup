@@ -288,6 +288,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                   setName={pickOfTheDay.setName}
                   packagingType={mapCategoryToPackagingType(pickOfTheDay.category)}
                   displayName={pickOfTheDay.boxName}
+                  cardCount={pickOfTheDay.cardCount}
                   size="md"
                   allowZoom={true}
                 />
@@ -397,6 +398,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                       setName={item.setName}
                       packagingType={mapCategoryToPackagingType(item.category)}
                       displayName={item.boxName}
+                      cardCount={item.cardCount}
                       size="sm"
                       allowZoom={true}
                     />

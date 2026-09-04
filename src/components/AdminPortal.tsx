@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 import { INITIAL_SETS } from '../data';
+import { dataService } from '../services/dataService';
 import { ProductHierarchyInspector } from './ProductHierarchyInspector';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { BoosterFoilPackMockup } from './BoosterFoilPackMockup';
@@ -38,9 +39,17 @@ interface AdminPortalProps {
   onNavigateToExplorer?: (setCode: string) => void;
 }
 
+interface ProductIntegrityIssue {
+  id: string;
+  setCode: string;
+  displayName: string;
+  severity: 'error' | 'warning';
+  issue: string;
+}
+
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }) => {
   // Top-level Admin Section Tab
-  const [activeAdminSection, setActiveAdminSection] = useState<'hierarchy' | 'audit' | 'studio'>('hierarchy');
+  const [activeAdminSection, setActiveAdminSection] = useState<'hierarchy' | 'integrity' | 'audit' | 'studio'>('hierarchy');
 
   // Filters & State
   const [selectedSetFilter, setSelectedSetFilter] = useState<string>('all');
@@ -74,6 +83,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
   const [foilPackLayoutVariant, setFoilPackLayoutVariant] = useState<'auto' | 'collector' | 'standard'>('collector');
   const [foilPackThemeColor, setFoilPackThemeColor] = useState<'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate'>('purple');
   const [foilPackSize, setFoilPackSize] = useState<'sm' | 'md' | 'lg' | 'hero'>('hero');
+  const [sealedProducts, setSealedProducts] = useState<any[]>([]);
+  const [isIntegrityLoading, setIsIntegrityLoading] = useState(true);
+  const [integrityLoadError, setIntegrityLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    dataService.getSealedProducts()
+      .then((products) => {
+        if (isMounted) {
+          if (products.length === 0) {
+            setIntegrityLoadError('MTGJSON sealed product data is empty or unavailable.');
+          } else {
+            setSealedProducts(products);
+          }
+          setIsIntegrityLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIntegrityLoadError('MTGJSON sealed product data could not be loaded.');
+          setIsIntegrityLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSelectFoilSet = (code: string) => {
     setFoilPackSetCode(code);
@@ -164,6 +201,48 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
       totalEstimatedEv,
     };
   }, [totalProducts, customImageOverrides]);
+
+  const integrityIssues = useMemo<ProductIntegrityIssue[]>(() => {
+    const idCounts = new Map<string, number>();
+    sealedProducts.forEach((product) => {
+      const id = String(product.id || product.uuid || '').trim();
+      if (id) idCounts.set(id, (idCounts.get(id) || 0) + 1);
+    });
+
+    const issues: ProductIntegrityIssue[] = [];
+    sealedProducts.forEach((product) => {
+      const id = String(product.id || product.uuid || '').trim();
+      const label = product.displayName || 'Unnamed product';
+      const setCode = String(product.setCode || product.set_code || '?').toUpperCase();
+      const addIssue = (severity: ProductIntegrityIssue['severity'], issue: string) => {
+        issues.push({ id: id || `${setCode}-${label}`, setCode, displayName: label, severity, issue });
+      };
+
+      if (!id) addIssue('error', 'Missing MTGJSON product UUID.');
+      if (id && (idCounts.get(id) || 0) > 1) addIssue('error', 'Duplicate MTGJSON product UUID.');
+      if (product.marketPrice === null || product.marketPrice === undefined || Number(product.marketPrice) <= 0) {
+        addIssue('warning', 'Missing market price.');
+      }
+      if (product.cardCount === null || product.cardCount === undefined) {
+        addIssue('warning', 'Missing declared card count.');
+      } else if (Number(product.cardCount) < 0) {
+        addIssue('error', 'Negative declared card count.');
+      }
+
+      const contents = product.contents;
+      if (!contents || typeof contents !== 'object' || Object.keys(contents).length === 0) {
+        addIssue('warning', 'Missing MTGJSON contents definition.');
+      }
+
+      const fixedCards = Array.isArray(contents?.card) ? contents.card : [];
+      const hasNestedContents = Array.isArray(contents?.sealed) || Array.isArray(contents?.pack) || Array.isArray(contents?.deck);
+      if (!hasNestedContents && fixedCards.length > 0 && Number(product.cardCount) !== fixedCards.length) {
+        addIssue('error', `Declared card count (${product.cardCount}) differs from fixed card entries (${fixedCards.length}).`);
+      }
+    });
+
+    return issues;
+  }, [sealedProducts]);
 
   // Filtered Products List for the Audit Table
   const filteredProducts = useMemo(() => {
@@ -322,6 +401,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
         </button>
 
         <button
+          onClick={() => setActiveAdminSection('integrity')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'integrity'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <ShieldCheck className={`w-4 h-4 ${activeAdminSection === 'integrity' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>MTGJSON Data Integrity</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${integrityIssues.length > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+            {isIntegrityLoading ? 'Loading' : integrityIssues.length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveAdminSection('studio')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             activeAdminSection === 'studio'
@@ -337,6 +431,72 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
       {/* Render Active Section */}
       {activeAdminSection === 'hierarchy' && (
         <ProductHierarchyInspector />
+      )}
+
+      {activeAdminSection === 'integrity' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">MTGJSON Product Integrity</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Read-only checks against <span className="font-mono">/data/sealed_products.json</span>. Missing values are reported, never replaced.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
+                  {integrityIssues.filter((item) => item.severity === 'error').length} Errors
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                  {integrityIssues.filter((item) => item.severity === 'warning').length} Warnings
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {integrityLoadError ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-800">
+              {integrityLoadError}
+            </div>
+          ) : isIntegrityLoading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              Loading authoritative product records...
+            </div>
+          ) : integrityIssues.length === 0 ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm font-bold text-emerald-800">
+              No product integrity issues found in the loaded MTGJSON export.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-900 text-white font-mono uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3">Severity</th>
+                    <th className="p-3">Set</th>
+                    <th className="p-3">Product</th>
+                    <th className="p-3">Issue</th>
+                    <th className="p-3">UUID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {integrityIssues.map((item, index) => (
+                    <tr key={`${item.id}-${item.issue}-${index}`} className="hover:bg-slate-50">
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded-md border font-bold ${item.severity === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          {item.severity}
+                        </span>
+                      </td>
+                      <td className="p-3 font-mono font-bold text-slate-600">{item.setCode}</td>
+                      <td className="p-3 font-bold text-slate-900">{item.displayName}</td>
+                      <td className="p-3 text-slate-700">{item.issue}</td>
+                      <td className="p-3 font-mono text-[10px] text-slate-400 max-w-48 truncate" title={item.id}>{item.id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {activeAdminSection === 'studio' && (

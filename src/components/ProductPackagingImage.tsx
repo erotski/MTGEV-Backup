@@ -12,6 +12,7 @@ interface ProductPackagingImageProps {
   packagingType: ProductPackagingType;
   imageUrl?: string;
   displayName: string;
+  cardCount?: number;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero';
   className?: string;
   themeColor?: 'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate';
@@ -24,6 +25,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   packagingType,
   imageUrl,
   displayName,
+  cardCount,
   size = 'md',
   className = '',
   themeColor,
@@ -440,7 +442,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
       return 'PLAY BOOSTER';
     })();
 
-    const resolvedCardCount = isCollectorPack ? 15 : 14;
+    const resolvedCardCount = cardCount ?? (isCollectorPack ? 15 : 14);
     const resolvedThemeColor =
       themeColor ||
       (isCollectorPack

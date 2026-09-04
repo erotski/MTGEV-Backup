@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor } from '../types';
 import { dataService } from '../services/dataService';
 import {
-  ECOMMERCE_CATALOG_PACKS,
   CatalogPackProduct,
   ProductPackagingType,
   ProductContainmentItem,
@@ -83,20 +82,19 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     return cleaned.trim() || name;
   };
 
-  // Find related products for the selected set from the catalog
-  const existingSetProducts = ECOMMERCE_CATALOG_PACKS.filter(
-    (p) => p.setCode.toUpperCase() === setCode.toUpperCase()
-  );
-
   // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
   const [dbSealedProducts, setDbSealedProducts] = useState<CatalogPackProduct[]>([]);
+  const [isLoadingDbProducts, setIsLoadingDbProducts] = useState(true);
+  const [dbProductsError, setDbProductsError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     async function loadDbProducts() {
+      setIsLoadingDbProducts(true);
+      setDbProductsError(null);
       try {
         const raw = await dataService.getSealedProducts();
-        if (isMounted && Array.isArray(raw) && raw.length > 0) {
+        if (isMounted && Array.isArray(raw)) {
           const rawProductMap = new Map<string, any>();
           for (const item of raw) {
             if (item.id || item.uuid) {
@@ -133,24 +131,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               if (packTotal > 0) return packTotal;
             }
 
-            // 3. Fallback strictly by category if no contents object exists
-            const cat = (product.category || '').toLowerCase();
-            const sub = (product.subtype || '').toLowerCase();
-            const pName = (product.displayName || product.name || '').toLowerCase();
-
-            if (cat === 'booster_pack') return 1;
-            if (cat === 'booster_box') return sub === 'collector' ? 12 : (sub === 'jumpstart' ? 24 : 36);
-            if (cat === 'booster_case') return sub === 'collector' ? 72 : (sub === 'jumpstart' ? 144 : 216);
-            if (cat === 'bundle') return 9;
-            if (cat === 'bundle_case') return 54;
-            if (sub === 'prerelease_kit' || pName.includes('prerelease')) return 6;
             return 0;
           };
 
           const matching = raw.filter(
             (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === setCode.toUpperCase()
           );
-          if (matching.length > 0) {
+          if (matching.length === 0) {
+            setDbProductsError(`No MTGJSON sealed products were found for set ${setCode.toUpperCase()}.`);
+            setDbSealedProducts([]);
+          } else {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
               const pName = sp.displayName || sp.name || 'Sealed Product';
               const pNameLower = pName.toLowerCase();
@@ -184,19 +174,15 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'other';
               }
 
-              // Strictly database-driven pack and item count with recursive hierarchy support
+              // Pack counts come from explicit MTGJSON contents only.
               const pCount = resolveRecursivePacks(sp);
 
-              // Strictly database-driven card count (NEVER inject fake 100 for box sets!)
+              // Card counts come from the MTGJSON record or explicit fixed cards only.
               let determinedCardCount: number | undefined = undefined;
               if (sp.cardCount !== null && sp.cardCount !== undefined && Number(sp.cardCount) > 0) {
                 determinedCardCount = Number(sp.cardCount);
               } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
                 determinedCardCount = sp.contents.card.length;
-              } else if (category === 'deck' && subtype === 'commander') {
-                determinedCardCount = 100;
-              } else if (category === 'deck' && subtype === 'brawl') {
-                determinedCardCount = 60;
               }
 
               const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
@@ -261,8 +247,14 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             setDbSealedProducts(mapped);
           }
         }
+        if (isMounted) setIsLoadingDbProducts(false);
       } catch (e) {
         console.warn('Could not load db sealed products:', e);
+        if (isMounted) {
+          setDbSealedProducts([]);
+          setDbProductsError('MTGJSON sealed product data could not be loaded.');
+          setIsLoadingDbProducts(false);
+        }
       }
     }
     loadDbProducts();
@@ -271,7 +263,10 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     };
   }, [setCode, setName]);
 
-  // Helper to synthesize a product if none exists in catalog for this set
+  /*
+   * Legacy synthetic product definitions are retained below for reference only.
+   * Runtime product rendering must use MTGJSON records exclusively.
+   */
   const getSyntheticProducts = (): CatalogPackProduct[] => {
     const packEv = activeBooster.evAverage;
     const packPrice = Number((packEv * 0.92).toFixed(2)) || 4.99;
@@ -508,19 +503,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
   const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
 
-  const combinedCatalogProducts = useMemo(() => {
-    if (dbSealedProducts.length > 0) {
-      // Merge dbSealedProducts with any existing hardcoded products, prioritizing dbSealedProducts
-      const dbNames = new Set(dbSealedProducts.map((p) => p.displayName.toLowerCase()));
-      const filteredExisting = existingSetProducts.filter(
-        (p) => !dbNames.has(p.displayName.toLowerCase())
-      );
-      return [...dbSealedProducts, ...filteredExisting];
-    }
-    return existingSetProducts;
-  }, [dbSealedProducts, existingSetProducts]);
-
-  const rawProducts = combinedCatalogProducts.length > 0 ? combinedCatalogProducts : getSyntheticProducts();
+  const rawProducts = dbSealedProducts;
 
   // Dynamically scale products for active PriceMode (Direct vs Cheapest Reprint) & Vendor
   const setProducts = useMemo(() => {
@@ -869,6 +852,23 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   const [isAssetGuideOpen, setIsAssetGuideOpen] = useState(false);
 
+  if (isLoadingDbProducts) {
+    return (
+      <div id="related-products-hierarchy-section" className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div className="text-sm font-bold text-slate-700">Loading MTGJSON sealed products...</div>
+      </div>
+    );
+  }
+
+  if (dbProductsError) {
+    return (
+      <div id="related-products-hierarchy-section" className="bg-white rounded-2xl p-6 border border-rose-200 shadow-sm">
+        <div className="text-sm font-bold text-rose-800">MTGJSON product data unavailable</div>
+        <div className="text-xs text-rose-700 mt-1">{dbProductsError}</div>
+      </div>
+    );
+  }
+
   return (
     <div id="related-products-hierarchy-section" className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
       {/* Section Header */}
@@ -1043,6 +1043,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                     setName={setName}
                     packagingType={activeProduct.packagingType}
                     displayName={cleanProductName(activeProduct.displayName)}
+                    cardCount={activeProduct.cardCount}
                     size="md"
                     allowZoom={true}
                   />
