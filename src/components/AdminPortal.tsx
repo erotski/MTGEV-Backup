@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 import { INITIAL_SETS } from '../data';
+import { ProductHierarchyInspector } from './ProductHierarchyInspector';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { BoosterFoilPackMockup } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
@@ -38,6 +39,9 @@ interface AdminPortalProps {
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }) => {
+  // Top-level Admin Section Tab
+  const [activeAdminSection, setActiveAdminSection] = useState<'hierarchy' | 'audit' | 'studio'>('hierarchy');
+
   // Filters & State
   const [selectedSetFilter, setSelectedSetFilter] = useState<string>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
@@ -284,6 +288,150 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
         {/* Ambient background glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       </div>
+
+      {/* Admin Module Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+        <button
+          onClick={() => setActiveAdminSection('hierarchy')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'hierarchy'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Layers className={`w-4 h-4 ${activeAdminSection === 'hierarchy' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>Product Hierarchy & Sub-Item Auditor</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-indigo-500/20 text-indigo-700 font-mono">
+            Recursive MTGJSON
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSection('audit')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'audit'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <ImageIcon className={`w-4 h-4 ${activeAdminSection === 'audit' ? 'text-emerald-400' : 'text-slate-400'}`} />
+          <span>Packaging Asset Health & Photos</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono">
+            {totalProducts} Items
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSection('studio')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'studio'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Sparkles className={`w-4 h-4 ${activeAdminSection === 'studio' ? 'text-purple-400' : 'text-slate-400'}`} />
+          <span>Procedural 3D Packaging Studio</span>
+        </button>
+      </div>
+
+      {/* Render Active Section */}
+      {activeAdminSection === 'hierarchy' && (
+        <ProductHierarchyInspector />
+      )}
+
+      {activeAdminSection === 'studio' && (
+        <div className="space-y-8">
+          {/* Procedural 3D Packaging Generator & Visual Recreator */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl p-6 sm:p-8 border border-slate-800 text-white shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-xl font-bold text-slate-100">
+                    Procedural 3D Packaging Visual Recreator
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-400">
+                  For any sealed product without an official WPN photograph, the app automatically generates an authentic 3D packaging rendering styled with the official Scryfall vector set emblem.
+                </p>
+              </div>
+
+              {/* Preset Controls */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-mono font-bold text-slate-400 mb-1">Preview Set</label>
+                  <select
+                    value={studioSetCode}
+                    onChange={(e) => setStudioSetCode(e.target.value)}
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-amber-400"
+                  >
+                    {INITIAL_SETS.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.code} - {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-mono font-bold text-slate-400 mb-1">Packaging Type</label>
+                  <select
+                    value={studioPackagingType}
+                    onChange={(e) => setStudioPackagingType(e.target.value as ProductPackagingType)}
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="box">Booster Display Box (36 Packs)</option>
+                    <option value="bundle">Bundle Box (9 Packs + Promo + Die)</option>
+                    <option value="prerelease">Prerelease Pack (6 Packs + Date Promo)</option>
+                    <option value="pack">Single Booster Pack (14 Cards)</option>
+                    <option value="case">Sealed Master Case (6 Boxes)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Recreator Showcase Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-950/80 rounded-2xl border border-slate-800">
+                <span className="text-xs font-mono text-slate-400 mb-3">Live Procedural 3D Render</span>
+                <ProductPackagingImage
+                  setCode={studioSetCode}
+                  packagingType={studioPackagingType}
+                  displayName={`${studioSetCode} Procedural Packaging`}
+                  size="hero"
+                  allowZoom={true}
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-4">
+                <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-2">
+                  <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Automatic Fallback Pipeline Status
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Whenever an e-commerce catalog entry lacks an official web photograph or when an asset fails to resolve via CORS, this component automatically synthesizes a high-fidelity vector packaging mock with 3D shadows, metallic foil ribbons, set branding, and packaging badges.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block text-[10px]">CURRENT SET SYMBOL</span>
+                    <span className="font-bold text-slate-200 uppercase">{studioSetCode} SVG Icon</span>
+                  </div>
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block text-[10px]">PACKAGING FORM FACTOR</span>
+                    <span className="font-bold text-slate-200 capitalize">{studioPackagingType} Silhouette</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeAdminSection === 'audit' && (
+        <div className="space-y-8">
 
       {/* Primary KPI Diagnostic Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1092,6 +1240,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
           </div>
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 };
