@@ -70,11 +70,16 @@ export interface BoxArbitrageRecord {
   setName: string;
   boosterName: string;
   packCount: number;
+  cardCount?: number;
   boxMarketPrice: number;
+  packEvMin?: number;
   packEvAvg: number;
   packEvMid90: number;
+  packEvMax?: number;
+  boxEvMin?: number;
   boxEvAvg: number;
   boxEvMid90: number;
+  boxEvMax?: number;
   profitUsd: number;
   roiPct: number;
   vendor: string;
@@ -105,37 +110,52 @@ export interface DeckCardItem {
   count: number;
   rarity: 'common' | 'uncommon' | 'rare' | 'mythic' | 'land' | string;
   type: string;
+  primaryType?: string;
   manaCost?: string;
+  manaValue?: number;
   scryfallId?: string;
   imageUrl?: string;
   price: number;
+  totalPrice?: number;
   foil?: boolean;
   isCommander?: boolean;
+  prices?: {
+    tcgplayer?: number;
+    cardkingdom?: number;
+    cardmarket?: number;
+    cardmarketEur?: number;
+    all?: number;
+  };
 }
 
 export interface PreconstructedDeckDetail {
   deckName: string;
   setCode: string;
+  theme: string;
+  cardCount: number;
+  totalSinglesEv?: number;
   commander: {
     name: string;
     manaCost: string;
     type: string;
+    rarity?: string;
     text?: string;
     imageUrl?: string;
     scryfallId?: string;
     price: number;
   };
-  cardCount: number;
-  colors: string[];
-  theme: string;
-  contentsSummary: {
+  colors?: string[];
+  typeSummary?: Record<string, { count: number; ev: number }>;
+  raritySummary?: Record<string, { count: number; ev: number }>;
+  contentsSummary?: {
     creatures: number;
     instantsAndSorceries: number;
     artifactsAndEnchantments: number;
     planeswalkers: number;
     lands: number;
   };
-  keyCards: DeckCardItem[];
+  keyCards?: DeckCardItem[];
+  cards?: DeckCardItem[];
   fullDecklist?: DeckCardItem[];
 }
 

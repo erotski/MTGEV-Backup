@@ -97,12 +97,63 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       try {
         const raw = await dataService.getSealedProducts();
         if (isMounted && Array.isArray(raw) && raw.length > 0) {
+          const rawProductMap = new Map<string, any>();
+          for (const item of raw) {
+            if (item.id || item.uuid) {
+              rawProductMap.set(item.id || item.uuid, item);
+            }
+          }
+
+          const resolveRecursivePacks = (product: any, visited = new Set<string>()): number => {
+            const pId = product.id || product.uuid;
+            if (pId && visited.has(pId)) return 0;
+            if (pId) visited.add(pId);
+
+            // 1. Sealed items (primary authority for boxes, cases, prerelease packs, bundles)
+            if (product.contents?.sealed && Array.isArray(product.contents.sealed)) {
+              let total = 0;
+              for (const s of product.contents.sealed) {
+                const sCount = s.count || 1;
+                const child = s.uuid ? rawProductMap.get(s.uuid) : null;
+                if (child) {
+                  total += sCount * resolveRecursivePacks(child, new Set(visited));
+                } else {
+                  const sName = (s.name || '').toLowerCase();
+                  if (sName.includes('pack') || sName.includes('booster')) total += sCount * 1;
+                  else if (sName.includes('box')) total += sCount * 36;
+                  else total += sCount;
+                }
+              }
+              if (total > 0) return total;
+            }
+
+            // 2. Direct pack definitions
+            if (product.contents?.pack && Array.isArray(product.contents.pack)) {
+              const packTotal = product.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
+              if (packTotal > 0) return packTotal;
+            }
+
+            // 3. Fallback strictly by category if no contents object exists
+            const cat = (product.category || '').toLowerCase();
+            const sub = (product.subtype || '').toLowerCase();
+            const pName = (product.displayName || product.name || '').toLowerCase();
+
+            if (cat === 'booster_pack') return 1;
+            if (cat === 'booster_box') return sub === 'collector' ? 12 : (sub === 'jumpstart' ? 24 : 36);
+            if (cat === 'booster_case') return sub === 'collector' ? 72 : (sub === 'jumpstart' ? 144 : 216);
+            if (cat === 'bundle') return 9;
+            if (cat === 'bundle_case') return 54;
+            if (sub === 'prerelease_kit' || pName.includes('prerelease')) return 6;
+            return 0;
+          };
+
           const matching = raw.filter(
             (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === setCode.toUpperCase()
           );
           if (matching.length > 0) {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
               const pName = sp.displayName || sp.name || 'Sealed Product';
+              const pNameLower = pName.toLowerCase();
               const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
               const category = (sp.category || '').toLowerCase();
               const subtype = (sp.subtype || '').toLowerCase();
@@ -113,7 +164,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'box_set';
               } else if (category === 'booster_box') {
                 packType = 'box';
-              } else if (category === 'booster_case' || category === 'limited_aid_case') {
+              } else if (category === 'booster_case') {
                 packType = 'case';
               } else if (category === 'bundle_case') {
                 packType = 'bundle_case';
@@ -123,31 +174,18 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'bundle';
               } else if (category === 'deck' || category === 'multiple_decks' || category === 'deck_box') {
                 packType = 'starter_deck';
+              } else if (category === 'limited_aid_case') {
+                packType = pNameLower.includes('case') ? 'case' : 'kit';
               } else if (category === 'limited_aid_tool') {
                 packType = 'limited_aid_tool';
-              } else if (category === 'kit') {
+              } else if (category === 'kit' || subtype === 'prerelease_kit' || pNameLower.includes('prerelease')) {
                 packType = 'kit';
               } else {
                 packType = 'other';
               }
 
-              // Strictly database-driven pack and item count
-              let pCount = 1;
-              if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
-                pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
-              } else if (sp.contents?.sealed && Array.isArray(sp.contents.sealed)) {
-                pCount = sp.contents.sealed.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
-              } else if (packType === 'box') {
-                pCount = subtype === 'collector' ? 12 : (subtype === 'jumpstart' ? 24 : 36);
-              } else if (packType === 'case') {
-                pCount = subtype === 'collector' ? 72 : (subtype === 'jumpstart' ? 144 : 216);
-              } else if (packType === 'bundle') {
-                pCount = 9;
-              } else if (packType === 'bundle_case') {
-                pCount = 54;
-              } else {
-                pCount = 1;
-              }
+              // Strictly database-driven pack and item count with recursive hierarchy support
+              const pCount = resolveRecursivePacks(sp);
 
               // Strictly database-driven card count (NEVER inject fake 100 for box sets!)
               let determinedCardCount: number | undefined = undefined;
@@ -162,10 +200,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               }
 
               const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
-              const computedEv = pCount > 0 && activeBooster.evAverage > 0 
-                ? Number((pCount * activeBooster.evAverage).toFixed(2))
-                : 0;
-              const ev = Number(sp.estimatedEv || sp.ev || computedEv);
+              let computedEv = 0;
+              if (pCount > 0 && activeBooster.evAverage > 0) {
+                computedEv = Number((pCount * activeBooster.evAverage).toFixed(2));
+              } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
+                computedEv = sp.contents.card.reduce((sum: number, cd: any) => {
+                  const p = cd.prices?.[vendor] ?? (vendor === 'all' ? (cd.prices?.all ?? cd.prices?.tcgplayer) : (cd.prices?.[vendor] ?? cd.prices?.tcgplayer));
+                  return sum + (typeof p === 'number' && p > 0 ? p : 0);
+                }, 0);
+              }
+              const ev = Number(sp.estimatedEv || computedEv || 0);
 
               let badgeText = 'Factory Sealed';
               if (category === 'box_set') {
@@ -1152,7 +1196,15 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                             </div>
                           </td>
                           <td className="p-3 font-mono font-bold text-slate-700 whitespace-nowrap">
-                            {p.packsCount > 1 ? `${p.packsCount}x Packs` : '1x Pack'}
+                            {p.packsCount > 1 
+                              ? `${p.packsCount}x Packs` 
+                              : p.packsCount === 1 
+                              ? '1x Pack' 
+                              : p.cardCount === 1 
+                              ? '1 Single Card' 
+                              : p.cardCount && p.cardCount > 1 
+                              ? `${p.cardCount} Cards` 
+                              : '0 Packs'}
                           </td>
                           <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
                             {p.cardCount ? `${p.cardCount} cards` : '—'}
@@ -1188,7 +1240,15 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                             )}
                           </td>
                           <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
-                            {p.marketPrice > 0 ? `$${(p.marketPrice / (p.packsCount || 1)).toFixed(2)}/pack` : <span className="text-slate-400 text-[11px]">—</span>}
+                            {p.packsCount > 0 && p.marketPrice > 0 ? (
+                              `$${(p.marketPrice / p.packsCount).toFixed(2)}/pack`
+                            ) : p.cardCount === 1 && p.marketPrice > 0 ? (
+                              `$${p.marketPrice.toFixed(2)}/card`
+                            ) : p.cardCount && p.cardCount > 1 && p.marketPrice > 0 ? (
+                              `$${(p.marketPrice / p.cardCount).toFixed(2)}/card`
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">—</span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1616,12 +1676,14 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   />
                 )}
 
-                {/* 4. Chase Cards Within This Product */}
-                <ProductChaseCardsViewer
-                  product={activeProduct}
-                  setCode={activeProduct.setCode}
-                  priceMode={priceMode}
-                />
+                {/* 4. Chase Cards Within This Product (Booster products only) */}
+                {!isDeck && (
+                  <ProductChaseCardsViewer
+                    product={activeProduct}
+                    setCode={activeProduct.setCode}
+                    priceMode={priceMode}
+                  />
+                )}
               </div>
             );
           })()}

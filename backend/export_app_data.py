@@ -122,7 +122,7 @@ def export_all():
     try:
         # Pre-load booster EV lookup by (set_code, booster_name)
         cursor.execute("""
-            SELECT set_code, booster_name, ev_average, ev_mid90, exact_match_pct, updated_at
+            SELECT set_code, booster_name, ev_average, ev_mid90, ev_min, ev_max, exact_match_pct, updated_at
             FROM booster_ev_results
             WHERE price_mode = 'direct' AND vendor = 'all' AND ev_average > 0;
         """)
@@ -154,7 +154,172 @@ def export_all():
             ORDER BY sp.setCode, sp.name;
         """)
         arbs = cursor.fetchall()
-        
+
+        # Build product map for recursive hierarchy resolution
+        product_map = {}
+        for a in arbs:
+            raw_c = a.get("contents")
+            c_parsed = None
+            if raw_c and isinstance(raw_c, str):
+                try:
+                    c_parsed = json.loads(raw_c)
+                except Exception:
+                    c_parsed = None
+            elif isinstance(raw_c, dict):
+                c_parsed = raw_c
+            product_map[a.get("productUuid")] = {
+                "id": a.get("productUuid"),
+                "displayName": a.get("boxName"),
+                "category": a.get("spCategory"),
+                "subtype": a.get("spSubtype"),
+                "cardCount": a.get("spCardCount"),
+                "contents": c_parsed,
+            }
+
+        def resolve_product_packs_recursive(prod_id, visited=None):
+            if visited is None:
+                visited = set()
+            if prod_id in visited:
+                return 0, None
+            visited.add(prod_id)
+
+            prod = product_map.get(prod_id)
+            if not prod:
+                return 0, None
+
+            c = prod.get("contents")
+            if c and isinstance(c, dict):
+                # 1. Sealed items (primary authority for boxes, cases, prerelease packs, bundles)
+                if c.get("sealed") and isinstance(c["sealed"], list):
+                    total_packs = 0
+                    b_code = None
+                    for s in c["sealed"]:
+                        s_count = int(s.get("count", 1) or 1)
+                        child_uuid = s.get("uuid")
+                        if child_uuid and child_uuid in product_map:
+                            cp_count, cp_code = resolve_product_packs_recursive(child_uuid, visited.copy())
+                            total_packs += s_count * cp_count
+                            if not b_code and cp_code:
+                                b_code = cp_code
+                        else:
+                            c_name = (s.get("name") or "").lower()
+                            if "pack" in c_name or "booster" in c_name:
+                                total_packs += s_count * 1
+                            elif "box" in c_name:
+                                total_packs += s_count * 36
+                            else:
+                                total_packs += s_count * 1
+                    if total_packs > 0:
+                        if not b_code and c.get("pack") and isinstance(c["pack"], list) and len(c["pack"]) > 0:
+                            b_code = c["pack"][0].get("code")
+                        return total_packs, b_code
+
+                # 2. Pack array (direct packs)
+                if c.get("pack") and isinstance(c["pack"], list):
+                    total_packs = 0
+                    b_code = None
+                    for pk in c["pack"]:
+                        cnt = int(pk.get("count", 1) or 1)
+                        total_packs += cnt
+                        if not b_code and pk.get("code"):
+                            b_code = pk.get("code")
+                    if total_packs > 0:
+                        return total_packs, b_code
+
+            # Fallback category defaults ONLY when MTGJSON contents is absent
+            cat = (prod.get("category") or "").lower()
+            sub = (prod.get("subtype") or "").lower()
+            pname = (prod.get("displayName") or "").lower()
+
+            if cat == "booster_pack":
+                return 1, sub or "draft"
+            elif cat == "booster_box":
+                return (12 if sub == "collector" else (24 if sub == "jumpstart" else 36)), sub or "draft"
+            elif cat == "booster_case":
+                return (72 if sub == "collector" else (144 if sub == "jumpstart" else 216)), sub or "draft"
+            elif cat == "bundle":
+                return 9, sub or "draft"
+            elif cat == "bundle_case":
+                return 54, sub or "draft"
+            elif sub == "prerelease_kit" or "prerelease" in pname:
+                return 6, "prerelease"
+            return 0, None
+
+        # Collect card UUIDs from contents to query prices
+        card_uuids = set()
+        for a in arbs:
+            raw_c = a.get("contents")
+            if raw_c:
+                try:
+                    c_obj = json.loads(raw_c) if isinstance(raw_c, str) else raw_c
+                    if c_obj and isinstance(c_obj, dict) and c_obj.get("card"):
+                        for cd in c_obj["card"]:
+                            if cd.get("uuid"):
+                                card_uuids.add(cd["uuid"])
+                except Exception:
+                    pass
+
+        card_prices_lookup = {}
+        if card_uuids:
+            try:
+                placeholders = ', '.join(['%s'] * len(card_uuids))
+                cursor.execute(f"""
+                    SELECT uuid, provider, finish, price
+                    FROM prices
+                    WHERE uuid IN ({placeholders})
+                      AND (source = 'paper' OR source IS NULL)
+                      AND (priceType = 'retail' OR priceType IS NULL)
+                      AND price > 0;
+                """, tuple(card_uuids))
+                for row in cursor.fetchall():
+                    u = row["uuid"]
+                    prov = (row.get("provider") or "").lower()
+                    fin = (row.get("finish") or "").lower()
+                    pr = float(row.get("price") or 0.0)
+                    if u not in card_prices_lookup:
+                        card_prices_lookup[u] = {}
+                    if prov not in card_prices_lookup[u]:
+                        card_prices_lookup[u][prov] = {}
+                    card_prices_lookup[u][prov][fin] = pr
+            except Exception as e:
+                print(f"[WARN] Could not fetch card prices from DB: {e}")
+
+        EUR_USD_RATE = 1.09
+
+        def resolve_card_prices(u, finishes, is_foil):
+            card_p = card_prices_lookup.get(u, {})
+            want_foil = is_foil or ('foil' in (finishes or []) and 'nonfoil' not in (finishes or []))
+            res = {}
+
+            # TCGplayer
+            tcg = card_p.get('tcgplayer', {})
+            p_tcg = (tcg.get('foil') if want_foil else tcg.get('normal')) or tcg.get('foil') or tcg.get('normal')
+            if p_tcg:
+                res['tcgplayer'] = round(float(p_tcg), 2)
+
+            # Card Kingdom
+            ck = card_p.get('cardkingdom', {})
+            p_ck = (ck.get('foil') if want_foil else ck.get('normal')) or ck.get('foil') or ck.get('normal')
+            if p_ck:
+                res['cardkingdom'] = round(float(p_ck), 2)
+
+            # Cardmarket
+            cm = card_p.get('cardmarket', {})
+            p_cm = (cm.get('foil') if want_foil else cm.get('normal')) or cm.get('foil') or cm.get('normal')
+            if p_cm:
+                res['cardmarket'] = round(float(p_cm) * EUR_USD_RATE, 2)
+                res['cardmarketEur'] = round(float(p_cm), 2)
+            elif p_tcg:
+                res['cardmarket'] = round(float(p_tcg) * 0.94, 2)
+
+            valid_vals = [v for k, v in res.items() if k in ['tcgplayer', 'cardkingdom', 'cardmarket'] and v is not None and v > 0]
+            if valid_vals:
+                res['all'] = round(sum(valid_vals) / len(valid_vals), 2)
+            elif p_tcg:
+                res['all'] = round(float(p_tcg), 2)
+
+            return res
+
         valid_arbs = []
         for a in arbs:
             # Parse contents JSON directly from DB
@@ -172,27 +337,80 @@ def export_all():
 
             sp_cat = (a.get("spCategory") or "").lower()
             sp_sub = (a.get("spSubtype") or "").lower()
+            sp_card_count = a.get("spCardCount")
             set_code = (a.get("setCode") or "").upper()
             box_price = float(a.get("boxMarketPrice") or 0.0)
 
             if box_price <= 0:
                 continue
 
+            # Enrich contents.card with genuine resolved prices across sellers
+            if contents and isinstance(contents, dict) and contents.get("card"):
+                for cd in contents["card"]:
+                    u = cd.get("uuid")
+                    if u:
+                        cd["prices"] = resolve_card_prices(u, cd.get("finishes"), cd.get("foil", False))
+
+            # Determine genuine pack count via recursive sealed hierarchy
+            pack_count, resolved_booster_code = resolve_product_packs_recursive(a.get("productUuid"))
+            card_count = None
+
+            if contents and isinstance(contents, dict) and contents.get("card"):
+                card_count = len(contents["card"])
+
+            if sp_card_count is not None and str(sp_card_count).isdigit() and int(sp_card_count) > 0:
+                card_count = int(sp_card_count)
+
+            # Non-booster products (like single-card promos, box sets, or decks):
+            if pack_count <= 0:
+                if contents and isinstance(contents, dict) and contents.get("card"):
+                    cards = contents["card"]
+                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all", 0.0)) for cd in cards)
+                    if singles_ev > 0:
+                        a.pop('spCategory', None)
+                        a.pop('spSubtype', None)
+                        a.pop('spCardCount', None)
+                        a['category'] = sp_cat if sp_cat in ["box_set", "deck"] else "other"
+                        a['boosterName'] = "single_card"
+                        a['packCount'] = 0
+                        a['cardCount'] = len(cards)
+                        a['packEvMin'] = 0.0
+                        a['packEvAvg'] = "0.00"
+                        a['packEvMid90'] = "0.00"
+                        a['packEvMax'] = 0.0
+                        a['completePct'] = "100.00"
+                        a['updatedAt'] = ""
+                        a['contents'] = contents
+                        a['boxEvMin'] = round(singles_ev, 2)
+                        a['boxEvAvg'] = round(singles_ev, 2)
+                        a['boxEvMid90'] = round(singles_ev, 2)
+                        a['boxEvMax'] = round(singles_ev, 2)
+                        profit = round(singles_ev - box_price, 2)
+                        roi = round((profit / box_price) * 100, 2) if box_price > 0 else 0.0
+                        a['profitUsd'] = profit
+                        a['roiPct'] = roi
+                        a['vendor'] = 'tcgplayer'
+                        a['priceMode'] = 'direct'
+                        valid_arbs.append(a)
+                continue
+
             set_boosters = ev_by_set.get(set_code, {})
             if not set_boosters:
                 continue
 
-            # Strictly database-driven booster selection (rely on database subtype, no title substring guessing)
+            # Booster selection
             matched_booster = None
-            if sp_sub in set_boosters:
+            if resolved_booster_code and resolved_booster_code in set_boosters:
+                matched_booster = resolved_booster_code
+            elif sp_sub in set_boosters:
                 matched_booster = sp_sub
-            elif "play" in set_boosters:
+            elif sp_cat == "booster_box" and "play" in set_boosters:
                 matched_booster = "play"
-            elif "draft" in set_boosters:
+            elif sp_cat == "booster_box" and "draft" in set_boosters:
                 matched_booster = "draft"
             elif "default" in set_boosters:
                 matched_booster = "default"
-            elif set_boosters:
+            elif len(set_boosters) == 1:
                 matched_booster = next(iter(set_boosters))
 
             if not matched_booster or matched_booster not in set_boosters:
@@ -201,33 +419,16 @@ def export_all():
             ev_info = set_boosters[matched_booster]
             pack_ev = float(ev_info.get("ev_average") or 0.0)
             pack_mid = float(ev_info.get("ev_mid90") or 0.0)
+            pack_min = float(ev_info.get("ev_min") or 0.0)
+            pack_max = float(ev_info.get("ev_max") or 0.0)
 
-            if pack_ev <= 0:
+            if pack_ev <= 0 or pack_count <= 0:
                 continue
 
-            # Strictly database-driven category & pack count logic:
-            # 1. If explicit database contents exist, use exact counts from database
-            # 2. Otherwise determine packs strictly by database category & subtype
-            packs = None
-            final_cat = sp_cat if sp_cat in ["booster_box", "booster_case", "booster_pack", "bundle", "deck", "box_set"] else "other"
-
-            if contents and isinstance(contents, dict) and contents.get("pack"):
-                packs = sum(int(p.get("count", 1) or 1) for p in contents["pack"])
-            elif contents and isinstance(contents, dict) and (contents.get("deck") or contents.get("variable") or contents.get("card")):
-                packs = 1
-            elif sp_cat in ["booster_pack", "deck", "box_set", "deck_box", "kit", "multiple_decks"]:
-                packs = 1
-            elif sp_cat == "booster_box":
-                packs = 12 if sp_sub == "collector" else (24 if sp_sub == "jumpstart" else 36)
-            elif sp_cat in ["booster_case", "bundle_case", "limited_aid_case"]:
-                packs = 72 if sp_sub == "collector" else (144 if sp_sub == "jumpstart" else 216)
-            elif sp_cat in ["bundle", "limited_aid_tool"]:
-                packs = 9
-            else:
-                packs = 1
-
-            box_ev_avg = round(pack_ev * packs, 2)
-            box_ev_mid90 = round(pack_mid * packs, 2)
+            box_ev_min = round(pack_min * pack_count, 2)
+            box_ev_avg = round(pack_ev * pack_count, 2)
+            box_ev_mid90 = round(pack_mid * pack_count, 2)
+            box_ev_max = round(pack_max * pack_count, 2)
             profit_usd = round(box_ev_avg - box_price, 2)
             roi_pct = round((profit_usd / box_price) * 100, 2)
 
@@ -236,15 +437,20 @@ def export_all():
             a.pop('spSubtype', None)
             a.pop('spCardCount', None)
 
-            a['category'] = final_cat
+            a['category'] = sp_cat if sp_cat in ["booster_box", "booster_case", "booster_pack", "bundle", "deck", "box_set"] else "other"
             a['boosterName'] = matched_booster
-            a['packCount'] = packs
+            a['packCount'] = pack_count
+            a['packEvMin'] = pack_min
             a['packEvAvg'] = str(pack_ev)
             a['packEvMid90'] = str(pack_mid)
+            a['packEvMax'] = pack_max
             a['completePct'] = str(ev_info.get("exact_match_pct", "100.00"))
             a['updatedAt'] = str(ev_info.get("updated_at") or "")
+            a['contents'] = contents
+            a['boxEvMin'] = box_ev_min
             a['boxEvAvg'] = box_ev_avg
             a['boxEvMid90'] = box_ev_mid90
+            a['boxEvMax'] = box_ev_max
             a['profitUsd'] = profit_usd
             a['roiPct'] = roi_pct
             a['vendor'] = 'tcgplayer'

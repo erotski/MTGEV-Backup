@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PreconstructedDeckDetail, DeckCardItem } from '../types';
-import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
+import { ManaCostRenderer } from './ManaCostRenderer';
 import {
   Layers3,
   Sparkles,
@@ -13,6 +13,14 @@ import {
   CheckCircle2,
   DollarSign,
   Crown,
+  LayoutGrid,
+  ListFilter,
+  Layers,
+  Sparkle,
+  Flame,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface PreconstructedDeckViewerProps {
@@ -24,6 +32,9 @@ interface PreconstructedDeckViewerProps {
   className?: string;
 }
 
+// In-memory cache for precon decks data file
+let preconDecksCache: Record<string, PreconstructedDeckDetail> | null = null;
+
 export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> = ({
   productId,
   productName,
@@ -32,252 +43,474 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
   estimatedEv,
   className = '',
 }) => {
-  // Try to match in PRECON_DECK_DETAILS
-  const deckDetail: PreconstructedDeckDetail = useMemo(() => {
-    const cleanId = (productId || '').toLowerCase();
-    const cleanName = (productName || '').toLowerCase();
+  const [allDecks, setAllDecks] = useState<Record<string, PreconstructedDeckDetail> | null>(
+    preconDecksCache
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(!preconDecksCache);
 
-    // Direct ID match
-    if (PRECON_DECK_DETAILS[cleanId]) {
-      return PRECON_DECK_DETAILS[cleanId];
+  // Grouping & Display States
+  const [groupBy, setGroupBy] = useState<'type' | 'rarity' | 'flat'>('type');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [rarityFilter, setRarityFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [cmcFilter, setCmcFilter] = useState<string>('all');
+  const [colorFilter, setColorFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'price_desc' | 'price_asc' | 'total_ev_desc' | 'name_asc' | 'cmc_desc' | 'cmc_asc' | 'rarity'>('total_ev_desc');
+  const [vendorMode, setVendorMode] = useState<'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom'>('all');
+  const [previewCard, setPreviewCard] = useState<DeckCardItem | null>(null);
+
+  // Load precon decks json
+  useEffect(() => {
+    if (preconDecksCache) {
+      setAllDecks(preconDecksCache);
+      setIsLoading(false);
+      return;
     }
 
-    // Name match
-    const matched = Object.values(PRECON_DECK_DETAILS).find((d) =>
-      cleanName.includes(d.commander.name.toLowerCase()) ||
-      cleanName.includes(d.theme.toLowerCase()) ||
-      (d.deckName && cleanName.includes(d.deckName.toLowerCase()))
-    );
+    let isMounted = true;
+    fetch('/data/precon_decks.json')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load precon decks');
+        return res.json();
+      })
+      .then((data: Record<string, PreconstructedDeckDetail>) => {
+        preconDecksCache = data;
+        if (isMounted) {
+          setAllDecks(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load precon_decks.json:', err);
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
 
-    if (matched) return matched;
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-    // Default synthesized precon deck structure
-    const isEldrazi = cleanName.includes('eldrazi');
-    const isTricky = cleanName.includes('tricky');
-    const isGraveyard = cleanName.includes('graveyard');
-    const isEnergy = cleanName.includes('energy');
+  // Match the deck for this product
+  const deckDetail: PreconstructedDeckDetail = useMemo(() => {
+    const cleanId = (productId || '').toLowerCase().trim();
+    const cleanName = (productName || '').toLowerCase().trim();
+    const cleanSet = (setCode || '').toUpperCase().trim();
 
-    if (isEldrazi) return PRECON_DECK_DETAILS['deck-mh3-eldrazi-incursion'];
-    if (isTricky) return PRECON_DECK_DETAILS['deck-mh3-tricky-terrain'];
-    if (isGraveyard) return PRECON_DECK_DETAILS['deck-mh3-graveyard-overdrive'];
-    if (isEnergy) return PRECON_DECK_DETAILS['deck-mh3-creative-energy'];
+    if (allDecks) {
+      const decksList = Object.values(allDecks) as PreconstructedDeckDetail[];
 
-    // Fallback generic precon deck
+      // 1. Direct ID match
+      if (allDecks[cleanId]) return allDecks[cleanId];
+      if (allDecks[productId]) return allDecks[productId];
+
+      // 2. Exact deck name match
+      for (const d of decksList) {
+        if (d.deckName && cleanName.includes(d.deckName.toLowerCase())) {
+          return d;
+        }
+      }
+
+      // 3. Keyword matching
+      for (const d of decksList) {
+        if (d.deckName) {
+          const keywords = d.deckName.toLowerCase().split(' ');
+          const matchedKeywords = keywords.filter(
+            (kw) => kw.length > 3 && cleanName.includes(kw)
+          );
+          if (matchedKeywords.length >= 2) {
+            return d;
+          }
+        }
+      }
+
+      // 4. Set match first deck if only 1 in set
+      const setDecks = decksList.filter(
+        (d) => d.setCode && d.setCode.toUpperCase() === cleanSet
+      );
+      if (setDecks.length === 1) return setDecks[0];
+    }
+
+    // Default synthesized precon deck structure if not in prebuilt json
     return {
-      deckName: productName,
+      deckName: productName || 'Preconstructed Commander Deck',
       setCode: setCode || 'MTG',
+      theme: 'Factory-Sealed 100-Card Ready-to-Play Commander Deck',
+      cardCount: 100,
+      totalSinglesEv: estimatedEv || marketPrice * 1.15 || 99.99,
       commander: {
-        name: 'Display Commander',
+        name: 'Face Commander',
         manaCost: '{2}{G}{U}',
         type: 'Legendary Creature',
-        text: 'Includes guaranteed foil face commander card designed specifically for Commander format.',
+        rarity: 'mythic',
+        text: 'Guaranteed foil etched face commander card designed specifically for the Commander format with dedicated synergy.',
         price: 9.99,
       },
-      cardCount: 100,
       colors: ['W', 'U', 'B', 'R', 'G'],
-      theme: 'Factory-Sealed 100-Card Ready-to-Play Preconstructed Deck',
       contentsSummary: {
-        creatures: 30,
+        creatures: 32,
         instantsAndSorceries: 18,
         artifactsAndEnchantments: 14,
         planeswalkers: 1,
-        lands: 37,
+        lands: 35,
       },
       keyCards: [
-        { name: 'Display Commander', count: 1, rarity: 'mythic', type: 'Creature', price: 9.99, foil: true, isCommander: true },
-        { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', price: 1.5 },
-        { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', price: 0.8 },
-        { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', price: 0.5 },
+        { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
+        { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+        { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+        { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
+      ],
+      cards: [
+        { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
+        { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+        { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+        { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
       ],
     };
-  }, [productId, productName, setCode]);
+  }, [allDecks, productId, productName, setCode, estimatedEv, marketPrice]);
 
-  // Card search and filter
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'price' | 'name'>('price');
+  // All cards array
+  const rawCards: DeckCardItem[] = useMemo(() => {
+    if (deckDetail.cards && deckDetail.cards.length > 0) {
+      return deckDetail.cards;
+    }
+    if (deckDetail.keyCards && deckDetail.keyCards.length > 0) {
+      return deckDetail.keyCards;
+    }
+    return [];
+  }, [deckDetail]);
 
-  const filteredCards = useMemo(() => {
-    return deckDetail.keyCards
+  // Helper to compute unit card price dynamically based on vendorMode
+  const getCardPrice = (c: DeckCardItem): number => {
+    if (vendorMode === 'cardkingdom' && c.prices?.cardkingdom) return c.prices.cardkingdom;
+    if (vendorMode === 'cardmarket' && c.prices?.cardmarket) return c.prices.cardmarket;
+    if (vendorMode === 'tcgplayer' && (c.prices?.tcgplayer || c.price)) return c.prices?.tcgplayer || c.price;
+    if (vendorMode === 'all') {
+      if (c.prices?.all) return c.prices.all;
+      const vals: number[] = [];
+      if (c.prices?.tcgplayer || c.price) vals.push(c.prices?.tcgplayer || c.price);
+      if (c.prices?.cardmarket) vals.push(c.prices.cardmarket);
+      if (c.prices?.cardkingdom) vals.push(c.prices.cardkingdom);
+      if (vals.length > 0) {
+        return vals.reduce((sum, v) => sum + v, 0) / vals.length;
+      }
+    }
+    return c.price || 0;
+  };
+
+  // Total calculated EV of currently displayed cards based on selected vendor mode
+  const currentEvTotal = useMemo(() => {
+    return rawCards.reduce((sum, c) => sum + getCardPrice(c) * (c.count || 1), 0);
+  }, [rawCards, vendorMode]);
+
+  // Total quantity of cards in deck (accounting for multiple basic lands)
+  const totalCardsInDeck = useMemo(() => {
+    return rawCards.reduce((sum, c) => sum + (c.count || 1), 0);
+  }, [rawCards]);
+
+  // Filtered & Sorted Cards
+  const processedCards = useMemo(() => {
+    return rawCards
       .filter((card) => {
-        const matchesSearch = card.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = typeFilter === 'all' || card.type.toLowerCase().includes(typeFilter.toLowerCase());
-        return matchesSearch && matchesType;
+        // Search Filter
+        const matchesSearch =
+          card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          card.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (card.manaCost && card.manaCost.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        // Rarity Filter
+        const matchesRarity =
+          rarityFilter === 'all' || card.rarity.toLowerCase() === rarityFilter.toLowerCase();
+
+        // Card Type Filter
+        const matchesType =
+          typeFilter === 'all' ||
+          (card.primaryType && card.primaryType.toLowerCase() === typeFilter.toLowerCase()) ||
+          card.type.toLowerCase().includes(typeFilter.toLowerCase());
+
+        // Mana Value (CMC) Filter
+        const mv = card.manaValue ?? 0;
+        let matchesCmc = true;
+        if (cmcFilter === '0') matchesCmc = mv === 0;
+        else if (cmcFilter === '1') matchesCmc = mv === 1;
+        else if (cmcFilter === '2') matchesCmc = mv === 2;
+        else if (cmcFilter === '3') matchesCmc = mv === 3;
+        else if (cmcFilter === '4') matchesCmc = mv === 4;
+        else if (cmcFilter === '5') matchesCmc = mv === 5;
+        else if (cmcFilter === '6+') matchesCmc = mv >= 6;
+
+        // Color Identity Filter
+        let matchesColor = true;
+        const cost = card.manaCost || '';
+        if (colorFilter === 'colorless') {
+          matchesColor = !cost.includes('W') && !cost.includes('U') && !cost.includes('B') && !cost.includes('R') && !cost.includes('G');
+        } else if (colorFilter === 'multi') {
+          const colors = ['W', 'U', 'B', 'R', 'G'].filter((c) => cost.includes(c));
+          matchesColor = colors.length > 1;
+        } else if (colorFilter !== 'all') {
+          matchesColor = cost.toUpperCase().includes(colorFilter.toUpperCase());
+        }
+
+        return matchesSearch && matchesRarity && matchesType && matchesCmc && matchesColor;
       })
       .sort((a, b) => {
-        if (sortBy === 'price') return b.price - a.price;
-        return a.name.localeCompare(b.name);
-      });
-  }, [deckDetail, searchTerm, typeFilter, sortBy]);
+        const aUnitPrice = getCardPrice(a);
+        const bUnitPrice = getCardPrice(b);
+        const aTotalVal = aUnitPrice * (a.count || 1);
+        const bTotalVal = bUnitPrice * (b.count || 1);
 
-  // Total singles EV of listed key cards
-  const keyCardsTotalValue = useMemo(() => {
-    return deckDetail.keyCards.reduce((sum, c) => sum + c.price * c.count, 0);
-  }, [deckDetail]);
+        if (sortBy === 'total_ev_desc') return bTotalVal - aTotalVal;
+        if (sortBy === 'price_desc') return bUnitPrice - aUnitPrice;
+        if (sortBy === 'price_asc') return aUnitPrice - bUnitPrice;
+        if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+        if (sortBy === 'cmc_desc') return (b.manaValue || 0) - (a.manaValue || 0);
+        if (sortBy === 'cmc_asc') return (a.manaValue || 0) - (b.manaValue || 0);
+        if (sortBy === 'rarity') {
+          const rWeight: Record<string, number> = { mythic: 4, rare: 3, uncommon: 2, common: 1, land: 0 };
+          return (rWeight[b.rarity.toLowerCase()] || 0) - (rWeight[a.rarity.toLowerCase()] || 0);
+        }
+        return 0;
+      });
+  }, [rawCards, searchTerm, rarityFilter, typeFilter, cmcFilter, colorFilter, sortBy, vendorMode]);
+
+  // Grouped by Type
+  const cardsGroupedByType = useMemo(() => {
+    const groups: Record<string, { count: number; ev: number; cards: DeckCardItem[] }> = {};
+    const typeOrder = ['Creature', 'Planeswalker', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Battle', 'Land', 'Other'];
+
+    typeOrder.forEach((t) => {
+      groups[t] = { count: 0, ev: 0, cards: [] };
+    });
+
+    processedCards.forEach((c) => {
+      const pType = c.primaryType || 'Other';
+      if (!groups[pType]) {
+        groups[pType] = { count: 0, ev: 0, cards: [] };
+      }
+      const qty = c.count || 1;
+      groups[pType].count += qty;
+      groups[pType].ev += getCardPrice(c) * qty;
+      groups[pType].cards.push(c);
+    });
+
+    return Object.entries(groups).filter(([_, data]) => data.cards.length > 0);
+  }, [processedCards, vendorMode]);
+
+  // Grouped by Rarity
+  const cardsGroupedByRarity = useMemo(() => {
+    const groups: Record<string, { count: number; ev: number; cards: DeckCardItem[] }> = {
+      mythic: { count: 0, ev: 0, cards: [] },
+      rare: { count: 0, ev: 0, cards: [] },
+      uncommon: { count: 0, ev: 0, cards: [] },
+      common: { count: 0, ev: 0, cards: [] },
+    };
+
+    processedCards.forEach((c) => {
+      const r = (c.rarity || 'common').toLowerCase();
+      if (!groups[r]) {
+        groups[r] = { count: 0, ev: 0, cards: [] };
+      }
+      const qty = c.count || 1;
+      groups[r].count += qty;
+      groups[r].ev += getCardPrice(c) * qty;
+      groups[r].cards.push(c);
+    });
+
+    const rarityOrder = ['mythic', 'rare', 'uncommon', 'common'];
+    return rarityOrder
+      .map((r) => [r, groups[r]] as [string, { count: number; ev: number; cards: DeckCardItem[] }])
+      .filter(([_, data]) => data && data.cards.length > 0);
+  }, [processedCards, vendorMode]);
+
+  const netProfit = Number((currentEvTotal - marketPrice).toFixed(2));
+  const netRoi = marketPrice > 0 ? Number(((netProfit / marketPrice) * 100).toFixed(1)) : 0;
+
+  // Processed cards total count (accounting for multiple basic lands)
+  const processedCardsTotalCount = useMemo(() => {
+    return processedCards.reduce((sum, c) => sum + (c.count || 1), 0);
+  }, [processedCards]);
 
   return (
     <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-6 ${className}`}>
-      {/* Header */}
-      <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Banner */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Layers3 className="w-5 h-5 text-amber-400" />
-            <h4 className="text-base font-bold tracking-tight">Preconstructed Deck Card Content</h4>
-            <span className="text-[11px] font-mono font-bold bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded border border-amber-400/30">
-              {deckDetail.cardCount} Cards Total
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="font-mono text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded shadow-2xs">
+              Preconstructed Product
+            </span>
+            <span className="text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              100% Guaranteed Card Contents (No RNG)
             </span>
           </div>
-          <p className="text-xs text-slate-300 mt-1 max-w-xl">
-            Preconstructed decks contain fixed, non-randomized card content. Explore the face commander, card type breakdown, and high-value singles included in this product.
+          <h4 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+            <Layers3 className="w-5 h-5 text-amber-400 shrink-0" />
+            <span>{deckDetail.deckName}</span>
+          </h4>
+          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            {deckDetail.theme || 'Complete 100-card factory-sealed decklist with live singles pricing, mana collation, and rarity breakdown.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono self-start sm:self-auto shrink-0">
-          <div className="bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+        {/* Financial Stat Pills */}
+        <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono shrink-0">
+          <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 text-right">
             <span className="text-slate-400 block text-[10px]">Market Price</span>
-            <span className="font-bold text-white">${marketPrice.toFixed(2)}</span>
+            <span className="font-black text-white text-sm">${marketPrice.toFixed(2)}</span>
           </div>
-          <div className="bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
-            <span className="text-emerald-300 block text-[10px]">Estimated EV</span>
-            <span className="font-bold text-emerald-300">${estimatedEv.toFixed(2)}</span>
+
+          <div className="bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-400/30 text-right">
+            <span className="text-emerald-300 block text-[10px]">
+              {vendorMode === 'all' ? 'All Vendors Avg EV' : `${vendorMode.toUpperCase()} Total EV`}
+            </span>
+            <span className="font-black text-emerald-300 text-sm">
+              ${currentEvTotal.toFixed(2)}
+            </span>
+          </div>
+
+          <div
+            className={`px-3 py-1.5 rounded-xl border text-right ${
+              netProfit >= 0
+                ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
+                : 'bg-rose-500/20 border-rose-400/30 text-rose-300'
+            }`}
+          >
+            <span className="text-[10px] block opacity-80">Net Margin</span>
+            <span className="font-black text-sm">
+              {netProfit >= 0 ? `+${netRoi}% (+$${netProfit})` : `${netRoi}% ($${netProfit})`}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Commander Showcase & Deck Identity */}
-      <div className="px-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Commander Spotlight & Strategy Overview */}
+      <div className="px-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Commander Card Art Frame */}
-        <div className="bg-gradient-to-br from-indigo-950 to-slate-900 text-white p-4 rounded-xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
+        <div className="lg:col-span-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
           <div>
-            <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center justify-between gap-2 mb-2.5">
               <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded flex items-center gap-1">
                 <Crown className="w-3 h-3" />
-                Face Commander
+                Guaranteed Face Commander
               </span>
-              <span className="text-[11px] font-mono text-amber-300 font-bold">
-                ${deckDetail.commander.price.toFixed(2)}
+              <span className="text-xs font-mono text-amber-300 font-black">
+                ${getCardPrice(deckDetail.commander as any).toFixed(2)}
               </span>
             </div>
 
             {deckDetail.commander.imageUrl ? (
-              <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-800 relative mb-3 border border-indigo-700/50 shadow-inner">
+              <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl overflow-hidden bg-slate-900 relative mb-3.5 border border-indigo-500/30 shadow-xl group">
                 <img
                   src={deckDetail.commander.imageUrl}
                   alt={deckDetail.commander.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
               </div>
             ) : (
-              <div className="aspect-[5/7] w-full rounded-lg bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center p-4 text-center mb-3">
-                <Crown className="w-8 h-8 text-amber-400 mb-2" />
-                <span className="text-xs font-bold">{deckDetail.commander.name}</span>
+              <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center p-4 text-center mb-3.5">
+                <Crown className="w-10 h-10 text-amber-400 mb-2" />
+                <span className="text-sm font-bold text-white">{deckDetail.commander.name}</span>
+                <span className="text-xs text-indigo-300 mt-1 font-mono">{deckDetail.commander.type}</span>
               </div>
             )}
 
-            <div className="font-bold text-sm text-white mb-0.5">
-              {deckDetail.commander.name}
+            <div className="font-black text-base text-white mb-0.5 flex items-center justify-between gap-2">
+              <span className="truncate">{deckDetail.commander.name}</span>
+              <ManaCostRenderer manaCost={deckDetail.commander.manaCost} size="md" />
             </div>
             <div className="text-xs text-indigo-300 font-mono mb-2">
               {deckDetail.commander.type}
             </div>
             {deckDetail.commander.text && (
-              <p className="text-[11px] text-slate-300 line-clamp-3 leading-relaxed bg-black/30 p-2 rounded border border-white/10">
+              <p className="text-[11px] text-slate-300 line-clamp-4 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-white/10">
                 {deckDetail.commander.text}
               </p>
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-            <span>Foil Etched Display Card</span>
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300 font-mono">
+            <span className="text-amber-300 font-bold flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              Foil-Etched Display Card
+            </span>
             <span className="text-emerald-400 font-bold">100% Guaranteed</span>
           </div>
         </div>
 
-        {/* Deck Strategy, Color Identity & Inclusions */}
-        <div className="md:col-span-2 space-y-4">
-          {/* Theme card */}
+        {/* Deck Strategy, Inclusions & Card Type Matrix */}
+        <div className="lg:col-span-8 space-y-4">
+          {/* Deck Strategy */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
-              Deck Archetype & Strategy
+            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Deck Theme & Archetype Strategy</span>
             </div>
-            <div className="text-sm font-semibold text-slate-900">
-              {deckDetail.theme}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] font-bold text-slate-600 font-mono">Color Identity:</span>
-              {deckDetail.colors.map((color, cIdx) => (
-                <span
-                  key={cIdx}
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-black uppercase bg-slate-200 text-slate-800 border border-slate-300 shadow-2xs"
-                >
-                  {color}
-                </span>
-              ))}
-            </div>
+            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+              {deckDetail.theme || 'Engineered out of the box with ready-to-play mana base, ramp, removal, card advantage, and win-conditions.'}
+            </p>
           </div>
 
-          {/* Type Distribution Breakdown Cards */}
-          <div>
-            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-2">
-              Card Content Breakdown by Type ({deckDetail.cardCount} Cards)
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                <span className="block text-[10px] font-mono text-slate-500">Creatures</span>
-                <span className="text-base font-black text-slate-900 font-mono">
-                  {deckDetail.contentsSummary.creatures}
-                </span>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                <span className="block text-[10px] font-mono text-slate-500">Spells (Inst/Sorc)</span>
-                <span className="text-base font-black text-slate-900 font-mono">
-                  {deckDetail.contentsSummary.instantsAndSorceries}
-                </span>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                <span className="block text-[10px] font-mono text-slate-500">Artifacts/Ench</span>
-                <span className="text-base font-black text-slate-900 font-mono">
-                  {deckDetail.contentsSummary.artifactsAndEnchantments}
-                </span>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                <span className="block text-[10px] font-mono text-slate-500">Planeswalkers</span>
-                <span className="text-base font-black text-slate-900 font-mono">
-                  {deckDetail.contentsSummary.planeswalkers}
-                </span>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
-                <span className="block text-[10px] font-mono text-slate-500">Lands</span>
-                <span className="text-base font-black text-slate-900 font-mono">
-                  {deckDetail.contentsSummary.lands}
-                </span>
-              </div>
-            </div>
+          {/* Quick Rarity & Type Summaries */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {deckDetail.raritySummary ? (
+              Object.entries(deckDetail.raritySummary).map(([r, data]) => (
+                <div key={r} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
+                  <span className="text-[10px] font-mono font-bold uppercase block text-slate-500">
+                    {r} ({data.count})
+                  </span>
+                  <span className="text-sm font-black text-slate-900 font-mono">
+                    ${data.ev.toFixed(2)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Mythic Rares</span>
+                  <span className="text-sm font-black text-amber-700 font-mono">Guaranteed</span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Rares</span>
+                  <span className="text-sm font-black text-slate-900 font-mono">30+ Cards</span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Uncommons</span>
+                  <span className="text-sm font-black text-slate-900 font-mono">25+ Cards</span>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Commons / Lands</span>
+                  <span className="text-sm font-black text-slate-900 font-mono">Complete</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Guaranteed Extra Accessories */}
-          <div className="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-200 space-y-1.5 text-xs text-indigo-950">
+          <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200 space-y-2 text-xs text-indigo-950">
             <div className="font-bold flex items-center gap-1.5 text-indigo-900">
               <Gift className="w-4 h-4 text-indigo-600" />
-              <span>Included Factory Accessories & Extras:</span>
+              <span>Included Factory Sealed Accessories & Physical Extras:</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-indigo-900/90 pt-1">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>1x 2-Card Collector Booster Sample Pack</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>10x Double-Sided Token Cards</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>1x Deck Box + 1x Life Tracker Wheel</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>1x Foil-Etched Display Commander</span>
               </div>
             </div>
@@ -285,111 +518,545 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
         </div>
       </div>
 
-      {/* High-Value Included Cards Table (Searchable & Filterable) */}
-      <div className="px-6 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-200">
-          <div>
-            <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>High-Value Singles & Key Cards in this Deck ({deckDetail.keyCards.length})</span>
-            </div>
-            <span className="text-[11px] text-slate-500">
-              Card prices pulled from live marketplace singles values:
+      {/* Interactive Controls Bar: Group By, View Mode, Search, Filters, Vendor */}
+      <div className="px-6 pt-3 space-y-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+          {/* Left: Grouping Mode Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 font-mono uppercase mr-1">
+              Group By:
             </span>
+            <button
+              onClick={() => setGroupBy('type')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
+                groupBy === 'type'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Card Type</span>
+            </button>
+            <button
+              onClick={() => setGroupBy('rarity')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
+                groupBy === 'rarity'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Sparkle className="w-3.5 h-3.5" />
+              <span>Rarity</span>
+            </button>
+            <button
+              onClick={() => setGroupBy('flat')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
+                groupBy === 'flat'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <ListFilter className="w-3.5 h-3.5" />
+              <span>All 100 Cards</span>
+            </button>
           </div>
 
-          {/* Search and Filters */}
+          {/* Right: Search, Filter, Sort, Vendor, View Layout */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Search */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search cards..."
-                className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-indigo-600 w-36 sm:w-44"
+                placeholder="Search cards or mana..."
+                className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-indigo-600 w-32 sm:w-44 shadow-2xs"
               />
             </div>
 
+            {/* Mana Value (CMC) Filter */}
+            <select
+              value={cmcFilter}
+              onChange={(e) => setCmcFilter(e.target.value)}
+              className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium cursor-pointer shadow-2xs"
+              title="Filter by Mana Value / CMC"
+            >
+              <option value="all">All Mana Values</option>
+              <option value="0">0 CMC / Lands</option>
+              <option value="1">1 CMC</option>
+              <option value="2">2 CMC</option>
+              <option value="3">3 CMC</option>
+              <option value="4">4 CMC</option>
+              <option value="5">5 CMC</option>
+              <option value="6+">6+ CMC</option>
+            </select>
+
+            {/* Color Identity Filter */}
+            <select
+              value={colorFilter}
+              onChange={(e) => setColorFilter(e.target.value)}
+              className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium cursor-pointer shadow-2xs"
+              title="Filter by Color"
+            >
+              <option value="all">All Colors</option>
+              <option value="W">White (W)</option>
+              <option value="U">Blue (U)</option>
+              <option value="B">Black (B)</option>
+              <option value="R">Red (R)</option>
+              <option value="G">Green (G)</option>
+              <option value="multi">Multicolor</option>
+              <option value="colorless">Colorless</option>
+            </select>
+
+            {/* Type Filter */}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium cursor-pointer"
+              className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium cursor-pointer shadow-2xs"
             >
               <option value="all">All Types</option>
               <option value="creature">Creatures</option>
-              <option value="land">Lands</option>
+              <option value="instant">Instants</option>
+              <option value="sorcery">Sorceries</option>
               <option value="artifact">Artifacts</option>
               <option value="enchantment">Enchantments</option>
+              <option value="planeswalker">Planeswalkers</option>
+              <option value="land">Lands</option>
             </select>
 
-            <button
-              onClick={() => setSortBy(sortBy === 'price' ? 'name' : 'price')}
-              className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition cursor-pointer"
+            {/* Rarity Filter */}
+            <select
+              value={rarityFilter}
+              onChange={(e) => setRarityFilter(e.target.value)}
+              className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium cursor-pointer shadow-2xs"
             >
-              <ArrowUpDown className="w-3 h-3" />
-              <span>{sortBy === 'price' ? 'By Price' : 'By Name'}</span>
-            </button>
+              <option value="all">All Rarities</option>
+              <option value="mythic">Mythic Rares</option>
+              <option value="rare">Rares</option>
+              <option value="uncommon">Uncommons</option>
+              <option value="common">Commons</option>
+            </select>
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium cursor-pointer shadow-2xs"
+            >
+              <option value="total_ev_desc">Total Value: High to Low</option>
+              <option value="price_desc">Unit Price: High to Low</option>
+              <option value="price_asc">Unit Price: Low to High</option>
+              <option value="name_asc">Name: A to Z</option>
+              <option value="cmc_desc">Mana Cost: High to Low</option>
+              <option value="cmc_asc">Mana Cost: Low to High</option>
+              <option value="rarity">Rarity (Mythic First)</option>
+            </select>
+
+            {/* Vendor Price Mode with All Vendors Option */}
+            <select
+              value={vendorMode}
+              onChange={(e) => setVendorMode(e.target.value as any)}
+              className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
+            >
+              <option value="all">All Vendors (Average $)</option>
+              <option value="tcgplayer">TCGplayer ($)</option>
+              <option value="cardmarket">Cardmarket (€ / $)</option>
+              <option value="cardkingdom">Card Kingdom ($)</option>
+            </select>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 shadow-2xs">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'table' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Table View"
+              >
+                <ListFilter className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Visual Card Grid"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Cards Table */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-900 text-white font-mono uppercase text-[10px]">
-              <tr>
-                <th className="py-2.5 px-3">Card Name</th>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-3">Rarity</th>
-                <th className="py-2.5 px-3 text-center">Finish</th>
-                <th className="py-2.5 px-3 text-center">Qty</th>
-                <th className="py-2.5 px-3 text-right">Singles Value</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {filteredCards.map((card, idx) => (
-                <tr key={idx} className="hover:bg-indigo-50/30 transition">
-                  <td className="py-2 px-3 font-semibold text-slate-900 flex items-center gap-2">
-                    {card.isCommander && (
-                      <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Face Commander" />
-                    )}
-                    <span>{card.name}</span>
-                  </td>
-                  <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">{card.type}</td>
-                  <td className="py-2 px-3">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
-                        card.rarity === 'mythic'
-                          ? 'bg-amber-100 text-amber-900 border-amber-300'
-                          : card.rarity === 'rare'
-                          ? 'bg-yellow-50 text-yellow-800 border-yellow-300'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {card.rarity}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3 text-center">
-                    {card.foil ? (
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                        Foil
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-[10px]">Regular</span>
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-center font-mono font-bold text-slate-700">
-                    {card.count}x
-                  </td>
-                  <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600">
-                    ${card.price.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Results Counter Banner */}
+        <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-mono">
+          <span>
+            Showing <strong className="text-slate-900">{processedCardsTotalCount}</strong> cards ({processedCards.length} unique entries) of{' '}
+            <strong className="text-slate-900">{totalCardsInDeck}</strong> total cards
+          </span>
+          <span>
+            {vendorMode === 'all' ? 'All Vendors Avg Subset EV: ' : 'Subset EV: '}
+            <strong className="text-indigo-600 font-black">
+              $
+              {processedCards
+                .reduce((sum, c) => sum + getCardPrice(c) * (c.count || 1), 0)
+                .toFixed(2)}
+            </strong>
+          </span>
         </div>
       </div>
+
+      {/* Main Card Content Display */}
+      <div className="px-6 pb-6 space-y-6">
+        {/* GROUPED BY CARD TYPE */}
+        {groupBy === 'type' && (
+          <div className="space-y-6">
+            {cardsGroupedByType.map(([typeTitle, groupData]) => (
+              <div
+                key={typeTitle}
+                className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden"
+              >
+                {/* Group Header */}
+                <div className="px-4 py-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black uppercase text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-300">
+                      {typeTitle}
+                    </span>
+                    <span className="text-xs font-bold text-slate-600">
+                      ({groupData.count} {groupData.count === 1 ? 'Card' : 'Cards'})
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                    Group EV: ${groupData.ev.toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Group Content */}
+                {viewMode === 'table' ? (
+                  <DeckTableSection
+                    cards={groupData.cards}
+                    vendorMode={vendorMode}
+                    getCardPrice={getCardPrice}
+                    onPreview={setPreviewCard}
+                  />
+                ) : (
+                  <DeckGridSection
+                    cards={groupData.cards}
+                    getCardPrice={getCardPrice}
+                    onPreview={setPreviewCard}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* GROUPED BY RARITY */}
+        {groupBy === 'rarity' && (
+          <div className="space-y-6">
+            {cardsGroupedByRarity.map(([rarityName, groupData]) => (
+              <div
+                key={rarityName}
+                className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden"
+              >
+                {/* Group Header */}
+                <div className="px-4 py-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`font-mono text-xs font-black uppercase px-2.5 py-1 rounded-lg border ${
+                        rarityName === 'mythic'
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : rarityName === 'rare'
+                          ? 'bg-yellow-50 text-yellow-800 border-yellow-300'
+                          : rarityName === 'uncommon'
+                          ? 'bg-slate-200 text-slate-800 border-slate-300'
+                          : 'bg-white text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {rarityName}
+                    </span>
+                    <span className="text-xs font-bold text-slate-600">
+                      ({groupData.count} {groupData.count === 1 ? 'Card' : 'Cards'})
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                    Group EV: ${groupData.ev.toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Group Content */}
+                {viewMode === 'table' ? (
+                  <DeckTableSection
+                    cards={groupData.cards}
+                    vendorMode={vendorMode}
+                    getCardPrice={getCardPrice}
+                    onPreview={setPreviewCard}
+                  />
+                ) : (
+                  <DeckGridSection
+                    cards={groupData.cards}
+                    getCardPrice={getCardPrice}
+                    onPreview={setPreviewCard}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* FLAT LIST / ALL 100 CARDS */}
+        {groupBy === 'flat' && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            {viewMode === 'table' ? (
+              <DeckTableSection
+                cards={processedCards}
+                vendorMode={vendorMode}
+                getCardPrice={getCardPrice}
+                onPreview={setPreviewCard}
+              />
+            ) : (
+              <DeckGridSection
+                cards={processedCards}
+                getCardPrice={getCardPrice}
+                onPreview={setPreviewCard}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Card Visual Preview Modal */}
+      {previewCard && (
+        <div
+          className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setPreviewCard(null)}
+        >
+          <div
+            className="bg-slate-900 text-white rounded-2xl max-w-sm w-full p-4 border border-slate-700 shadow-2xl overflow-hidden animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <span className="font-bold text-sm truncate">{previewCard.name}</span>
+              <button
+                onClick={() => setPreviewCard(null)}
+                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {previewCard.imageUrl ? (
+              <img
+                src={previewCard.imageUrl}
+                alt={previewCard.name}
+                className="w-full rounded-xl shadow-lg mb-3"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="aspect-[5/7] bg-slate-800 rounded-xl flex items-center justify-center mb-3 text-slate-500 font-mono text-xs">
+                No Image Available
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-xs font-mono pt-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400">{previewCard.type}</span>
+                {previewCard.manaCost && (
+                  <ManaCostRenderer manaCost={previewCard.manaCost} size="sm" />
+                )}
+              </div>
+              <div className="text-right">
+                <span className="font-black text-amber-400 text-sm block">
+                  ${(getCardPrice(previewCard) * (previewCard.count || 1)).toFixed(2)}
+                </span>
+                {(previewCard.count || 1) > 1 && (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {previewCard.count}x @ ${getCardPrice(previewCard).toFixed(2)} ea
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Full Table Subcomponent with Mana Cost column
+interface TableSectionProps {
+  cards: DeckCardItem[];
+  vendorMode: 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
+  getCardPrice: (card: DeckCardItem) => number;
+  onPreview: (card: DeckCardItem) => void;
+}
+
+const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getCardPrice, onPreview }) => {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs border-collapse">
+        <thead className="bg-slate-900 text-white font-mono uppercase text-[10px]">
+          <tr>
+            <th className="py-2.5 px-3">Card Name</th>
+            <th className="py-2.5 px-3 text-center">Mana Cost</th>
+            <th className="py-2.5 px-3">Type Line</th>
+            <th className="py-2.5 px-3">Rarity</th>
+            <th className="py-2.5 px-3 text-center">Finish</th>
+            <th className="py-2.5 px-3 text-center">Qty</th>
+            <th className="py-2.5 px-3 text-right">
+              {vendorMode === 'all'
+                ? 'Avg Unit Price'
+                : vendorMode === 'cardmarket'
+                ? 'Cardmarket Price'
+                : vendorMode === 'cardkingdom'
+                ? 'Card Kingdom'
+                : 'Unit Price'}
+            </th>
+            <th className="py-2.5 px-3 text-right font-bold text-emerald-300">
+              Total EV
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {cards.map((card, idx) => {
+            const unitVal = getCardPrice(card);
+            const qty = card.count || 1;
+            const totalVal = unitVal * qty;
+
+            return (
+              <tr
+                key={idx}
+                onClick={() => onPreview(card)}
+                className="hover:bg-indigo-50/40 transition cursor-pointer group"
+              >
+                <td className="py-2 px-3 font-semibold text-slate-900 flex items-center gap-2">
+                  {card.isCommander && (
+                    <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Face Commander" />
+                  )}
+                  <span className="group-hover:text-indigo-600 transition truncate max-w-xs">
+                    {card.name}
+                  </span>
+                </td>
+                <td className="py-2 px-3 text-center">
+                  <ManaCostRenderer manaCost={card.manaCost} size="sm" />
+                </td>
+                <td className="py-2 px-3 text-slate-500 font-mono text-[11px] truncate max-w-[180px]">
+                  {card.type}
+                </td>
+                <td className="py-2 px-3">
+                  <span
+                    className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
+                      card.rarity === 'mythic'
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : card.rarity === 'rare'
+                        ? 'bg-yellow-50 text-yellow-800 border-yellow-300'
+                        : card.rarity === 'uncommon'
+                        ? 'bg-slate-200 text-slate-700 border-slate-300'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {card.rarity}
+                  </span>
+                </td>
+                <td className="py-2 px-3 text-center">
+                  {card.foil || card.isCommander ? (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      Foil
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-[10px]">Nonfoil</span>
+                  )}
+                </td>
+                <td className="py-2 px-3 text-center font-mono font-bold text-slate-800">
+                  <span className={qty > 1 ? 'bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded text-[10px] font-black' : ''}>
+                    {qty}x
+                  </span>
+                </td>
+                <td className="py-2 px-3 text-right font-mono font-medium text-slate-600">
+                  ${unitVal.toFixed(2)}
+                </td>
+                <td className="py-2 px-3 text-right font-mono font-black text-emerald-600 text-xs">
+                  ${totalVal.toFixed(2)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// Visual Grid Subcomponent with Mana Cost & Qty Badges
+interface GridSectionProps {
+  cards: DeckCardItem[];
+  getCardPrice: (card: DeckCardItem) => number;
+  onPreview: (card: DeckCardItem) => void;
+}
+
+const DeckGridSection: React.FC<GridSectionProps> = ({ cards, getCardPrice, onPreview }) => {
+  return (
+    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {cards.map((card, idx) => {
+        const unitVal = getCardPrice(card);
+        const qty = card.count || 1;
+        const totalVal = unitVal * qty;
+
+        return (
+          <div
+            key={idx}
+            onClick={() => onPreview(card)}
+            className="bg-slate-50 hover:bg-white rounded-xl border border-slate-200 hover:border-indigo-300 p-2 text-xs flex flex-col justify-between transition cursor-pointer hover:shadow-md group"
+          >
+            {card.imageUrl ? (
+              <div className="aspect-[5/7] rounded-lg overflow-hidden bg-slate-900 mb-2 border border-slate-200 relative">
+                <img
+                  src={card.imageUrl}
+                  alt={card.name}
+                  className="w-full h-full object-cover transition duration-200 group-hover:scale-105"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+                {qty > 1 && (
+                  <span className="absolute top-1.5 right-1.5 bg-indigo-900/90 backdrop-blur-xs text-white text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow">
+                    {qty}x
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="aspect-[5/7] rounded-lg bg-slate-800 text-white flex flex-col items-center justify-center p-2 text-center mb-2 relative">
+                <span className="font-bold text-[11px] line-clamp-2">{card.name}</span>
+                {qty > 1 && (
+                  <span className="absolute top-1.5 right-1.5 bg-indigo-600 text-white text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow">
+                    {qty}x
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between gap-1">
+                <div className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition">
+                  {card.name}
+                </div>
+                {card.manaCost && (
+                  <div className="shrink-0 scale-90 origin-right">
+                    <ManaCostRenderer manaCost={card.manaCost} size="sm" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between font-mono text-[10px]">
+                <span className="text-slate-500 uppercase">{card.rarity}</span>
+                <span className="font-black text-emerald-600 text-xs">
+                  ${totalVal.toFixed(2)}
+                  {qty > 1 && <span className="text-[9px] text-slate-400 font-normal block">${unitVal.toFixed(2)} ea</span>}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

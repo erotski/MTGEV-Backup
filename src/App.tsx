@@ -6,7 +6,7 @@ import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
 import { CubeBuilderStudio } from './components/CubeBuilderStudio';
 import { AdminPortal } from './components/AdminPortal';
-import { TrendingUp, Layers, Sparkles, Box, Sliders, Dices, Package, Database, Download } from 'lucide-react';
+import { TrendingUp, Layers, Sparkles, Box, Sliders, Dices, Package, Database } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'cube' | 'admin'>('arbitrage');
@@ -145,18 +145,6 @@ export default function App() {
                 Admin Portal
               </button>
             </div>
-
-            {/* Direct 1-Click Codebase Export ZIP */}
-            <a
-              id="export-zip-btn"
-              href="/mtg-ev-calc-latest.zip"
-              download="mtg-ev-calc-latest.zip"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition shadow-xs cursor-pointer"
-              title="Download clean codebase ZIP to sync with GitHub"
-            >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
-              <span>Export ZIP</span>
-            </a>
           </div>
         </div>
       </header>

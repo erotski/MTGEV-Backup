@@ -43,11 +43,30 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
-  const [sortBy, setSortBy] = useState<'roi' | 'profit' | 'boxPrice' | 'boxEv'>('roi');
+  const [evBasis, setEvBasis] = useState<'min' | 'mid90' | 'avg' | 'max'>('avg');
+  const [sortBy, setSortBy] = useState<'roi' | 'profit' | 'boxPrice' | 'boxEv' | 'boxMid90' | 'boxMin' | 'boxMax' | 'packs' | 'cards'>('roi');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
 
-  // Dynamically compute adjusted pricing and EV based on selected PriceMode & Vendor
+  const getCardCount = (box: BoxArbitrageRecord): number => {
+    if (typeof box.cardCount === 'number' && box.cardCount > 0) return box.cardCount;
+    if (box.contents?.card && Array.isArray(box.contents.card) && box.contents.card.length > 0) {
+      return box.contents.card.reduce((sum: number, c: any) => sum + (c.count || 1), 0);
+    }
+    if (box.contents?.deck && Array.isArray(box.contents.deck) && box.contents.deck.length > 0) {
+      const cat = (box.category || '').toLowerCase();
+      const isCommander = cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander');
+      return box.contents.deck.length * (isCommander ? 100 : 60);
+    }
+    const cat = (box.category || '').toLowerCase();
+    if (cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander')) return 100;
+    if (box.packCount > 0) {
+      return box.packCount * 15;
+    }
+    return 0;
+  };
+
+  // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
   const adjustedRecords = useMemo(() => {
     // Pricing multipliers based on priceMode & vendor
     const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
@@ -60,26 +79,60 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     }[vendor] || { priceMult: 1.0, evMult: 1.0 };
 
     return records.map((r) => {
+      const rawMin = typeof r.packEvMin === 'number' && r.packEvMin > 0 ? r.packEvMin : (r.packEvAvg > 0 ? r.packEvAvg * 0.15 : 0);
+      const rawMax = typeof r.packEvMax === 'number' && r.packEvMax > 0 ? r.packEvMax : (r.packEvAvg > 0 ? r.packEvAvg * 4.5 : 0);
+
+      const adjustedPackMin = rawMin * reprintMultiplier * vendorSettings.evMult;
       const adjustedPackEv = r.packEvAvg * reprintMultiplier * vendorSettings.evMult;
       const adjustedPackMid90 = r.packEvMid90 * reprintMultiplier * vendorSettings.evMult;
+      const adjustedPackMax = rawMax * reprintMultiplier * vendorSettings.evMult;
       const adjustedBoxPrice = r.boxMarketPrice * vendorSettings.priceMult;
-      const adjustedBoxEv = adjustedPackEv * r.packCount;
-      const adjustedBoxMid90 = adjustedPackMid90 * r.packCount;
-      const profitUsd = adjustedBoxEv - adjustedBoxPrice;
-      const roiPct = (profitUsd / adjustedBoxPrice) * 100;
+
+      let baseCardEv = r.boxEvAvg;
+      if (r.packCount === 0 && r.contents?.card && Array.isArray(r.contents.card)) {
+        const vendorCardSum = r.contents.card.reduce((sum: number, cd: any) => {
+          const p = cd.prices?.[vendor] ?? (vendor === 'all' ? (cd.prices?.all ?? cd.prices?.tcgplayer) : (cd.prices?.[vendor] ?? cd.prices?.tcgplayer));
+          return sum + (typeof p === 'number' && p > 0 ? p : 0);
+        }, 0);
+        if (vendorCardSum > 0) {
+          baseCardEv = vendorCardSum;
+        }
+      }
+
+      const adjustedBoxMin = r.packCount > 0 ? adjustedPackMin * r.packCount : baseCardEv * reprintMultiplier;
+      const adjustedBoxEv = r.packCount > 0 ? adjustedPackEv * r.packCount : baseCardEv * reprintMultiplier;
+      const adjustedBoxMid90 = r.packCount > 0 ? adjustedPackMid90 * r.packCount : baseCardEv * reprintMultiplier;
+      const adjustedBoxMax = r.packCount > 0 ? adjustedPackMax * r.packCount : baseCardEv * reprintMultiplier;
+      
+      // Calculate Profit/Loss and ROI based on selected EV Calculation Basis (Min, Mid90, Avg, Max)
+      const effectiveEv =
+        evBasis === 'min'
+          ? adjustedBoxMin
+          : evBasis === 'mid90'
+          ? adjustedBoxMid90
+          : evBasis === 'max'
+          ? adjustedBoxMax
+          : adjustedBoxEv;
+
+      const profitUsd = effectiveEv - adjustedBoxPrice;
+      const roiPct = adjustedBoxPrice > 0 ? (profitUsd / adjustedBoxPrice) * 100 : 0;
 
       return {
         ...r,
         boxMarketPrice: adjustedBoxPrice,
+        packEvMin: adjustedPackMin,
         packEvAvg: adjustedPackEv,
         packEvMid90: adjustedPackMid90,
+        packEvMax: adjustedPackMax,
+        boxEvMin: adjustedBoxMin,
         boxEvAvg: adjustedBoxEv,
         boxEvMid90: adjustedBoxMid90,
+        boxEvMax: adjustedBoxMax,
         profitUsd,
         roiPct,
       };
     });
-  }, [records, priceMode, vendor]);
+  }, [records, priceMode, vendor, evBasis]);
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;
@@ -119,9 +172,24 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         } else if (sortBy === 'boxPrice') {
           valA = a.boxMarketPrice;
           valB = b.boxMarketPrice;
+        } else if (sortBy === 'boxMin') {
+          valA = a.boxEvMin ?? 0;
+          valB = b.boxEvMin ?? 0;
         } else if (sortBy === 'boxEv') {
           valA = a.boxEvAvg;
           valB = b.boxEvAvg;
+        } else if (sortBy === 'boxMid90') {
+          valA = a.boxEvMid90;
+          valB = b.boxEvMid90;
+        } else if (sortBy === 'boxMax') {
+          valA = a.boxEvMax ?? 0;
+          valB = b.boxEvMax ?? 0;
+        } else if (sortBy === 'packs') {
+          valA = a.packCount;
+          valB = b.packCount;
+        } else if (sortBy === 'cards') {
+          valA = getCardCount(a);
+          valB = getCardCount(b);
         }
         return sortOrder === 'desc' ? valB - valA : valA - valB;
       });
@@ -136,7 +204,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const top3WorstRoi = [...sortedByRoi].reverse().slice(0, 3);
   const pickOfTheDay = top3BestRoi[0] || adjustedRecords[0];
 
-  const toggleSort = (field: 'roi' | 'profit' | 'boxPrice' | 'boxEv') => {
+  const toggleSort = (field: 'roi' | 'profit' | 'boxPrice' | 'boxEv' | 'boxMid90' | 'boxMin' | 'boxMax' | 'packs' | 'cards') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
@@ -145,10 +213,14 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     }
   };
 
-  const getCategoryIcon = (cat: string) => {
+  const getCategoryIcon = (cat: string, name?: string) => {
     const c = (cat || '').toLowerCase();
+    const n = (name || '').toLowerCase();
     if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || c === 'multiple_decks') {
       return <Shield className="w-4 h-4 text-violet-500" />;
+    }
+    if (c === 'kit' || n.includes('prerelease')) {
+      return <Shield className="w-4 h-4 text-emerald-500" />;
     }
     if (c === 'box_set') {
       return <Sparkles className="w-4 h-4 text-amber-500" />;
@@ -159,21 +231,22 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     if (c === 'booster_pack') {
       return <Package className="w-4 h-4 text-emerald-500" />;
     }
-    if (c === 'booster_case' || c === 'bundle_case' || c === 'limited_aid_case') {
+    if (c === 'booster_case' || c === 'bundle_case' || (c === 'limited_aid_case' && n.includes('case'))) {
       return <Archive className="w-4 h-4 text-indigo-500" />;
     }
-    if (c === 'bundle') {
+    if (c === 'bundle' || c === 'limited_aid_tool') {
       return <Gift className="w-4 h-4 text-rose-500" />;
     }
     return <HelpCircle className="w-4 h-4 text-slate-400" />;
   };
 
-  const mapCategoryToPackagingType = (cat: string): ProductPackagingType => {
+  const mapCategoryToPackagingType = (cat: string, name?: string): ProductPackagingType => {
     const c = (cat || '').toLowerCase();
+    const n = (name || '').toLowerCase();
     if (c === 'box_set') {
       return 'box_set';
     }
-    if (c === 'kit') {
+    if (c === 'kit' || n.includes('prerelease')) {
       return 'kit';
     }
     if (c === 'commander_deck' || c === 'deck' || c === 'starter_deck' || c === 'multiple_decks' || c === 'deck_box') {
@@ -182,7 +255,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     if (c === 'booster_pack') {
       return 'pack';
     }
-    if (c === 'booster_case' || c === 'bundle_case' || c === 'limited_aid_case') {
+    if (c === 'booster_case' || c === 'bundle_case' || (c === 'limited_aid_case' && n.includes('case'))) {
       return 'case';
     }
     if (c === 'bundle' || c === 'limited_aid_tool') {
@@ -516,6 +589,63 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* EV Calculation Basis Selector */}
+            <div className="flex items-center bg-white p-1 rounded-xl text-xs font-bold border border-slate-200 shadow-xs">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 hidden sm:inline">Calc Basis:</span>
+              <button
+                id="ev-basis-min-btn"
+                onClick={() => setEvBasis('min')}
+                title="Calculate Profit/Loss and ROI based on Minimum EV Floor (Worst-case simulated collation return)"
+                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                  evBasis === 'min'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>Min EV (Floor)</span>
+                {evBasis === 'min' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+              </button>
+              <button
+                id="ev-basis-mid90-btn"
+                onClick={() => setEvBasis('mid90')}
+                title="Calculate Profit/Loss and ROI based on Mid 90% EV (Trimmed 5-95th percentile, excluding extreme 5% outliers)"
+                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                  evBasis === 'mid90'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>Mid 90% EV</span>
+                {evBasis === 'mid90' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+              </button>
+              <button
+                id="ev-basis-avg-btn"
+                onClick={() => setEvBasis('avg')}
+                title="Calculate Profit/Loss and ROI based on Average EV (Mathematical Mean of all simulated packs)"
+                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                  evBasis === 'avg'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>Average EV (Mean)</span>
+                {evBasis === 'avg' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+              </button>
+              <button
+                id="ev-basis-max-btn"
+                onClick={() => setEvBasis('max')}
+                title="Calculate Profit/Loss and ROI based on Maximum EV Ceiling (Best-case simulated jackpot ceiling)"
+                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                  evBasis === 'max'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>Max EV (Ceiling)</span>
+                {evBasis === 'max' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+              </button>
+            </div>
+
             {/* Price Mode Selector */}
             <div className="flex items-center bg-white p-1 rounded-xl text-xs font-bold border border-slate-200 shadow-xs">
               <button
@@ -561,33 +691,122 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider">
                 <th className="py-3.5 px-4">Sealed Product</th>
                 <th className="py-3.5 px-3">Set</th>
-                <th className="py-3.5 px-3 text-center">Packs</th>
+                <th
+                  className="py-3.5 px-3 text-center cursor-pointer hover:text-slate-900"
+                  onClick={() => toggleSort('packs')}
+                  title="Number of booster packs in this sealed product (0 for preconstructed products without packs). Click to sort."
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Packs</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th
+                  className="py-3.5 px-3 text-center cursor-pointer hover:text-slate-900"
+                  onClick={() => toggleSort('cards')}
+                  title="Total number of cards included in this sealed product. Click to sort."
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Cards</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
                 <th
                   className="py-3.5 px-3 text-right cursor-pointer hover:text-slate-900"
                   onClick={() => toggleSort('boxPrice')}
                 >
                   <div className="flex items-center justify-end gap-1">
                     Live Market Price
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
                 <th
-                  className="py-3.5 px-3 text-right cursor-pointer hover:text-slate-900"
-                  onClick={() => toggleSort('boxEv')}
+                  className={`py-3.5 px-3 text-right cursor-pointer transition ${
+                    evBasis === 'min' ? 'text-slate-900 bg-slate-100/80 font-bold' : 'hover:text-slate-900'
+                  }`}
+                  onClick={() => toggleSort('boxMin')}
+                  title="Minimum EV Floor (worst-case collation simulation return). Click to sort."
                 >
-                  <div className="flex items-center justify-end gap-1">
-                    Total Format EV
-                    <ArrowUpDown className="w-3 h-3" />
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Min EV (Floor)</span>
+                    {evBasis === 'min' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300/70">
+                        Calc Basis
+                      </span>
+                    )}
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
-                <th className="py-3.5 px-3 text-right">Mid 90% EV</th>
+                <th
+                  className={`py-3.5 px-3 text-right cursor-pointer transition ${
+                    evBasis === 'mid90' ? 'text-slate-900 bg-slate-100/80 font-bold' : 'hover:text-slate-900'
+                  }`}
+                  onClick={() => toggleSort('boxMid90')}
+                  title="Realistic trimmed average excluding top 5% jackpot hits and bottom 5% duds. Click to sort."
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Mid 90% EV</span>
+                    {evBasis === 'mid90' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300/70">
+                        Calc Basis
+                      </span>
+                    )}
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th
+                  className={`py-3.5 px-3 text-right cursor-pointer transition ${
+                    evBasis === 'avg' ? 'text-slate-900 bg-slate-100/80 font-bold' : 'hover:text-slate-900'
+                  }`}
+                  onClick={() => toggleSort('boxEv')}
+                  title="Average Expected Value across all simulated pack collation options. Click to sort."
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Average EV (Mean)</span>
+                    {evBasis === 'avg' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300/70">
+                        Calc Basis
+                      </span>
+                    )}
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th
+                  className={`py-3.5 px-3 text-right cursor-pointer transition ${
+                    evBasis === 'max' ? 'text-slate-900 bg-slate-100/80 font-bold' : 'hover:text-slate-900'
+                  }`}
+                  onClick={() => toggleSort('boxMax')}
+                  title="Maximum EV Ceiling (best-case jackpot ceiling simulation return). Click to sort."
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Max EV (Ceiling)</span>
+                    {evBasis === 'max' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300/70">
+                        Calc Basis
+                      </span>
+                    )}
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
                 <th
                   className="py-3.5 px-3 text-right cursor-pointer hover:text-slate-900"
                   onClick={() => toggleSort('profit')}
+                  title={`Net Profit/Loss calculated as (${
+                    evBasis === 'min'
+                      ? 'Min EV'
+                      : evBasis === 'mid90'
+                      ? 'Mid 90% EV'
+                      : evBasis === 'max'
+                      ? 'Max EV'
+                      : 'Average EV'
+                  } - Live Market Price)`}
                 >
                   <div className="flex items-center justify-end gap-1">
-                    Profit / Loss
-                    <ArrowUpDown className="w-3 h-3" />
+                    <span>Profit / Loss</span>
+                    <span className="text-[9px] font-mono font-semibold text-slate-400">
+                      ({evBasis === 'min' ? 'Min' : evBasis === 'mid90' ? 'Mid90' : evBasis === 'max' ? 'Max' : 'Avg'})
+                    </span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
                 <th
@@ -596,7 +815,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                 >
                   <div className="flex items-center justify-end gap-1">
                     ROI %
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
                 <th className="py-3.5 px-4 text-center">Action</th>
@@ -605,7 +824,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 px-4 text-center text-slate-500">
+                  <td colSpan={12} className="py-12 px-4 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                         <Package className="w-6 h-6" />
@@ -627,7 +846,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     className="hover:bg-slate-50/80 transition group"
                   >
                     <td className="py-3.5 px-4 font-medium text-slate-900 flex items-center gap-2">
-                      {getCategoryIcon(box.category)}
+                      {getCategoryIcon(box.category, box.boxName)}
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span>{box.boxName}</span>
@@ -638,6 +857,10 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                             >
                               {box.contents.note?.includes('1 of them is foil')
                                 ? '8 Cards (1 Foil)'
+                                : box.contents.card && box.contents.card.length === 1
+                                ? '1 Single Card'
+                                : box.contents.card && box.contents.card.length > 1
+                                ? `${box.contents.card.length} Cards`
                                 : box.contents.variable
                                 ? 'Variable Collation'
                                 : box.contents.deck
@@ -654,15 +877,34 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                         <span>{box.setCode}</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-center font-mono text-slate-600">{box.packCount}</td>
+                    <td className="py-3.5 px-3 text-center font-mono text-slate-700">
+                      {box.packCount > 0 ? (
+                        <span className="font-semibold text-slate-900">{box.packCount}</span>
+                      ) : (
+                        <span className="text-slate-400 font-medium">0</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-3 text-center font-mono text-slate-700">
+                      {getCardCount(box) > 0 ? (
+                        <span className="font-medium text-slate-800">{getCardCount(box).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-slate-400">0</span>
+                      )}
+                    </td>
                     <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-900">
                       ${box.boxMarketPrice.toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">
+                    <td className={`py-3.5 px-3 text-right font-mono ${evBasis === 'min' ? 'font-bold text-slate-950 bg-slate-50/70' : 'text-slate-600'}`}>
+                      ${(box.boxEvMin ?? 0).toFixed(2)}
+                    </td>
+                    <td className={`py-3.5 px-3 text-right font-mono ${evBasis === 'mid90' ? 'font-bold text-slate-950 bg-slate-50/70' : 'text-slate-600'}`}>
+                      ${box.boxEvMid90.toFixed(2)}
+                    </td>
+                    <td className={`py-3.5 px-3 text-right font-mono ${evBasis === 'avg' ? 'font-bold text-slate-950 bg-slate-50/70' : 'text-slate-800'}`}>
                       ${box.boxEvAvg.toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-3 text-right font-mono text-slate-600">
-                      ${box.boxEvMid90.toFixed(2)}
+                    <td className={`py-3.5 px-3 text-right font-mono ${evBasis === 'max' ? 'font-bold text-slate-950 bg-slate-50/70' : 'text-slate-600'}`}>
+                      ${(box.boxEvMax ?? 0).toFixed(2)}
                     </td>
                     <td
                       className={`py-3.5 px-3 text-right font-mono font-bold ${

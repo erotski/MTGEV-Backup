@@ -4,6 +4,7 @@ import { BoosterSlotViewer } from './BoosterSlotViewer';
 import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
 import { ProductPackagingImage } from './ProductPackagingImage';
+import { SingleCardBreakdownViewer } from './SingleCardBreakdownViewer';
 import {
   X,
   Package,
@@ -42,7 +43,16 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
   const isDeck =
     product.packagingType === 'starter_deck' ||
     (product.displayName || '').toLowerCase().includes('commander deck') ||
-    product.rawCategory === 'deck';
+    (product.displayName || '').toLowerCase().includes('precon') ||
+    product.rawCategory === 'deck' ||
+    product.rawCategory === 'starter_deck' ||
+    product.rawCategory === 'commander_deck';
+
+  const isSingleCard =
+    product.boosterName === 'single_card' ||
+    (product.packsCount === 0 &&
+      (product.cardCount === 1 ||
+        Boolean(product.rawContents?.card && product.rawContents.card.length > 0 && !product.rawContents?.pack && !product.rawContents?.sealed)));
 
   const profit = Number((product.estimatedEv - product.marketPrice).toFixed(2));
   const roiPct = product.marketPrice > 0 ? Number(((profit / product.marketPrice) * 100).toFixed(1)) : 0;
@@ -78,11 +88,19 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 uppercase">
                   {product.packagingType.replace(/_/g, ' ')}
                 </span>
-                {product.packsCount > 0 && (
+                {product.packsCount > 0 ? (
                   <span className="font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
                     {product.packsCount} {product.packsCount === 1 ? 'Pack' : 'Packs'}
                   </span>
-                )}
+                ) : product.cardCount === 1 ? (
+                  <span className="font-mono text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                    1 Single Card
+                  </span>
+                ) : product.cardCount && product.cardCount > 1 ? (
+                  <span className="font-mono text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                    {product.cardCount} Cards
+                  </span>
+                ) : null}
               </div>
 
               <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
@@ -156,21 +174,36 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            {isDeck ? <Layers3 className="w-4 h-4" /> : <Sliders className="w-4 h-4" />}
-            <span>{isDeck ? 'Deck Card Content & Strategy' : 'Slot Information & Options (0, 1, 2...)'}</span>
+            {isSingleCard ? (
+              <Sparkles className="w-4 h-4 text-amber-500" />
+            ) : isDeck ? (
+              <Layers3 className="w-4 h-4" />
+            ) : (
+              <Sliders className="w-4 h-4" />
+            )}
+            <span>
+              {isSingleCard
+                ? 'Single Card Content & Multi-Seller Pricing'
+                : isDeck
+                ? 'Deck Card Content (100-Card Breakdown & EV)'
+                : 'Slot Information & Options (0, 1, 2...)'}
+            </span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('chase_cards')}
-            className={`py-3 px-3.5 font-bold text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
-              activeTab === 'chase_cards'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-amber-500" />
-            <span>Chase Cards in this Product</span>
-          </button>
+          {/* Chase Cards are only displayed for booster products with randomized slots, never for fixed precon decks or singles */}
+          {!isDeck && !isSingleCard && (
+            <button
+              onClick={() => setActiveTab('chase_cards')}
+              className={`py-3 px-3.5 font-bold text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
+                activeTab === 'chase_cards'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Flame className="w-4 h-4 text-amber-500" />
+              <span>Chase Cards in this Product</span>
+            </button>
+          )}
 
           {product.rawContents && (
             <button
@@ -189,10 +222,16 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
 
         {/* Modal Scrollable Body */}
         <div className="p-5 overflow-y-auto flex-1 space-y-6">
-          {/* Tab 1: Slot Collation Information OR Preconstructed Deck Contents */}
-          {activeTab === 'slots_content' && (
+          {/* Tab 1: Slot Collation Information OR Preconstructed Deck Contents OR Single Card Viewer */}
+          {(activeTab === 'slots_content' || (activeTab === 'chase_cards' && (isDeck || isSingleCard))) && (
             <div>
-              {isDeck ? (
+              {isSingleCard ? (
+                <SingleCardBreakdownViewer
+                  product={product}
+                  priceMode={priceMode}
+                  vendor={vendor}
+                />
+              ) : isDeck ? (
                 <PreconstructedDeckViewer
                   productId={product.id}
                   productName={product.displayName}
@@ -213,8 +252,8 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
             </div>
           )}
 
-          {/* Tab 2: Chase Cards Within This Product */}
-          {activeTab === 'chase_cards' && (
+          {/* Tab 2: Chase Cards Within This Product (Booster products only) */}
+          {activeTab === 'chase_cards' && !isDeck && !isSingleCard && (
             <ProductChaseCardsViewer
               product={product}
               setCode={product.setCode}
@@ -234,6 +273,43 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
                   <span className="font-bold">Collation Logic Note: </span>
                   <span>{product.rawContents.note}</span>
+                </div>
+              )}
+
+              {/* Contained Cards & Promotional Singles */}
+              {product.rawContents.card && product.rawContents.card.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Contained Promotional Cards / Singles ({product.rawContents.card.length}):</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {product.rawContents.card.map((c: any, idx: number) => {
+                      const cPrices = c.prices || {};
+                      const isFoil = c.foil || (c.finishes && c.finishes.includes('foil'));
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <div className="font-semibold text-slate-800 truncate">{c.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              {c.number ? `#${c.number}` : ''} {isFoil ? '• Foil' : '• Nonfoil'}
+                            </div>
+                          </div>
+                          {cPrices.tcgplayer ? (
+                            <div className="text-right shrink-0">
+                              <span className="font-mono text-xs font-black text-indigo-700 block">
+                                ${cPrices.tcgplayer.toFixed(2)}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block">TCG Market</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
