@@ -11,6 +11,10 @@ import {
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { PackagingStockAssetGuide } from './PackagingStockAssetGuide';
+import { BoosterSlotViewer } from './BoosterSlotViewer';
+import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
+import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
+import { ProductBreakdownModal } from './ProductBreakdownModal';
 import {
   Layers,
   Package,
@@ -522,6 +526,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   };
 
   const activeProduct = setProducts.find((p) => p.id === selectedProductId) || setProducts[0];
+
+  // Full product breakdown modal state
+  const [breakdownModalProduct, setBreakdownModalProduct] = useState<CatalogPackProduct | null>(null);
 
   // Custom Multiplier Calculator State
   const [calculatorPacks, setCalculatorPacks] = useState<number>(36);
@@ -1197,6 +1204,34 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       {/* 2. Deep "Products Within Products" Containment Inspector */}
       {activeProduct && (
         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-5">
+          {/* Active Product Title & Quick Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div>
+              <div className="text-[11px] font-bold text-slate-500 font-mono uppercase tracking-wider">
+                Product Breakdown & Collation Inspector
+              </div>
+              <h3 className="text-lg font-black text-slate-900 flex flex-wrap items-center gap-2 mt-0.5">
+                <span>{cleanProductName(activeProduct.displayName)}</span>
+                <span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 uppercase">
+                  {activeProduct.packagingType.replace(/_/g, ' ')}
+                </span>
+                {activeProduct.packsCount > 0 && (
+                  <span className="text-xs font-mono font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                    {activeProduct.packsCount} {activeProduct.packsCount === 1 ? 'Pack' : 'Packs'}
+                  </span>
+                )}
+              </h3>
+            </div>
+
+            <button
+              onClick={() => setBreakdownModalProduct(activeProduct)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-xs cursor-pointer self-start sm:self-auto"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Full Breakdown Modal</span>
+            </button>
+          </div>
+
           {/* Containment Hierarchy Sub-Panels: Items Inside vs Available in Bulk Parent Containers */}
           {(() => {
             const hasContains = Boolean(
@@ -1553,128 +1588,43 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             </div>
           )}
 
-          {/* MTGJSON Collation Sheet Breakdown for this Tier */}
-          {activeProduct.variations && activeProduct.variations[0]?.sheets && (
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-indigo-600" />
-                    <span>Booster Slot & Sheet Collation Weights</span>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    MTGJSON <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-mono font-bold text-[11px]">setboostercontentweights</code> breakdown for {cleanProductName(activeProduct.displayName)}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                    {activeProduct.variations[0].sheets.length} Sheet Slots
-                  </span>
-                  <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-                    {activeProduct.packsCount} {activeProduct.packsCount === 1 ? 'Pack' : 'Packs'} in {activeProduct.packagingType.toUpperCase()}
-                  </span>
-                </div>
-              </div>
+          {/* 3. Slot Information with Option Collation (0, 1, 2...) OR Preconstructed Deck Contents */}
+          {(() => {
+            const isDeck =
+              activeProduct.packagingType === 'starter_deck' ||
+              (activeProduct.displayName || '').toLowerCase().includes('commander deck') ||
+              activeProduct.rawCategory === 'deck';
 
-              {/* Clean, readable slot list table */}
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-900 text-white font-mono uppercase text-[10px] tracking-wider">
-                    <tr>
-                      <th className="py-2.5 px-3 w-10 text-center">#</th>
-                      <th className="py-2.5 px-3">Slot Name & MTGJSON Code</th>
-                      <th className="py-2.5 px-3">Rarity / Category</th>
-                      <th className="py-2.5 px-3 text-right">Cards / Pack</th>
-                      <th className="py-2.5 px-3 text-right">Total in {activeProduct.packagingType.toUpperCase()}</th>
-                      <th className="py-2.5 px-3">Collation Odds & Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
-                    {activeProduct.variations[0].sheets.map((sheet, sIdx) => {
-                      const sheetPicksPerContainer = sheet.sheetPicks * activeProduct.packsCount;
-                      const cat = getCategoryStyle(sheet.category);
+            return (
+              <div className="space-y-6">
+                {isDeck ? (
+                  <PreconstructedDeckViewer
+                    productId={activeProduct.id}
+                    productName={activeProduct.displayName}
+                    setCode={activeProduct.setCode}
+                    marketPrice={activeProduct.marketPrice}
+                    estimatedEv={activeProduct.estimatedEv}
+                  />
+                ) : (
+                  <BoosterSlotViewer
+                    setCode={activeProduct.setCode}
+                    boosterName={activeProduct.boosterName}
+                    variations={activeProduct.variations || []}
+                    packsCount={activeProduct.packsCount}
+                    packagingType={activeProduct.packagingType}
+                    productName={activeProduct.displayName}
+                  />
+                )}
 
-                      return (
-                        <tr
-                          key={sIdx}
-                          className="hover:bg-indigo-50/40 transition-colors"
-                        >
-                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-400">
-                            {sIdx + 1}
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-900 text-xs">
-                                {sheet.sheetName}
-                              </span>
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded font-mono font-bold text-[10px] border border-slate-200">
-                                {sheet.sheetCode}
-                              </span>
-                            </div>
-                            {sheet.description && (
-                              <div className="text-[11px] text-slate-500 mt-0.5">
-                                {sheet.description}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border inline-flex items-center ${cat.bg}`}>
-                              {cat.label}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right font-mono">
-                            <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-xs">
-                              {sheet.sheetPicks} {sheet.sheetPicks === 1 ? 'card' : 'cards'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right font-mono">
-                            <span className="font-black text-slate-900 text-xs">
-                              {sheetPicksPerContainer} {sheetPicksPerContainer === 1 ? 'card' : 'cards'}
-                            </span>
-                            {activeProduct.packsCount > 1 && (
-                              <div className="text-[10px] text-slate-400">
-                                ({sheet.sheetPicks} × {activeProduct.packsCount} pks)
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-3 text-slate-600 text-[11px]">
-                            {sheet.rareOdds ? (
-                              <span className="text-amber-700 font-medium font-mono">
-                                ~{Math.round(sheet.rareOdds * 100)}% Rare, {Math.round((1 - sheet.rareOdds) * 100)}% Mythic
-                              </span>
-                            ) : sheet.foilChance ? (
-                              <span className="text-yellow-700 font-medium flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-yellow-500" />
-                                100% Traditional Foil Guaranteed
-                              </span>
-                            ) : (
-                              <span className="text-slate-500">Fixed collation pick</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-300 text-xs">
-                    <tr>
-                      <td colSpan={3} className="py-2.5 px-3 text-slate-900 font-mono uppercase text-[11px]">
-                        Total Cards Collation Summary
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-indigo-700 text-xs">
-                        {activeProduct.variations[0].sheets.reduce((acc, s) => acc + s.sheetPicks, 0)} cards / pack
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-900 text-xs">
-                        {activeProduct.variations[0].sheets.reduce((acc, s) => acc + s.sheetPicks * activeProduct.packsCount, 0)} cards total
-                      </td>
-                      <td className="py-2.5 px-3 text-[11px] text-slate-500 font-normal">
-                        Across {activeProduct.packsCount} packs in this tier
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                {/* 4. Chase Cards Within This Product */}
+                <ProductChaseCardsViewer
+                  product={activeProduct}
+                  setCode={activeProduct.setCode}
+                  priceMode={priceMode}
+                />
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 
@@ -1771,6 +1721,20 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           </div>
         </div>
       </div>
+
+      {/* Universal Product Breakdown Modal */}
+      <ProductBreakdownModal
+        product={breakdownModalProduct}
+        isOpen={Boolean(breakdownModalProduct)}
+        onClose={() => setBreakdownModalProduct(null)}
+        priceMode={priceMode}
+        vendor={vendor}
+        onNavigateToSet={(sCode, bName) => {
+          if (onSelectProduct && breakdownModalProduct) {
+            onSelectProduct(breakdownModalProduct.id, bName || 'play', breakdownModalProduct);
+          }
+        }}
+      />
     </div>
   );
 };

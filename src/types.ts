@@ -93,6 +93,50 @@ export interface ChaseCard {
   priceNormal: number;
   priceFoil?: number;
   finish: string;
+  imageUrl?: string;
+  cardType?: string;
+  productType?: 'all' | 'collector' | 'play' | 'draft' | 'deck' | string;
+  deckName?: string;
+  pullOddsDesc?: string;
+}
+
+export interface DeckCardItem {
+  name: string;
+  count: number;
+  rarity: 'common' | 'uncommon' | 'rare' | 'mythic' | 'land' | string;
+  type: string;
+  manaCost?: string;
+  scryfallId?: string;
+  imageUrl?: string;
+  price: number;
+  foil?: boolean;
+  isCommander?: boolean;
+}
+
+export interface PreconstructedDeckDetail {
+  deckName: string;
+  setCode: string;
+  commander: {
+    name: string;
+    manaCost: string;
+    type: string;
+    text?: string;
+    imageUrl?: string;
+    scryfallId?: string;
+    price: number;
+  };
+  cardCount: number;
+  colors: string[];
+  theme: string;
+  contentsSummary: {
+    creatures: number;
+    instantsAndSorceries: number;
+    artifactsAndEnchantments: number;
+    planeswalkers: number;
+    lands: number;
+  };
+  keyCards: DeckCardItem[];
+  fullDecklist?: DeckCardItem[];
 }
 
 export interface CustomSlot {

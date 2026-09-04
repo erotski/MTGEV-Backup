@@ -19,12 +19,12 @@ export const PackagingStockAssetGuide: React.FC<PackagingStockAssetGuideProps> =
 
   const assetSources = [
     {
-      title: 'Wizards Play Network (WPN) Digital Marketing Assets',
+      title: 'Digital Packaging Marketing Assets',
       badge: 'Official 300 DPI Renders & Transparent 3D Mockups',
       description:
-        'Wizards of the Coast releases official digital marketing kits for every Magic set. These contain isolated transparent PNGs of Booster Boxes, Bundles, Collector Displays, and Prerelease packs.',
+        'Standard digital marketing kits released for each set contain isolated transparent PNGs of Booster Boxes, Bundles, Collector Displays, and Prerelease packs.',
       url: 'https://wpn.wizards.com/en/marketing-materials',
-      features: ['Transparent 3D box renders', 'Print-ready high-res assets', 'Direct from Wizards of the Coast'],
+      features: ['Transparent 3D box renders', 'Print-ready high-res assets', 'Direct package photography'],
       tag: 'Best for 3D Boxes',
     },
     {

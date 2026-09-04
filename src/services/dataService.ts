@@ -1,4 +1,77 @@
 import { SetOption, BoosterEVRecord, BoxArbitrageRecord } from '../types';
+import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
+
+export interface DbBoosterSheet {
+  sheetName: string;
+  foil: boolean;
+  totalWeight?: number;
+  cardCount?: number;
+  balanceColors?: boolean;
+}
+
+export interface DbBoosterOption {
+  boosterIndex: number;
+  weight: number;
+  contents: Record<string, number>;
+}
+
+export interface DbBoosterData {
+  boosterName: string;
+  boostersTotalWeight: number;
+  boosters: DbBoosterOption[];
+  sheets: Record<string, DbBoosterSheet>;
+}
+
+/**
+ * Converts authentic database booster records to BoosterVariation UI models.
+ * Strictly preserves exact database sheet names, collation weights, and options.
+ */
+export function convertDbBoosterToVariations(dbBooster: DbBoosterData): BoosterVariation[] {
+  const totalW = dbBooster.boostersTotalWeight || 1;
+  return (dbBooster.boosters || []).map((b) => {
+    const weightPct = (b.weight / totalW) * 100;
+    const weightPctStr = weightPct < 0.01 ? weightPct.toExponential(2) : weightPct.toFixed(3);
+
+    const sheets: SheetConfig[] = Object.entries(b.contents || {}).map(([sheetName, count]) => {
+      const meta = dbBooster.sheets?.[sheetName];
+      const isFoil = Boolean(meta?.foil || sheetName.toLowerCase().includes('foil'));
+      const lower = sheetName.toLowerCase();
+
+      let category: SheetConfig['category'] = 'special_bonus';
+      if (lower.includes('common') && !lower.includes('uncommon')) category = 'common';
+      else if (lower.includes('uncommon')) category = 'uncommon';
+      else if (lower.includes('rare') || lower.includes('mythic')) category = 'rare_mythic';
+      else if (lower.includes('land') || lower.includes('basic')) category = 'land';
+      else if (lower.includes('token') || lower.includes('art') || lower.includes('ad')) category = 'ancillary';
+      else if (isFoil) category = 'foil';
+      else if (lower.includes('wild')) category = 'wildcard';
+
+      return {
+        sheetName: sheetName, // Strictly database sheet name!
+        sheetCode: sheetName,
+        sheetPicks: Number(count),
+        description: `Picks: ${count} | Foil: ${isFoil ? 'Yes' : 'No'}${meta?.cardCount ? ` | Pool: ${meta.cardCount} cards` : ''}${meta?.totalWeight ? ` | Weight: ${meta.totalWeight}` : ''}`,
+        category,
+        foilChance: isFoil ? 1.0 : undefined,
+        isSpecialSheet:
+          lower.includes('serialized') ||
+          lower.includes('praetor') ||
+          lower.includes('mul') ||
+          lower.includes('showcase') ||
+          lower.includes('bonus') ||
+          lower.includes('spg'),
+      };
+    });
+
+    return {
+      boosterIndex: b.boosterIndex,
+      boosterWeight: b.weight,
+      name: `Option ${b.boosterIndex}`,
+      description: `Collation Option ${b.boosterIndex} (Weight: ${b.weight.toLocaleString()} / ${totalW.toLocaleString()} = ${weightPctStr}%)`,
+      sheets,
+    };
+  });
+}
 
 export interface DataFetchStatus {
   source: 'live_pipeline' | 'empty';
@@ -15,6 +88,7 @@ class DataService {
   private setsCache: SetOption[] | null = null;
   private arbitrageCache: BoxArbitrageRecord[] | null = null;
   private boosterEvCache: Record<string, BoosterEVRecord[]> | null = null;
+  private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
   private isLoadedFromPipeline = false;
 
   /**
@@ -145,6 +219,137 @@ class DataService {
       console.warn('Could not fetch /data/sealed_products.json:', e);
     }
     return [];
+  }
+
+  /**
+   * Loads all booster slot collation definitions for a given set.
+   * Uses authentic MTGJSON database structure (setBoosterContentWeights, setBoosterContents, setBoosterSheets).
+   */
+  public async getAllBoosterSlotsForSet(setCode: string): Promise<Record<string, DbBoosterData> | null> {
+    const upperCode = (setCode || '').toUpperCase().trim();
+    if (!upperCode) return null;
+
+    // Load /data/booster_slots.json once
+    if (!this.boosterSlotsCache) {
+      try {
+        const response = await fetch('/data/booster_slots.json');
+        if (response.ok) {
+          const raw = await response.json();
+          this.boosterSlotsCache = raw;
+        }
+      } catch (e) {
+        console.warn('Could not load /data/booster_slots.json:', e);
+      }
+      if (!this.boosterSlotsCache) {
+        this.boosterSlotsCache = {};
+      }
+    }
+
+    // Check if set is in cache
+    if (this.boosterSlotsCache[upperCode]) {
+      return this.boosterSlotsCache[upperCode];
+    }
+
+    // On-demand fetch from MTGJSON API if set not yet in local JSON
+    try {
+      const res = await fetch(`https://mtgjson.com/api/v5/${upperCode}.json`);
+      if (res.ok) {
+        const json = await res.json();
+        const boosterObj = json.data?.booster;
+        if (boosterObj) {
+          const formatted: Record<string, DbBoosterData> = {};
+          for (const [bName, bInfo] of Object.entries<any>(boosterObj)) {
+            formatted[bName] = {
+              boosterName: bName,
+              boostersTotalWeight: Number(bInfo.boostersTotalWeight || 0),
+              boosters: (bInfo.boosters || []).map((b: any, idx: number) => ({
+                boosterIndex: idx,
+                weight: Number(b.weight || 0),
+                contents: b.contents || {},
+              })),
+              sheets: Object.fromEntries(
+                Object.entries<any>(bInfo.sheets || {}).map(([sName, sData]) => [
+                  sName,
+                  {
+                    sheetName: sName,
+                    foil: Boolean(sData.foil),
+                    totalWeight: sData.totalWeight ? Number(sData.totalWeight) : undefined,
+                    cardCount: sData.cards ? Object.keys(sData.cards).length : undefined,
+                    balanceColors: Boolean(sData.balanceColors),
+                  },
+                ])
+              ),
+            };
+          }
+          this.boosterSlotsCache[upperCode] = formatted;
+          return formatted;
+        }
+      }
+    } catch (e) {
+      console.warn(`Could not fetch booster slots for set ${upperCode}:`, e);
+    }
+
+    return null;
+  }
+
+  /**
+   * Retrieves the specific booster slot configuration (e.g. 'collector', 'play', 'draft') for a product.
+   * In MOM Collector Booster, this strictly returns all 24 collation variations with authentic MTGJSON sheets.
+   */
+  public async getBoosterSlots(
+    setCode: string,
+    boosterType?: string,
+    productName?: string
+  ): Promise<DbBoosterData | null> {
+    const setBoosters = await this.getAllBoosterSlotsForSet(setCode);
+    if (!setBoosters || Object.keys(setBoosters).length === 0) {
+      return null;
+    }
+
+    const availableTypes = Object.keys(setBoosters);
+    const searchTarget = `${boosterType || ''} ${productName || ''}`.toLowerCase();
+
+    // 1. Direct type match
+    if (boosterType && setBoosters[boosterType]) {
+      return setBoosters[boosterType];
+    }
+
+    // 2. Infer booster type from product naming
+    if (searchTarget.includes('collector-sample') || searchTarget.includes('sample')) {
+      if (setBoosters['collector-sample']) return setBoosters['collector-sample'];
+    }
+    if (searchTarget.includes('collector')) {
+      if (setBoosters['collector']) return setBoosters['collector'];
+    }
+    if (searchTarget.includes('play')) {
+      if (setBoosters['play']) return setBoosters['play'];
+    }
+    if (searchTarget.includes('draft')) {
+      if (setBoosters['draft']) return setBoosters['draft'];
+    }
+    if (searchTarget.includes('set booster') || searchTarget.includes('set-booster')) {
+      if (setBoosters['set']) return setBoosters['set'];
+    }
+    if (searchTarget.includes('jumpstart')) {
+      if (setBoosters['jumpstart']) return setBoosters['jumpstart'];
+    }
+    if (searchTarget.includes('prerelease')) {
+      if (setBoosters['prerelease']) return setBoosters['prerelease'];
+    }
+
+    // 3. Match any key contained in searchTarget
+    for (const type of availableTypes) {
+      if (searchTarget.includes(type)) {
+        return setBoosters[type];
+      }
+    }
+
+    // 4. Default fallbacks in order of preference: play, draft, collector, set, first available
+    if (setBoosters['play']) return setBoosters['play'];
+    if (setBoosters['draft']) return setBoosters['draft'];
+    if (setBoosters['collector']) return setBoosters['collector'];
+    if (setBoosters['set']) return setBoosters['set'];
+    return setBoosters[availableTypes[0]] || null;
   }
 }
 

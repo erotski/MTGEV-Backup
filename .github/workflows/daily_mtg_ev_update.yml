@@ -49,14 +49,15 @@ jobs:
         run: |
           python backend/daily_update.py
 
-      - name: Commit & Push Updated Datasets
+      - name: Commit & Push Updated Datasets to Dedicated Data Branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B data-sync
           git add public/data/
           if git diff --staged --quiet; then
             echo "No data changes to commit."
           else
             git commit -m "Auto-update MTG booster EV & market prices [skip ci]"
-            git push
+            git push origin data-sync --force
           fi

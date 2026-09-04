@@ -74,7 +74,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const fallbackBoosters = rawSetBoosters.filter((b) => b.priceMode === 'direct');
   const sourceBoosters = exactModeBoosters.length > 0 ? exactModeBoosters : fallbackBoosters.length > 0 ? fallbackBoosters : rawSetBoosters;
 
-  (sourceBoosters.length > 0 ? sourceBoosters : boosterRecords.slice(0, 2)).forEach((b) => {
+  sourceBoosters.forEach((b) => {
     if (!uniqueBoostersMap.has(b.boosterName)) {
       uniqueBoostersMap.set(b.boosterName, b);
     }
