@@ -134,6 +134,12 @@ def run_sync():
         with open(PUBLIC_DATA_DIR / "precon_decks.json", "r", encoding="utf-8") as f:
             precon_decks = json.load(f)
 
+    # 4b. Load Single Card Prices for singles/promos in contents
+    single_prices = {}
+    if (PUBLIC_DATA_DIR / "single_card_prices.json").exists():
+        with open(PUBLIC_DATA_DIR / "single_card_prices.json", "r", encoding="utf-8") as f:
+            single_prices = json.load(f)
+
     # 5. Strict recursive composite product EV, pack, and card resolution engine
     def get_pack_ev(set_code, booster_code):
         s_code = (set_code or "").lower()
@@ -175,12 +181,6 @@ def run_sync():
         ev_max = 0.0
         booster_names = set()
 
-        is_secret_lair = (
-            (prod.get("setCode") or "").lower() == "sld" 
-            or (prod.get("subtype") or "").lower() in ["secret_lair", "secret_lair_bundle"] 
-            or "secret lair" in (prod.get("displayName") or "").lower()
-        )
-
         # 1. Sealed sub-products (Bundles, Cases, Superdrops, Festival in a Box)
         if c.get("sealed") and isinstance(c["sealed"], list) and len(c["sealed"]) > 0:
             for s in c["sealed"]:
@@ -221,8 +221,8 @@ def run_sync():
                     else:
                         total_cards += scnt * 15
 
-        # 2. Packs directly in contents (exclude Secret Lair drop synthetic pack wrappers)
-        if not is_secret_lair and c.get("pack") and isinstance(c["pack"], list) and len(c["pack"]) > 0:
+        # 2. Packs directly in contents (MTGJSON authoritative pack entries)
+        if c.get("pack") and isinstance(c["pack"], list) and len(c["pack"]) > 0:
             for pk in c["pack"]:
                 pcnt = int(pk.get("count", 1) or 1)
                 pcode = pk.get("code") or "draft"
@@ -236,47 +236,79 @@ def run_sync():
                     ev_max += pcnt * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
                     booster_names.add(ev_row.get("boosterName", pcode))
                 total_packs += pcnt
-                total_cards += pcnt * int(prod.get("cardCount") or 0)
+                # Pack card counts strictly based on booster type, never cardCount multiplier
+                cards_in_pack = 15
+                if (pset or "").lower() == "sld" or "sample" in pcode.lower() or "jumpstart-lands" in pcode.lower():
+                    cards_in_pack = 1 if "jumpstart-lands" in pcode.lower() else (2 if "sample" in pcode.lower() else 1)
+                total_cards += pcnt * cards_in_pack
 
-        # 3. Cards directly in contents (promos / singles)
+        # 3. Cards directly in contents (promos / singles lookup)
         if c.get("card") and isinstance(c["card"], list) and len(c["card"]) > 0:
             for cd in c["card"]:
                 ccnt = int(cd.get("count", 1) or 1)
                 total_cards += ccnt
-                is_foil = cd.get("foil", False) or "foil" in (cd.get("finishes") or [])
-                card_val = 15.0 if is_foil else 5.0
+                cuuid = cd.get("uuid")
+                cname = (cd.get("name") or "").lower()
+                cset = (cd.get("set") or prod.get("setCode") or "").lower()
+                ns_key = f"{cname}_{cset}"
+
+                card_val = 0.0
+                card_info = None
+                if cuuid and single_prices.get("byUuid", {}).get(cuuid):
+                    card_info = single_prices["byUuid"][cuuid]
+                elif single_prices.get("byNameSet", {}).get(ns_key):
+                    card_info = single_prices["byNameSet"][ns_key]
+
+                if card_info:
+                    is_foil = cd.get("foil", False) or "foil" in (cd.get("finishes") or [])
+                    card_val = float(card_info.get("foilPrice" if is_foil else "price", 0.0) or 0.0)
+                elif cd.get("price"):
+                    card_val = float(cd.get("price") or 0.0)
+
                 ev_avg += ccnt * card_val
                 ev_mid90 += ccnt * card_val
-                ev_min += ccnt * (card_val * 0.5)
-                ev_max += ccnt * (card_val * 2.0)
+                ev_min += ccnt * (card_val * 0.8)
+                ev_max += ccnt * (card_val * 1.2)
 
         # 4. Decks directly in contents
         if c.get("deck") and isinstance(c["deck"], list) and len(c["deck"]) > 0:
             for dk in c["deck"]:
-                dname = (dk.get("name") or "").lower()
+                dname = (dk.get("name") or "").lower().strip()
+                dset = (dk.get("set") or prod.get("setCode") or "").lower().strip()
                 matched = None
-                clean_dname = re.sub(r"[^a-z0-9]", "", dname)
-                for k, d in precon_decks.items():
-                    cd = re.sub(r"[^a-z0-9]", "", (d.get("deckName") or "").lower())
-                    if cd and (cd in clean_dname or clean_dname in cd):
-                        matched = d
-                        break
+
+                # Exact dictionary matches
+                if dname in precon_decks:
+                    matched = precon_decks[dname]
+                elif f"{dname}___{dset}" in precon_decks:
+                    matched = precon_decks[f"{dname}___{dset}"]
+                else:
+                    # Normalized alphanumeric search
+                    clean_dname = re.sub(r"[^a-z0-9]", "", dname)
+                    for k, d in precon_decks.items():
+                        c_d = re.sub(r"[^a-z0-9]", "", (d.get("deckName") or k).lower())
+                        c_s = (d.get("setCode") or "").lower()
+                        if dset and c_s == dset and clean_dname == c_d:
+                            matched = d
+                            break
+                        elif clean_dname == c_d:
+                            matched = d
+                            break
+
                 if matched and matched.get("totalSinglesEv"):
                     dev = float(matched["totalSinglesEv"])
                     ev_avg += dev
                     ev_mid90 += dev
                     ev_min += dev * 0.75
                     ev_max += dev * 1.35
-                    total_cards += int(matched.get("cardCount", 100) or 100)
+                    total_cards += int(matched.get("cardCount") or len(matched.get("cards", [])) or 60)
+                elif matched:
+                    total_cards += int(matched.get("cardCount") or len(matched.get("cards", [])) or 60)
                 else:
-                    if is_secret_lair:
-                        cnt = int(prod.get("cardCount") or 5)
-                        total_cards += cnt
-                    else:
-                        total_cards += 100
+                    total_cards += 60
 
-        # 5. Category fallback (for leaf products without contents)
-        if total_packs == 0 and not is_secret_lair and not c.get("sealed") and not c.get("pack") and not c.get("card") and not c.get("deck"):
+        # 5. Category fallback (ONLY for leaf booster products without MTGJSON contents)
+        if total_packs == 0 and not c.get("sealed") and not c.get("pack") and not c.get("card") and not c.get("deck"):
             cat = (prod.get("category") or "").lower()
             sub = (prod.get("subtype") or "").lower()
             pname = (prod.get("displayName") or "").lower()

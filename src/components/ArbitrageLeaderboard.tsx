@@ -48,6 +48,8 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
 
+  const recordByUuid = useMemo(() => new Map(records.map((r) => [r.productUuid, r])), [records]);
+
   const getCardCount = (box: BoxArbitrageRecord): number => {
     if (typeof box.cardCount === 'number' && box.cardCount > 0) return box.cardCount;
     if (box.contents?.card && Array.isArray(box.contents.card) && box.contents.card.length > 0) {
@@ -57,6 +59,20 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
       const cat = (box.category || '').toLowerCase();
       const isCommander = cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander');
       return box.contents.deck.length * (isCommander ? 100 : 60);
+    }
+    if (box.contents?.sealed && Array.isArray(box.contents.sealed) && box.contents.sealed.length > 0) {
+      const childSum = box.contents.sealed.reduce((sum: number, s: any) => {
+        const child = recordByUuid.get(s.uuid);
+        if (child) {
+          const cCount = typeof child.cardCount === 'number' && child.cardCount > 0 ? child.cardCount : 5;
+          return sum + (s.count || 1) * cCount;
+        }
+        return sum + (s.count || 1) * 5;
+      }, 0);
+      if (childSum > 0) return childSum;
+    }
+    if (box.contents?.variable && Array.isArray(box.contents.variable) && box.contents.variable.length > 0) {
+      return box.contents.variable.length;
     }
     const cat = (box.category || '').toLowerCase();
     if (cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander')) return 100;
@@ -849,29 +865,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                   >
                     <td className="py-3.5 px-4 font-medium text-slate-900 flex items-center gap-2">
                       {getCategoryIcon(box.category, box.boxName)}
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span>{box.boxName}</span>
-                          {box.contents && (
-                            <span
-                              className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
-                              title="Configured with verified MTGJSON contents"
-                            >
-                              {box.contents.note?.includes('1 of them is foil')
-                                ? '8 Cards (1 Foil)'
-                                : box.contents.card && box.contents.card.length === 1
-                                ? '1 Single Card'
-                                : box.contents.card && box.contents.card.length > 1
-                                ? `${box.contents.card.length} Cards`
-                                : box.contents.variable
-                                ? 'Variable Collation'
-                                : box.contents.deck
-                                ? 'Precon Deck'
-                                : 'Contents'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <span>{box.boxName}</span>
                     </td>
                     <td className="py-3.5 px-3 font-mono font-semibold text-xs text-slate-600">
                       <span className="px-2 py-1 bg-slate-100 rounded-md flex items-center gap-1.5 w-fit border border-slate-200/80">
