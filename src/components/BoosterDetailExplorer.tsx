@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo } from '../types';
+import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
   ShieldCheck, 
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
-import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct } from '../ecommerceBoosterData';
+import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 
 interface BoosterDetailExplorerProps {
   selectedSetCode: string;
@@ -107,6 +108,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     }));
   }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, vendorPriceMultiplier]);
 
+  // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
+  const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
+  const [selectedProductOverride, setSelectedProductOverride] = useState<CatalogPackProduct | null>(null);
+
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
     setCatalogProducts[0]?.id || ''
@@ -115,6 +120,73 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [activeBoosterName, setActiveBoosterName] = useState<string>(
     setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
   );
+
+  useEffect(() => {
+    let isMounted = true;
+    setSelectedProductOverride(null);
+    dataService.getSealedProducts().then((raw) => {
+      if (!isMounted || !Array.isArray(raw)) return;
+      const matching = raw.filter(
+        (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === selectedSetCode.toUpperCase()
+      );
+      const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
+        const pName = sp.displayName || sp.name || 'Sealed Product';
+        const sCode = (sp.setCode || sp.set_code || selectedSetCode).toUpperCase();
+        const cat = (sp.category || '').toLowerCase();
+        let packType: ProductPackagingType = 'other';
+        if (cat === 'box_set') packType = 'box_set';
+        else if (cat === 'booster_box') packType = 'box';
+        else if (cat === 'booster_case') packType = 'case';
+        else if (cat === 'bundle_case') packType = 'bundle_case';
+        else if (cat === 'booster_pack') packType = 'pack';
+        else if (cat === 'bundle') packType = 'bundle';
+        else if (cat === 'deck' || cat === 'multiple_decks' || cat === 'deck_box') packType = 'starter_deck';
+        else if (cat === 'kit') packType = 'kit';
+
+        let pCount = 1;
+        if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
+          pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
+        } else if (sp.contents?.sealed && Array.isArray(sp.contents.sealed)) {
+          pCount = sp.contents.sealed.reduce((sum: number, s: any) => sum + (s.count || 1), 0);
+        }
+
+        const boosterNameType = (
+          ['play', 'draft', 'set', 'collector', 'jumpstart', 'starter'].includes((sp.subtype || '').toLowerCase())
+            ? (sp.subtype || '').toLowerCase()
+            : 'draft'
+        ) as 'play' | 'draft' | 'set' | 'collector' | 'jumpstart' | 'starter';
+
+        return {
+          id: sp.id || sp.uuid || `${sCode}-${pName}`,
+          uuid: sp.uuid,
+          displayName: pName,
+          setCode: sCode,
+          setName: currentSet?.name || sCode,
+          releaseDate: sp.releaseDate || currentSet?.releaseDate || '',
+          block: currentSet?.block || '',
+          boosterName: boosterNameType,
+          packagingType: packType,
+          packsCount: pCount > 0 ? pCount : 1,
+          cardCount: sp.cardCount || (packType === 'starter_deck' ? 100 : undefined),
+          marketPrice: Number(((sp.marketPrice || 0) * vendorPriceMultiplier).toFixed(2)),
+          estimatedEv: Number(((sp.estimatedEv || sp.marketPrice || 0) * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+          rawCategory: cat,
+          specialFeatures: [],
+          rawContents: sp.contents,
+        };
+      });
+      setDbProducts(mapped);
+      if (mapped.length > 0) {
+        const preferred = mapped.find((p) => p.packagingType === 'pack') || mapped.find((p) => p.packagingType === 'box') || mapped[0];
+        setSelectedProductOverride(preferred);
+        setSelectedProductId(preferred.id);
+        if (preferred.boosterName) {
+          setActiveBoosterName(preferred.boosterName);
+        }
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [selectedSetCode, vendorPriceMultiplier, reprintMultiplier, vendorEvMultiplier]);
 
   // Sync when set changes
   useEffect(() => {
@@ -155,8 +227,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Find active product details
   const activeProduct: CatalogPackProduct | undefined = useMemo(() => {
-    return setCatalogProducts.find((p) => p.id === selectedProductId) || setCatalogProducts[0];
-  }, [setCatalogProducts, selectedProductId]);
+    if (selectedProductOverride && selectedProductOverride.setCode.toUpperCase() === selectedSetCode.toUpperCase()) {
+      return selectedProductOverride;
+    }
+    const dbMatch = dbProducts.find((p) => p.id === selectedProductId);
+    if (dbMatch) return dbMatch;
+    return setCatalogProducts.find((p) => p.id === selectedProductId) || dbProducts[0] || setCatalogProducts[0];
+  }, [selectedProductOverride, selectedSetCode, dbProducts, selectedProductId, setCatalogProducts]);
 
   const isPreconProduct = useMemo(() => {
     if (!activeProduct) return false;
@@ -181,7 +258,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Product level scaled metrics
   const productPacksCount = activeProduct?.packsCount || 1;
-  const productMarketPrice = activeProduct?.marketPrice || packMarketPrice;
+  const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : packMarketPrice;
   // Calculate dynamic product EV from pack EV and pack count (plus bundle bonuses if applicable)
   // Preconstructed decks have deterministic fixed EV
   const bundleBonusVal = activeProduct?.packagingType === 'bundle' ? 3.50 : 0;
@@ -193,6 +270,24 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const productMax5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2));
   const productMin = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2));
   const productMax = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2));
+
+  // EV score number (0 - 100): Probability of opening value >= sealed market price
+  const productEvScore = useMemo(() => {
+    if (productMarketPrice <= 0) return 100;
+    if (isPreconProduct) {
+      if (productEstimatedEv >= productMarketPrice) return 100;
+      return Math.max(0, Math.min(99, Math.round((productEstimatedEv / productMarketPrice) * 100)));
+    }
+    if (productMarketPrice <= productMin5) return 100;
+    if (productMarketPrice >= productMax5) return 0;
+    if (productMarketPrice <= productMid90Ev) {
+      const pct = 95 - ((productMarketPrice - productMin5) / (productMid90Ev - productMin5)) * 45;
+      return Math.round(Math.max(50, Math.min(95, pct)));
+    } else {
+      const pct = 50 - ((productMarketPrice - productMid90Ev) / (productMax5 - productMid90Ev)) * 45;
+      return Math.round(Math.max(5, Math.min(50, pct)));
+    }
+  }, [productMarketPrice, isPreconProduct, productEstimatedEv, productMin5, productMid90Ev, productMax5]);
 
   const getRarityBadge = (rarity: string) => {
     switch (rarity) {
@@ -301,19 +396,14 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
         {/* Middle Row: Generic Set Information Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100">
-          {/* 1. Set Code & Token Code */}
+          {/* 1. Set Code */}
           <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/70 space-y-1">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <Hash className="w-3 h-3 text-slate-500" />
-              <span>Set Codes</span>
+              <span>Set Code</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
               <span className="font-mono">{currentSet?.code || selectedSetCode}</span>
-              <span className="text-slate-300">/</span>
-              <span className="inline-flex items-center gap-1 font-mono text-slate-600" title="Token Set Code">
-                <SetSymbolIcon setCode={currentSet?.tokenSetCode || `T${selectedSetCode}`} size="xs" />
-                {currentSet?.tokenSetCode || `T${selectedSetCode}`}
-              </span>
             </div>
           </div>
 
@@ -455,6 +545,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           onVendorChange={onVendorChange}
           onSelectProduct={(prodId, bName, product) => {
             setSelectedProductId(prodId);
+            if (product) {
+              setSelectedProductOverride(product);
+            }
             if (bName) {
               setActiveBoosterName(bName);
             }
@@ -465,8 +558,106 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       {/* 2. Active Selected Product Detailed Stats Grid */}
       {activeBooster && (
         <div className="space-y-6">
+          {/* EV Score & Market Price Banner */}
+          <div
+            id="product-ev-score-banner"
+            className="bg-slate-900 text-white rounded-2xl p-4 px-6 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex flex-col items-center justify-center shrink-0">
+                <span
+                  className={`text-xl font-black font-mono leading-none ${
+                    productEvScore >= 60 ? 'text-emerald-400' : productEvScore >= 35 ? 'text-amber-400' : 'text-rose-400'
+                  }`}
+                >
+                  {productEvScore}
+                </span>
+                <span className="text-[8px] font-bold text-slate-500 font-mono mt-0.5">/100</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">EV Score</span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      productEvScore >= 60
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        : productEvScore >= 35
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : 'bg-rose-950 text-rose-300 border border-rose-800'
+                    }`}
+                  >
+                    {productEvScore >= 75 ? 'High Profit Probability' : productEvScore >= 50 ? 'Positive Risk/Reward' : productEvScore >= 25 ? 'Moderate Dud Risk' : 'Heavy Loss Expected'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Estimated <strong className="text-white font-mono">{productEvScore}%</strong> chance that this sealed product yields singles valued equal to or above its <strong className="text-white font-mono">${productMarketPrice.toFixed(2)}</strong> market price.
+                </p>
+              </div>
+            </div>
+            <div className="text-left sm:text-right shrink-0 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Selected Product Price</div>
+              <div className="text-lg font-black font-mono text-emerald-400">${productMarketPrice.toFixed(2)}</div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Expected Value / Precon Total */}
+            {/* Card 1: Bottom 5% Floor */}
+            <div
+              id="card-stat-floor"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct ? 'Dud Floor (0% Risk)' : 'Bottom 5% Floor'}
+                </span>
+                <AlertCircle className="w-4 h-4 text-rose-500" />
+              </div>
+              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-rose-600'}`}>
+                ${productMin5.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>{isPreconProduct ? 'No dud risk (fixed list)' : 'Worst 5% dud distribution'}</span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-slate-700">Guaranteed</span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-rose-700">
+                      ${activeBooster.evMin5.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+
+            {/* Card 2: Mid 90% EV */}
+            <div
+              id="card-stat-mid90"
+              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
+            >
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {isPreconProduct ? 'Median Singles Value' : 'Mid 90% EV'}
+                </span>
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="text-3xl font-black text-emerald-600 font-mono tracking-tight">
+                ${productMid90Ev.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                <span>{isPreconProduct ? 'Constant across all copies' : '5% trimmed mean'}</span>
+                {isPreconProduct ? (
+                  <span className="font-mono font-semibold text-emerald-700">0% Variance</span>
+                ) : (
+                  productPacksCount > 1 && (
+                    <span className="font-mono font-semibold text-emerald-700">
+                      ${activeBooster.evMid90.toFixed(2)} / pack
+                    </span>
+                  )
+                )}
+              </p>
+            </div>
+
+            {/* Card 3: Average Pack EV / Precon Total */}
             <div
               id="card-stat-ev"
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
@@ -512,63 +703,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               </p>
             </div>
 
-            {/* Card 2: Mid 90% Trimmed Mean / Median */}
-            <div
-              id="card-stat-mid90"
-              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
-            >
-              <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {isPreconProduct ? 'Median Singles Value' : 'Mid 90% EV'}
-                </span>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div className="text-3xl font-black text-emerald-600 font-mono tracking-tight">
-                ${productMid90Ev.toFixed(2)}
-              </div>
-              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{isPreconProduct ? 'Constant across all copies' : '5% trimmed mean'}</span>
-                {isPreconProduct ? (
-                  <span className="font-mono font-semibold text-emerald-700">0% Variance</span>
-                ) : (
-                  productPacksCount > 1 && (
-                    <span className="font-mono font-semibold text-emerald-700">
-                      ${activeBooster.evMid90.toFixed(2)} / pack
-                    </span>
-                  )
-                )}
-              </p>
-            </div>
-
-            {/* Card 3: Floor (Bottom 5% / Dud Floor) */}
-            <div
-              id="card-stat-floor"
-              className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
-            >
-              <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {isPreconProduct ? 'Dud Floor (0% Risk)' : 'Bottom 5% Floor'}
-                </span>
-                <AlertCircle className="w-4 h-4 text-rose-500" />
-              </div>
-              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-rose-600'}`}>
-                ${productMin5.toFixed(2)}
-              </div>
-              <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{isPreconProduct ? 'No dud risk (fixed list)' : 'Worst 5% dud distribution'}</span>
-                {isPreconProduct ? (
-                  <span className="font-mono font-semibold text-slate-700">Guaranteed</span>
-                ) : (
-                  productPacksCount > 1 && (
-                    <span className="font-mono font-semibold text-rose-700">
-                      ${activeBooster.evMin5.toFixed(2)} / pack
-                    </span>
-                  )
-                )}
-              </p>
-            </div>
-
-            {/* Card 4: Ceiling (Top 5% / Max Value) */}
+            {/* Card 4: Top 5% Ceiling */}
             <div
               id="card-stat-ceiling"
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
@@ -594,89 +729,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   )
                 )}
               </p>
-            </div>
-          </div>
-
-          {/* Top 10 Chase Cards Artwork Gallery */}
-          <div
-            id="chase-cards-gallery-section"
-            className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-amber-500" />
-                <h3 className="text-lg font-bold text-slate-900">
-                  Top Chase Cards ({currentSet?.name || selectedSetCode})
-                </h3>
-              </div>
-              <span className="text-xs font-medium text-slate-400">Scryfall CDN Direct</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
-              {chaseCards.map((card) => {
-                const imageUrl = `https://cards.scryfall.io/normal/front/${card.scryfallId.charAt(0)}/${card.scryfallId.charAt(1)}/${card.scryfallId}.jpg`;
-                const displayPriceNormal = priceMode === 'cheapest_reprint' ? Number((card.priceNormal * 0.74).toFixed(2)) : card.priceNormal;
-                const displayPriceFoil = card.priceFoil ? (priceMode === 'cheapest_reprint' ? Number((card.priceFoil * 0.78).toFixed(2)) : card.priceFoil) : undefined;
-
-                return (
-                  <div
-                    key={card.uuid}
-                    id={`chase-card-${card.uuid}`}
-                    className="group bg-slate-50 rounded-xl p-2.5 border border-slate-200 hover:border-slate-400 hover:shadow-md transition flex flex-col"
-                  >
-                    <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2.5">
-                      <img
-                        src={imageUrl}
-                        alt={card.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
-                        }}
-                      />
-                      <span
-                        className={`absolute top-1.5 right-1.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md bg-white/90 ${getRarityBadge(
-                          card.rarity
-                        )}`}
-                      >
-                        {card.rarity}
-                      </span>
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-amber-600 transition">
-                        {card.name}
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/80">
-                        <span className="text-[11px] font-mono text-slate-500">#{card.number}</span>
-                        <div className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className="text-xs font-black font-mono text-emerald-600">
-                              ${displayPriceNormal.toFixed(2)}
-                            </span>
-                            {priceMode === 'cheapest_reprint' && (
-                              <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 rounded font-sans">
-                                Reprint
-                              </span>
-                            )}
-                          </div>
-                          {priceMode === 'cheapest_reprint' && (
-                            <span className="text-[9px] font-mono text-slate-400 line-through block">
-                              Orig: ${card.priceNormal.toFixed(2)}
-                            </span>
-                          )}
-                          {displayPriceFoil && (
-                            <span className="text-[10px] font-mono text-amber-500 block">
-                              Foil: ${displayPriceFoil.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
 

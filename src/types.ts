@@ -71,15 +71,20 @@ export interface BoxArbitrageRecord {
   boosterName: string;
   packCount: number;
   cardCount?: number;
-  boxMarketPrice: number;
-  packEvMin?: number;
-  packEvAvg: number;
-  packEvMid90: number;
-  packEvMax?: number;
-  boxEvMin?: number;
-  boxEvAvg: number;
-  boxEvMid90: number;
-  boxEvMax?: number;
+  /** This product's own listed market price (regardless of whether it's a pack, box, case, or deck) */
+  marketPrice: number;
+  /** EV of a single contained unit (e.g. one pack) - not applicable/0 for leaf products */
+  unitEvMin?: number;
+  unitEvAvg: number;
+  unitEvMid90: number;
+  unitEvMax?: number;
+  /** EV of this whole product (unitEv * quantity, or its own singles/contents EV) */
+  totalEvMin?: number;
+  totalEvAvg: number;
+  totalEvMid90: number;
+  totalEvMax?: number;
+  effectiveEv?: number;
+  evScore?: number;
   profitUsd: number;
   roiPct: number;
   vendor: string;

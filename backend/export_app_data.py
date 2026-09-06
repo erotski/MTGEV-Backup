@@ -145,7 +145,7 @@ def export_all():
                 sp.cardCount as spCardCount,
                 sp.setCode,
                 s.name as setName,
-                spp.market_price as boxMarketPrice,
+                spp.market_price as marketPrice,
                 sp.contents as contents
             FROM sealedProducts sp
             JOIN sets s ON sp.setCode = s.code
@@ -322,7 +322,7 @@ def export_all():
             sp_sub = (a.get("spSubtype") or "").lower()
             sp_card_count = a.get("spCardCount")
             set_code = (a.get("setCode") or "").upper()
-            box_price = float(a.get("boxMarketPrice") or 0.0)
+            box_price = float(a.get("marketPrice") or 0.0)
 
             if box_price <= 0:
                 continue
@@ -357,17 +357,17 @@ def export_all():
                         a['boosterName'] = "single_card"
                         a['packCount'] = 0
                         a['cardCount'] = len(cards)
-                        a['packEvMin'] = 0.0
-                        a['packEvAvg'] = "0.00"
-                        a['packEvMid90'] = "0.00"
-                        a['packEvMax'] = 0.0
+                        a['unitEvMin'] = 0.0
+                        a['unitEvAvg'] = "0.00"
+                        a['unitEvMid90'] = "0.00"
+                        a['unitEvMax'] = 0.0
                         a['completePct'] = "100.00"
                         a['updatedAt'] = ""
                         a['contents'] = contents
-                        a['boxEvMin'] = round(singles_ev, 2)
-                        a['boxEvAvg'] = round(singles_ev, 2)
-                        a['boxEvMid90'] = round(singles_ev, 2)
-                        a['boxEvMax'] = round(singles_ev, 2)
+                        a['totalEvMin'] = round(singles_ev, 2)
+                        a['totalEvAvg'] = round(singles_ev, 2)
+                        a['totalEvMid90'] = round(singles_ev, 2)
+                        a['totalEvMax'] = round(singles_ev, 2)
                         profit = round(singles_ev - box_price, 2)
                         roi = round((profit / box_price) * 100, 2) if box_price > 0 else 0.0
                         a['profitUsd'] = profit
@@ -427,17 +427,17 @@ def export_all():
             a['category'] = sp_cat if sp_cat in ["booster_box", "booster_case", "booster_pack", "bundle", "deck", "box_set"] else "other"
             a['boosterName'] = matched_booster
             a['packCount'] = pack_count
-            a['packEvMin'] = pack_min
-            a['packEvAvg'] = str(pack_ev)
-            a['packEvMid90'] = str(pack_mid)
-            a['packEvMax'] = pack_max
+            a['unitEvMin'] = pack_min
+            a['unitEvAvg'] = str(pack_ev)
+            a['unitEvMid90'] = str(pack_mid)
+            a['unitEvMax'] = pack_max
             a['completePct'] = str(ev_info.get("exact_match_pct", "100.00"))
             a['updatedAt'] = str(ev_info.get("updated_at") or "")
             a['contents'] = contents
-            a['boxEvMin'] = box_ev_min
-            a['boxEvAvg'] = box_ev_avg
-            a['boxEvMid90'] = box_ev_mid90
-            a['boxEvMax'] = box_ev_max
+            a['totalEvMin'] = box_ev_min
+            a['totalEvAvg'] = box_ev_avg
+            a['totalEvMid90'] = box_ev_mid90
+            a['totalEvMax'] = box_ev_max
             a['profitUsd'] = profit_usd
             a['roiPct'] = roi_pct
             a['vendor'] = 'tcgplayer'

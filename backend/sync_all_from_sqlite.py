@@ -6,9 +6,10 @@ Populates both packCount and total cardCount (with 0 for products with no packs)
 """
 import sqlite3
 import json
-import re
 import os
 from pathlib import Path
+
+from ev_engine import evaluate_product_composite
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DATA_DIR = ROOT_DIR / "public" / "data"
@@ -134,202 +135,14 @@ def run_sync():
         with open(PUBLIC_DATA_DIR / "precon_decks.json", "r", encoding="utf-8") as f:
             precon_decks = json.load(f)
 
+    # 4b. Load Single Card Prices for singles/promos in contents
+    single_prices = {}
+    if (PUBLIC_DATA_DIR / "single_card_prices.json").exists():
+        with open(PUBLIC_DATA_DIR / "single_card_prices.json", "r", encoding="utf-8") as f:
+            single_prices = json.load(f)
+
     # 5. Strict recursive composite product EV, pack, and card resolution engine
-    def get_pack_ev(set_code, booster_code):
-        s_code = (set_code or "").lower()
-        b_key = (booster_code or "").lower()
-
-        # MTGJSON contents codes are authoritative. Do not turn promotional
-        # codes such as collector-sample into regular collector boosters.
-        aliases = {
-            "set-booster": "set",
-            "set_booster": "set",
-            "draft-booster": "draft",
-            "draft_booster": "draft",
-            "play-booster": "play",
-            "play_booster": "play",
-        }
-        b_key = aliases.get(b_key, b_key)
-        
-        # Standard lookup
-        ev_row = (
-            booster_ev_lookup.get((s_code, b_key, "direct", "tcgplayer"))
-            or booster_ev_lookup.get((s_code, b_key, "direct", "all"))
-        )
-        return ev_row
-
-    def evaluate_product_composite(prod, depth=0, visited=None):
-        if visited is None:
-            visited = set()
-        uid = prod.get("id") or prod.get("uuid")
-        if uid in visited or depth > 6:
-            return {"packs": 0, "cards": 0, "evAvg": 0.0, "evMid90": 0.0, "evMin": 0.0, "evMax": 0.0, "boosterName": "custom"}
-        visited.add(uid)
-
-        c = prod.get("contents") or {}
-        total_packs = 0
-        total_cards = 0
-        ev_avg = 0.0
-        ev_mid90 = 0.0
-        ev_min = 0.0
-        ev_max = 0.0
-        booster_names = set()
-
-        is_secret_lair = (
-            (prod.get("setCode") or "").lower() == "sld" 
-            or (prod.get("subtype") or "").lower() in ["secret_lair", "secret_lair_bundle"] 
-            or "secret lair" in (prod.get("displayName") or "").lower()
-        )
-
-        # 1. Sealed sub-products (Bundles, Cases, Superdrops, Festival in a Box)
-        if c.get("sealed") and isinstance(c["sealed"], list) and len(c["sealed"]) > 0:
-            for s in c["sealed"]:
-                scnt = int(s.get("count", 1) or 1)
-                suuid = s.get("uuid")
-                sub_prod = product_map.get(suuid)
-                if sub_prod:
-                    res = evaluate_product_composite(sub_prod, depth + 1, visited.copy())
-                    total_packs += scnt * res["packs"]
-                    total_cards += scnt * res["cards"]
-                    if res.get("boosterName") and res["boosterName"] not in ["draft", "custom", "deck"]:
-                        booster_names.add(res["boosterName"])
-
-                    if res["evAvg"] > 0:
-                        ev_avg += scnt * res["evAvg"]
-                        ev_mid90 += scnt * res["evMid90"]
-                        ev_min += scnt * res["evMin"]
-                        ev_max += scnt * res["evMax"]
-                    else:
-                        sub_m = float(sub_prod.get("marketPrice", 0) or 0)
-                        if sub_m > 0:
-                            ev_avg += scnt * sub_m
-                            ev_mid90 += scnt * sub_m
-                            ev_min += scnt * sub_m * 0.85
-                            ev_max += scnt * sub_m * 1.15
-                else:
-                    sname = (s.get("name") or "").lower()
-                    sset = (s.get("set") or prod.get("setCode") or "").lower()
-                    ev_row = get_pack_ev(sset, "draft")
-                    if ev_row and ("pack" in sname or "booster" in sname):
-                        p_ev = float(ev_row.get("evAverage", 0) or 0)
-                        ev_avg += scnt * p_ev
-                        ev_mid90 += scnt * float(ev_row.get("evMid90", p_ev) or p_ev)
-                        ev_min += scnt * float(ev_row.get("evMin", 0) or 0)
-                        ev_max += scnt * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
-                        total_packs += scnt
-                        total_cards += scnt * 15
-                    else:
-                        total_cards += scnt * 15
-
-        # 2. Packs directly in contents (exclude Secret Lair drop synthetic pack wrappers)
-        if not is_secret_lair and c.get("pack") and isinstance(c["pack"], list) and len(c["pack"]) > 0:
-            for pk in c["pack"]:
-                pcnt = int(pk.get("count", 1) or 1)
-                pcode = pk.get("code") or "draft"
-                pset = pk.get("set") or prod.get("setCode") or ""
-                ev_row = get_pack_ev(pset, pcode)
-                if ev_row:
-                    p_ev = float(ev_row.get("evAverage", 0) or 0)
-                    ev_avg += pcnt * p_ev
-                    ev_mid90 += pcnt * float(ev_row.get("evMid90", p_ev) or p_ev)
-                    ev_min += pcnt * float(ev_row.get("evMin", 0) or 0)
-                    ev_max += pcnt * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
-                    booster_names.add(ev_row.get("boosterName", pcode))
-                total_packs += pcnt
-                total_cards += pcnt * int(prod.get("cardCount") or 0)
-
-        # 3. Cards directly in contents (promos / singles)
-        if c.get("card") and isinstance(c["card"], list) and len(c["card"]) > 0:
-            for cd in c["card"]:
-                ccnt = int(cd.get("count", 1) or 1)
-                total_cards += ccnt
-                is_foil = cd.get("foil", False) or "foil" in (cd.get("finishes") or [])
-                card_val = 15.0 if is_foil else 5.0
-                ev_avg += ccnt * card_val
-                ev_mid90 += ccnt * card_val
-                ev_min += ccnt * (card_val * 0.5)
-                ev_max += ccnt * (card_val * 2.0)
-
-        # 4. Decks directly in contents
-        if c.get("deck") and isinstance(c["deck"], list) and len(c["deck"]) > 0:
-            for dk in c["deck"]:
-                dname = (dk.get("name") or "").lower()
-                matched = None
-                clean_dname = re.sub(r"[^a-z0-9]", "", dname)
-                for k, d in precon_decks.items():
-                    cd = re.sub(r"[^a-z0-9]", "", (d.get("deckName") or "").lower())
-                    if cd and (cd in clean_dname or clean_dname in cd):
-                        matched = d
-                        break
-                if matched and matched.get("totalSinglesEv"):
-                    dev = float(matched["totalSinglesEv"])
-                    ev_avg += dev
-                    ev_mid90 += dev
-                    ev_min += dev * 0.75
-                    ev_max += dev * 1.35
-                    total_cards += int(matched.get("cardCount", 100) or 100)
-                else:
-                    if is_secret_lair:
-                        cnt = int(prod.get("cardCount") or 5)
-                        total_cards += cnt
-                    else:
-                        total_cards += 100
-
-        # 5. Category fallback (for leaf products without contents)
-        if total_packs == 0 and not is_secret_lair and not c.get("sealed") and not c.get("pack") and not c.get("card") and not c.get("deck"):
-            cat = (prod.get("category") or "").lower()
-            sub = (prod.get("subtype") or "").lower()
-            pname = (prod.get("displayName") or "").lower()
-            s_code = (prod.get("setCode") or "").lower()
-
-            if cat in ["booster_box", "booster_pack", "bundle", "prerelease_kit", "booster_case", "bundle_case"]:
-                packs = 36
-                b_key = "draft"
-                if cat == "booster_pack": packs = 1
-                elif cat == "bundle": packs = 9
-                elif cat == "bundle_case": packs = 54
-                elif cat == "prerelease_kit" or "prerelease" in pname: packs = 6
-                elif cat == "booster_case":
-                    packs = 72 if sub == "collector" else (144 if sub == "jumpstart" else 216)
-                elif sub == "collector" or "collector" in pname: packs = 12; b_key = "collector"
-                elif sub == "jumpstart" or "jumpstart" in pname: packs = 24; b_key = "jumpstart"
-                elif sub == "play" or "play" in pname: packs = 36; b_key = "play"
-
-                total_packs = packs
-                total_cards = packs * 15
-
-                ev_row = get_pack_ev(s_code, b_key)
-                if ev_row:
-                    p_ev = float(ev_row.get("evAverage", 0) or 0)
-                    ev_avg = packs * p_ev
-                    ev_mid90 = packs * float(ev_row.get("evMid90", p_ev) or p_ev)
-                    ev_min = packs * float(ev_row.get("evMin", 0) or 0)
-                    ev_max = packs * float(ev_row.get("evMax", p_ev * 2) or p_ev * 2)
-                    booster_names.add(ev_row.get("boosterName", b_key))
-
-        # Do not invent EV for products with explicit MTGJSON contents.
-        if ev_avg == 0.0 and not c:
-            m_price = float(prod.get("marketPrice", 0) or 0)
-            if m_price > 0:
-                ev_avg = m_price
-                ev_mid90 = m_price
-                ev_min = m_price * 0.85
-                ev_max = m_price * 1.15
-
-        # Authoritative card count override if MTGJSON specifies cardCount explicitly
-        if prod.get("cardCount") and int(prod["cardCount"]) > 0:
-            total_cards = int(prod["cardCount"])
-
-        bname = ", ".join(sorted(booster_names)) if booster_names else ("deck" if total_packs == 0 else "draft")
-        return {
-            "packs": total_packs,
-            "cards": total_cards,
-            "evAvg": round(ev_avg, 2),
-            "evMid90": round(ev_mid90, 2),
-            "evMin": round(ev_min, 2),
-            "evMax": round(ev_max, 2),
-            "boosterName": bname
-        }
+    # (shared with scripts/recompute_arbitrage_leaderboard.py via ev_engine.py)
 
     # 6. Build Arbitrage Leaderboard
     if has_sqlite:
@@ -344,8 +157,8 @@ def run_sync():
         m_price = float(m_price)
 
         uid = sp["id"]
-        res = evaluate_product_composite(sp)
-        
+        res = evaluate_product_composite(sp, product_map, booster_ev_lookup, precon_decks, single_prices)
+
         if res["evAvg"] <= 0:
             continue
 
@@ -374,18 +187,18 @@ def run_sync():
             "category": sp.get("category"),
             "setCode": sp.get("setCode", "").upper(),
             "setName": set_name,
-            "boxMarketPrice": m_price,
+            "marketPrice": m_price,
             "packCount": pack_count,
             "cardCount": card_count,
             "boosterName": b_name_display,
-            "packEvAvg": pack_ev_avg,
-            "packEvMid90": pack_ev_mid90,
-            "packEvMin": pack_ev_min,
-            "packEvMax": pack_ev_max,
-            "boxEvAvg": box_ev_avg,
-            "boxEvMid90": box_ev_mid90,
-            "boxEvMin": box_ev_min,
-            "boxEvMax": box_ev_max,
+            "unitEvAvg": pack_ev_avg,
+            "unitEvMid90": pack_ev_mid90,
+            "unitEvMin": pack_ev_min,
+            "unitEvMax": pack_ev_max,
+            "totalEvAvg": box_ev_avg,
+            "totalEvMid90": box_ev_mid90,
+            "totalEvMin": box_ev_min,
+            "totalEvMax": box_ev_max,
             "arbitrageValue": arbitrage_val,
             "roiPercent": roi,
             "purchaseUrl": sp.get("purchaseUrl"),
@@ -402,11 +215,11 @@ def run_sync():
     # Check sample products (both pack and 0-pack)
     print("\nSample Leaderboard Records:")
     for r in arbitrage_records[:5]:
-        print(f"  [{r['setCode']}] {r['boxName'][:40]} | Packs: {r['packCount']} | Cards: {r['cardCount']} | Price: ${r['boxMarketPrice']:.2f} | EV: ${r['boxEvAvg']:.2f}")
+        print(f"  [{r['setCode']}] {r['boxName'][:40]} | Packs: {r['packCount']} | Cards: {r['cardCount']} | Price: ${r['marketPrice']:.2f} | EV: ${r['totalEvAvg']:.2f}")
 
     for r in arbitrage_records:
         if r['packCount'] == 0:
-            print(f"\nSample 0-Pack Deck Record: [{r['setCode']}] {r['boxName']} | Packs: {r['packCount']} | Cards: {r['cardCount']} | Price: ${r['boxMarketPrice']:.2f} | EV: ${r['boxEvAvg']:.2f}")
+            print(f"\nSample 0-Pack Deck Record: [{r['setCode']}] {r['boxName']} | Packs: {r['packCount']} | Cards: {r['cardCount']} | Price: ${r['marketPrice']:.2f} | EV: ${r['totalEvAvg']:.2f}")
             break
 
 if __name__ == "__main__":

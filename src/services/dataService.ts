@@ -146,8 +146,9 @@ class DataService {
           if (Array.isArray(sealedProducts)) {
             for (const product of sealedProducts) {
               const uuid = product.id || product.uuid;
-              const cardCount = Number(product.cardCount);
-              if (uuid && Number.isFinite(cardCount) && cardCount >= 0) {
+              const rawCount = product.cardCount;
+              const cardCount = rawCount !== null && rawCount !== undefined ? Number(rawCount) : NaN;
+              if (uuid && Number.isFinite(cardCount) && cardCount > 0) {
                 cardCountByUuid.set(uuid, cardCount);
               }
               const packCodes = Array.isArray(product.contents?.pack)
@@ -162,9 +163,12 @@ class DataService {
 
           this.arbitrageCache = raw.filter((record: BoxArbitrageRecord) => !productsWithoutExactEv.has(record.productUuid)).map((record: BoxArbitrageRecord) => {
             const authoritativeCardCount = cardCountByUuid.get(record.productUuid);
-            return authoritativeCardCount === undefined
-              ? record
-              : { ...record, cardCount: authoritativeCardCount };
+            const resolvedCardCount = authoritativeCardCount !== undefined && authoritativeCardCount > 0
+              ? authoritativeCardCount
+              : (typeof record.cardCount === 'number' && record.cardCount > 0 ? record.cardCount : undefined);
+            return resolvedCardCount !== undefined
+              ? { ...record, cardCount: resolvedCardCount }
+              : record;
           });
           return this.arbitrageCache;
         }
@@ -263,6 +267,29 @@ class DataService {
       console.warn('Could not fetch /data/sealed_products.json:', e);
     }
     return [];
+  }
+
+  /**
+   * Loads individual card pricing & EV index from /data/single_card_prices.json
+   */
+  public async getSingleCardPrices(): Promise<{
+    byUuid: Record<string, any>;
+    byNameSet: Record<string, any>;
+    byName: Record<string, any>;
+    totalIndexed: number;
+  }> {
+    try {
+      const response = await fetch('/data/single_card_prices.json', { cache: 'no-cache' });
+      if (response.ok) {
+        const raw = await response.json();
+        if (raw && typeof raw === 'object') {
+          return raw;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch /data/single_card_prices.json:', e);
+    }
+    return { byUuid: {}, byNameSet: {}, byName: {}, totalIndexed: 0 };
   }
 
   /**

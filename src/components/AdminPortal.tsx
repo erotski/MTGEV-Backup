@@ -86,6 +86,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
   const [sealedProducts, setSealedProducts] = useState<any[]>([]);
   const [isIntegrityLoading, setIsIntegrityLoading] = useState(true);
   const [integrityLoadError, setIntegrityLoadError] = useState<string | null>(null);
+  const [integrityFilter, setIntegrityFilter] = useState<'all' | 'zero_ev' | 'error' | 'warning'>('all');
+  const [integritySearch, setIntegritySearch] = useState<string>('');
+  const [integrityPage, setIntegrityPage] = useState<number>(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -234,6 +237,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
         addIssue('warning', 'Missing MTGJSON contents definition.');
       }
 
+      const ev = Number(product.estimatedEv ?? product.evAverage ?? product.ev ?? 0);
+      if (ev <= 0) {
+        addIssue('warning', 'Unit EV value is zero ($0.00) – missing card singles pricing or decklist collation.');
+      }
+
       const fixedCards = Array.isArray(contents?.card) ? contents.card : [];
       const hasNestedContents = Array.isArray(contents?.sealed) || Array.isArray(contents?.pack) || Array.isArray(contents?.deck);
       if (!hasNestedContents && fixedCards.length > 0 && Number(product.cardCount) !== fixedCards.length) {
@@ -243,6 +251,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
 
     return issues;
   }, [sealedProducts]);
+
+  const zeroEvCount = useMemo(() => {
+    return integrityIssues.filter((item) => item.issue.includes('Unit EV value is zero')).length;
+  }, [integrityIssues]);
+
+  const displayedIntegrityIssues = useMemo(() => {
+    return integrityIssues.filter((item) => {
+      if (integrityFilter === 'zero_ev' && !item.issue.includes('Unit EV value is zero')) return false;
+      if (integrityFilter === 'error' && item.severity !== 'error') return false;
+      if (integrityFilter === 'warning' && item.severity !== 'warning') return false;
+      if (integritySearch.trim()) {
+        const q = integritySearch.toLowerCase();
+        return (
+          item.displayName.toLowerCase().includes(q) ||
+          item.setCode.toLowerCase().includes(q) ||
+          item.id.toLowerCase().includes(q) ||
+          item.issue.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [integrityIssues, integrityFilter, integritySearch]);
 
   // Filtered Products List for the Audit Table
   const filteredProducts = useMemo(() => {
@@ -435,22 +465,132 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
 
       {activeAdminSection === 'integrity' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-black text-slate-900">MTGJSON Product Integrity</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Read-only checks against <span className="font-mono">/data/sealed_products.json</span>. Missing values are reported, never replaced.
-                </p>
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Audited Products
               </div>
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
-                  {integrityIssues.filter((item) => item.severity === 'error').length} Errors
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                  {integrityIssues.filter((item) => item.severity === 'warning').length} Warnings
-                </span>
+              <div className="text-2xl font-black font-mono text-slate-900">
+                {sealedProducts.length.toLocaleString()}
               </div>
+              <p className="text-[11px] text-slate-500 mt-1">Total items in /data/sealed_products.json</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm bg-rose-50/20">
+              <div className="text-xs font-bold uppercase tracking-wider text-rose-500 mb-1">
+                Zero EV Products ($0.00)
+              </div>
+              <div className="text-2xl font-black font-mono text-rose-600">
+                {zeroEvCount.toLocaleString()}
+              </div>
+              <p className="text-[11px] text-rose-500/80 mt-1">Missing decklist singles pricing or collation</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Schema Errors
+              </div>
+              <div className="text-2xl font-black font-mono text-rose-700">
+                {integrityIssues.filter((item) => item.severity === 'error').length.toLocaleString()}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Count discrepancies or missing UUIDs</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Schema Warnings
+              </div>
+              <div className="text-2xl font-black font-mono text-amber-600">
+                {integrityIssues.filter((item) => item.severity === 'warning').length.toLocaleString()}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Missing market prices or contents</p>
+            </div>
+          </div>
+
+          {/* Controls & Filters Bar */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setIntegrityFilter('all');
+                  setIntegrityPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  integrityFilter === 'all'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>All Issues</span>
+                <span className="text-[10px] opacity-80 font-mono">({integrityIssues.length.toLocaleString()})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIntegrityFilter('zero_ev');
+                  setIntegrityPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  integrityFilter === 'zero_ev'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Zero EV Products ($0.00)</span>
+                <span className="text-[10px] font-mono">({zeroEvCount.toLocaleString()})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIntegrityFilter('error');
+                  setIntegrityPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  integrityFilter === 'error'
+                    ? 'bg-rose-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>Errors Only</span>
+                <span className="text-[10px] opacity-80 font-mono">
+                  ({integrityIssues.filter((i) => i.severity === 'error').length})
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIntegrityFilter('warning');
+                  setIntegrityPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  integrityFilter === 'warning'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>Warnings Only</span>
+                <span className="text-[10px] opacity-80 font-mono">
+                  ({integrityIssues.filter((i) => i.severity === 'warning').length.toLocaleString()})
+                </span>
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search issue, product, set, UUID..."
+                value={integritySearch}
+                onChange={(e) => {
+                  setIntegritySearch(e.target.value);
+                  setIntegrityPage(1);
+                }}
+                className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 w-full sm:w-64"
+              />
             </div>
           </div>
 
@@ -462,38 +602,97 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
               Loading authoritative product records...
             </div>
-          ) : integrityIssues.length === 0 ? (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm font-bold text-emerald-800">
-              No product integrity issues found in the loaded MTGJSON export.
+          ) : displayedIntegrityIssues.length === 0 ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center text-sm font-bold text-emerald-800">
+              <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
+              No issues matching current filters and search criteria.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900 text-white font-mono uppercase text-[10px]">
-                  <tr>
-                    <th className="p-3">Severity</th>
-                    <th className="p-3">Set</th>
-                    <th className="p-3">Product</th>
-                    <th className="p-3">Issue</th>
-                    <th className="p-3">UUID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {integrityIssues.map((item, index) => (
-                    <tr key={`${item.id}-${item.issue}-${index}`} className="hover:bg-slate-50">
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-md border font-bold ${item.severity === 'error' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                          {item.severity}
-                        </span>
-                      </td>
-                      <td className="p-3 font-mono font-bold text-slate-600">{item.setCode}</td>
-                      <td className="p-3 font-bold text-slate-900">{item.displayName}</td>
-                      <td className="p-3 text-slate-700">{item.issue}</td>
-                      <td className="p-3 font-mono text-[10px] text-slate-400 max-w-48 truncate" title={item.id}>{item.id}</td>
+            <div className="space-y-3">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900 text-white font-mono uppercase text-[10px]">
+                    <tr>
+                      <th className="p-3">Severity</th>
+                      <th className="p-3">Set</th>
+                      <th className="p-3">Product Name</th>
+                      <th className="p-3">Detected Issue</th>
+                      <th className="p-3">UUID</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {displayedIntegrityIssues
+                      .slice((integrityPage - 1) * 100, integrityPage * 100)
+                      .map((item, index) => {
+                        const isZeroEv = item.issue.includes('Unit EV value is zero');
+                        return (
+                          <tr key={`${item.id}-${item.issue}-${index}`} className="hover:bg-slate-50/80 transition">
+                            <td className="p-3 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
+                                  isZeroEv
+                                    ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                    : item.severity === 'error'
+                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}
+                              >
+                                {isZeroEv ? 'ZERO EV' : item.severity}
+                              </span>
+                            </td>
+                            <td className="p-3 font-mono font-bold text-slate-700 whitespace-nowrap">
+                              {item.setCode}
+                            </td>
+                            <td className="p-3 font-bold text-slate-900 max-w-xs">{item.displayName}</td>
+                            <td className="p-3 text-slate-700">
+                              <span className={isZeroEv ? 'text-rose-700 font-semibold' : ''}>
+                                {item.issue}
+                              </span>
+                            </td>
+                            <td className="p-3 font-mono text-[10px] text-slate-400 max-w-44 truncate select-all" title={item.id}>
+                              {item.id}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Bar */}
+              <div className="flex items-center justify-between px-2 text-xs text-slate-500">
+                <div>
+                  Showing{' '}
+                  <strong className="text-slate-800 font-mono">
+                    {Math.min(displayedIntegrityIssues.length, (integrityPage - 1) * 100 + 1)} -{' '}
+                    {Math.min(displayedIntegrityIssues.length, integrityPage * 100)}
+                  </strong>{' '}
+                  of <strong className="text-slate-800 font-mono">{displayedIntegrityIssues.length.toLocaleString()}</strong> issues
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIntegrityPage((p) => Math.max(1, p - 1))}
+                    disabled={integrityPage <= 1}
+                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  <span className="font-mono text-slate-700 px-1 font-bold">
+                    {integrityPage} / {Math.max(1, Math.ceil(displayedIntegrityIssues.length / 100))}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setIntegrityPage((p) =>
+                        p < Math.ceil(displayedIntegrityIssues.length / 100) ? p + 1 : p
+                      )
+                    }
+                    disabled={integrityPage >= Math.ceil(displayedIntegrityIssues.length / 100)}
+                    className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
