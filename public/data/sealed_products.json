@@ -1245,7 +1245,8 @@
     },
     "marketPrice": 288.6099853515625,
     "purchaseUrl": "https://www.tcgplayer.com/product/272320",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 231.31
   },
   {
     "id": "9dd4bff1-35ac-5703-b646-de93c5713887",
@@ -1264,7 +1265,8 @@
     },
     "marketPrice": 446.0299987792969,
     "purchaseUrl": "https://www.tcgplayer.com/product/272318",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 615.89
   },
   {
     "id": "79a81dce-2546-5cbb-9b1f-4806d4a65204",
@@ -1283,7 +1285,8 @@
     },
     "marketPrice": 353.8999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/272308",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 291.97
   },
   {
     "id": "97bb3015-fc6e-52d5-940d-ce5f2f4a5c9d",
@@ -1302,7 +1305,8 @@
     },
     "marketPrice": 664.6799926757812,
     "purchaseUrl": "https://www.tcgplayer.com/product/272311",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 646.12
   },
   {
     "id": "b99b36b2-d9db-5c60-bcc4-710f6c7cc601",
@@ -1321,7 +1325,8 @@
     },
     "marketPrice": 238.88999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/272315",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 212.51
   },
   {
     "id": "3e9933ef-fb48-5d3e-bc1c-4ce53db331d3",
@@ -1340,7 +1345,8 @@
     },
     "marketPrice": 385.2900085449219,
     "purchaseUrl": "https://www.tcgplayer.com/product/272317",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 565.78
   },
   {
     "id": "9321e73d-7e9d-5c63-b356-e3cc1919d045",
@@ -1359,7 +1365,8 @@
     },
     "marketPrice": 311.4100036621094,
     "purchaseUrl": "https://www.tcgplayer.com/product/272314",
-    "priceFetchedAt": "2026-09-02 22:23:07"
+    "priceFetchedAt": "2026-09-02 22:23:07",
+    "estimatedEv": 200.97
   },
   {
     "id": "850a5232-bbbc-524c-8353-0c50cc1c169a",
@@ -1378,7 +1385,8 @@
     },
     "marketPrice": 480.9800109863281,
     "purchaseUrl": "https://www.tcgplayer.com/product/272312",
-    "priceFetchedAt": "2026-09-02 22:23:08"
+    "priceFetchedAt": "2026-09-02 22:23:08",
+    "estimatedEv": 557.39
   },
   {
     "id": "61ee21e4-f657-513a-8164-d92dcf6733ba",
@@ -2115,7 +2123,8 @@
     },
     "marketPrice": 153.97999572753906,
     "purchaseUrl": "https://www.tcgplayer.com/product/232842",
-    "priceFetchedAt": "2026-09-02 22:23:04"
+    "priceFetchedAt": "2026-09-02 22:23:04",
+    "estimatedEv": 11.37
   },
   {
     "id": "9f80e55a-88d0-59dd-a13f-fe967bd7f5c2",
@@ -2268,7 +2277,8 @@
     },
     "marketPrice": 79,
     "purchaseUrl": "https://www.tcgplayer.com/product/184222",
-    "priceFetchedAt": "2026-09-02 22:23:03"
+    "priceFetchedAt": "2026-09-02 22:23:03",
+    "estimatedEv": 14.17
   },
   {
     "id": "f28081c6-2a72-566b-ae47-fc397f80f14d",
@@ -2587,7 +2597,7 @@
           ],
           "foil": true,
           "name": "Thorn Elemental",
-          "number": "273★",
+          "number": "273\u2605",
           "set": "7ed",
           "uuid": "bf0c2b85-2e3d-5e12-80bb-c10a552feb2d"
         }
@@ -2633,7 +2643,8 @@
     },
     "marketPrice": 50,
     "purchaseUrl": "https://www.tcgplayer.com/product/244394",
-    "priceFetchedAt": "2026-09-02 22:23:03"
+    "priceFetchedAt": "2026-09-02 22:23:03",
+    "estimatedEv": 9.18
   },
   {
     "id": "5a5c60c9-ec4e-5df7-bb38-f856bc3c0f30",
@@ -2821,7 +2832,7 @@
           ],
           "foil": true,
           "name": "Elvish Champion",
-          "number": "241★",
+          "number": "241\u2605",
           "set": "8ed",
           "uuid": "51729dab-95a0-59f0-a829-82dc2d748c1d"
         }
@@ -2867,7 +2878,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": "https://www.tcgplayer.com/product/245974",
-    "priceFetchedAt": "2026-09-02 22:23:01"
+    "priceFetchedAt": "2026-09-02 22:23:01",
+    "estimatedEv": 8.94
   },
   {
     "id": "564740b1-dd94-5c32-bd84-c8793814cc9a",
@@ -3083,7 +3095,7 @@
           ],
           "foil": true,
           "name": "Elvish Champion",
-          "number": "241★",
+          "number": "241\u2605",
           "set": "8ed",
           "uuid": "51729dab-95a0-59f0-a829-82dc2d748c1d"
         }
@@ -3129,7 +3141,8 @@
     },
     "marketPrice": 28.989999771118164,
     "purchaseUrl": "https://www.tcgplayer.com/product/81797",
-    "priceFetchedAt": "2026-09-02 22:23:02"
+    "priceFetchedAt": "2026-09-02 22:23:02",
+    "estimatedEv": 8.94
   },
   {
     "id": "851465fe-f59a-5bfb-bb95-272f84fe3bdd",
@@ -3554,7 +3567,7 @@
           ],
           "foil": true,
           "name": "Serra Angel",
-          "number": "43★",
+          "number": "43\u2605",
           "set": "9ed",
           "uuid": "646a6755-dda4-5c76-b737-10f42738fb54"
         }
@@ -3594,7 +3607,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": "https://www.tcgplayer.com/product/81799",
-    "priceFetchedAt": "2026-09-02 22:22:59"
+    "priceFetchedAt": "2026-09-02 22:22:59",
+    "estimatedEv": 8.08
   },
   {
     "id": "e7241b78-ff1f-5ce1-b643-5dc78f65c064",
@@ -3986,7 +4000,8 @@
     },
     "marketPrice": 77.83999633789062,
     "purchaseUrl": "https://www.tcgplayer.com/product/541230",
-    "priceFetchedAt": "2026-09-02 22:22:58"
+    "priceFetchedAt": "2026-09-02 22:22:58",
+    "estimatedEv": 32.58
   },
   {
     "id": "31ece7b3-d736-5eeb-a38f-df7cc6d5933d",
@@ -4305,7 +4320,8 @@
     },
     "marketPrice": 86.19999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/238759",
-    "priceFetchedAt": "2026-09-02 22:22:55"
+    "priceFetchedAt": "2026-09-02 22:22:55",
+    "estimatedEv": 132.33
   },
   {
     "id": "97ff14e6-683e-5a4e-8330-b556470bb432",
@@ -4335,7 +4351,8 @@
     },
     "marketPrice": 123.41999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/238754",
-    "priceFetchedAt": "2026-09-02 22:22:55"
+    "priceFetchedAt": "2026-09-02 22:22:55",
+    "estimatedEv": 117.36
   },
   {
     "id": "4091d3ae-702b-5359-bcde-0ba739aeca00",
@@ -4365,7 +4382,8 @@
     },
     "marketPrice": 96.06999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/238757",
-    "priceFetchedAt": "2026-09-02 22:22:55"
+    "priceFetchedAt": "2026-09-02 22:22:55",
+    "estimatedEv": 97.44
   },
   {
     "id": "c10d76ba-cc3c-537b-8804-4b1fe994d1e3",
@@ -4395,7 +4413,8 @@
     },
     "marketPrice": 136.5800018310547,
     "purchaseUrl": "https://www.tcgplayer.com/product/238755",
-    "priceFetchedAt": "2026-09-02 22:22:55"
+    "priceFetchedAt": "2026-09-02 22:22:55",
+    "estimatedEv": 123.22
   },
   {
     "id": "cc4a5f9f-7d04-5b52-a18e-e6fae1c2eab1",
@@ -5131,7 +5150,8 @@
     },
     "marketPrice": 17.969999313354492,
     "purchaseUrl": "https://www.tcgplayer.com/product/243657",
-    "priceFetchedAt": "2026-09-02 22:22:51"
+    "priceFetchedAt": "2026-09-02 22:22:51",
+    "estimatedEv": 73.41
   },
   {
     "id": "ba2690a9-2f5c-5ce8-86ed-0e8073d4f68f",
@@ -15908,7 +15928,8 @@
     },
     "marketPrice": 74.19000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/59110",
-    "priceFetchedAt": "2026-09-02 22:22:42"
+    "priceFetchedAt": "2026-09-02 22:22:42",
+    "estimatedEv": 23.29
   },
   {
     "id": "5e3d62d2-6686-5481-963d-65dac6e425b1",
@@ -15938,7 +15959,8 @@
     },
     "marketPrice": 34.95000076293945,
     "purchaseUrl": "https://www.tcgplayer.com/product/59109",
-    "priceFetchedAt": "2026-09-02 22:22:42"
+    "priceFetchedAt": "2026-09-02 22:22:42",
+    "estimatedEv": 42.59
   },
   {
     "id": "943f2166-d591-517c-8be7-f325c7fc5779",
@@ -16560,7 +16582,8 @@
     },
     "marketPrice": 16.420000076293945,
     "purchaseUrl": "https://www.tcgplayer.com/product/102800",
-    "priceFetchedAt": "2026-09-02 22:22:39"
+    "priceFetchedAt": "2026-09-02 22:22:39",
+    "estimatedEv": 22.08
   },
   {
     "id": "ccebaec4-b1e3-5737-b739-e9b064799ba6",
@@ -17347,7 +17370,8 @@
     },
     "marketPrice": 73.44999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/541243",
-    "priceFetchedAt": "2026-09-02 22:22:38"
+    "priceFetchedAt": "2026-09-02 22:22:38",
+    "estimatedEv": 48.15
   },
   {
     "id": "1c6be48e-51ef-5604-bb56-3475fc49c820",
@@ -17418,7 +17442,8 @@
     },
     "marketPrice": 78.81999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/541246",
-    "priceFetchedAt": "2026-09-02 22:22:35"
+    "priceFetchedAt": "2026-09-02 22:22:35",
+    "estimatedEv": 102.91
   },
   {
     "id": "8e163096-61b2-56fb-911b-ec87b164cb92",
@@ -17456,7 +17481,8 @@
     },
     "marketPrice": 36.369998931884766,
     "purchaseUrl": "https://www.tcgplayer.com/product/541247",
-    "priceFetchedAt": "2026-09-02 22:22:35"
+    "priceFetchedAt": "2026-09-02 22:22:35",
+    "estimatedEv": 72.36
   },
   {
     "id": "de265922-b960-5a40-a375-6e6f5c16054c",
@@ -17494,7 +17520,8 @@
     },
     "marketPrice": 93.55999755859375,
     "purchaseUrl": "https://www.tcgplayer.com/product/541248",
-    "priceFetchedAt": "2026-09-02 22:22:35"
+    "priceFetchedAt": "2026-09-02 22:22:35",
+    "estimatedEv": 107.7
   },
   {
     "id": "a8a866cb-bd86-57bf-9cea-8ae7479aa439",
@@ -17532,7 +17559,8 @@
     },
     "marketPrice": 88.04000091552734,
     "purchaseUrl": "https://www.tcgplayer.com/product/541249",
-    "priceFetchedAt": "2026-09-02 22:22:35"
+    "priceFetchedAt": "2026-09-02 22:22:35",
+    "estimatedEv": 127.73
   },
   {
     "id": "7226347d-eec2-5060-87ad-80f67687209a",
@@ -17977,7 +18005,8 @@
     },
     "marketPrice": 18.989999771118164,
     "purchaseUrl": "https://www.tcgplayer.com/product/77983",
-    "priceFetchedAt": "2026-09-02 22:22:33"
+    "priceFetchedAt": "2026-09-02 22:22:33",
+    "estimatedEv": 27.76
   },
   {
     "id": "a36e4cd7-c36f-5f10-9ffd-df40dee5566a",
@@ -18890,7 +18919,8 @@
     },
     "marketPrice": 103.11000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/449723",
-    "priceFetchedAt": "2026-09-02 22:22:30"
+    "priceFetchedAt": "2026-09-02 22:22:30",
+    "estimatedEv": 145.88
   },
   {
     "id": "00a77e73-c3b5-5a7a-b4b8-ad3d1be4e754",
@@ -18928,7 +18958,8 @@
     },
     "marketPrice": 155.97999572753906,
     "purchaseUrl": "https://www.tcgplayer.com/product/449722",
-    "priceFetchedAt": "2026-09-02 22:22:30"
+    "priceFetchedAt": "2026-09-02 22:22:30",
+    "estimatedEv": 118.02
   },
   {
     "id": "0eae7c3b-a536-5130-bc7a-63c986b557cd",
@@ -19581,7 +19612,8 @@
     },
     "marketPrice": 182.10000610351562,
     "purchaseUrl": "https://www.tcgplayer.com/product/71511",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 99.25
   },
   {
     "id": "16ba9bf4-c275-5df9-b08f-806223a2647b",
@@ -19600,7 +19632,8 @@
     },
     "marketPrice": 73.77999877929688,
     "purchaseUrl": "https://www.tcgplayer.com/product/71513",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 96.71
   },
   {
     "id": "b9f45cc2-3b91-5478-b7e4-9a404a2c45c5",
@@ -19619,7 +19652,8 @@
     },
     "marketPrice": 80.69999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/71515",
-    "priceFetchedAt": "2026-09-02 22:22:26"
+    "priceFetchedAt": "2026-09-02 22:22:26",
+    "estimatedEv": 87.59
   },
   {
     "id": "abeb8faa-7599-5e67-bb75-a6fb1a778127",
@@ -19638,7 +19672,8 @@
     },
     "marketPrice": 74.19999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/71514",
-    "priceFetchedAt": "2026-09-02 22:22:26"
+    "priceFetchedAt": "2026-09-02 22:22:26",
+    "estimatedEv": 73.09
   },
   {
     "id": "bfbb0676-e1f0-5612-a491-255c31b93bad",
@@ -19657,7 +19692,8 @@
     },
     "marketPrice": 140.8800048828125,
     "purchaseUrl": "https://www.tcgplayer.com/product/71512",
-    "priceFetchedAt": "2026-09-02 22:22:26"
+    "priceFetchedAt": "2026-09-02 22:22:26",
+    "estimatedEv": 87.61
   },
   {
     "id": "0ac902f4-1c3f-5d39-b633-873989b3624c",
@@ -19721,7 +19757,8 @@
     },
     "marketPrice": 94.66000366210938,
     "purchaseUrl": "https://www.tcgplayer.com/product/94102",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 113.23
   },
   {
     "id": "ec5ad6d4-81f1-5b6b-be59-f46ffdae2fd0",
@@ -19740,7 +19777,8 @@
     },
     "marketPrice": 145.24000549316406,
     "purchaseUrl": "https://www.tcgplayer.com/product/94104",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 109.57
   },
   {
     "id": "fd4a9abf-cf6d-5abc-a77b-65d9b92d8eff",
@@ -19759,7 +19797,8 @@
     },
     "marketPrice": 190.44000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/94103",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 139.07
   },
   {
     "id": "cf9bb01b-4814-54a9-a0d6-0a8c404fb104",
@@ -19778,7 +19817,8 @@
     },
     "marketPrice": 136.2899932861328,
     "purchaseUrl": "https://www.tcgplayer.com/product/94100",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 98.77
   },
   {
     "id": "8f7348d1-9f9a-5cda-b0d8-963ba2c6fcf3",
@@ -19797,7 +19837,8 @@
     },
     "marketPrice": 140.7100067138672,
     "purchaseUrl": "https://www.tcgplayer.com/product/94101",
-    "priceFetchedAt": "2026-09-02 22:22:25"
+    "priceFetchedAt": "2026-09-02 22:22:25",
+    "estimatedEv": 102.56
   },
   {
     "id": "f02ac1ec-5b58-52a6-a624-efe62daa348f",
@@ -19861,7 +19902,8 @@
     },
     "marketPrice": 73.4800033569336,
     "purchaseUrl": "https://www.tcgplayer.com/product/107626",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 109.26
   },
   {
     "id": "fba537b5-a71a-5c39-a752-f65696691296",
@@ -19880,7 +19922,8 @@
     },
     "marketPrice": 166.8000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/107623",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 94.35
   },
   {
     "id": "46ab39d9-82a7-5536-a1aa-2a7ea5140237",
@@ -19899,7 +19942,8 @@
     },
     "marketPrice": 68.72000122070312,
     "purchaseUrl": "https://www.tcgplayer.com/product/107625",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 81.28
   },
   {
     "id": "62c91fc6-5042-5941-a15e-de960f5a67d0",
@@ -19918,7 +19962,8 @@
     },
     "marketPrice": 87.95999908447266,
     "purchaseUrl": "https://www.tcgplayer.com/product/107624",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 94.46
   },
   {
     "id": "52b5c350-74ab-5ab0-88a7-d092ff3d61bb",
@@ -19937,7 +19982,8 @@
     },
     "marketPrice": 73.08000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/107627",
-    "priceFetchedAt": "2026-09-02 22:22:24"
+    "priceFetchedAt": "2026-09-02 22:22:24",
+    "estimatedEv": 106.34
   },
   {
     "id": "c8b61108-ced3-5801-a9fd-66043dcd72d4",
@@ -20001,7 +20047,8 @@
     },
     "marketPrice": 285.8800048828125,
     "purchaseUrl": "https://www.tcgplayer.com/product/123968",
-    "priceFetchedAt": "2026-09-02 22:22:23"
+    "priceFetchedAt": "2026-09-02 22:22:23",
+    "estimatedEv": 140.41
   },
   {
     "id": "446f5f69-98bd-55bc-a509-abd91b185a25",
@@ -20020,7 +20067,8 @@
     },
     "marketPrice": 201.66000366210938,
     "purchaseUrl": "https://www.tcgplayer.com/product/123966",
-    "priceFetchedAt": "2026-09-02 22:22:23"
+    "priceFetchedAt": "2026-09-02 22:22:23",
+    "estimatedEv": 195.42
   },
   {
     "id": "9cb4bacd-bdd8-5023-a1a9-0d33d765a330",
@@ -20039,7 +20087,8 @@
     },
     "marketPrice": 255.99000549316406,
     "purchaseUrl": "https://www.tcgplayer.com/product/123970",
-    "priceFetchedAt": "2026-09-02 22:22:23"
+    "priceFetchedAt": "2026-09-02 22:22:23",
+    "estimatedEv": 99.18
   },
   {
     "id": "747c8f6c-8f24-5612-80f1-ad23fd50ef7a",
@@ -20058,7 +20107,8 @@
     },
     "marketPrice": 157.63999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/123967",
-    "priceFetchedAt": "2026-09-02 22:22:23"
+    "priceFetchedAt": "2026-09-02 22:22:23",
+    "estimatedEv": 178.36
   },
   {
     "id": "2cbcd933-ee5e-5285-9d18-3e3ac2a04fb7",
@@ -20077,7 +20127,8 @@
     },
     "marketPrice": 237.8300018310547,
     "purchaseUrl": "https://www.tcgplayer.com/product/123969",
-    "priceFetchedAt": "2026-09-02 22:22:23"
+    "priceFetchedAt": "2026-09-02 22:22:23",
+    "estimatedEv": 214.26
   },
   {
     "id": "be64e179-494c-505f-8608-901827f26450",
@@ -20141,7 +20192,8 @@
     },
     "marketPrice": 120.93000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/139843",
-    "priceFetchedAt": "2026-09-02 22:22:22"
+    "priceFetchedAt": "2026-09-02 22:22:22",
+    "estimatedEv": 83.43
   },
   {
     "id": "a92e9f52-f3a2-5db6-9e4c-c88fd4ec0c8e",
@@ -20160,7 +20212,8 @@
     },
     "marketPrice": 485.79998779296875,
     "purchaseUrl": "https://www.tcgplayer.com/product/139782",
-    "priceFetchedAt": "2026-09-02 22:22:22"
+    "priceFetchedAt": "2026-09-02 22:22:22",
+    "estimatedEv": 178.73
   },
   {
     "id": "ad66640b-ed92-5eb5-b603-ff2130d6af92",
@@ -20179,7 +20232,8 @@
     },
     "marketPrice": 238.3300018310547,
     "purchaseUrl": "https://www.tcgplayer.com/product/139780",
-    "priceFetchedAt": "2026-09-02 22:22:22"
+    "priceFetchedAt": "2026-09-02 22:22:22",
+    "estimatedEv": 174.34
   },
   {
     "id": "688b6d53-b1ad-5bed-a83a-357fc8b2b865",
@@ -20198,7 +20252,8 @@
     },
     "marketPrice": 414.7200012207031,
     "purchaseUrl": "https://www.tcgplayer.com/product/139781",
-    "priceFetchedAt": "2026-09-02 22:22:22"
+    "priceFetchedAt": "2026-09-02 22:22:22",
+    "estimatedEv": 217.43
   },
   {
     "id": "05bfddd4-4705-5cd3-80a2-25ad25091a86",
@@ -20270,7 +20325,8 @@
     },
     "marketPrice": 63.209999084472656,
     "purchaseUrl": "https://www.tcgplayer.com/product/170285",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 75.96
   },
   {
     "id": "9c9a17b2-f62d-5034-a32c-af4c7f1f334e",
@@ -20303,7 +20359,8 @@
     },
     "marketPrice": 46.2400016784668,
     "purchaseUrl": "https://www.tcgplayer.com/product/170283",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 77.9
   },
   {
     "id": "3f27b3f1-cbc8-5a8f-82c0-07c80e59863a",
@@ -20336,7 +20393,8 @@
     },
     "marketPrice": 70.33999633789062,
     "purchaseUrl": "https://www.tcgplayer.com/product/170284",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 62.19
   },
   {
     "id": "304774e7-a16e-51d6-a8ad-6f47039f0144",
@@ -20369,7 +20427,8 @@
     },
     "marketPrice": 61.68000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/170286",
-    "priceFetchedAt": "2026-09-02 22:22:22"
+    "priceFetchedAt": "2026-09-02 22:22:22",
+    "estimatedEv": 62.47
   },
   {
     "id": "f73b9429-2ba9-59e6-96ef-cd1e635e3ff9",
@@ -20441,7 +20500,8 @@
     },
     "marketPrice": 50.400001525878906,
     "purchaseUrl": "https://www.tcgplayer.com/product/196279",
-    "priceFetchedAt": "2026-09-02 22:22:20"
+    "priceFetchedAt": "2026-09-02 22:22:20",
+    "estimatedEv": 104.99
   },
   {
     "id": "2e2fa533-c4c8-550e-97cb-b3a4ea1584aa",
@@ -20474,7 +20534,8 @@
     },
     "marketPrice": 54.61000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/196280",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 86.49
   },
   {
     "id": "0060dafa-bfca-5496-8319-b02e091fbb45",
@@ -20507,7 +20568,8 @@
     },
     "marketPrice": 39.7400016784668,
     "purchaseUrl": "https://www.tcgplayer.com/product/196281",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 69.68
   },
   {
     "id": "526cc71b-c0d0-5490-94f4-8359a12fe85c",
@@ -20540,7 +20602,8 @@
     },
     "marketPrice": 58.70000076293945,
     "purchaseUrl": "https://www.tcgplayer.com/product/196282",
-    "priceFetchedAt": "2026-09-02 22:22:21"
+    "priceFetchedAt": "2026-09-02 22:22:21",
+    "estimatedEv": 90.02
   },
   {
     "id": "e8b90683-d02b-5ea1-bf0f-762da3bfbf38",
@@ -20612,7 +20675,8 @@
     },
     "marketPrice": 109.88999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/210823",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 139.38
   },
   {
     "id": "e222d962-d657-5196-847d-17b058fc611c",
@@ -20645,7 +20709,8 @@
     },
     "marketPrice": 77.72000122070312,
     "purchaseUrl": "https://www.tcgplayer.com/product/210826",
-    "priceFetchedAt": "2026-09-02 22:22:20"
+    "priceFetchedAt": "2026-09-02 22:22:20",
+    "estimatedEv": 117.83
   },
   {
     "id": "06e5e5b7-e14e-508f-86d4-5e98b3400a83",
@@ -20678,7 +20743,8 @@
     },
     "marketPrice": 66.56999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/210821",
-    "priceFetchedAt": "2026-09-02 22:22:20"
+    "priceFetchedAt": "2026-09-02 22:22:20",
+    "estimatedEv": 112.68
   },
   {
     "id": "de32390a-b029-5686-a778-f4fa8847ab5a",
@@ -20711,7 +20777,8 @@
     },
     "marketPrice": 68.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/210824",
-    "priceFetchedAt": "2026-09-02 22:22:20"
+    "priceFetchedAt": "2026-09-02 22:22:20",
+    "estimatedEv": 75.34
   },
   {
     "id": "c284f5ec-c761-559e-b53e-68d94e93d109",
@@ -20744,7 +20811,8 @@
     },
     "marketPrice": 80.88999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/210825",
-    "priceFetchedAt": "2026-09-02 22:22:20"
+    "priceFetchedAt": "2026-09-02 22:22:20",
+    "estimatedEv": 146.01
   },
   {
     "id": "a0c0d3ce-dbac-5b5b-ad93-c4d139053f1e",
@@ -20816,7 +20884,8 @@
     },
     "marketPrice": 65.19000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/235092",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 89.65
   },
   {
     "id": "74a40242-efeb-550a-a7ce-b0fe2d620af8",
@@ -20843,7 +20912,8 @@
     },
     "marketPrice": 56.2599983215332,
     "purchaseUrl": "https://www.tcgplayer.com/product/236479",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 89.65
   },
   {
     "id": "fc42f932-5d38-56f2-b7ab-95e4ac8c8c3b",
@@ -20870,7 +20940,8 @@
     },
     "marketPrice": 57.09000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/235089",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 93.12
   },
   {
     "id": "f49d67ec-1d9e-5bf1-baad-9d4590a45f68",
@@ -20897,7 +20968,8 @@
     },
     "marketPrice": 49.31999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/236480",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 93.12
   },
   {
     "id": "7492727a-818c-5f60-8867-36f6fded0378",
@@ -20924,7 +20996,8 @@
     },
     "marketPrice": 74.18000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/235090",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 84.27
   },
   {
     "id": "91fc3d96-65d6-5c92-8718-12ecde722d95",
@@ -20951,7 +21024,8 @@
     },
     "marketPrice": 67.94999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/236481",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 84.27
   },
   {
     "id": "8cfb8e6f-acbd-59e9-b791-4adb56330830",
@@ -20978,7 +21052,8 @@
     },
     "marketPrice": 88.5999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/235091",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 116.1
   },
   {
     "id": "222a72ca-9f05-500e-9b5d-c9d76f27fbb9",
@@ -21005,7 +21080,8 @@
     },
     "marketPrice": 88.4800033569336,
     "purchaseUrl": "https://www.tcgplayer.com/product/236482",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 116.1
   },
   {
     "id": "b744ce89-744f-5e97-9678-dfbe1d8bb680",
@@ -21032,7 +21108,8 @@
     },
     "marketPrice": 77.63999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/235088",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 104.83
   },
   {
     "id": "1583c4bf-0a17-5a83-b836-cea7c8413cc1",
@@ -21059,7 +21136,8 @@
     },
     "marketPrice": 59.970001220703125,
     "purchaseUrl": "https://www.tcgplayer.com/product/236483",
-    "priceFetchedAt": "2026-09-02 22:22:19"
+    "priceFetchedAt": "2026-09-02 22:22:19",
+    "estimatedEv": 104.83
   },
   {
     "id": "106b0c1c-651e-5132-a483-680323bf95f3",
@@ -21123,7 +21201,8 @@
     },
     "marketPrice": 77.6500015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/221302",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 95.05
   },
   {
     "id": "ac3edaad-41cc-5e61-bd6f-6e422096b076",
@@ -21142,7 +21221,8 @@
     },
     "marketPrice": 99.72000122070312,
     "purchaseUrl": "https://www.tcgplayer.com/product/221303",
-    "priceFetchedAt": "2026-09-02 22:22:18"
+    "priceFetchedAt": "2026-09-02 22:22:18",
+    "estimatedEv": 145.85
   },
   {
     "id": "6c80781e-ace0-5bfe-a6cb-9cbb605da004",
@@ -21161,7 +21241,8 @@
     },
     "marketPrice": 40.220001220703125,
     "purchaseUrl": "https://www.tcgplayer.com/product/247519",
-    "priceFetchedAt": "2026-09-02 22:22:17"
+    "priceFetchedAt": "2026-09-02 22:22:17",
+    "estimatedEv": 55.35
   },
   {
     "id": "6fb3525c-a97d-5d3d-aab5-5031a60bc763",
@@ -21180,7 +21261,8 @@
     },
     "marketPrice": 66.4000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/247520",
-    "priceFetchedAt": "2026-09-02 22:22:17"
+    "priceFetchedAt": "2026-09-02 22:22:17",
+    "estimatedEv": 92.85
   },
   {
     "id": "db044702-4496-5b06-989e-818a08fd0322",
@@ -21841,7 +21923,8 @@
     },
     "marketPrice": 191.6699981689453,
     "purchaseUrl": "https://www.tcgplayer.com/product/267034",
-    "priceFetchedAt": "2026-09-02 22:22:12"
+    "priceFetchedAt": "2026-09-02 22:22:12",
+    "estimatedEv": 8.82
   },
   {
     "id": "96e44935-25de-5b9c-b1cb-2d416696eecd",
@@ -21900,7 +21983,8 @@
     },
     "marketPrice": 172.7899932861328,
     "purchaseUrl": "https://www.tcgplayer.com/product/267030",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 168.59
   },
   {
     "id": "02c76da7-f1d6-518e-90a4-fb0f5cba35d0",
@@ -21938,7 +22022,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": "https://www.tcgplayer.com/product/267029",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 168.59
   },
   {
     "id": "f8c1403e-9a69-5a15-9076-64ca760b3bfb",
@@ -21976,7 +22061,8 @@
     },
     "marketPrice": 171.8300018310547,
     "purchaseUrl": "https://www.tcgplayer.com/product/267031",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 157.96
   },
   {
     "id": "cf2088ea-a443-53f9-a7fd-40f5892359c3",
@@ -22014,7 +22100,8 @@
     },
     "marketPrice": 266,
     "purchaseUrl": "https://www.tcgplayer.com/product/267032",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 157.96
   },
   {
     "id": "7710eceb-d9c2-5da6-b233-d8d23303bfee",
@@ -22052,7 +22139,8 @@
     },
     "marketPrice": 303.3900146484375,
     "purchaseUrl": "https://www.tcgplayer.com/product/267027",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 182.04
   },
   {
     "id": "df74addd-24aa-5293-a7f5-ea6da0927d8c",
@@ -22090,7 +22178,8 @@
     },
     "marketPrice": 280.6499938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/267028",
-    "priceFetchedAt": "2026-09-02 22:22:13"
+    "priceFetchedAt": "2026-09-02 22:22:13",
+    "estimatedEv": 182.04
   },
   {
     "id": "ae9ef0cb-c344-534f-94c0-fc2b0138d19e",
@@ -22128,7 +22217,8 @@
     },
     "marketPrice": 178.16000366210938,
     "purchaseUrl": "https://www.tcgplayer.com/product/267025",
-    "priceFetchedAt": "2026-09-02 22:22:14"
+    "priceFetchedAt": "2026-09-02 22:22:14",
+    "estimatedEv": 133.63
   },
   {
     "id": "754656b3-e670-5f33-b3eb-5f1b56fe6599",
@@ -22166,7 +22256,8 @@
     },
     "marketPrice": 161,
     "purchaseUrl": "https://www.tcgplayer.com/product/267026",
-    "priceFetchedAt": "2026-09-02 22:22:14"
+    "priceFetchedAt": "2026-09-02 22:22:14",
+    "estimatedEv": 133.63
   },
   {
     "id": "413cbdb6-8a21-5aa1-a861-0170c633bf1a",
@@ -22398,7 +22489,8 @@
     },
     "marketPrice": 318.70001220703125,
     "purchaseUrl": "https://www.tcgplayer.com/product/71419",
-    "priceFetchedAt": "2026-09-02 22:22:11"
+    "priceFetchedAt": "2026-09-02 22:22:11",
+    "estimatedEv": 305.94
   },
   {
     "id": "2b7d3b86-826c-5432-a925-e36ee8a2767e",
@@ -22464,7 +22556,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 152.38
   },
   {
     "id": "96770485-43db-5af4-a82b-06bbf96cf05d",
@@ -22483,7 +22576,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 125.88
   },
   {
     "id": "da309847-725f-5d5e-9609-f20ac21b7daa",
@@ -22502,7 +22596,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 142.81
   },
   {
     "id": "8417f534-e75f-59b2-bbae-7976f0f623ab",
@@ -22521,7 +22616,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 99.91
   },
   {
     "id": "df1500dd-860f-5fb8-bda2-1a08192d94a0",
@@ -22587,7 +22683,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 100.8
   },
   {
     "id": "28690cea-9be7-5a1c-9097-553700512c5d",
@@ -22606,7 +22703,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 171.59
   },
   {
     "id": "d0c617ee-b56c-5176-baee-4dbec2c1a972",
@@ -22625,7 +22723,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 114.68
   },
   {
     "id": "600c4590-87fb-5181-ae88-e2c2952c0f74",
@@ -22644,7 +22743,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 115.26
   },
   {
     "id": "0be07f70-3930-59a3-9dff-6c46eaafc4c3",
@@ -22663,7 +22763,8 @@
     },
     "marketPrice": 156.55999755859375,
     "purchaseUrl": "https://www.tcgplayer.com/product/42095",
-    "priceFetchedAt": "2026-09-02 22:22:10"
+    "priceFetchedAt": "2026-09-02 22:22:10",
+    "estimatedEv": 121.53
   },
   {
     "id": "252f4267-91d4-54f0-b49a-8b65a014d1c4",
@@ -22682,7 +22783,8 @@
     },
     "marketPrice": 232.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/42097",
-    "priceFetchedAt": "2026-09-02 22:22:10"
+    "priceFetchedAt": "2026-09-02 22:22:10",
+    "estimatedEv": 128.28
   },
   {
     "id": "28ec7023-333f-5768-a8e2-061d16847766",
@@ -22701,7 +22803,8 @@
     },
     "marketPrice": 409.19000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/42093",
-    "priceFetchedAt": "2026-09-02 22:22:10"
+    "priceFetchedAt": "2026-09-02 22:22:10",
+    "estimatedEv": 108.98
   },
   {
     "id": "778214f1-3da3-5550-9504-acadae1203da",
@@ -22720,7 +22823,8 @@
     },
     "marketPrice": 325.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/42094",
-    "priceFetchedAt": "2026-09-02 22:22:10"
+    "priceFetchedAt": "2026-09-02 22:22:10",
+    "estimatedEv": 128.64
   },
   {
     "id": "0adbf7af-d90b-51a9-a32a-ee7049d09b17",
@@ -22739,7 +22843,8 @@
     },
     "marketPrice": 191.8800048828125,
     "purchaseUrl": "https://www.tcgplayer.com/product/42096",
-    "priceFetchedAt": "2026-09-02 22:22:10"
+    "priceFetchedAt": "2026-09-02 22:22:10",
+    "estimatedEv": 100.97
   },
   {
     "id": "8ddee433-57b1-5ee8-a247-8e0a594cb947",
@@ -23013,7 +23118,8 @@
     },
     "marketPrice": 432.5299987792969,
     "purchaseUrl": "https://www.tcgplayer.com/product/484931",
-    "priceFetchedAt": "2026-09-02 22:22:08"
+    "priceFetchedAt": "2026-09-02 22:22:08",
+    "estimatedEv": 307.14
   },
   {
     "id": "d379fa71-0664-5039-bbe0-e16869de18f5",
@@ -23040,7 +23146,8 @@
     },
     "marketPrice": 160.32000732421875,
     "purchaseUrl": "https://www.tcgplayer.com/product/484932",
-    "priceFetchedAt": "2026-09-02 22:22:08"
+    "priceFetchedAt": "2026-09-02 22:22:08",
+    "estimatedEv": 171.41
   },
   {
     "id": "b1dc7b0f-2d84-52cc-85f6-b7498d5132c8",
@@ -23067,7 +23174,8 @@
     },
     "marketPrice": 152.91000366210938,
     "purchaseUrl": "https://www.tcgplayer.com/product/484930",
-    "priceFetchedAt": "2026-09-02 22:22:08"
+    "priceFetchedAt": "2026-09-02 22:22:08",
+    "estimatedEv": 127.17
   },
   {
     "id": "845ceac0-488b-5321-8e8d-f20f5f757b5c",
@@ -23094,7 +23202,8 @@
     },
     "marketPrice": 325.8900146484375,
     "purchaseUrl": "https://www.tcgplayer.com/product/484933",
-    "priceFetchedAt": "2026-09-02 22:22:08"
+    "priceFetchedAt": "2026-09-02 22:22:08",
+    "estimatedEv": 203.47
   },
   {
     "id": "710554fe-0087-5f2c-bcc3-a1cb98ffb123",
@@ -23306,7 +23415,8 @@
     },
     "marketPrice": 61.66999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/227387",
-    "priceFetchedAt": "2026-09-02 22:22:06"
+    "priceFetchedAt": "2026-09-02 22:22:06",
+    "estimatedEv": 122.22
   },
   {
     "id": "94dead0e-794d-5b29-bd99-222f54d519e0",
@@ -23336,7 +23446,8 @@
     },
     "marketPrice": 142.0399932861328,
     "purchaseUrl": "https://www.tcgplayer.com/product/227386",
-    "priceFetchedAt": "2026-09-02 22:22:07"
+    "priceFetchedAt": "2026-09-02 22:22:07",
+    "estimatedEv": 85.17
   },
   {
     "id": "6d8f6897-1a42-554f-91bb-b01e7deed9e8",
@@ -28385,7 +28496,8 @@
     },
     "marketPrice": 148.13999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/279817",
-    "priceFetchedAt": "2026-09-02 22:21:49"
+    "priceFetchedAt": "2026-09-02 22:21:49",
+    "estimatedEv": 187.79
   },
   {
     "id": "dd9ebe9d-0c57-56e6-9c38-ee7279f94044",
@@ -28423,7 +28535,8 @@
     },
     "marketPrice": 114.1500015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/279816",
-    "priceFetchedAt": "2026-09-02 22:21:49"
+    "priceFetchedAt": "2026-09-02 22:21:49",
+    "estimatedEv": 93.77
   },
   {
     "id": "48ff4260-64d3-5e95-aa24-4aa90431b42d",
@@ -29280,13 +29393,13 @@
           "name": "1 card box"
         },
         {
-          "name": "1 player’s guide"
+          "name": "1 player\u2019s guide"
         },
         {
           "name": "1 learn-to-play insert"
         },
         {
-          "name": "1 Spindown™ life counter"
+          "name": "1 Spindown\u2122 life counter"
         },
         {
           "name": "1 Menu booklet"
@@ -30221,7 +30334,8 @@
     },
     "marketPrice": 40.86000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/604259",
-    "priceFetchedAt": "2026-09-02 22:21:40"
+    "priceFetchedAt": "2026-09-02 22:21:40",
+    "estimatedEv": 54.75
   },
   {
     "id": "c43f37b3-9215-5737-aaa0-b0caf429745c",
@@ -30259,7 +30373,8 @@
     },
     "marketPrice": 26.15999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/604258",
-    "priceFetchedAt": "2026-09-02 22:21:40"
+    "priceFetchedAt": "2026-09-02 22:21:40",
+    "estimatedEv": 62.87
   },
   {
     "id": "48a9092d-9f91-5037-81bc-1ba49be052cc",
@@ -30443,7 +30558,8 @@
     },
     "marketPrice": 60.13999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/557254",
-    "priceFetchedAt": "2026-09-02 22:21:39"
+    "priceFetchedAt": "2026-09-02 22:21:39",
+    "estimatedEv": 86.49
   },
   {
     "id": "2e328e42-642e-533f-99a6-aac11de47c7a",
@@ -30478,7 +30594,8 @@
     },
     "marketPrice": 228.14999389648438,
     "purchaseUrl": "https://www.tcgplayer.com/product/557256",
-    "priceFetchedAt": "2026-09-02 22:21:39"
+    "priceFetchedAt": "2026-09-02 22:21:39",
+    "estimatedEv": 201.43
   },
   {
     "id": "9693d820-c89c-5b84-9b26-c097ff691027",
@@ -30513,7 +30630,8 @@
     },
     "marketPrice": 64.33000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/557255",
-    "priceFetchedAt": "2026-09-02 22:21:39"
+    "priceFetchedAt": "2026-09-02 22:21:39",
+    "estimatedEv": 98.56
   },
   {
     "id": "dcdd3aeb-1070-53f7-b97a-4dda68d0176b",
@@ -30548,7 +30666,8 @@
     },
     "marketPrice": 66.04000091552734,
     "purchaseUrl": "https://www.tcgplayer.com/product/557253",
-    "priceFetchedAt": "2026-09-02 22:21:40"
+    "priceFetchedAt": "2026-09-02 22:21:40",
+    "estimatedEv": 110.17
   },
   {
     "id": "73a79113-3320-5bb6-8610-6811aeee7122",
@@ -32477,7 +32596,8 @@
     },
     "marketPrice": 35.650001525878906,
     "purchaseUrl": "https://www.tcgplayer.com/product/656354",
-    "priceFetchedAt": "2026-09-02 22:21:31"
+    "priceFetchedAt": "2026-09-02 22:21:31",
+    "estimatedEv": 50.73
   },
   {
     "id": "5b7c6f90-c879-5756-811d-bb69655e1a70",
@@ -32496,7 +32616,8 @@
     },
     "marketPrice": 39.29999923706055,
     "purchaseUrl": "https://www.tcgplayer.com/product/656352",
-    "priceFetchedAt": "2026-09-02 22:21:32"
+    "priceFetchedAt": "2026-09-02 22:21:32",
+    "estimatedEv": 66.43
   },
   {
     "id": "59adcbc9-ea53-5a9c-992c-34faf1ec6720",
@@ -33514,7 +33635,8 @@
     },
     "marketPrice": 81.51000213623047,
     "purchaseUrl": "https://www.tcgplayer.com/product/194910",
-    "priceFetchedAt": "2026-09-02 22:21:24"
+    "priceFetchedAt": "2026-09-02 22:21:24",
+    "estimatedEv": 90.13
   },
   {
     "id": "e00980ac-f97d-57d5-acf1-a298dd12a0ae",
@@ -33538,7 +33660,8 @@
     },
     "marketPrice": 32.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/194911",
-    "priceFetchedAt": "2026-09-02 22:21:25"
+    "priceFetchedAt": "2026-09-02 22:21:25",
+    "estimatedEv": 31.65
   },
   {
     "id": "df6d1607-26c5-5b88-98e1-e89571d43a2e",
@@ -33562,7 +33685,8 @@
     },
     "marketPrice": 38,
     "purchaseUrl": "https://www.tcgplayer.com/product/194909",
-    "priceFetchedAt": "2026-09-02 22:21:25"
+    "priceFetchedAt": "2026-09-02 22:21:25",
+    "estimatedEv": 39.76
   },
   {
     "id": "7b7f4e46-68c4-54db-9ad4-37250659be33",
@@ -33586,7 +33710,8 @@
     },
     "marketPrice": 27.790000915527344,
     "purchaseUrl": "https://www.tcgplayer.com/product/194908",
-    "priceFetchedAt": "2026-09-02 22:21:25"
+    "priceFetchedAt": "2026-09-02 22:21:25",
+    "estimatedEv": 39.96
   },
   {
     "id": "dbd24487-7f84-5b1a-b209-df79ed99f18c",
@@ -34348,7 +34473,8 @@
     },
     "marketPrice": 39.27000045776367,
     "purchaseUrl": "https://www.tcgplayer.com/product/619677",
-    "priceFetchedAt": "2026-09-02 22:21:22"
+    "priceFetchedAt": "2026-09-02 22:21:22",
+    "estimatedEv": 61.24
   },
   {
     "id": "6ddddac3-0d10-5fc7-8e34-2b5fca86aeb8",
@@ -34383,7 +34509,8 @@
     },
     "marketPrice": 54.130001068115234,
     "purchaseUrl": "https://www.tcgplayer.com/product/619676",
-    "priceFetchedAt": "2026-09-02 22:21:22"
+    "priceFetchedAt": "2026-09-02 22:21:22",
+    "estimatedEv": 52.59
   },
   {
     "id": "ef1e217c-58ff-559a-91b5-e65a266761ca",
@@ -36124,7 +36251,8 @@
     },
     "marketPrice": 50.279998779296875,
     "purchaseUrl": "https://www.tcgplayer.com/product/618905",
-    "priceFetchedAt": "2026-09-02 22:21:07"
+    "priceFetchedAt": "2026-09-02 22:21:07",
+    "estimatedEv": 69.37
   },
   {
     "id": "2269c6b6-f453-55aa-afda-b10b5fd3fc4d",
@@ -36162,7 +36290,8 @@
     },
     "marketPrice": 173.6999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/618910",
-    "priceFetchedAt": "2026-09-02 22:21:07"
+    "priceFetchedAt": "2026-09-02 22:21:07",
+    "estimatedEv": 260.73
   },
   {
     "id": "eec62564-21b0-58b0-8e6d-63424b186c12",
@@ -36197,7 +36326,8 @@
     },
     "marketPrice": 58.90999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/618904",
-    "priceFetchedAt": "2026-09-02 22:21:07"
+    "priceFetchedAt": "2026-09-02 22:21:07",
+    "estimatedEv": 68.42
   },
   {
     "id": "615970e7-3e9f-5e7f-8855-a8af9114ed15",
@@ -36232,7 +36362,8 @@
     },
     "marketPrice": 220.39999389648438,
     "purchaseUrl": "https://www.tcgplayer.com/product/618909",
-    "priceFetchedAt": "2026-09-02 22:21:07"
+    "priceFetchedAt": "2026-09-02 22:21:07",
+    "estimatedEv": 341.66
   },
   {
     "id": "a78248b5-37ee-5939-b872-a644867d8251",
@@ -36305,7 +36436,8 @@
     },
     "marketPrice": 34.16999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/618903",
-    "priceFetchedAt": "2026-09-02 22:21:08"
+    "priceFetchedAt": "2026-09-02 22:21:08",
+    "estimatedEv": 54.13
   },
   {
     "id": "0b38d35b-fd59-561d-90ce-f88544e738b3",
@@ -36340,7 +36472,8 @@
     },
     "marketPrice": 126.11000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/618908",
-    "priceFetchedAt": "2026-09-02 22:21:08"
+    "priceFetchedAt": "2026-09-02 22:21:08",
+    "estimatedEv": 209.86
   },
   {
     "id": "1c427b8e-6749-53cd-83d9-f6728f7fc064",
@@ -36375,7 +36508,8 @@
     },
     "marketPrice": 66.38999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/618906",
-    "priceFetchedAt": "2026-09-02 22:21:08"
+    "priceFetchedAt": "2026-09-02 22:21:08",
+    "estimatedEv": 73.07
   },
   {
     "id": "70703a5a-9e90-5d51-8e86-e255aa8576fe",
@@ -36410,7 +36544,8 @@
     },
     "marketPrice": 225.17999267578125,
     "purchaseUrl": "https://www.tcgplayer.com/product/618911",
-    "priceFetchedAt": "2026-09-02 22:21:08"
+    "priceFetchedAt": "2026-09-02 22:21:08",
+    "estimatedEv": 340.18
   },
   {
     "id": "4bc07581-3b2a-5372-bdca-6b74313b7e76",
@@ -37227,7 +37362,8 @@
     },
     "marketPrice": 18.1200008392334,
     "purchaseUrl": "https://www.tcgplayer.com/product/618901",
-    "priceFetchedAt": "2026-09-02 22:21:07"
+    "priceFetchedAt": "2026-09-02 22:21:07",
+    "estimatedEv": 20.76
   },
   {
     "id": "3d76ef6d-1959-5995-b7d5-2c1abc7ac17a",
@@ -40035,7 +40171,7 @@
           "name": "1 card box"
         },
         {
-          "name": "1 player’s guide"
+          "name": "1 player\u2019s guide"
         },
         {
           "name": "1 learn-to-play insert"
@@ -40878,7 +41014,7 @@
           ],
           "foil": true,
           "name": "Foundry Champion",
-          "number": "165★",
+          "number": "165\u2605",
           "set": "pgtc",
           "uuid": "2b0bde87-f083-52dc-9a7e-9cdbf17775f2"
         }
@@ -40922,7 +41058,7 @@
           ],
           "foil": true,
           "name": "Consuming Aberration",
-          "number": "152★",
+          "number": "152\u2605",
           "set": "pgtc",
           "uuid": "09cb87f1-e41f-5a2a-954b-b917c1297874"
         }
@@ -40966,7 +41102,7 @@
           ],
           "foil": true,
           "name": "Rubblehulk",
-          "number": "191★",
+          "number": "191\u2605",
           "set": "pgtc",
           "uuid": "306a3920-7ec2-5658-af94-9283bb1f41d6"
         }
@@ -41010,7 +41146,7 @@
           ],
           "foil": true,
           "name": "Treasury Thrull",
-          "number": "201★",
+          "number": "201\u2605",
           "set": "pgtc",
           "uuid": "a73de542-1433-5322-ad8a-b103e3d98bf6"
         }
@@ -41054,7 +41190,7 @@
           ],
           "foil": true,
           "name": "Fathom Mage",
-          "number": "162★",
+          "number": "162\u2605",
           "set": "pgtc",
           "uuid": "df0eb7be-8208-5e67-9ed1-a091d34f68d2"
         }
@@ -45673,7 +45809,8 @@
     },
     "marketPrice": 179.25,
     "purchaseUrl": "https://www.tcgplayer.com/product/229377",
-    "priceFetchedAt": "2026-09-02 22:20:14"
+    "priceFetchedAt": "2026-09-02 22:20:14",
+    "estimatedEv": 135.07
   },
   {
     "id": "b92f39f9-8df0-59ef-920d-3b066bc84766",
@@ -45703,7 +45840,8 @@
     },
     "marketPrice": 69.83000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/229376",
-    "priceFetchedAt": "2026-09-02 22:20:14"
+    "priceFetchedAt": "2026-09-02 22:20:14",
+    "estimatedEv": 88.79
   },
   {
     "id": "65a8f10c-8151-50e2-a361-375dae91277c",
@@ -56168,7 +56306,8 @@
     },
     "marketPrice": 45.869998931884766,
     "purchaseUrl": "https://www.tcgplayer.com/product/517513",
-    "priceFetchedAt": "2026-09-02 22:20:05"
+    "priceFetchedAt": "2026-09-02 22:20:05",
+    "estimatedEv": 90.88
   },
   {
     "id": "17029d0a-ebcf-59d2-87da-94ffe9f66332",
@@ -56209,7 +56348,8 @@
     },
     "marketPrice": 91.69000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/517514",
-    "priceFetchedAt": "2026-09-02 22:20:05"
+    "priceFetchedAt": "2026-09-02 22:20:05",
+    "estimatedEv": 135.59
   },
   {
     "id": "ba78a240-5dac-52ae-b082-503930218bee",
@@ -56250,7 +56390,8 @@
     },
     "marketPrice": 94.45999908447266,
     "purchaseUrl": "https://www.tcgplayer.com/product/517515",
-    "priceFetchedAt": "2026-09-02 22:20:05"
+    "priceFetchedAt": "2026-09-02 22:20:05",
+    "estimatedEv": 90.83
   },
   {
     "id": "05000e1a-5e14-5665-a594-cd40241e9f92",
@@ -56291,7 +56432,8 @@
     },
     "marketPrice": 145.99000549316406,
     "purchaseUrl": "https://www.tcgplayer.com/product/517516",
-    "priceFetchedAt": "2026-09-02 22:20:05"
+    "priceFetchedAt": "2026-09-02 22:20:05",
+    "estimatedEv": 124.77
   },
   {
     "id": "f40db8d9-1f95-5e5b-8891-9519906da1c8",
@@ -57809,7 +57951,8 @@
     },
     "marketPrice": 72.93000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/488295",
-    "priceFetchedAt": "2026-09-02 22:19:57"
+    "priceFetchedAt": "2026-09-02 22:19:57",
+    "estimatedEv": 113.04
   },
   {
     "id": "c8ca8844-ca64-5968-81eb-055aeda52d43",
@@ -57847,7 +57990,8 @@
     },
     "marketPrice": 107.83999633789062,
     "purchaseUrl": "https://www.tcgplayer.com/product/488294",
-    "priceFetchedAt": "2026-09-02 22:19:57"
+    "priceFetchedAt": "2026-09-02 22:19:57",
+    "estimatedEv": 101.36
   },
   {
     "id": "d1e69561-3966-5900-aa5c-0bb7209d5f79",
@@ -57885,7 +58029,8 @@
     },
     "marketPrice": 80.33000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/488296",
-    "priceFetchedAt": "2026-09-02 22:19:57"
+    "priceFetchedAt": "2026-09-02 22:19:57",
+    "estimatedEv": 87.61
   },
   {
     "id": "dad99af2-08f8-516e-88b6-59962c77a5de",
@@ -57923,7 +58068,8 @@
     },
     "marketPrice": 121.88800048828125,
     "purchaseUrl": "https://www.tcgplayer.com/product/488293",
-    "priceFetchedAt": "2026-09-02 22:19:58"
+    "priceFetchedAt": "2026-09-02 22:19:58",
+    "estimatedEv": 116.68
   },
   {
     "id": "889a6f54-fb20-57c4-830f-2a0bda9af335",
@@ -58008,7 +58154,7 @@
             "foil"
           ],
           "foil": true,
-          "name": "The Balrog, Flame of Udûn",
+          "name": "The Balrog, Flame of Ud\u00fbn",
           "number": "4",
           "set": "pltc",
           "uuid": "0656a666-559d-56c4-8770-6813cf7c4875"
@@ -58031,7 +58177,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 113.04
   },
   {
     "id": "e2e4597e-2e0c-5c6a-be7c-74790f363ecc",
@@ -58077,7 +58224,7 @@
             "foil"
           ],
           "foil": true,
-          "name": "The Balrog, Flame of Udûn",
+          "name": "The Balrog, Flame of Ud\u00fbn",
           "number": "4",
           "set": "pltc",
           "uuid": "0656a666-559d-56c4-8770-6813cf7c4875"
@@ -58100,7 +58247,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 101.36
   },
   {
     "id": "640dd841-1395-550f-b0e9-9324c0ce5507",
@@ -58146,7 +58294,7 @@
             "foil"
           ],
           "foil": true,
-          "name": "The Balrog, Flame of Udûn",
+          "name": "The Balrog, Flame of Ud\u00fbn",
           "number": "4",
           "set": "pltc",
           "uuid": "0656a666-559d-56c4-8770-6813cf7c4875"
@@ -58169,7 +58317,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 87.61
   },
   {
     "id": "a8a93717-917b-56b5-bc0e-bebaf6e0fb76",
@@ -58215,7 +58364,7 @@
             "foil"
           ],
           "foil": true,
-          "name": "The Balrog, Flame of Udûn",
+          "name": "The Balrog, Flame of Ud\u00fbn",
           "number": "4",
           "set": "pltc",
           "uuid": "0656a666-559d-56c4-8770-6813cf7c4875"
@@ -58238,7 +58387,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 116.68
   },
   {
     "id": "f72749ee-a878-591f-97db-74eb7ba31bc5",
@@ -58677,7 +58827,7 @@
           ],
           "foil": true,
           "name": "Llanowar Elves",
-          "number": "1★",
+          "number": "1\u2605",
           "set": "pdmu",
           "uuid": "f916fc99-a7d5-508c-b0c2-0cbd8d52655f"
         },
@@ -58687,7 +58837,7 @@
           ],
           "foil": true,
           "name": "Lathril, Blade of the Elves",
-          "number": "2★",
+          "number": "2\u2605",
           "set": "pkhm",
           "uuid": "a3aa23c3-5f67-5d12-9568-4ef2d1621c7d"
         }
@@ -58720,7 +58870,7 @@
           ],
           "foil": true,
           "name": "Llanowar Elves",
-          "number": "1★",
+          "number": "1\u2605",
           "set": "pdmu",
           "uuid": "f916fc99-a7d5-508c-b0c2-0cbd8d52655f"
         },
@@ -58730,7 +58880,7 @@
           ],
           "foil": true,
           "name": "Lathril, Blade of the Elves",
-          "number": "2★",
+          "number": "2\u2605",
           "set": "pkhm",
           "uuid": "a3aa23c3-5f67-5d12-9568-4ef2d1621c7d"
         }
@@ -58763,7 +58913,7 @@
           ],
           "foil": true,
           "name": "Llanowar Elves",
-          "number": "1★",
+          "number": "1\u2605",
           "set": "pdmu",
           "uuid": "f916fc99-a7d5-508c-b0c2-0cbd8d52655f"
         },
@@ -58773,7 +58923,7 @@
           ],
           "foil": true,
           "name": "Lathril, Blade of the Elves",
-          "number": "2★",
+          "number": "2\u2605",
           "set": "pkhm",
           "uuid": "a3aa23c3-5f67-5d12-9568-4ef2d1621c7d"
         }
@@ -59273,7 +59423,8 @@
     },
     "marketPrice": 86.02999877929688,
     "purchaseUrl": "https://www.tcgplayer.com/product/484921",
-    "priceFetchedAt": "2026-09-02 22:19:57"
+    "priceFetchedAt": "2026-09-02 22:19:57",
+    "estimatedEv": 36.86
   },
   {
     "id": "aeb8388a-d1a9-539d-a995-37940d917528",
@@ -108140,7 +108291,8 @@
     },
     "marketPrice": 49.34000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/541194",
-    "priceFetchedAt": "2026-09-02 22:19:26"
+    "priceFetchedAt": "2026-09-02 22:19:26",
+    "estimatedEv": 80.95
   },
   {
     "id": "3e17294d-a33e-5324-8d0e-264fabcc0b51",
@@ -108181,7 +108333,8 @@
     },
     "marketPrice": 104.27999877929688,
     "purchaseUrl": "https://www.tcgplayer.com/product/541199",
-    "priceFetchedAt": "2026-09-02 22:19:26"
+    "priceFetchedAt": "2026-09-02 22:19:26",
+    "estimatedEv": 164.78
   },
   {
     "id": "858a5be1-3763-50d8-93ef-d836007fdb8e",
@@ -108222,7 +108375,8 @@
     },
     "marketPrice": 197.17999267578125,
     "purchaseUrl": "https://www.tcgplayer.com/product/541195",
-    "priceFetchedAt": "2026-09-02 22:19:28"
+    "priceFetchedAt": "2026-09-02 22:19:28",
+    "estimatedEv": 160.19
   },
   {
     "id": "2fc41fef-1eb3-56d7-8800-a59d7cdc7208",
@@ -108263,7 +108417,8 @@
     },
     "marketPrice": 390.8299865722656,
     "purchaseUrl": "https://www.tcgplayer.com/product/541200",
-    "priceFetchedAt": "2026-09-02 22:19:28"
+    "priceFetchedAt": "2026-09-02 22:19:28",
+    "estimatedEv": 430.41
   },
   {
     "id": "8fc54314-6dce-5324-9c5d-8b2279b6b8ac",
@@ -108304,7 +108459,8 @@
     },
     "marketPrice": 64.01000213623047,
     "purchaseUrl": "https://www.tcgplayer.com/product/541192",
-    "priceFetchedAt": "2026-09-02 22:19:28"
+    "priceFetchedAt": "2026-09-02 22:19:28",
+    "estimatedEv": 116.72
   },
   {
     "id": "d09d5cf9-0219-52d1-a7bd-ea3a61e10ca1",
@@ -108345,7 +108501,8 @@
     },
     "marketPrice": 150.4499969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/541197",
-    "priceFetchedAt": "2026-09-02 22:19:29"
+    "priceFetchedAt": "2026-09-02 22:19:29",
+    "estimatedEv": 264.58
   },
   {
     "id": "ebbb38f6-9d7a-57bf-ac65-8dcc4b9483b2",
@@ -108386,7 +108543,8 @@
     },
     "marketPrice": 85.30000305175781,
     "purchaseUrl": "https://www.tcgplayer.com/product/541193",
-    "priceFetchedAt": "2026-09-02 22:19:29"
+    "priceFetchedAt": "2026-09-02 22:19:29",
+    "estimatedEv": 147.72
   },
   {
     "id": "04ea3fcd-990b-578f-91c8-5890013994c0",
@@ -108427,7 +108585,8 @@
     },
     "marketPrice": 247.3300018310547,
     "purchaseUrl": "https://www.tcgplayer.com/product/541198",
-    "priceFetchedAt": "2026-09-02 22:19:29"
+    "priceFetchedAt": "2026-09-02 22:19:29",
+    "estimatedEv": 409.73
   },
   {
     "id": "2d462b77-d2e1-5a0b-8f0b-55608f2a8145",
@@ -110308,7 +110467,8 @@
     },
     "marketPrice": 60.75,
     "purchaseUrl": "https://www.tcgplayer.com/product/246460",
-    "priceFetchedAt": "2026-09-02 22:19:14"
+    "priceFetchedAt": "2026-09-02 22:19:14",
+    "estimatedEv": 55.55
   },
   {
     "id": "1eb46285-39db-5049-be86-bc2d50b91d77",
@@ -110338,7 +110498,8 @@
     },
     "marketPrice": 54.91999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/246265",
-    "priceFetchedAt": "2026-09-02 22:19:14"
+    "priceFetchedAt": "2026-09-02 22:19:14",
+    "estimatedEv": 55.55
   },
   {
     "id": "3ca8a448-1f52-5b42-9285-7c6588fd8eb3",
@@ -110368,7 +110529,8 @@
     },
     "marketPrice": 136.55999755859375,
     "purchaseUrl": "https://www.tcgplayer.com/product/246461",
-    "priceFetchedAt": "2026-09-02 22:19:14"
+    "priceFetchedAt": "2026-09-02 22:19:14",
+    "estimatedEv": 93.51
   },
   {
     "id": "316315d9-096e-5b71-98af-cbac73af1a81",
@@ -110398,7 +110560,8 @@
     },
     "marketPrice": 115,
     "purchaseUrl": "https://www.tcgplayer.com/product/246266",
-    "priceFetchedAt": "2026-09-02 22:19:14"
+    "priceFetchedAt": "2026-09-02 22:19:14",
+    "estimatedEv": 93.51
   },
   {
     "id": "b5c7aeda-7a53-522d-a145-539c0d9da034",
@@ -111204,7 +111367,8 @@
     },
     "marketPrice": 120,
     "purchaseUrl": "https://www.tcgplayer.com/product/529980",
-    "priceFetchedAt": "2026-09-02 22:19:08"
+    "priceFetchedAt": "2026-09-02 22:19:08",
+    "estimatedEv": 151.36
   },
   {
     "id": "e4285534-2c7f-51ad-b6ae-37ac29db4d32",
@@ -111239,7 +111403,8 @@
     },
     "marketPrice": 90.61000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/529977",
-    "priceFetchedAt": "2026-09-02 22:19:09"
+    "priceFetchedAt": "2026-09-02 22:19:09",
+    "estimatedEv": 145.11
   },
   {
     "id": "adeb6008-4d30-52be-80da-11ba517b57ff",
@@ -111274,7 +111439,8 @@
     },
     "marketPrice": 76.04000091552734,
     "purchaseUrl": "https://www.tcgplayer.com/product/529979",
-    "priceFetchedAt": "2026-09-02 22:19:09"
+    "priceFetchedAt": "2026-09-02 22:19:09",
+    "estimatedEv": 124.41
   },
   {
     "id": "1dda9d52-11ef-52dd-b169-b02271aff831",
@@ -111309,7 +111475,8 @@
     },
     "marketPrice": 88.4000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/529978",
-    "priceFetchedAt": "2026-09-02 22:19:09"
+    "priceFetchedAt": "2026-09-02 22:19:09",
+    "estimatedEv": 133.06
   },
   {
     "id": "9d70e71a-8d19-5af5-81b2-936fc1054eb3",
@@ -112189,7 +112356,8 @@
     },
     "marketPrice": 82.70999908447266,
     "purchaseUrl": "https://www.tcgplayer.com/product/484587",
-    "priceFetchedAt": "2026-09-02 22:19:03"
+    "priceFetchedAt": "2026-09-02 22:19:03",
+    "estimatedEv": 117.66
   },
   {
     "id": "c4345ca9-4383-54f6-85b0-79381b2b35b8",
@@ -112230,7 +112398,8 @@
     },
     "marketPrice": 148,
     "purchaseUrl": "https://www.tcgplayer.com/product/484589",
-    "priceFetchedAt": "2026-09-02 22:19:03"
+    "priceFetchedAt": "2026-09-02 22:19:03",
+    "estimatedEv": 97.29
   },
   {
     "id": "aaafd779-74dd-593e-a6be-9f9912314920",
@@ -112271,7 +112440,8 @@
     },
     "marketPrice": 76.62999725341797,
     "purchaseUrl": "https://www.tcgplayer.com/product/484588",
-    "priceFetchedAt": "2026-09-02 22:19:03"
+    "priceFetchedAt": "2026-09-02 22:19:03",
+    "estimatedEv": 98.58
   },
   {
     "id": "c761fe82-5597-5439-b50b-b09911bfa6fb",
@@ -112312,7 +112482,8 @@
     },
     "marketPrice": 83.62000274658203,
     "purchaseUrl": "https://www.tcgplayer.com/product/484590",
-    "priceFetchedAt": "2026-09-02 22:19:04"
+    "priceFetchedAt": "2026-09-02 22:19:04",
+    "estimatedEv": 89.99
   },
   {
     "id": "832131a2-077b-5300-98e2-02f5eabbbaed",
@@ -112359,7 +112530,8 @@
     },
     "marketPrice": 47.959999084472656,
     "purchaseUrl": "https://www.tcgplayer.com/product/484591",
-    "priceFetchedAt": "2026-09-02 22:19:04"
+    "priceFetchedAt": "2026-09-02 22:19:04",
+    "estimatedEv": 76.39
   },
   {
     "id": "55fed710-49e0-55e9-949b-72a0c6d5c4b3",
@@ -113492,7 +113664,8 @@
     },
     "marketPrice": 52.83000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/675634",
-    "priceFetchedAt": "2026-09-02 22:18:56"
+    "priceFetchedAt": "2026-09-02 22:18:56",
+    "estimatedEv": 78.57
   },
   {
     "id": "d308be8a-b2c5-5a3f-8896-3bf1cb5bbdb1",
@@ -113511,7 +113684,8 @@
     },
     "marketPrice": 128.10000610351562,
     "purchaseUrl": "https://www.tcgplayer.com/product/675627",
-    "priceFetchedAt": "2026-09-02 22:18:56"
+    "priceFetchedAt": "2026-09-02 22:18:56",
+    "estimatedEv": 239.72
   },
   {
     "id": "aa82de23-8dbe-563f-a5b7-e401d445b1cf",
@@ -113530,7 +113704,8 @@
     },
     "marketPrice": 66.56999969482422,
     "purchaseUrl": "https://www.tcgplayer.com/product/675631",
-    "priceFetchedAt": "2026-09-02 22:18:57"
+    "priceFetchedAt": "2026-09-02 22:18:57",
+    "estimatedEv": 92.23
   },
   {
     "id": "de76444b-1e67-58ce-a186-747cbb631046",
@@ -113549,7 +113724,8 @@
     },
     "marketPrice": 177.6699981689453,
     "purchaseUrl": "https://www.tcgplayer.com/product/675630",
-    "priceFetchedAt": "2026-09-02 22:18:57"
+    "priceFetchedAt": "2026-09-02 22:18:57",
+    "estimatedEv": 246.9
   },
   {
     "id": "6c97f171-b139-5365-a4e2-51ee652f10c7",
@@ -113568,7 +113744,8 @@
     },
     "marketPrice": 43.59000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/675632",
-    "priceFetchedAt": "2026-09-02 22:18:57"
+    "priceFetchedAt": "2026-09-02 22:18:57",
+    "estimatedEv": 70.46
   },
   {
     "id": "8df7848c-9899-5bab-88cd-73c21659095b",
@@ -113587,7 +113764,8 @@
     },
     "marketPrice": 101.83000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/675629",
-    "priceFetchedAt": "2026-09-02 22:18:57"
+    "priceFetchedAt": "2026-09-02 22:18:57",
+    "estimatedEv": 204.3
   },
   {
     "id": "393e3767-0029-53b0-96c1-c2c9d3e79ce7",
@@ -113606,7 +113784,8 @@
     },
     "marketPrice": 40.849998474121094,
     "purchaseUrl": "https://www.tcgplayer.com/product/675633",
-    "priceFetchedAt": "2026-09-02 22:18:57"
+    "priceFetchedAt": "2026-09-02 22:18:57",
+    "estimatedEv": 70.44
   },
   {
     "id": "ed6578ff-0ad5-5024-aeda-98a153b832ed",
@@ -113625,7 +113804,8 @@
     },
     "marketPrice": 90.95999908447266,
     "purchaseUrl": "https://www.tcgplayer.com/product/675628",
-    "priceFetchedAt": "2026-09-02 22:18:58"
+    "priceFetchedAt": "2026-09-02 22:18:58",
+    "estimatedEv": 180.6
   },
   {
     "id": "7466a783-9b46-5093-a259-b75480b4d8c7",
@@ -114464,7 +114644,8 @@
     },
     "marketPrice": 68.16999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/265396",
-    "priceFetchedAt": "2026-09-02 22:18:51"
+    "priceFetchedAt": "2026-09-02 22:18:51",
+    "estimatedEv": 105.01
   },
   {
     "id": "9bc35b71-be0e-5bd1-ab69-a11d4ee1a6ad",
@@ -114502,7 +114683,8 @@
     },
     "marketPrice": 79.98999786376953,
     "purchaseUrl": "https://www.tcgplayer.com/product/278939",
-    "priceFetchedAt": "2026-09-02 22:18:51"
+    "priceFetchedAt": "2026-09-02 22:18:51",
+    "estimatedEv": 105.01
   },
   {
     "id": "04ab49ac-7d0b-5100-8571-a836eb621c1d",
@@ -114540,7 +114722,8 @@
     },
     "marketPrice": 105.8499984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/265395",
-    "priceFetchedAt": "2026-09-02 22:18:51"
+    "priceFetchedAt": "2026-09-02 22:18:51",
+    "estimatedEv": 149.78
   },
   {
     "id": "bc60a74f-2603-5401-82d8-630502d6e660",
@@ -114578,7 +114761,8 @@
     },
     "marketPrice": 80.33000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/278940",
-    "priceFetchedAt": "2026-09-02 22:18:51"
+    "priceFetchedAt": "2026-09-02 22:18:51",
+    "estimatedEv": 149.78
   },
   {
     "id": "cc49a2ad-7068-5fe4-ac02-d0abf3acf451",
@@ -114616,7 +114800,8 @@
     },
     "marketPrice": 79.87999725341797,
     "purchaseUrl": "https://www.tcgplayer.com/product/265393",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 96.64
   },
   {
     "id": "879529b8-1ffa-5eb8-afa9-dc8389f57ca9",
@@ -114654,7 +114839,8 @@
     },
     "marketPrice": 117.49500274658203,
     "purchaseUrl": "https://www.tcgplayer.com/product/278942",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 96.64
   },
   {
     "id": "d0dfec66-d58a-5e71-910c-09424f9f5a42",
@@ -114692,7 +114878,8 @@
     },
     "marketPrice": 81.41999816894531,
     "purchaseUrl": "https://www.tcgplayer.com/product/265392",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 117.35
   },
   {
     "id": "1cc0da19-2b54-593b-84b1-f0bb12c34114",
@@ -114730,7 +114917,8 @@
     },
     "marketPrice": 82.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/278945",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 117.35
   },
   {
     "id": "6ce9546b-3a8d-5283-ac09-b0782d61db8a",
@@ -114768,7 +114956,8 @@
     },
     "marketPrice": 132.7100067138672,
     "purchaseUrl": "https://www.tcgplayer.com/product/265394",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 101.86
   },
   {
     "id": "3be2adba-98b7-530b-9084-e323f9a9732c",
@@ -114806,7 +114995,8 @@
     },
     "marketPrice": 74.98999786376953,
     "purchaseUrl": "https://www.tcgplayer.com/product/278944",
-    "priceFetchedAt": "2026-09-02 22:18:52"
+    "priceFetchedAt": "2026-09-02 22:18:52",
+    "estimatedEv": 101.86
   },
   {
     "id": "ecbb336b-1fdd-575a-b929-523b5fe96bba",
@@ -114926,7 +115116,8 @@
     },
     "marketPrice": 99.22000122070312,
     "purchaseUrl": "https://www.tcgplayer.com/product/262517",
-    "priceFetchedAt": "2026-09-02 22:18:50"
+    "priceFetchedAt": "2026-09-02 22:18:50",
+    "estimatedEv": 79.36
   },
   {
     "id": "8b475fa7-b654-5171-a77f-15fdb9afaceb",
@@ -114956,7 +115147,8 @@
     },
     "marketPrice": 89.80999755859375,
     "purchaseUrl": "https://www.tcgplayer.com/product/450312",
-    "priceFetchedAt": "2026-09-02 22:18:50"
+    "priceFetchedAt": "2026-09-02 22:18:50",
+    "estimatedEv": 79.36
   },
   {
     "id": "e1787527-e6dc-59d3-b671-d5778c449a0c",
@@ -114986,7 +115178,8 @@
     },
     "marketPrice": 73.38999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/262520",
-    "priceFetchedAt": "2026-09-02 22:18:50"
+    "priceFetchedAt": "2026-09-02 22:18:50",
+    "estimatedEv": 101.98
   },
   {
     "id": "685a824b-6d40-58dd-b173-a8f20c7db081",
@@ -115016,7 +115209,8 @@
     },
     "marketPrice": 65.66000366210938,
     "purchaseUrl": "https://www.tcgplayer.com/product/450313",
-    "priceFetchedAt": "2026-09-02 22:18:50"
+    "priceFetchedAt": "2026-09-02 22:18:50",
+    "estimatedEv": 101.98
   },
   {
     "id": "db9b56cf-9a76-5c34-a646-0df60a404050",
@@ -117140,7 +117334,8 @@
     },
     "marketPrice": 282.3699951171875,
     "purchaseUrl": "https://www.tcgplayer.com/product/475566",
-    "priceFetchedAt": "2026-09-02 22:18:39"
+    "priceFetchedAt": "2026-09-02 22:18:39",
+    "estimatedEv": 161.83
   },
   {
     "id": "2c61d5a4-9252-595b-9a58-a782a3d27d68",
@@ -117181,7 +117376,8 @@
     },
     "marketPrice": 95.04000091552734,
     "purchaseUrl": "https://www.tcgplayer.com/product/475567",
-    "priceFetchedAt": "2026-09-02 22:18:40"
+    "priceFetchedAt": "2026-09-02 22:18:40",
+    "estimatedEv": 134.0
   },
   {
     "id": "ff1b65ce-49d4-58dc-8445-6d14eab6dfc2",
@@ -127423,7 +127619,8 @@
     },
     "marketPrice": 101.4800033569336,
     "purchaseUrl": "https://www.tcgplayer.com/product/541100",
-    "priceFetchedAt": "2026-09-02 22:18:32"
+    "priceFetchedAt": "2026-09-02 22:18:32",
+    "estimatedEv": 113.28
   },
   {
     "id": "e5dd120f-1ddb-5522-975b-bf2e59474c04",
@@ -127461,7 +127658,8 @@
     },
     "marketPrice": 198.42999267578125,
     "purchaseUrl": "https://www.tcgplayer.com/product/541102",
-    "priceFetchedAt": "2026-09-02 22:18:32"
+    "priceFetchedAt": "2026-09-02 22:18:32",
+    "estimatedEv": 172.92
   },
   {
     "id": "4233fcb4-c1f6-5ccc-9a36-c0cbf021ae93",
@@ -127499,7 +127697,8 @@
     },
     "marketPrice": 155.49000549316406,
     "purchaseUrl": "https://www.tcgplayer.com/product/541103",
-    "priceFetchedAt": "2026-09-02 22:18:32"
+    "priceFetchedAt": "2026-09-02 22:18:32",
+    "estimatedEv": 158.43
   },
   {
     "id": "739e751a-c299-5ac9-94c2-23f60e3b172f",
@@ -127537,7 +127736,8 @@
     },
     "marketPrice": 190.9199981689453,
     "purchaseUrl": "https://www.tcgplayer.com/product/541099",
-    "priceFetchedAt": "2026-09-02 22:18:32"
+    "priceFetchedAt": "2026-09-02 22:18:32",
+    "estimatedEv": 134.25
   },
   {
     "id": "02393b20-bc9a-5b06-befd-787e257f3a6a",
@@ -128224,7 +128424,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": "https://www.tcgplayer.com/product/96282",
-    "priceFetchedAt": "2026-09-02 22:18:29"
+    "priceFetchedAt": "2026-09-02 22:18:29",
+    "estimatedEv": 28.6
   },
   {
     "id": "c529b47f-383a-530b-89b6-e17bfa6d7e29",
@@ -129050,7 +129251,8 @@
     },
     "marketPrice": 129.24000549316406,
     "purchaseUrl": "https://www.tcgplayer.com/product/522903",
-    "priceFetchedAt": "2026-09-02 22:18:25"
+    "priceFetchedAt": "2026-09-02 22:18:25",
+    "estimatedEv": 106.79
   },
   {
     "id": "efe144d5-6413-5464-b709-4748a0fa6995",
@@ -129088,7 +129290,8 @@
     },
     "marketPrice": 208.94000244140625,
     "purchaseUrl": "https://www.tcgplayer.com/product/522902",
-    "priceFetchedAt": "2026-09-02 22:18:25"
+    "priceFetchedAt": "2026-09-02 22:18:25",
+    "estimatedEv": 174.39
   },
   {
     "id": "c2974b81-2006-59c4-bc63-e4fe2fb3e969",
@@ -129126,7 +129329,8 @@
     },
     "marketPrice": 52.22999954223633,
     "purchaseUrl": "https://www.tcgplayer.com/product/522905",
-    "priceFetchedAt": "2026-09-02 22:18:25"
+    "priceFetchedAt": "2026-09-02 22:18:25",
+    "estimatedEv": 92.43
   },
   {
     "id": "a86a2bee-752f-543c-9f96-c7e64c3cab8d",
@@ -129164,7 +129368,8 @@
     },
     "marketPrice": 107.26000213623047,
     "purchaseUrl": "https://www.tcgplayer.com/product/522899",
-    "priceFetchedAt": "2026-09-02 22:18:25"
+    "priceFetchedAt": "2026-09-02 22:18:25",
+    "estimatedEv": 139.0
   },
   {
     "id": "9d373e6e-abeb-55b7-b1b5-6b5cf6875b45",
@@ -130017,7 +130222,8 @@
     },
     "marketPrice": 59.47999954223633,
     "purchaseUrl": "https://www.tcgplayer.com/product/81795",
-    "priceFetchedAt": "2026-09-02 22:18:22"
+    "priceFetchedAt": "2026-09-02 22:18:22",
+    "estimatedEv": 32.48
   },
   {
     "id": "590fd5f4-2d83-53e5-97c6-2c7fb07eacf6",
@@ -130194,7 +130400,7 @@
   {
     "id": "7494dca6-5dfb-5353-ad16-273cec7a9bc4",
     "setCode": "PS11",
-    "displayName": "Salvat 2011 Theme Deck Mente del vacío",
+    "displayName": "Salvat 2011 Theme Deck Mente del vac\u00edo",
     "category": "deck",
     "subtype": "theme",
     "cardCount": 60,
@@ -130270,7 +130476,7 @@
   {
     "id": "69fc487b-f758-582c-a2cb-9b417bc020b9",
     "setCode": "PS11",
-    "displayName": "Salvat 2011 Theme Deck Reliquias de perdición",
+    "displayName": "Salvat 2011 Theme Deck Reliquias de perdici\u00f3n",
     "category": "deck",
     "subtype": "theme",
     "cardCount": 60,
@@ -130513,7 +130719,7 @@
   {
     "id": "b081f1af-5680-5571-9ae0-1499a783d602",
     "setCode": "PSAL",
-    "displayName": "Salvat Theme Deck Espíritus",
+    "displayName": "Salvat Theme Deck Esp\u00edritus",
     "category": "deck",
     "subtype": "theme",
     "cardCount": 60,
@@ -130646,7 +130852,7 @@
   {
     "id": "fe432eac-ab23-54ba-9930-4082882d63d2",
     "setCode": "PSAL",
-    "displayName": "Salvat Theme Deck Tálidos y Saprolines",
+    "displayName": "Salvat Theme Deck T\u00e1lidos y Saprolines",
     "category": "deck",
     "subtype": "theme",
     "cardCount": 60,
@@ -130684,7 +130890,7 @@
   {
     "id": "f93b5692-1792-588c-b86a-08eaa1ae6dbe",
     "setCode": "PSAL",
-    "displayName": "Salvat Theme Deck Ángeles",
+    "displayName": "Salvat Theme Deck \u00c1ngeles",
     "category": "deck",
     "subtype": "theme",
     "cardCount": 60,
@@ -131136,7 +131342,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": "https://www.tcgplayer.com/product/96285",
-    "priceFetchedAt": "2026-09-02 22:18:17"
+    "priceFetchedAt": "2026-09-02 22:18:17",
+    "estimatedEv": 165.22
   },
   {
     "id": "5e9763db-6220-52b3-b999-7a2c0c368f1b",
@@ -131170,7 +131377,8 @@
     },
     "marketPrice": 283.989990234375,
     "purchaseUrl": "https://www.tcgplayer.com/product/96284",
-    "priceFetchedAt": "2026-09-02 22:18:17"
+    "priceFetchedAt": "2026-09-02 22:18:17",
+    "estimatedEv": 165.22
   },
   {
     "id": "c2a85236-f765-5c39-8dc4-bf433ad11201",
@@ -131222,7 +131430,8 @@
     },
     "marketPrice": 25.610000610351562,
     "purchaseUrl": "https://www.tcgplayer.com/product/161415",
-    "priceFetchedAt": "2026-09-02 22:18:15"
+    "priceFetchedAt": "2026-09-02 22:18:15",
+    "estimatedEv": 36.45
   },
   {
     "id": "21f90d20-1427-5e2b-8a25-c30fa77d8998",
@@ -131241,7 +131450,8 @@
     },
     "marketPrice": 26.489999771118164,
     "purchaseUrl": "https://www.tcgplayer.com/product/161412",
-    "priceFetchedAt": "2026-09-02 22:18:16"
+    "priceFetchedAt": "2026-09-02 22:18:16",
+    "estimatedEv": 44.72
   },
   {
     "id": "55a2ef53-0387-5f64-a9a6-b7d0e4806409",
@@ -131260,7 +131470,8 @@
     },
     "marketPrice": 20.989999771118164,
     "purchaseUrl": "https://www.tcgplayer.com/product/161414",
-    "priceFetchedAt": "2026-09-02 22:18:16"
+    "priceFetchedAt": "2026-09-02 22:18:16",
+    "estimatedEv": 43.8
   },
   {
     "id": "c693cb5b-1236-5581-8e99-a7acdb515bca",
@@ -131279,7 +131490,8 @@
     },
     "marketPrice": 15.350000381469727,
     "purchaseUrl": "https://www.tcgplayer.com/product/161413",
-    "priceFetchedAt": "2026-09-02 22:18:16"
+    "priceFetchedAt": "2026-09-02 22:18:16",
+    "estimatedEv": 25.85
   },
   {
     "id": "13044115-319f-5366-8311-60fd88e29aeb",
@@ -131376,7 +131588,8 @@
     },
     "marketPrice": 32.15999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/186435",
-    "priceFetchedAt": "2026-09-02 22:18:15"
+    "priceFetchedAt": "2026-09-02 22:18:15",
+    "estimatedEv": 28.59
   },
   {
     "id": "9b0d6e07-d002-500e-889e-8f378bdab60b",
@@ -131395,7 +131608,8 @@
     },
     "marketPrice": 23.079999923706055,
     "purchaseUrl": "https://www.tcgplayer.com/product/186434",
-    "priceFetchedAt": "2026-09-02 22:18:15"
+    "priceFetchedAt": "2026-09-02 22:18:15",
+    "estimatedEv": 28.94
   },
   {
     "id": "344967c3-a83b-568a-816a-741e2b43fd31",
@@ -131414,7 +131628,8 @@
     },
     "marketPrice": 23.719999313354492,
     "purchaseUrl": "https://www.tcgplayer.com/product/186433",
-    "priceFetchedAt": "2026-09-02 22:18:15"
+    "priceFetchedAt": "2026-09-02 22:18:15",
+    "estimatedEv": 26.31
   },
   {
     "id": "078136dc-56fa-56c1-a69c-a34a3b54b481",
@@ -131433,7 +131648,8 @@
     },
     "marketPrice": 18.489999771118164,
     "purchaseUrl": "https://www.tcgplayer.com/product/186432",
-    "priceFetchedAt": "2026-09-02 22:18:15"
+    "priceFetchedAt": "2026-09-02 22:18:15",
+    "estimatedEv": 27.85
   },
   {
     "id": "0b887898-3a19-5bc7-89de-cc01aaad2428",
@@ -131530,7 +131746,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 70.23
   },
   {
     "id": "8e4c9f84-19cc-5019-93f9-d50a8aa98d0e",
@@ -131549,7 +131766,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 42.36
   },
   {
     "id": "f900867d-05eb-56bc-a5af-4e61ddb85fe1",
@@ -131568,7 +131786,8 @@
     },
     "marketPrice": 16.34000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/209420",
-    "priceFetchedAt": "2026-09-02 22:18:14"
+    "priceFetchedAt": "2026-09-02 22:18:14",
+    "estimatedEv": 32.1
   },
   {
     "id": "80133799-1750-588b-84e1-0ed143a3c2b5",
@@ -131587,7 +131806,8 @@
     },
     "marketPrice": 21.420000076293945,
     "purchaseUrl": "https://www.tcgplayer.com/product/209422",
-    "priceFetchedAt": "2026-09-02 22:18:14"
+    "priceFetchedAt": "2026-09-02 22:18:14",
+    "estimatedEv": 49.74
   },
   {
     "id": "468bc4c6-9ccc-526d-8dab-8f0d5ab7cdd7",
@@ -131606,7 +131826,8 @@
     },
     "marketPrice": 18.90999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/209421",
-    "priceFetchedAt": "2026-09-02 22:18:14"
+    "priceFetchedAt": "2026-09-02 22:18:14",
+    "estimatedEv": 31.72
   },
   {
     "id": "d0b31bb5-4cea-555c-a63d-512ffa4774ea",
@@ -131625,7 +131846,8 @@
     },
     "marketPrice": 16.229999542236328,
     "purchaseUrl": "https://www.tcgplayer.com/product/209423",
-    "priceFetchedAt": "2026-09-02 22:18:14"
+    "priceFetchedAt": "2026-09-02 22:18:14",
+    "estimatedEv": 19.94
   },
   {
     "id": "1d18989d-cf60-527c-8343-e66267520527",
@@ -131722,7 +131944,8 @@
     },
     "marketPrice": 18.510000228881836,
     "purchaseUrl": "https://www.tcgplayer.com/product/232756",
-    "priceFetchedAt": "2026-09-02 22:18:12"
+    "priceFetchedAt": "2026-09-02 22:18:12",
+    "estimatedEv": 38.1
   },
   {
     "id": "a680a179-aa91-5c01-9f83-6265131cfdfe",
@@ -131741,7 +131964,8 @@
     },
     "marketPrice": 27.780000686645508,
     "purchaseUrl": "https://www.tcgplayer.com/product/232758",
-    "priceFetchedAt": "2026-09-02 22:18:13"
+    "priceFetchedAt": "2026-09-02 22:18:13",
+    "estimatedEv": 56.65
   },
   {
     "id": "e0d88354-2e1a-54b7-88bd-63a8a629df80",
@@ -131760,7 +131984,8 @@
     },
     "marketPrice": 25.6299991607666,
     "purchaseUrl": "https://www.tcgplayer.com/product/232761",
-    "priceFetchedAt": "2026-09-02 22:18:13"
+    "priceFetchedAt": "2026-09-02 22:18:13",
+    "estimatedEv": 38.9
   },
   {
     "id": "fde63a47-9596-54e4-9947-93c68a27d7a2",
@@ -131779,7 +132004,8 @@
     },
     "marketPrice": 31.8799991607666,
     "purchaseUrl": "https://www.tcgplayer.com/product/232760",
-    "priceFetchedAt": "2026-09-02 22:18:13"
+    "priceFetchedAt": "2026-09-02 22:18:13",
+    "estimatedEv": 71.98
   },
   {
     "id": "60fe8c7d-354a-533b-a951-0a65666deb58",
@@ -132030,7 +132256,8 @@
     },
     "marketPrice": 47.54999923706055,
     "purchaseUrl": "https://www.tcgplayer.com/product/263165",
-    "priceFetchedAt": "2026-09-02 22:18:11"
+    "priceFetchedAt": "2026-09-02 22:18:11",
+    "estimatedEv": 64.08
   },
   {
     "id": "3486b605-60ec-54af-8ab1-265e1d01c688",
@@ -132049,7 +132276,8 @@
     },
     "marketPrice": 34.18000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/263166",
-    "priceFetchedAt": "2026-09-02 22:18:11"
+    "priceFetchedAt": "2026-09-02 22:18:11",
+    "estimatedEv": 92.69
   },
   {
     "id": "83cc5488-a136-5153-ac4e-b121e921df4b",
@@ -132068,7 +132296,8 @@
     },
     "marketPrice": 41.61000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/263164",
-    "priceFetchedAt": "2026-09-02 22:18:11"
+    "priceFetchedAt": "2026-09-02 22:18:11",
+    "estimatedEv": 19.93
   },
   {
     "id": "ccbdd4bb-508a-5a28-92bb-a71396b166c9",
@@ -132087,7 +132316,8 @@
     },
     "marketPrice": 55.33000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/263167",
-    "priceFetchedAt": "2026-09-02 22:18:11"
+    "priceFetchedAt": "2026-09-02 22:18:11",
+    "estimatedEv": 41.08
   },
   {
     "id": "cc8321c9-7758-5e5b-91ce-fbb2c80f122f",
@@ -132222,7 +132452,8 @@
     },
     "marketPrice": 42.7400016784668,
     "purchaseUrl": "https://www.tcgplayer.com/product/278663",
-    "priceFetchedAt": "2026-09-02 22:18:10"
+    "priceFetchedAt": "2026-09-02 22:18:10",
+    "estimatedEv": 64.08
   },
   {
     "id": "af06f01f-f54a-5bf6-b97c-f50a9f06e699",
@@ -132241,7 +132472,8 @@
     },
     "marketPrice": 56.290000915527344,
     "purchaseUrl": "https://www.tcgplayer.com/product/278666",
-    "priceFetchedAt": "2026-09-02 22:18:10"
+    "priceFetchedAt": "2026-09-02 22:18:10",
+    "estimatedEv": 92.69
   },
   {
     "id": "fd8b7db3-7f68-5546-9e9c-b4a6b923f271",
@@ -132971,7 +133203,7 @@
           "name": "1 Card box"
         },
         {
-          "name": "1 Player’s Guide with visual encyclopedia for Rivals of Ixalan"
+          "name": "1 Player\u2019s Guide with visual encyclopedia for Rivals of Ixalan"
         },
         {
           "name": "1 Magic learn-to-play guide"
@@ -133494,7 +133726,7 @@
           "name": "1 card box"
         },
         {
-          "name": "1 player’s guide"
+          "name": "1 player\u2019s guide"
         },
         {
           "name": "1 learn-to-play insert"
@@ -134994,7 +135226,7 @@
           ],
           "foil": true,
           "name": "Archon of the Triumvirate",
-          "number": "142★",
+          "number": "142\u2605",
           "set": "prtr",
           "uuid": "17c126bd-d42b-513b-b37b-f8f652de99c2"
         }
@@ -135038,7 +135270,7 @@
           ],
           "foil": true,
           "name": "Corpsejack Menace",
-          "number": "152★",
+          "number": "152\u2605",
           "set": "prtr",
           "uuid": "1dfa9686-e3a8-5207-892e-b8ef244e7ce3"
         }
@@ -135082,7 +135314,7 @@
           ],
           "foil": true,
           "name": "Hypersonic Dragon",
-          "number": "170★",
+          "number": "170\u2605",
           "set": "prtr",
           "uuid": "9d767e5e-1aa4-5402-a145-eaf094aa3505"
         }
@@ -135126,7 +135358,7 @@
           ],
           "foil": true,
           "name": "Carnival Hellsteed",
-          "number": "147★",
+          "number": "147\u2605",
           "set": "prtr",
           "uuid": "c5c730db-4a77-58f8-b6bc-213ee9751c8a"
         }
@@ -135170,7 +135402,7 @@
           ],
           "foil": true,
           "name": "Grove of the Guardian",
-          "number": "240★",
+          "number": "240\u2605",
           "set": "prtr",
           "uuid": "9d2e211f-1fd6-525d-8c13-7b952f63bc35"
         }
@@ -135595,7 +135827,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 5.96
   },
   {
     "id": "b4e8db8e-5bf6-5dc5-b10c-6955d8d59e1c",
@@ -135744,7 +135977,8 @@
     },
     "marketPrice": 0,
     "purchaseUrl": null,
-    "priceFetchedAt": null
+    "priceFetchedAt": null,
+    "estimatedEv": 13.57
   },
   {
     "id": "4eb2da6d-b432-5cbe-bb51-8a70387fd273",
@@ -135945,7 +136179,8 @@
     },
     "marketPrice": 448.4949951171875,
     "purchaseUrl": "https://www.tcgplayer.com/product/532800",
-    "priceFetchedAt": "2026-09-02 22:17:55"
+    "priceFetchedAt": "2026-09-02 22:17:55",
+    "estimatedEv": 13.57
   },
   {
     "id": "263009b9-549d-5bae-b92e-330067619818",
@@ -136014,7 +136249,8 @@
     },
     "marketPrice": 32.88999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/448435",
-    "priceFetchedAt": "2026-09-02 22:17:54"
+    "priceFetchedAt": "2026-09-02 22:17:54",
+    "estimatedEv": 45.96
   },
   {
     "id": "eda5f16c-19f2-517e-80b7-0a50d48a91d9",
@@ -136038,7 +136274,8 @@
     },
     "marketPrice": 48.619998931884766,
     "purchaseUrl": "https://www.tcgplayer.com/product/448436",
-    "priceFetchedAt": "2026-09-02 22:17:54"
+    "priceFetchedAt": "2026-09-02 22:17:54",
+    "estimatedEv": 44.26
   },
   {
     "id": "bd1bb123-37d6-5961-ad5b-f14453add9b0",
@@ -136062,7 +136299,8 @@
     },
     "marketPrice": 22.75,
     "purchaseUrl": "https://www.tcgplayer.com/product/448434",
-    "priceFetchedAt": "2026-09-02 22:17:54"
+    "priceFetchedAt": "2026-09-02 22:17:54",
+    "estimatedEv": 38.1
   },
   {
     "id": "a3e4cfc8-ace6-5518-affc-1331aa2c5ac3",
@@ -136086,7 +136324,8 @@
     },
     "marketPrice": 28.190000534057617,
     "purchaseUrl": "https://www.tcgplayer.com/product/448432",
-    "priceFetchedAt": "2026-09-02 22:17:55"
+    "priceFetchedAt": "2026-09-02 22:17:55",
+    "estimatedEv": 32.61
   },
   {
     "id": "c9e98362-8c81-5f65-bf35-faeb51d5961f",
@@ -136110,7 +136349,8 @@
     },
     "marketPrice": 27.059999465942383,
     "purchaseUrl": "https://www.tcgplayer.com/product/448433",
-    "priceFetchedAt": "2026-09-02 22:17:55"
+    "priceFetchedAt": "2026-09-02 22:17:55",
+    "estimatedEv": 33.29
   },
   {
     "id": "243a7bae-a44f-56f3-b193-8b6b5197aec9",
@@ -144319,7 +144559,7 @@
           ],
           "foil": true,
           "name": "Arcane Signet",
-          "number": "820★",
+          "number": "820\u2605",
           "set": "sld",
           "uuid": "f4d4bb37-348c-5ef4-be48-c7a5943a7ea1"
         }
@@ -148880,7 +149120,7 @@
   {
     "id": "08be8f63-3e5c-56d2-9e01-4ed83443ba4b",
     "setCode": "SLD",
-    "displayName": "Secret Lair Drop Dandân Deck",
+    "displayName": "Secret Lair Drop Dand\u00e2n Deck",
     "category": "box_set",
     "subtype": "secret_lair",
     "cardCount": 80,
@@ -148909,7 +149149,7 @@
       ],
       "deck": [
         {
-          "name": "Dandân Deck",
+          "name": "Dand\u00e2n Deck",
           "set": "sld"
         }
       ]
@@ -149139,7 +149379,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -149156,7 +149396,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -149173,7 +149413,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -149190,7 +149430,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -149246,7 +149486,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -149263,7 +149503,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -149280,7 +149520,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -149297,7 +149537,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -155418,14 +155658,14 @@
   {
     "id": "a04caaca-d480-5a95-a468-5b05e5bb7c69",
     "setCode": "SLD",
-    "displayName": "Secret Lair Drop Mahō Gakuin Seishun Hakusho — 魔法学院青春白書",
+    "displayName": "Secret Lair Drop Mah\u014d Gakuin Seishun Hakusho \u2014 \u9b54\u6cd5\u5b66\u9662\u9752\u6625\u767d\u66f8",
     "category": "box_set",
     "subtype": "secret_lair",
     "cardCount": 5,
     "contents": {
       "deck": [
         {
-          "name": "Mahō Gakuin Seishun Hakusho — 魔法学院青春白書",
+          "name": "Mah\u014d Gakuin Seishun Hakusho \u2014 \u9b54\u6cd5\u5b66\u9662\u9752\u6625\u767d\u66f8",
           "set": "sld"
         }
       ],
@@ -155443,14 +155683,14 @@
   {
     "id": "700fb3a9-a92e-5163-b774-b7b01ecb0b0e",
     "setCode": "SLD",
-    "displayName": "Secret Lair Drop Mahō Gakuin Seishun Hakusho — 魔法学院青春白書 Foil",
+    "displayName": "Secret Lair Drop Mah\u014d Gakuin Seishun Hakusho \u2014 \u9b54\u6cd5\u5b66\u9662\u9752\u6625\u767d\u66f8 Foil",
     "category": "box_set",
     "subtype": "secret_lair",
     "cardCount": 5,
     "contents": {
       "deck": [
         {
-          "name": "Mahō Gakuin Seishun Hakusho — 魔法学院青春白書 Foil Edition",
+          "name": "Mah\u014d Gakuin Seishun Hakusho \u2014 \u9b54\u6cd5\u5b66\u9662\u9752\u6625\u767d\u66f8 Foil Edition",
           "set": "sld"
         }
       ],
@@ -156157,7 +156397,7 @@
           "finishes": [
             "nonfoil"
           ],
-          "name": "Gríma Wormtongue",
+          "name": "Gr\u00edma Wormtongue",
           "number": "734",
           "set": "sld",
           "uuid": "3aae9350-6a5e-5fdb-8527-35a2238959fa"
@@ -156188,7 +156428,7 @@
             "foil"
           ],
           "foil": true,
-          "name": "Gríma Wormtongue",
+          "name": "Gr\u00edma Wormtongue",
           "number": "734",
           "set": "sld",
           "uuid": "3aae9350-6a5e-5fdb-8527-35a2238959fa"
@@ -156796,7 +157036,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Oishii! Tokens オイシイ！ トークン",
+          "name": "Oishii! Tokens \u30aa\u30a4\u30b7\u30a4\uff01 \u30c8\u30fc\u30af\u30f3",
           "set": "sld"
         }
       ],
@@ -156821,7 +157061,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Oishii! Tokens オイシイ！ トークン Foil Edition",
+          "name": "Oishii! Tokens \u30aa\u30a4\u30b7\u30a4\uff01 \u30c8\u30fc\u30af\u30f3 Foil Edition",
           "set": "sld"
         }
       ],
@@ -157227,7 +157467,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -157244,7 +157484,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -157261,7 +157501,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -157278,7 +157518,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -157334,7 +157574,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -157351,7 +157591,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -157368,7 +157608,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -157385,7 +157625,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -161092,7 +161332,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161109,7 +161349,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161126,7 +161366,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -161168,7 +161408,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161185,7 +161425,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161202,7 +161442,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -161244,7 +161484,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161261,7 +161501,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161278,7 +161518,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -161320,7 +161560,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161337,7 +161577,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161354,7 +161594,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -161396,7 +161636,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161413,7 +161653,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161430,7 +161670,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -161472,7 +161712,7 @@
                 {
                   "foil": true,
                   "name": "Codex Shredder",
-                  "number": "790★",
+                  "number": "790\u2605",
                   "set": "sld",
                   "uuid": "366812fd-ef58-58e9-8f51-31400e63f0f7"
                 }
@@ -161489,7 +161729,7 @@
                 {
                   "foil": true,
                   "name": "Wastes",
-                  "number": "795★",
+                  "number": "795\u2605",
                   "set": "sld",
                   "uuid": "1bb2861a-ccf3-51a3-a2e3-f490d98d5b8b"
                 }
@@ -161506,7 +161746,7 @@
                 {
                   "foil": true,
                   "name": "Mana Vault",
-                  "number": "796★",
+                  "number": "796\u2605",
                   "set": "sld",
                   "uuid": "d6e8ce9f-1d5b-5f8a-b440-532f59e57e51"
                 }
@@ -162759,7 +162999,7 @@
           ],
           "foil": true,
           "name": "Chaos Warp",
-          "number": "741★",
+          "number": "741\u2605",
           "set": "sld",
           "uuid": "06239993-414b-5bad-9217-85933e4c75a2"
         }
@@ -162820,7 +163060,7 @@
           ],
           "foil": true,
           "name": "Colossal Dreadmaw",
-          "number": "740★",
+          "number": "740\u2605",
           "set": "sld",
           "uuid": "7db7d1f7-8558-53cf-9e99-fa1abb098b13"
         }
@@ -165340,7 +165580,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -165357,7 +165597,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -165374,7 +165614,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -165391,7 +165631,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -168327,7 +168567,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -168344,7 +168584,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -168361,7 +168601,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -168378,7 +168618,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -168434,7 +168674,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -168451,7 +168691,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -168468,7 +168708,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -168485,7 +168725,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -168982,7 +169222,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -168999,7 +169239,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -169016,7 +169256,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -169033,7 +169273,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -169089,7 +169329,7 @@
                 {
                   "foil": true,
                   "name": "Plague Sliver",
-                  "number": "633Φ",
+                  "number": "633\u03a6",
                   "set": "sld",
                   "uuid": "2723d888-5a01-59fe-bd37-029822be1a6d"
                 }
@@ -169106,7 +169346,7 @@
                 {
                   "foil": true,
                   "name": "Toxin Sliver",
-                  "number": "635Φ",
+                  "number": "635\u03a6",
                   "set": "sld",
                   "uuid": "62124746-eb93-5cb7-9c0f-14113c16133e"
                 }
@@ -169123,7 +169363,7 @@
                 {
                   "foil": true,
                   "name": "Virulent Sliver",
-                  "number": "659Φ",
+                  "number": "659\u03a6",
                   "set": "sld",
                   "uuid": "7f054dc5-611f-5cf9-8211-7106a158f84e"
                 }
@@ -169140,7 +169380,7 @@
                 {
                   "foil": true,
                   "name": "Shadowborn Apostle",
-                  "number": "681Φ",
+                  "number": "681\u03a6",
                   "set": "sld",
                   "uuid": "2c28317d-3a8b-56ce-9467-e52270a234ea"
                 }
@@ -171413,7 +171653,7 @@
           ],
           "foil": true,
           "name": "Solemn Simulacrum",
-          "number": "791★",
+          "number": "791\u2605",
           "set": "sld",
           "uuid": "62ebd730-69fc-53b2-a8f3-e7937bd60cc7"
         }
@@ -173155,7 +173395,7 @@
   {
     "id": "1bf9952e-1de3-5c31-8785-3363364f8a30",
     "setCode": "SLD",
-    "displayName": "Secret Lair Drop “explosion sounds”",
+    "displayName": "Secret Lair Drop \u201cexplosion sounds\u201d",
     "category": "box_set",
     "subtype": "secret_lair",
     "cardCount": 5,
@@ -173944,7 +174184,7 @@
           "name": "Dominaria United Stained Glass Deck Box w/ 30th Anniversary Logo"
         },
         {
-          "name": "Set of 100 Li’l Giri Sleeves w/ 30th Anniversary Logo"
+          "name": "Set of 100 Li\u2019l Giri Sleeves w/ 30th Anniversary Logo"
         }
       ],
       "sealed": [
@@ -174199,7 +174439,8 @@
     },
     "marketPrice": 286.07000732421875,
     "purchaseUrl": "https://www.tcgplayer.com/product/599975",
-    "priceFetchedAt": "2026-09-02 22:15:54"
+    "priceFetchedAt": "2026-09-02 22:15:54",
+    "estimatedEv": 457.19
   },
   {
     "id": "1c890060-2a4b-5c2e-bde9-901e2a02f26a",
@@ -174230,7 +174471,8 @@
     },
     "marketPrice": 775.2000122070312,
     "purchaseUrl": "https://www.tcgplayer.com/product/511863",
-    "priceFetchedAt": "2026-09-02 22:15:54"
+    "priceFetchedAt": "2026-09-02 22:15:54",
+    "estimatedEv": 689.43
   },
   {
     "id": "709129c4-b986-5ce2-b3a3-4b099789623e",
@@ -174261,7 +174503,8 @@
     },
     "marketPrice": 334.1000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/631564",
-    "priceFetchedAt": "2026-09-02 22:15:54"
+    "priceFetchedAt": "2026-09-02 22:15:54",
+    "estimatedEv": 477.2
   },
   {
     "id": "d2477e62-9bf9-5ed0-ba93-368e5843994f",
@@ -174292,7 +174535,8 @@
     },
     "marketPrice": 322.42999267578125,
     "purchaseUrl": "https://www.tcgplayer.com/product/496129",
-    "priceFetchedAt": "2026-09-02 22:15:54"
+    "priceFetchedAt": "2026-09-02 22:15:54",
+    "estimatedEv": 400.82
   },
   {
     "id": "c1933766-25fa-56fc-8555-295f5aae60f5",
@@ -174323,7 +174567,8 @@
     },
     "marketPrice": 447.2799987792969,
     "purchaseUrl": "https://www.tcgplayer.com/product/693209",
-    "priceFetchedAt": "2026-09-02 22:15:54"
+    "priceFetchedAt": "2026-09-02 22:15:54",
+    "estimatedEv": 598.28
   },
   {
     "id": "c0d1476c-af00-5fd8-bd56-53b2fd672d4f",
@@ -174413,7 +174658,8 @@
     },
     "marketPrice": 581.6799926757812,
     "purchaseUrl": "https://www.tcgplayer.com/product/258492",
-    "priceFetchedAt": "2026-09-02 22:15:55"
+    "priceFetchedAt": "2026-09-02 22:15:55",
+    "estimatedEv": 551.73
   },
   {
     "id": "35547876-9e01-50a0-a90d-68037993d971",
@@ -174454,7 +174700,8 @@
     },
     "marketPrice": 556.5,
     "purchaseUrl": "https://www.tcgplayer.com/product/534124",
-    "priceFetchedAt": "2026-09-02 22:15:55"
+    "priceFetchedAt": "2026-09-02 22:15:55",
+    "estimatedEv": 590.64
   },
   {
     "id": "08049dbc-9cf7-57d8-8120-c2fad2f93152",
@@ -175473,7 +175720,8 @@
     },
     "marketPrice": 27.6200008392334,
     "purchaseUrl": "https://www.tcgplayer.com/product/273811",
-    "priceFetchedAt": "2026-09-02 22:15:15"
+    "priceFetchedAt": "2026-09-02 22:15:15",
+    "estimatedEv": 22.04
   },
   {
     "id": "badc3853-fce3-5f6c-84e5-04cb447b6648",
@@ -175582,7 +175830,8 @@
     },
     "marketPrice": 40.849998474121094,
     "purchaseUrl": "https://www.tcgplayer.com/product/675570",
-    "priceFetchedAt": "2026-09-02 22:15:14"
+    "priceFetchedAt": "2026-09-02 22:15:14",
+    "estimatedEv": 75.77
   },
   {
     "id": "2618b785-3cfa-562e-b35a-a17239c52a4e",
@@ -175601,7 +175850,8 @@
     },
     "marketPrice": 44.22999954223633,
     "purchaseUrl": "https://www.tcgplayer.com/product/675568",
-    "priceFetchedAt": "2026-09-02 22:15:15"
+    "priceFetchedAt": "2026-09-02 22:15:15",
+    "estimatedEv": 81.1
   },
   {
     "id": "493b3cdb-0fd8-5237-8daf-e18399fc0d21",
@@ -175620,7 +175870,8 @@
     },
     "marketPrice": 38.11000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/675571",
-    "priceFetchedAt": "2026-09-02 22:15:15"
+    "priceFetchedAt": "2026-09-02 22:15:15",
+    "estimatedEv": 75.53
   },
   {
     "id": "9ee95ffd-73c3-51d1-a780-f7f875751ac8",
@@ -175639,7 +175890,8 @@
     },
     "marketPrice": 53.18000030517578,
     "purchaseUrl": "https://www.tcgplayer.com/product/675567",
-    "priceFetchedAt": "2026-09-02 22:15:15"
+    "priceFetchedAt": "2026-09-02 22:15:15",
+    "estimatedEv": 96.38
   },
   {
     "id": "02582628-cad4-5ea8-b046-b39fad411ba6",
@@ -175658,7 +175910,8 @@
     },
     "marketPrice": 51.97999954223633,
     "purchaseUrl": "https://www.tcgplayer.com/product/675569",
-    "priceFetchedAt": "2026-09-02 22:15:15"
+    "priceFetchedAt": "2026-09-02 22:15:15",
+    "estimatedEv": 77.13
   },
   {
     "id": "752834be-8c25-54e7-9f6b-ed9b0c9e7f40",
@@ -188610,7 +188863,8 @@
     },
     "marketPrice": 58.86000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/619664",
-    "priceFetchedAt": "2026-09-02 22:14:47"
+    "priceFetchedAt": "2026-09-02 22:14:47",
+    "estimatedEv": 87.35
   },
   {
     "id": "4ba6479e-c06c-5850-9c29-53e23c13fb4b",
@@ -188645,7 +188899,8 @@
     },
     "marketPrice": 37.7599983215332,
     "purchaseUrl": "https://www.tcgplayer.com/product/619665",
-    "priceFetchedAt": "2026-09-02 22:14:47"
+    "priceFetchedAt": "2026-09-02 22:14:47",
+    "estimatedEv": 69.15
   },
   {
     "id": "7922b4c9-12c3-5821-a3ec-ea444f998dc4",
@@ -188680,7 +188935,8 @@
     },
     "marketPrice": 53.231201171875,
     "purchaseUrl": "https://www.tcgplayer.com/product/619667",
-    "priceFetchedAt": "2026-09-02 22:14:48"
+    "priceFetchedAt": "2026-09-02 22:14:48",
+    "estimatedEv": 77.92
   },
   {
     "id": "d78635bb-a3a7-5661-925d-fc3a91213447",
@@ -188715,7 +188971,8 @@
     },
     "marketPrice": 97.05999755859375,
     "purchaseUrl": "https://www.tcgplayer.com/product/619666",
-    "priceFetchedAt": "2026-09-02 22:14:48"
+    "priceFetchedAt": "2026-09-02 22:14:48",
+    "estimatedEv": 112.84
   },
   {
     "id": "0efe1bd4-c56d-5188-b8f6-8fa4d6cef710",
@@ -188750,7 +189007,8 @@
     },
     "marketPrice": 88,
     "purchaseUrl": "https://www.tcgplayer.com/product/619668",
-    "priceFetchedAt": "2026-09-02 22:14:48"
+    "priceFetchedAt": "2026-09-02 22:14:48",
+    "estimatedEv": 80.24
   },
   {
     "id": "7bdef404-4e7f-5277-a815-b362efc0a08c",
@@ -188852,7 +189110,8 @@
     },
     "marketPrice": 71.11000061035156,
     "purchaseUrl": "https://www.tcgplayer.com/product/691158",
-    "priceFetchedAt": "2026-09-02 22:14:48"
+    "priceFetchedAt": "2026-09-02 22:14:48",
+    "estimatedEv": 87.35
   },
   {
     "id": "8eaa6a92-1008-52a8-81c0-94fe1ba6ff26",
@@ -188909,7 +189168,8 @@
     },
     "marketPrice": 72.19999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/691159",
-    "priceFetchedAt": "2026-09-02 22:14:48"
+    "priceFetchedAt": "2026-09-02 22:14:48",
+    "estimatedEv": 69.15
   },
   {
     "id": "367a3390-d9b9-57a5-b6ad-0a69e683af2a",
@@ -188966,7 +189226,8 @@
     },
     "marketPrice": 64.12999725341797,
     "purchaseUrl": "https://www.tcgplayer.com/product/691163",
-    "priceFetchedAt": "2026-09-02 22:14:49"
+    "priceFetchedAt": "2026-09-02 22:14:49",
+    "estimatedEv": 77.92
   },
   {
     "id": "e09020d5-e6ac-5414-808c-0deb79de2366",
@@ -189023,7 +189284,8 @@
     },
     "marketPrice": 125.08999633789062,
     "purchaseUrl": "https://www.tcgplayer.com/product/691152",
-    "priceFetchedAt": "2026-09-02 22:14:49"
+    "priceFetchedAt": "2026-09-02 22:14:49",
+    "estimatedEv": 112.84
   },
   {
     "id": "2102f9c4-a20b-5bd4-8a7b-1737e4cd0b5b",
@@ -189080,7 +189342,8 @@
     },
     "marketPrice": 96.77999877929688,
     "purchaseUrl": "https://www.tcgplayer.com/product/691162",
-    "priceFetchedAt": "2026-09-02 22:14:49"
+    "priceFetchedAt": "2026-09-02 22:14:49",
+    "estimatedEv": 80.24
   },
   {
     "id": "42133e82-2aba-5a32-8c5a-d3b6911df79b",
@@ -191871,7 +192134,8 @@
     },
     "marketPrice": 59.619998931884766,
     "purchaseUrl": "https://www.tcgplayer.com/product/657865",
-    "priceFetchedAt": "2026-09-02 22:14:35"
+    "priceFetchedAt": "2026-09-02 22:14:35",
+    "estimatedEv": 87.97
   },
   {
     "id": "3d57f608-69e3-5d25-afc7-b1e9ab3177ec",
@@ -193043,7 +193307,8 @@
     },
     "marketPrice": 54.9900016784668,
     "purchaseUrl": "https://www.tcgplayer.com/product/120583",
-    "priceFetchedAt": "2026-09-02 22:14:29"
+    "priceFetchedAt": "2026-09-02 22:14:29",
+    "estimatedEv": 32.61
   },
   {
     "id": "31300227-8cd5-5933-9051-854af883edce",
@@ -195978,7 +196243,8 @@
     },
     "marketPrice": 78.87000274658203,
     "purchaseUrl": "https://www.tcgplayer.com/product/246465",
-    "priceFetchedAt": "2026-09-02 22:14:13"
+    "priceFetchedAt": "2026-09-02 22:14:13",
+    "estimatedEv": 59.93
   },
   {
     "id": "38f12f84-e8e9-51fe-a1b0-294ac06d1192",
@@ -196008,7 +196274,8 @@
     },
     "marketPrice": 59.9900016784668,
     "purchaseUrl": "https://www.tcgplayer.com/product/246464",
-    "priceFetchedAt": "2026-09-02 22:14:13"
+    "priceFetchedAt": "2026-09-02 22:14:13",
+    "estimatedEv": 59.93
   },
   {
     "id": "9a8b9875-9c3f-50ec-a116-b979190701ef",
@@ -196038,7 +196305,8 @@
     },
     "marketPrice": 145.38999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/246466",
-    "priceFetchedAt": "2026-09-02 22:14:13"
+    "priceFetchedAt": "2026-09-02 22:14:13",
+    "estimatedEv": 85.31
   },
   {
     "id": "6722661b-8fb4-5671-8881-46eb65737fc2",
@@ -196068,7 +196336,8 @@
     },
     "marketPrice": 145,
     "purchaseUrl": "https://www.tcgplayer.com/product/246463",
-    "priceFetchedAt": "2026-09-02 22:14:13"
+    "priceFetchedAt": "2026-09-02 22:14:13",
+    "estimatedEv": 85.31
   },
   {
     "id": "7406caab-c5f0-5c84-9ee1-820601285d54",
@@ -197418,7 +197687,7 @@
           "name": "1 card box"
         },
         {
-          "name": "1 player’s guide"
+          "name": "1 player\u2019s guide"
         },
         {
           "name": "1 learn-to-play insert"
@@ -197749,7 +198018,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Janosch Kühn - Angry Non-Hermit",
+          "name": "Janosch K\u00fchn - Angry Non-Hermit",
           "set": "wc00"
         }
       ]
@@ -198049,7 +198318,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Carlos Romão - Psychatog",
+          "name": "Carlos Rom\u00e3o - Psychatog",
           "set": "wc02"
         }
       ]
@@ -198222,7 +198491,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Peer Kröger - Reanimator",
+          "name": "Peer Kr\u00f6ger - Reanimator",
           "set": "wc03"
         }
       ]
@@ -198492,7 +198761,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Jakub Šlemr - Prismatic Black Aggro",
+          "name": "Jakub \u0160lemr - Prismatic Black Aggro",
           "set": "wc97"
         }
       ]
@@ -198511,7 +198780,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Janosch Kühn - Red-White-Blue Speed Control",
+          "name": "Janosch K\u00fchn - Red-White-Blue Speed Control",
           "set": "wc97"
         }
       ]
@@ -198800,7 +199069,7 @@
     "contents": {
       "deck": [
         {
-          "name": "Jakub Šlemr - Mono-Black Control",
+          "name": "Jakub \u0160lemr - Mono-Black Control",
           "set": "wc99"
         }
       ]
@@ -199063,7 +199332,8 @@
     },
     "marketPrice": 55.95000076293945,
     "purchaseUrl": "https://www.tcgplayer.com/product/496071",
-    "priceFetchedAt": "2026-09-02 22:13:59"
+    "priceFetchedAt": "2026-09-02 22:13:59",
+    "estimatedEv": 96.51
   },
   {
     "id": "56277bb8-a36f-5d54-98ee-909d8626fe41",
@@ -199104,7 +199374,8 @@
     },
     "marketPrice": 124.94999694824219,
     "purchaseUrl": "https://www.tcgplayer.com/product/496070",
-    "priceFetchedAt": "2026-09-02 22:13:59"
+    "priceFetchedAt": "2026-09-02 22:13:59",
+    "estimatedEv": 176.47
   },
   {
     "id": "35e404f8-fe83-5d32-9f80-64a00a444552",
@@ -199145,7 +199416,8 @@
     },
     "marketPrice": 67.37000274658203,
     "purchaseUrl": "https://www.tcgplayer.com/product/496073",
-    "priceFetchedAt": "2026-09-02 22:13:59"
+    "priceFetchedAt": "2026-09-02 22:13:59",
+    "estimatedEv": 96.78
   },
   {
     "id": "00ed0d98-a457-56f1-8356-090b55c6aa17",
@@ -199186,7 +199458,8 @@
     },
     "marketPrice": 154.13999938964844,
     "purchaseUrl": "https://www.tcgplayer.com/product/496072",
-    "priceFetchedAt": "2026-09-02 22:14:00"
+    "priceFetchedAt": "2026-09-02 22:14:00",
+    "estimatedEv": 153.14
   },
   {
     "id": "4664d6d9-d65f-5faf-9175-9bd7ebbd52cd",
@@ -199252,7 +199525,8 @@
     },
     "marketPrice": 287.7699890136719,
     "purchaseUrl": "https://www.tcgplayer.com/product/496043",
-    "priceFetchedAt": "2026-09-02 22:13:58"
+    "priceFetchedAt": "2026-09-02 22:13:58",
+    "estimatedEv": 169.75
   },
   {
     "id": "63462fa8-3fe9-5f0b-a2e7-cea857c514b0",
@@ -199279,7 +199553,8 @@
     },
     "marketPrice": 97.58000183105469,
     "purchaseUrl": "https://www.tcgplayer.com/product/496044",
-    "priceFetchedAt": "2026-09-02 22:13:58"
+    "priceFetchedAt": "2026-09-02 22:13:58",
+    "estimatedEv": 137.19
   },
   {
     "id": "4d7cf9d1-f15e-5f93-9639-27afec1ce0b5",
@@ -199707,7 +199982,8 @@
     },
     "marketPrice": 31.40999984741211,
     "purchaseUrl": "https://www.tcgplayer.com/product/496049",
-    "priceFetchedAt": "2026-09-02 22:13:56"
+    "priceFetchedAt": "2026-09-02 22:13:56",
+    "estimatedEv": 17.1
   },
   {
     "id": "4a4bed55-a98f-592b-b52f-9d50f55d66d6",
@@ -200306,7 +200582,7 @@
           "name": "1 Card box"
         },
         {
-          "name": "1 Player’s Guide with visual encyclopedia for Ixalan"
+          "name": "1 Player\u2019s Guide with visual encyclopedia for Ixalan"
         },
         {
           "name": "1 Magic learn-to-play guide"
@@ -202047,7 +202323,8 @@
     },
     "marketPrice": 45.439998626708984,
     "purchaseUrl": "https://www.tcgplayer.com/product/221917",
-    "priceFetchedAt": "2026-09-02 22:13:50"
+    "priceFetchedAt": "2026-09-02 22:13:50",
+    "estimatedEv": 61.02
   },
   {
     "id": "b01552aa-529f-5924-a54e-a28fdf866a55",
@@ -202077,7 +202354,8 @@
     },
     "marketPrice": 43.84000015258789,
     "purchaseUrl": "https://www.tcgplayer.com/product/221916",
-    "priceFetchedAt": "2026-09-02 22:13:51"
+    "priceFetchedAt": "2026-09-02 22:13:51",
+    "estimatedEv": 73.41
   },
   {
     "id": "fbb2f456-f94a-5084-9dba-02aad18dc27a",

@@ -181,31 +181,47 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     };
   }, [isPreconstructed, fixedDeckEv, activeBooster, scale]);
 
-  // Calculate Breakeven Percentile for TCGplayer vs Sealed Cost
+  // Calculate Breakeven Percentile & EV Score (0 - 100) for TCGplayer vs Sealed Cost
+  const evScore = useMemo(() => {
+    if (sealedPrice <= 0) return 100;
+    if (isPreconstructed) {
+      if (fixedDeckEv >= sealedPrice) return 100;
+      return Math.max(0, Math.min(99, Math.round((fixedDeckEv / sealedPrice) * 100)));
+    }
+    const minCurve = allCurveData[0]?.tcgplayer ?? 0;
+    const maxCurve = allCurveData[allCurveData.length - 1]?.tcgplayer ?? 0;
+    if (sealedPrice <= minCurve) return 100;
+    if (sealedPrice > maxCurve) return 0;
+    const point = allCurveData.find((d) => d.tcgplayer >= sealedPrice);
+    if (!point) return 0;
+    return Math.max(0, Math.min(100, 100 - point.percentileNum));
+  }, [isPreconstructed, fixedDeckEv, sealedPrice, allCurveData]);
+
   const breakevenPoint = useMemo(() => {
     if (isPreconstructed) {
       const isProfitable = scaledAverages.tcgplayer >= sealedPrice;
       return {
         percentile: '0%',
         percentileNum: 0,
-        profitablePct: isProfitable ? 100 : 0,
+        profitablePct: isProfitable ? 100 : evScore,
         isDeterministic: true,
         diff: Number((scaledAverages.tcgplayer - sealedPrice).toFixed(2)),
         diffPct: Number((((scaledAverages.tcgplayer - sealedPrice) / sealedPrice) * 100).toFixed(1)),
+        evScore,
       };
     }
     const point = allCurveData.find((d) => d.tcgplayer >= sealedPrice);
-    if (!point) return null;
-    const profitablePct = 100 - point.percentileNum;
+    const profitablePct = point ? (100 - point.percentileNum) : (sealedPrice <= (allCurveData[0]?.tcgplayer || 0) ? 100 : 0);
     return {
-      percentile: point.percentile,
-      percentileNum: point.percentileNum,
+      percentile: point ? point.percentile : (sealedPrice <= (allCurveData[0]?.tcgplayer || 0) ? '0%' : '>100%'),
+      percentileNum: point ? point.percentileNum : 100,
       profitablePct,
       isDeterministic: false,
       diff: Number((scaledAverages.tcgplayer - sealedPrice).toFixed(2)),
       diffPct: Number((((scaledAverages.tcgplayer - sealedPrice) / sealedPrice) * 100).toFixed(1)),
+      evScore,
     };
-  }, [isPreconstructed, scaledAverages.tcgplayer, sealedPrice, allCurveData]);
+  }, [isPreconstructed, scaledAverages.tcgplayer, sealedPrice, allCurveData, evScore]);
 
   // Quick Sealed Price Adjustment buttons
   const stepAmount = scale > 1 || isPreconstructed ? Math.max(1, Math.round((isPreconstructed ? fixedDeckEv : scale) * 0.05)) : 0.5;
@@ -260,50 +276,85 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           </p>
         </div>
 
-        {/* Sealed Price Controller */}
-        <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-          <div className="text-xs">
-            <span className="text-slate-500 font-medium block">
-              {isPreconstructed ? 'Sealed Deck Market Price:' : 'Pack Sealed Price:'}
-            </span>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-rose-600 font-bold text-sm">$</span>
-              <input
-                id="sealed-price-input"
-                type="number"
-                step="0.50"
-                min="0.5"
-                value={sealedPrice}
-                onChange={(e) => setSealedPrice(parseFloat(e.target.value) || 0)}
-                className="w-24 px-2 py-1 text-sm font-bold font-mono bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-              />
+        <div className="flex flex-wrap items-center gap-3">
+          {/* EV Score (0 - 100 Profit Chance) */}
+          <div
+            id="ev-score-badge"
+            className="flex items-center gap-3 bg-slate-900 text-white p-2.5 px-3.5 rounded-xl border border-slate-800 shadow-sm"
+            title={`EV Score: ${evScore}/100. ${evScore}% probability that opening this product yields singles value equal to or greater than its sealed cost.`}
+          >
+            <div className="text-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">EV Score</span>
+              <div className="flex items-baseline justify-center gap-0.5">
+                <span
+                  className={`text-2xl font-black font-mono tracking-tight ${
+                    evScore >= 60 ? 'text-emerald-400' : evScore >= 35 ? 'text-amber-400' : 'text-rose-400'
+                  }`}
+                >
+                  {evScore}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500 font-mono">/100</span>
+              </div>
+            </div>
+            <div className="border-l border-slate-800 pl-3 text-left">
+              <span
+                className={`text-[10px] font-black uppercase tracking-wider block ${
+                  evScore >= 60 ? 'text-emerald-300' : evScore >= 35 ? 'text-amber-300' : 'text-rose-300'
+                }`}
+              >
+                {evScore >= 80 ? 'High Profit Chance' : evScore >= 50 ? 'Moderate Win Rate' : evScore >= 25 ? 'Low / High Variance' : 'Heavy Dud Probability'}
+              </span>
+              <span className="text-[10px] text-slate-300 block leading-tight">
+                {evScore}% chance to exceed ${sealedPrice.toFixed(2)}
+              </span>
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-0.5">
+          {/* Sealed Price Controller */}
+          <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <div className="text-xs">
+              <span className="text-slate-500 font-medium block">
+                {isPreconstructed ? 'Sealed Deck Market Price:' : 'Pack Sealed Price:'}
+              </span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-rose-600 font-bold text-sm">$</span>
+                <input
+                  id="sealed-price-input"
+                  type="number"
+                  step="0.50"
+                  min="0.5"
+                  value={sealedPrice}
+                  onChange={(e) => setSealedPrice(parseFloat(e.target.value) || 0)}
+                  className="w-24 px-2 py-1 text-sm font-bold font-mono bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-0.5">
+                <button
+                  title={`Decrease $${stepAmount}`}
+                  onClick={() => handleAdjustPrice(-stepAmount)}
+                  className="p-1 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 cursor-pointer"
+                >
+                  <Minus className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  title={`Increase $${stepAmount}`}
+                  onClick={() => handleAdjustPrice(stepAmount)}
+                  className="p-1 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 cursor-pointer"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                </button>
+              </div>
               <button
-                title={`Decrease $${stepAmount}`}
-                onClick={() => handleAdjustPrice(-stepAmount)}
-                className="p-1 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 cursor-pointer"
+                title="Reset to market estimate"
+                onClick={handleResetPrice}
+                className="text-[9px] font-bold text-slate-500 hover:text-slate-900 text-center flex items-center justify-center gap-0.5 cursor-pointer"
               >
-                <Minus className="w-2.5 h-2.5" />
-              </button>
-              <button
-                title={`Increase $${stepAmount}`}
-                onClick={() => handleAdjustPrice(stepAmount)}
-                className="p-1 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 cursor-pointer"
-              >
-                <Plus className="w-2.5 h-2.5" />
+                <RotateCcw className="w-2.5 h-2.5" /> Reset
               </button>
             </div>
-            <button
-              title="Reset to market estimate"
-              onClick={handleResetPrice}
-              className="text-[9px] font-bold text-slate-500 hover:text-slate-900 text-center flex items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <RotateCcw className="w-2.5 h-2.5" /> Reset
-            </button>
           </div>
         </div>
       </div>

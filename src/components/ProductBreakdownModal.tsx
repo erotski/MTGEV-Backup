@@ -5,6 +5,7 @@ import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { SingleCardBreakdownViewer } from './SingleCardBreakdownViewer';
+import { calculateEvScore, getEvScoreBadgeClass } from '../utils/evScore';
 import {
   X,
   Package,
@@ -56,6 +57,16 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
 
   const profit = Number((product.estimatedEv - product.marketPrice).toFixed(2));
   const roiPct = product.marketPrice > 0 ? Number(((profit / product.marketPrice) * 100).toFixed(1)) : 0;
+  const productEvScore = typeof (product as any).evScore === 'number'
+    ? (product as any).evScore
+    : calculateEvScore(
+        product.marketPrice,
+        product.estimatedEv,
+        (product as any).evMin ?? product.estimatedEv * 0.25,
+        (product as any).evMid90 ?? product.estimatedEv,
+        (product as any).evMax ?? product.estimatedEv * 3.5,
+        isDeck
+      );
 
   return (
     <div
@@ -139,6 +150,16 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
               <span className="text-[10px] block opacity-75">Net Margin</span>
               <span className="text-sm font-black">
                 {profit >= 0 ? `+${roiPct}%` : `${roiPct}%`}
+              </span>
+            </div>
+
+            <div
+              className={`rounded-xl px-3 py-1.5 font-mono text-right border ${getEvScoreBadgeClass(productEvScore)}`}
+              title={`EV Score: ${productEvScore}/100. Probability of opening singles value >= sealed price.`}
+            >
+              <span className="text-[10px] block opacity-75">EV Score</span>
+              <span className="text-sm font-black">
+                {productEvScore}/100
               </span>
             </div>
 

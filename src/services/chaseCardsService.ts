@@ -1,5 +1,6 @@
 import { ChaseCard, PreconstructedDeckDetail, DeckCardItem } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
+import { dataService } from './dataService';
 
 // In-memory cache for dynamically fetched chase cards from Scryfall
 const dynamicChaseCardsCache: Record<string, ChaseCard[]> = {};
@@ -898,7 +899,8 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
   }
 
   try {
-    const url = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}&order=usd&dir=desc`;
+    // Scryfall is queried strictly for card metadata, collector numbers, and high-res artwork
+    const url = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}&order=rarity&dir=desc`;
     const res = await fetch(url, {
       headers: {
         'User-Agent': 'MTG-EV-Studio/1.0',
@@ -915,9 +917,17 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
       return [];
     }
 
+    // Load authentic MTGJSON vendor pricing feed
+    const singlePrices = await dataService.getSingleCardPrices();
+
     const cards: ChaseCard[] = data.data.slice(0, 15).map((card: any) => {
-      const priceNorm = parseFloat(card.prices?.usd || '0.0') || 1.0;
-      const priceFoil = card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined;
+      // Pricing is sourced strictly from MTGJSON vendor records, never from Scryfall
+      const cardKey = (card.name || '').toLowerCase().trim();
+      const priceRec = singlePrices?.byUuid?.[card.id] || singlePrices?.byName?.[cardKey];
+      const priceNorm = priceRec?.prices?.tcgplayer ?? priceRec?.price ?? 0.0;
+      const priceFoil = priceRec?.prices?.tcgplayerFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
+
+      // Scryfall used strictly for card artwork and navigation
       const img =
         card.image_uris?.normal ||
         card.card_faces?.[0]?.image_uris?.normal ||
@@ -943,7 +953,7 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
     dynamicChaseCardsCache[upperCode] = cards;
     return cards;
   } catch (err) {
-    console.warn(`Could not fetch Scryfall chase cards for set ${upperCode}:`, err);
+    console.warn(`Could not fetch chase card metadata for set ${upperCode}:`, err);
     return [];
   }
 }

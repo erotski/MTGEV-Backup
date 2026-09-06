@@ -80,6 +80,8 @@ export interface BoxArbitrageRecord {
   boxEvAvg: number;
   boxEvMid90: number;
   boxEvMax?: number;
+  effectiveEv?: number;
+  evScore?: number;
   profitUsd: number;
   roiPct: number;
   vendor: string;

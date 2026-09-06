@@ -167,11 +167,15 @@ def evaluate_product_composite(prod, depth=0, visited=None):
             dset = (dk.get("set") or prod.get("setCode") or "").lower().strip()
             matched = None
 
+            prod_uuid = prod.get("id") or prod.get("uuid")
+            if not matched and prod_uuid and prod_uuid in precon_decks:
+                matched = precon_decks[prod_uuid]
+
             if dname in precon_decks:
                 matched = precon_decks[dname]
             elif f"{dname}___{dset}" in precon_decks:
                 matched = precon_decks[f"{dname}___{dset}"]
-            else:
+            elif not matched:
                 clean_dname = re.sub(r"[^a-z0-9]", "", dname)
                 for k, d in precon_decks.items():
                     c_d = re.sub(r"[^a-z0-9]", "", (d.get("deckName") or k).lower())
@@ -186,15 +190,15 @@ def evaluate_product_composite(prod, depth=0, visited=None):
             is_commander = "commander" in (prod.get("category", "") + " " + prod.get("subtype", "") + " " + prod.get("displayName", "") + " " + dname).lower()
             default_deck_cards = 100 if is_commander else 60
 
-            if matched and matched.get("totalSinglesEv"):
-                dev = float(matched["totalSinglesEv"])
-                ev_avg += dev
-                ev_mid90 += dev
-                ev_min += dev * 0.75
-                ev_max += dev * 1.35
-                total_cards += int(matched.get("cardCount") or len(matched.get("cards", [])) or default_deck_cards)
+            deck_ev = float(matched.get("singlesEv") or matched.get("totalSinglesEv") or matched.get("estimatedEv") or 0.0) if matched else 0.0
+            if matched and deck_ev > 0:
+                ev_avg += deck_ev
+                ev_mid90 += deck_ev
+                ev_min += deck_ev
+                ev_max += deck_ev
+                total_cards += int(matched.get("totalCards") or matched.get("cardCount") or len(matched.get("cards", [])) or default_deck_cards)
             elif matched:
-                total_cards += int(matched.get("cardCount") or len(matched.get("cards", [])) or default_deck_cards)
+                total_cards += int(matched.get("totalCards") or matched.get("cardCount") or len(matched.get("cards", [])) or default_deck_cards)
             else:
                 total_cards += default_deck_cards
 
@@ -291,7 +295,13 @@ for p in sealed_products:
         "boxEvMin": res["evMin"],
         "boxEvMax": res["evMax"],
         "arbitrageValue": arbitrage_val,
+        "profitUsd": arbitrage_val,
         "roiPercent": roi_pct,
+        "roiPct": roi_pct,
+        "completePct": "100.00",
+        "updatedAt": p.get("priceFetchedAt", ""),
+        "vendor": "tcgplayer",
+        "priceMode": "direct",
         "purchaseUrl": p.get("purchaseUrl", ""),
         "contents": p.get("contents"),
     }
@@ -302,5 +312,10 @@ leaderboard.sort(key=lambda x: x["arbitrageValue"], reverse=True)
 
 with open(DATA_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
     json.dump(leaderboard, f, indent=2)
+
+dist_dir = Path(__file__).resolve().parent.parent / "dist" / "data"
+if dist_dir.exists():
+    with open(dist_dir / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
+        json.dump(leaderboard, f, indent=2)
 
 print(f"Successfully recomputed arbitrage_leaderboard.json with {len(leaderboard)} products.")

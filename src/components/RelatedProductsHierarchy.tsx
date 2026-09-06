@@ -557,9 +557,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   // Full product breakdown modal state
   const [breakdownModalProduct, setBreakdownModalProduct] = useState<CatalogPackProduct | null>(null);
 
-  // Custom Multiplier Calculator State
-  const [calculatorPacks, setCalculatorPacks] = useState<number>(36);
-
   // Helper for packaging badges
   const getCategoryStyle = (category?: string) => {
     switch (category) {
@@ -840,15 +837,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     if (matchingGroup) return matchingGroup.products;
     return setProducts;
   }, [setProducts, activeCategory, productSubtypeGroups]);
-
-  // Calculator calculations
-  const calcTotalCards = calculatorPacks * 14;
-  const calcTotalEv = calculatorPacks * activeBooster.evAverage;
-  const calcTotalCost = calculatorPacks * (activeProduct?.marketPrice ? activeProduct.marketPrice / (activeProduct.packsCount || 1) : 4.5);
-  const calcRares = Math.round(calculatorPacks * 1.15); // ~1.15 rares/mythics per modern pack with wildcard
-  const calcMythics = Math.round(calculatorPacks * (1 - 0.857));
-  const calcFoils = Math.round(calculatorPacks * 1.0);
-  const calcRoiPct = calcTotalCost > 0 ? Number((((calcTotalEv - calcTotalCost) / calcTotalCost) * 100).toFixed(1)) : 0;
 
   const [isAssetGuideOpen, setIsAssetGuideOpen] = useState(false);
 
@@ -1690,100 +1678,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           })()}
         </div>
       )}
-
-      {/* 3. Live Custom Quantity Collation Multiplier Calculator */}
-      <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-amber-400" />
-            <h4 className="text-base font-bold text-white">3. Custom Collation Multiplier Calculator</h4>
-          </div>
-          <span className="text-xs text-slate-400">
-            Calculate expected EV, card counts, and rare density for any quantity of packs
-          </span>
-        </div>
-
-        {/* Quantity Range Slider & Input */}
-        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">Packs to Open:</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCalculatorPacks(9)}
-                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition cursor-pointer"
-              >
-                1 Bundle (9x)
-              </button>
-              <button
-                onClick={() => setCalculatorPacks(36)}
-                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition cursor-pointer"
-              >
-                1 Box (36x)
-              </button>
-              <button
-                onClick={() => setCalculatorPacks(108)}
-                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition cursor-pointer"
-              >
-                3 Boxes (108x)
-              </button>
-              <button
-                onClick={() => setCalculatorPacks(216)}
-                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-bold transition cursor-pointer"
-              >
-                1 Case (216x)
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={1000}
-                value={calculatorPacks}
-                onChange={(e) => setCalculatorPacks(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-16 px-2 py-1 bg-slate-950 border border-slate-600 text-white text-xs font-mono font-bold rounded focus:outline-none focus:ring-1 focus:ring-amber-400 text-center"
-              />
-            </div>
-          </div>
-
-          <input
-            type="range"
-            min={1}
-            max={216}
-            value={calculatorPacks}
-            onChange={(e) => setCalculatorPacks(parseInt(e.target.value))}
-            className="w-full accent-amber-400 cursor-pointer"
-          />
-        </div>
-
-        {/* Calculator Output KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <div className="text-slate-400">Total MTG Cards</div>
-            <div className="text-xl font-black text-white font-mono mt-0.5">{calcTotalCards}</div>
-            <div className="text-[10px] text-slate-400">{calculatorPacks} Boosters</div>
-          </div>
-
-          <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <div className="text-slate-400">Expected Rares/Mythics</div>
-            <div className="text-xl font-black text-amber-400 font-mono mt-0.5">~{calcRares} Cards</div>
-            <div className="text-[10px] text-amber-300">({calcMythics} Mythics avg)</div>
-          </div>
-
-          <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <div className="text-slate-400">Expected Foil Wildcards</div>
-            <div className="text-xl font-black text-indigo-400 font-mono mt-0.5">~{calcFoils} Foils</div>
-            <div className="text-[10px] text-indigo-300">100% Traditional Foil</div>
-          </div>
-
-          <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-            <div className="text-slate-400">Simulated Total EV</div>
-            <div className="text-xl font-black text-emerald-400 font-mono mt-0.5">
-              ${calcTotalEv.toFixed(2)}
-            </div>
-            <div className="text-[10px] text-emerald-300">
-              Avg ${(calcTotalEv / calculatorPacks).toFixed(2)}/pack
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Universal Product Breakdown Modal */}
       <ProductBreakdownModal
