@@ -774,7 +774,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
               onChange={(e) => onVendorChange(e.target.value as Vendor)}
               className="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-xs cursor-pointer"
             >
-              <option value="all">All Vendors (Consensus)</option>
+              <option value="all">All Vendors (Cheapest Available)</option>
               <option value="tcgplayer">TCGplayer Live Market (12.5% Fee)</option>
               <option value="cardmarket">Cardmarket (EUR / 5% Fee)</option>
               <option value="cardkingdom">Card Kingdom (Retail Spread)</option>

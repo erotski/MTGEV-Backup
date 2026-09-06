@@ -65,32 +65,39 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // Calculate dynamically adjusted booster records based on priceMode & vendor
   const rawSetBoosters = boosterRecords.filter((b) => b.setCode === selectedSetCode);
   const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-  const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
+  // No real per-vendor sealed product price data exists, so market prices for static/db
+  // catalog entries still use an approximate adjustment. Booster EV itself uses the exact
+  // per-vendor simulated row below instead of an approximation.
   const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
+  // Approximation used only for pre-baked estimatedEv fields (static catalog/db products)
+  // that don't have real per-vendor Monte Carlo rows to look up.
+  const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
 
-  // Deduplicate by boosterName so each booster type (e.g. 'play', 'collector', 'draft') appears cleanly
-  // Prefer exact match for priceMode if available in mock data
-  const uniqueBoostersMap = new Map<string, BoosterEVRecord>();
+  // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
+  // active priceMode, then pick the row for the exact selected vendor (falling back to the
+  // 'all' consensus row) - mirrors backend/ev_engine.py's get_pack_ev priority so both the
+  // Booster EV explorer and the Product Overview/Admin pages agree on the same numbers.
   const exactModeBoosters = rawSetBoosters.filter((b) => b.priceMode === priceMode);
   const fallbackBoosters = rawSetBoosters.filter((b) => b.priceMode === 'direct');
   const sourceBoosters = exactModeBoosters.length > 0 ? exactModeBoosters : fallbackBoosters.length > 0 ? fallbackBoosters : rawSetBoosters;
 
+  const boostersByName = new Map<string, BoosterEVRecord[]>();
   sourceBoosters.forEach((b) => {
-    if (!uniqueBoostersMap.has(b.boosterName)) {
-      uniqueBoostersMap.set(b.boosterName, b);
-    }
+    if (!boostersByName.has(b.boosterName)) boostersByName.set(b.boosterName, []);
+    boostersByName.get(b.boosterName)!.push(b);
   });
 
-  const currentBoosters = Array.from(uniqueBoostersMap.values()).map((b) => {
-    const mult = b.priceMode === priceMode ? 1.0 : reprintMultiplier;
+  const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
+    const base = rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all') || rows[0];
+    const mult = base.priceMode === priceMode ? 1.0 : reprintMultiplier;
     return {
-      ...b,
-      evAverage: Number((b.evAverage * mult * vendorEvMultiplier).toFixed(2)),
-      evMid90: Number((b.evMid90 * mult * vendorEvMultiplier).toFixed(2)),
-      evMin: Number((b.evMin * mult * vendorEvMultiplier).toFixed(2)),
-      evMax: Number((b.evMax * mult * vendorEvMultiplier).toFixed(2)),
-      evMin5: Number((b.evMin5 * mult * vendorEvMultiplier).toFixed(2)),
-      evMax5: Number((b.evMax5 * mult * vendorEvMultiplier).toFixed(2)),
+      ...base,
+      evAverage: Number((base.evAverage * mult).toFixed(2)),
+      evMid90: Number((base.evMid90 * mult).toFixed(2)),
+      evMin: Number((base.evMin * mult).toFixed(2)),
+      evMax: Number((base.evMax * mult).toFixed(2)),
+      evMin5: Number((base.evMin5 * mult).toFixed(2)),
+      evMax5: Number((base.evMax5 * mult).toFixed(2)),
       priceMode,
       vendor,
     };
