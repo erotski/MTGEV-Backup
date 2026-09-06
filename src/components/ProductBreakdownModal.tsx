@@ -40,13 +40,17 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<'slots_content' | 'chase_cards' | 'hierarchy'>('slots_content');
 
-  const isDeck =
+    const isDeck =
     product.packagingType === 'starter_deck' ||
-    (product.displayName || '').toLowerCase().includes('commander deck') ||
-    (product.displayName || '').toLowerCase().includes('precon') ||
+    product.rawCategory === 'multiple_decks' ||
     product.rawCategory === 'deck' ||
     product.rawCategory === 'starter_deck' ||
-    product.rawCategory === 'commander_deck';
+    product.rawCategory === 'commander_deck' ||
+    (product.displayName || '').toLowerCase().includes('commander deck') ||
+    (product.displayName || '').toLowerCase().includes('precon') ||
+    (product.displayName || '').toLowerCase().includes('clash pack') ||
+    (product.displayName || '').toLowerCase().includes('starter kit') ||
+    (product.displayName || '').toLowerCase().includes('duel deck');
 
   const isSingleCard =
     product.boosterName === 'single_card' ||

@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { BoxArbitrageRecord } from '../types';
+import { ProductBreakdownModal } from './ProductBreakdownModal';
+import { CatalogPackProduct } from '../ecommerceBoosterData';
 
 export interface SealedProductItem {
   id: string;
@@ -56,6 +58,9 @@ export const ProductHierarchyInspector: React.FC = () => {
   const [preconDecks, setPreconDecks] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Modal State for full card breakdown
+  const [breakdownProduct, setBreakdownProduct] = useState<CatalogPackProduct | null>(null);
 
   // Filters & State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -726,7 +731,7 @@ export const ProductHierarchyInspector: React.FC = () => {
                     </h2>
                   </div>
 
-                  {/* View Mode Toggle */}
+                                    {/* View Mode Toggle */}
                   <div className="flex items-center bg-slate-100 p-1 rounded-xl">
                     <button
                       onClick={() => setViewMode('visual_tree')}
@@ -745,6 +750,50 @@ export const ProductHierarchyInspector: React.FC = () => {
                       Raw MTGJSON
                     </button>
                   </div>
+                </div>
+
+                {/* Direct Launch Card Breakdown Button */}
+                <div className="flex flex-wrap items-center justify-between bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 p-4 rounded-xl text-white gap-3 shadow-md">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 block">
+                      Product Card Breakdown & Singles Valuation
+                    </span>
+                    <span className="text-xs text-slate-300 font-medium">
+                      Inspect all individual cards, mana curves, prices across vendors, and foil breakdown.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const p = selectedProduct;
+                      const uid = p.id || p.uuid || '';
+                      const arb = arbitrageMap[uid];
+                      const matchedDeck = preconDecks[uid] || preconDecks[p.displayName.toLowerCase()];
+
+                                            const modalProd: CatalogPackProduct = {
+                                              id: uid,
+                                              setCode: p.setCode,
+                                              setName: p.setCode,
+                                              displayName: p.displayName,
+                                              packagingType: p.category as any,
+                                              boosterName: 'default' as any,
+                                              marketPrice: p.marketPrice || 0,
+                                              estimatedEv: matchedDeck?.totalSinglesEv || arb?.boxEvAvg || (p.marketPrice ? p.marketPrice * 1.15 : 0),
+                                              packsCount: arb?.packCount || (p.contents?.pack ? p.contents.pack.reduce((sum, pk) => sum + (pk.count || 1), 0) : 0),
+                                              cardCount: p.cardCount || matchedDeck?.cardCount || 0,
+                                              rawCategory: p.category,
+                                              rawSubtype: p.subtype,
+                                              rawContents: p.contents as any,
+                                              releaseDate: '',
+                                              block: '',
+                                              specialFeatures: [],
+                                            };
+                      setBreakdownProduct(modalProd);
+                    }}
+                    className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer shadow-md flex items-center gap-1.5 shrink-0"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                    <span>View Card Breakdown Modal</span>
+                  </button>
                 </div>
 
                 {/* Mathematical Formula Summary Box */}
@@ -822,9 +871,16 @@ export const ProductHierarchyInspector: React.FC = () => {
                 Choose any sealed booster box, bundle case, or Secret Lair drop on the left to inspect its recursive breakdown and sub-item pricing.
               </p>
             </div>
-          )}
+                    )}
         </div>
       </div>
+
+      {/* Modal Render */}
+      <ProductBreakdownModal
+        product={breakdownProduct}
+        isOpen={Boolean(breakdownProduct)}
+        onClose={() => setBreakdownProduct(null)}
+      />
     </div>
   );
 };
