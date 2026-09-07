@@ -83,7 +83,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [tempUrlInput, setTempUrlInput] = useState<string>('');
 
   // Simulation & Engine Parameter Controls
-  const [monteCarloDraws, setMonteCarloDraws] = useState<number>(5000);
+  const [monteCarloDraws, setMonteCarloDraws] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('admin_monte_carlo_draws');
+      return saved ? Math.max(100, Number(saved)) : 5000;
+    } catch {
+      return 5000;
+    }
+  });
+
+  const handleUpdateMonteCarloDraws = (newDraws: number) => {
+    setMonteCarloDraws(newDraws);
+    try {
+      localStorage.setItem('admin_monte_carlo_draws', String(newDraws));
+    } catch {
+      // ignore
+    }
+  };
   const [packSleeveMargin, setPackSleeveMargin] = useState<number>(0.15);
   const [cacheTimestamp, setCacheTimestamp] = useState<string>(new Date().toLocaleTimeString());
   const [isRefreshingCache, setIsRefreshingCache] = useState<boolean>(false);
@@ -898,10 +914,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
           <div className="my-2">
             <div className="text-2xl font-black text-slate-900">{monteCarloDraws.toLocaleString()} Draws / Pack</div>
-            <div className="text-xs text-slate-500">Std Error: &lt; ±0.42% EV accuracy</div>
+            <div className="text-xs text-slate-500">
+              Std Error: &lt; ±{(30 / Math.sqrt(monteCarloDraws)).toFixed(2)}% EV accuracy
+            </div>
           </div>
           <div className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded w-fit">
-            Confidence Interval: 99%
+            100-Point Curve: {Math.max(1, Math.round(monteCarloDraws / 100))} packs / 1% quantile
           </div>
         </div>
 
@@ -1592,24 +1610,64 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700">
           {/* Setting 1: Monte Carlo Draws */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-900">Monte Carlo Sample Size</span>
               <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                 {monteCarloDraws.toLocaleString()} Packs
               </span>
             </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[1000, 2500, 5000, 10000, 20000].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => handleUpdateMonteCarloDraws(preset)}
+                  className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold border transition ${
+                    monteCarloDraws === preset
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  {preset >= 1000 ? `${preset / 1000}k` : preset}
+                  {preset === 5000 ? ' (Default)' : ''}
+                </button>
+              ))}
+            </div>
+
             <input
               type="range"
               min="1000"
               max="20000"
-              step="1000"
+              step="500"
               value={monteCarloDraws}
-              onChange={(e) => setMonteCarloDraws(Number(e.target.value))}
+              onChange={(e) => handleUpdateMonteCarloDraws(Number(e.target.value))}
               className="w-full accent-indigo-600 cursor-pointer"
             />
-            <p className="text-[11px] text-slate-500">
-              Controls statistical resolution when sampling rare/mythic and Special Guest slots.
+
+            <div className="bg-white p-2 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-medium">100-Sample Pipeline:</span>
+                <span className="font-mono font-bold text-indigo-700">
+                  {Math.max(1, Math.round(monteCarloDraws / 100))} packs / 1% quantile
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-medium">Quantile Points:</span>
+                <span className="font-mono font-bold text-slate-700">100 empirical steps (0% → 100%)</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-medium">Expected Std Error:</span>
+                <span className="font-mono font-bold text-emerald-600">
+                  &plusmn;{(30 / Math.sqrt(monteCarloDraws)).toFixed(2)}%
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-slate-500 font-mono bg-slate-100/80 px-2 py-1 rounded">
+              CLI: python3 -m backend.populate_booster_ev_to_db --sample-size {monteCarloDraws}
             </p>
           </div>
 

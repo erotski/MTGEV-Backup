@@ -67,6 +67,7 @@ class DatabaseBoosterEVEngine:
                 ev_max DECIMAL(10, 2) NOT NULL,
                 ev_min5 DECIMAL(10, 2) NOT NULL,
                 ev_max5 DECIMAL(10, 2) NOT NULL,
+                quantiles JSON DEFAULT NULL,
                 
                 complete_booster_pct DECIMAL(5, 2),
                 exact_match_pct DECIMAL(5, 2),
@@ -591,10 +592,10 @@ class DatabaseBoosterEVEngine:
     insert_sql = """
             INSERT INTO booster_ev_results 
                 (set_code, booster_name, price_mode, vendor, 
-                 ev_average, ev_mid90, ev_min, ev_max, ev_min5, ev_max5, 
+                 ev_average, ev_mid90, ev_min, ev_max, ev_min5, ev_max5, quantiles,
                  complete_booster_pct, exact_match_pct, different_finish_pct, different_vendor_pct, 
                  failed_boosters, simulated_packs)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 ev_average = VALUES(ev_average),
                 ev_mid90 = VALUES(ev_mid90),
@@ -602,6 +603,7 @@ class DatabaseBoosterEVEngine:
                 ev_max = VALUES(ev_max),
                 ev_min5 = VALUES(ev_min5),
                 ev_max5 = VALUES(ev_max5),
+                quantiles = VALUES(quantiles),
                 complete_booster_pct = VALUES(complete_booster_pct),
                 exact_match_pct = VALUES(exact_match_pct),
                 different_finish_pct = VALUES(different_finish_pct),
@@ -631,8 +633,16 @@ class DatabaseBoosterEVEngine:
           ev_max = round(float(np.max(np_arr)), 2)
           ev_min5 = round(float(np.mean(s_arr[:trim])), 2)
           ev_max5 = round(float(np.mean(s_arr[-trim:])), 2)
+
+          # Calculate 100 samples from 5,000 simulations (average of each 50-increment bucket)
+          bucket_size = max(1, len(s_arr) // 100)
+          quantiles = [
+              round(float(np.mean(s_arr[i * bucket_size : (i + 1) * bucket_size])), 2)
+              for i in range(100)
+          ]
         else:
           ev_avg = ev_mid90 = ev_min = ev_max = ev_min5 = ev_max5 = 0.0
+          quantiles = []
 
         complete_pct = round((len(arr) / self.sample_size) * 100, 2)
         exact_pct = round(
@@ -656,6 +666,7 @@ class DatabaseBoosterEVEngine:
             ev_max,
             ev_min5,
             ev_max5,
+            json.dumps(quantiles),
             complete_pct,
             exact_pct,
             finish_pct,
@@ -838,24 +849,30 @@ class DatabaseBoosterEVEngine:
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
-def run_full_pipeline():
+def run_full_pipeline(sample_size: int = 5000, target_set: str = None):
   db_config = DB_CONFIG
 
-  engine = DatabaseBoosterEVEngine(db_config, sample_size=5000)
+  engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size)
 
   # Fetch distinct paper booster configurations
-  engine.cursor.execute("""
+  query = """
         SELECT DISTINCT sbc.setCode, sbc.boosterName, s.name as setName
         FROM setBoosterContents sbc
         JOIN sets s ON sbc.setCode = s.code
         WHERE (s.isOnlineOnly = 0 OR s.isOnlineOnly IS NULL)
           AND sbc.boosterName NOT IN ('arena', 'mtgo')
-        ORDER BY sbc.setCode, sbc.boosterName
-    """)
+    """
+  params = []
+  if target_set:
+    query += " AND sbc.setCode = %s"
+    params.append(target_set.upper())
+  query += " ORDER BY sbc.setCode, sbc.boosterName"
+
+  engine.cursor.execute(query, tuple(params) if params else None)
   all_boosters = engine.cursor.fetchall()
 
   print('=' * 65)
-  print('Starting Full Matrix Booster EV Engine -> MySQL `booster_ev_results`')
+  print(f'Starting Booster EV Engine -> MySQL `booster_ev_results` [Sample Size: {sample_size:,} packs]')
   print(f'Total Paper Booster Configurations: {len(all_boosters)}')
   print(f'Database Target: {db_config["database"]}.booster_ev_results')
   print('=' * 65 + '\n')
@@ -892,4 +909,19 @@ def run_full_pipeline():
 
 
 if __name__ == '__main__':
-  run_full_pipeline()
+  import argparse
+  parser = argparse.ArgumentParser(description='MTG Full Matrix Booster EV Engine')
+  parser.add_argument(
+      '--sample-size',
+      type=int,
+      default=5000,
+      help='Number of simulated packs per booster (default: 5000)',
+  )
+  parser.add_argument(
+      '--set',
+      type=str,
+      default=None,
+      help='Filter to specific setCode (e.g. DFT)',
+  )
+  args = parser.parse_args()
+  run_full_pipeline(sample_size=args.sample_size, target_set=args.set)

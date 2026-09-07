@@ -12,6 +12,7 @@ export interface BoosterEVRecord {
   evMax: number;
   evMin5: number;
   evMax5: number;
+  quantiles?: number[];
   completeBoosterPct: number;
   exactMatchPct: number;
   differentFinishPct: number;

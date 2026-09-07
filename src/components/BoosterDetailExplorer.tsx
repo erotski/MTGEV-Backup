@@ -905,6 +905,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             <PackDistributionCurve
               productTitle={activeProduct?.displayName || `${currentSet?.name || selectedSetCode} ${activeBooster.fullBoosterName || activeBooster.boosterName}`}
               activeBooster={activeBooster}
+              allSetBoosters={rawSetBoosters}
               defaultPackSealedPrice={productMarketPrice}
               multiplier={productPacksCount}
               priceMode={priceMode}

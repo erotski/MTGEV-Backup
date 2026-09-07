@@ -31,6 +31,7 @@ import { BoosterEVRecord } from '../types';
 interface PackDistributionCurveProps {
   productTitle: string;
   activeBooster: BoosterEVRecord;
+  allSetBoosters?: BoosterEVRecord[];
   defaultPackSealedPrice?: number;
   multiplier?: number;
   priceMode?: 'direct' | 'cheapest_reprint';
@@ -43,6 +44,7 @@ interface PackDistributionCurveProps {
 export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   productTitle,
   activeBooster,
+  allSetBoosters,
   defaultPackSealedPrice = 7.99,
   multiplier = 1,
   priceMode = 'direct',
@@ -120,19 +122,99 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     setVisibleVendors((prev) => ({ ...prev, [v]: !prev[v] }));
   };
 
-  // Generate 101 percentile data points (0% to 100%)
-  // Quantile functions are mathematically monotonic (non-decreasing).
-  const allCurveData = useMemo(() => {
-    const rawPoints: { percentile: string; percentileNum: number; baseVal: number }[] = [];
-    for (let p = 0; p <= 100; p += 1) {
-      const t = p / 100; // 0.0 to 1.0
+  // Lookup exact vendor simulation records for active booster & priceMode
+  const vendorRecords = useMemo(() => {
+    const list = allSetBoosters || [];
+    const targetName = activeBooster?.boosterName?.toLowerCase();
+    const mode = priceMode || 'direct';
+    const byVendor: Record<string, BoosterEVRecord | undefined> = {};
+    const candidates = list.filter(
+      (b) => b.boosterName?.toLowerCase() === targetName && b.priceMode === mode
+    );
+    ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+      byVendor[v] = candidates.find((b) => b.vendor === v) || (activeBooster?.vendor === v ? activeBooster : undefined);
+    });
+    return byVendor;
+  }, [allSetBoosters, activeBooster, priceMode]);
 
-      let baseVal: number;
+  // Generate 101 percentile data points (0% to 100%)
+  // Uses authentic 100-sample empirical quantiles from 5,000 pack simulation when available!
+  const allCurveData = useMemo(() => {
+    const points: Array<{
+      percentile: string;
+      percentileNum: number;
+      all: number;
+      all_average: number;
+      tcgplayer: number;
+      cardmarket: number;
+      cardkingdom: number;
+      manapool: number;
+    }> = [];
+
+    // Check if authentic 100-sample quantiles exist on vendor records or activeBooster
+    const hasSimulatedQuantiles =
+      (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) ||
+      ['all', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].some(
+        (v) => vendorRecords[v]?.quantiles && vendorRecords[v]!.quantiles!.length >= 100
+      );
+
+    for (let p = 0; p <= 100; p += 1) {
       if (isPreconstructed) {
-        // Deterministic fixed cardlist value across all percentiles
-        baseVal = fixedDeckEv;
+        points.push({
+          percentile: `${p}%`,
+          percentileNum: p,
+          all: fixedDeckEv,
+          all_average: fixedDeckEv,
+          tcgplayer: fixedDeckEv,
+          cardmarket: fixedDeckEv,
+          cardkingdom: fixedDeckEv,
+          manapool: fixedDeckEv,
+        });
+        continue;
+      }
+
+      if (hasSimulatedQuantiles) {
+        // Sample index in the 100-bucket array (0 to 99)
+        const qIdx = p === 0 ? 0 : Math.min(99, p - 1);
+
+        const getVal = (v: string, fallbackRatio: number) => {
+          const rec = vendorRecords[v];
+          if (rec?.quantiles && rec.quantiles.length >= 100) {
+            const rawVal = p === 0 ? Math.min(rec.quantiles[0], rec.evMin || rec.quantiles[0]) : rec.quantiles[qIdx];
+            return Number((rawVal * scale).toFixed(2));
+          }
+          if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
+            const rawVal = p === 0 ? Math.min(activeBooster.quantiles[0], activeBooster.evMin || activeBooster.quantiles[0]) : activeBooster.quantiles[qIdx];
+            return Number((rawVal * fallbackRatio * scale).toFixed(2));
+          }
+          return 0;
+        };
+
+        const tcgVal = getVal('tcgplayer', 1.0);
+        const ckVal = getVal('cardkingdom', 1.15);
+        const cmVal = getVal('cardmarket', 0.88);
+        const mpVal = getVal('manapool', 0.98);
+        const allVal = vendorRecords['all']?.quantiles?.length
+          ? getVal('all', 0.94)
+          : Math.min(tcgVal, ckVal, cmVal, mpVal);
+        const allAvgVal = vendorRecords['all_average']?.quantiles?.length
+          ? getVal('all_average', 1.0)
+          : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+
+        points.push({
+          percentile: `${p}%`,
+          percentileNum: p,
+          all: allVal,
+          all_average: allAvgVal,
+          tcgplayer: tcgVal,
+          cardmarket: cmVal,
+          cardkingdom: ckVal,
+          manapool: mpVal,
+        });
       } else {
-        // Realistic MTG Piecewise Quantile Curve (Monotonically non-decreasing)
+        // Fallback to mathematical quantile anchors if legacy data without quantiles
+        const t = p / 100;
+        let baseVal: number;
         if (t <= 0.05) {
           const subT = t / 0.05;
           baseVal = q0 + subT * (q5 - q0);
@@ -140,52 +222,48 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           const subT = (t - 0.05) / 0.45;
           baseVal = q5 + Math.pow(subT, 0.9) * (q50 - q5);
         } else if (t <= 0.95) {
-          // Smooth progression from 50th percentile (median) up to 95th percentile
-          // Resolves the previous artifact where an unconstrained p90 exceeded p95 and dropped
           const subT = (t - 0.50) / 0.45;
           baseVal = q50 + Math.pow(subT, 1.25) * (q95 - q50);
         } else {
-          // Pareto tail for chase cards in top 5% of packs
           const subT = (t - 0.95) / 0.05;
           baseVal = q95 + Math.pow(subT, 2.4) * (q100 - q95);
         }
-      }
 
-      rawPoints.push({
-        percentile: `${p}%`,
-        percentileNum: p,
-        baseVal,
-      });
+        const tcgVal = Number(baseVal.toFixed(2));
+        const ckVal = Number((baseVal * 1.08).toFixed(2));
+        const cmVal = Number((baseVal * 0.92).toFixed(2));
+        const mpVal = Number((baseVal * 0.96).toFixed(2));
+        const allCheapestVal = Math.min(tcgVal, ckVal, cmVal, mpVal);
+        const allAvgVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+
+        points.push({
+          percentile: `${p}%`,
+          percentileNum: p,
+          all: allCheapestVal,
+          all_average: allAvgVal,
+          tcgplayer: tcgVal,
+          cardmarket: cmVal,
+          cardkingdom: ckVal,
+          manapool: mpVal,
+        });
+      }
     }
 
-    // Guarantee strict mathematical monotonicity across all 101 percentiles (the curve only goes up)
-    let runningMax = 0;
-    return rawPoints.map((pt) => {
-      if (pt.baseVal < runningMax) {
-        pt.baseVal = runningMax;
-      } else {
-        runningMax = pt.baseVal;
+    // Ensure non-decreasing monotonicity across percentiles
+    ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+      let maxSeen = 0;
+      for (let i = 0; i < points.length; i++) {
+        const val = (points[i] as any)[v];
+        if (val < maxSeen) {
+          (points[i] as any)[v] = maxSeen;
+        } else {
+          maxSeen = val;
+        }
       }
-
-      const tcgVal = Number(pt.baseVal.toFixed(2));
-      const ckVal = Number((pt.baseVal * 1.08).toFixed(2));
-      const cmVal = Number((pt.baseVal * 0.92).toFixed(2));
-      const mpVal = Number((pt.baseVal * 0.96).toFixed(2));
-      const allCheapestVal = Math.min(tcgVal, ckVal, cmVal, mpVal);
-      const allAvgVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
-
-      return {
-        percentile: pt.percentile,
-        percentileNum: pt.percentileNum,
-        all: allCheapestVal,
-        all_average: allAvgVal,
-        tcgplayer: tcgVal,
-        cardmarket: cmVal,
-        cardkingdom: ckVal,
-        manapool: mpVal,
-      };
     });
-  }, [isPreconstructed, fixedDeckEv, q0, q5, q50, q95, q100]);
+
+    return points;
+  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, q0, q5, q50, q95, q100]);
 
   // Filtered curve data for X-Axis Slider Range
   const filteredCurveData = useMemo(() => {
@@ -196,22 +274,42 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
   // Scaled Vendor Averages for reference lines
   const scaledAverages = useMemo(() => {
-    const baseAvg = isPreconstructed ? fixedDeckEv : (activeBooster?.evAverage || 9.34) * scale;
-    const tcgAvg = Number(baseAvg.toFixed(2));
-    const ckAvg = Number((baseAvg * 1.08).toFixed(2));
-    const cmAvg = Number((baseAvg * 0.92).toFixed(2));
-    const mpAvg = Number((baseAvg * 0.96).toFixed(2));
-    const cheapestAvg = Math.min(tcgAvg, ckAvg, cmAvg, mpAvg);
-    const averageAvg = Number(((tcgAvg + ckAvg + cmAvg + mpAvg) / 4).toFixed(2));
+    if (isPreconstructed) {
+      return {
+        all: fixedDeckEv,
+        all_average: fixedDeckEv,
+        tcgplayer: fixedDeckEv,
+        cardmarket: fixedDeckEv,
+        cardkingdom: fixedDeckEv,
+        manapool: fixedDeckEv,
+      };
+    }
+    const getAvg = (v: string, fallbackMult: number) => {
+      const rec = vendorRecords[v];
+      if (rec && rec.evAverage > 0) {
+        return Number((rec.evAverage * scale).toFixed(2));
+      }
+      return Number(((activeBooster?.evAverage || 9.34) * fallbackMult * scale).toFixed(2));
+    };
+    const tcgAvg = getAvg('tcgplayer', 1.0);
+    const ckAvg = getAvg('cardkingdom', 1.15);
+    const cmAvg = getAvg('cardmarket', 0.88);
+    const mpAvg = getAvg('manapool', 0.98);
+    const allAvg = vendorRecords['all']?.evAverage
+      ? getAvg('all', 0.94)
+      : Math.min(tcgAvg, ckAvg, cmAvg, mpAvg);
+    const allAverageAvg = vendorRecords['all_average']?.evAverage
+      ? getAvg('all_average', 1.0)
+      : Number(((tcgAvg + ckAvg + cmAvg + mpAvg) / 4).toFixed(2));
     return {
-      all: cheapestAvg,
-      all_average: averageAvg,
+      all: allAvg,
+      all_average: allAverageAvg,
       tcgplayer: tcgAvg,
       cardmarket: cmAvg,
       cardkingdom: ckAvg,
       manapool: mpAvg,
     };
-  }, [isPreconstructed, fixedDeckEv, activeBooster, scale]);
+  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale]);
 
   const vendorKey = useMemo(() => {
     if (vendor && ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
@@ -294,7 +392,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           <p className="text-xs text-slate-500 mt-1">
             {isPreconstructed
               ? `Deterministic fixed collation${cardCount ? ` (${cardCount} cards)` : ''} with 0% lottery variance across copies vs. Sealed Product Price.`
-              : 'Simulated 5,000 packs sorted by value (0% dud floor → 100% top hit) vs. Pack Sealed Market Price.'}
+              : 'Simulated 5,000 packs grouped into 100 percentile samples (50-pack averages from 0% floor → 100% top hit) vs. Pack Sealed Market Price.'}
           </p>
         </div>
 
