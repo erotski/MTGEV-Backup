@@ -40,54 +40,21 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const cleanType = (packagingType || 'pack').toLowerCase().trim();
   const isCollector = (displayName || '').toLowerCase().includes('collector');
 
-  // Generate comprehensive list of local & remote image candidates to probe
+  // Generate candidate list of remote image to test if provided
   const candidateUrls = React.useMemo(() => {
     const urls: string[] = [];
-    if (imageUrl) {
-      urls.push(imageUrl);
+    if (imageUrl && imageUrl.trim().length > 0 && !imageUrl.startsWith('/products/')) {
+      urls.push(imageUrl.trim());
     }
-
-    const upperCode = cleanCode.toUpperCase();
-
-    // Specific naming patterns for Collector Booster Boxes
-    if (isCollector && cleanType === 'box') {
-      urls.push(`/products/${cleanCode}-collector-box.png`);
-      urls.push(`/products/${cleanCode}-box-collector.png`);
-      urls.push(`/products/${cleanCode}-collector.png`);
-      urls.push(`/products/${cleanCode}-collector-box.webp`);
-      urls.push(`/products/${cleanCode}-collector-box.jpg`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Clctr_01_01.png`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Clctr_01_01.webp`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Clctr_01_01.jpg`);
-    } else if (isCollector && cleanType === 'pack') {
-      urls.push(`/products/${cleanCode}-collector-pack.png`);
-      urls.push(`/products/${cleanCode}-pack-collector.png`);
-      urls.push(`/products/${cleanCode}-collector.png`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrPck_Clctr_01_01.png`);
-    }
-
-    // Official WPN DMA filename conventions for Play / Draft / Set boxes
-    if (cleanType === 'box') {
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Play_01_01.png`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Drft_01_01.png`);
-      urls.push(`/products/MTG${upperCode}_EN_BstrDspBx_Set_01_01.png`);
-    }
-
-    // Standard local WPN file naming patterns in /public/products/
-    urls.push(`/products/${cleanCode}-${cleanType}.png`);
-    urls.push(`/products/${cleanCode}-${cleanType}.webp`);
-    urls.push(`/products/${cleanCode}-${cleanType}.jpg`);
-    urls.push(`/products/${cleanCode}-${cleanType}.jpeg`);
-    urls.push(`/products/${cleanCode}.png`);
     return urls;
-  }, [imageUrl, cleanCode, cleanType, isCollector]);
+  }, [imageUrl]);
 
   // Reset image candidate testing when props change
   useEffect(() => {
     setCandidateIndex(0);
     setHasImageLoaded(false);
-    setAllCandidatesFailed(false);
-  }, [setCode, packagingType, imageUrl]);
+    setAllCandidatesFailed(candidateUrls.length === 0);
+  }, [candidateUrls]);
 
   const handleImageError = () => {
     if (candidateIndex < candidateUrls.length - 1) {

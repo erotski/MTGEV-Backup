@@ -30,8 +30,6 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   className = '',
   onSelectCard,
 }) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
   const [liveCards, setLiveCards] = useState<ChaseCard[]>([]);
   const [loadingLive, setLoadingLive] = useState<boolean>(false);
@@ -68,18 +66,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
   const chaseCards = curatedCards.length > 0 ? curatedCards : liveCards;
 
-  // Filtered cards
-  const filteredCards = useMemo(() => {
-    return chaseCards.filter((card) => {
-      const matchesSearch =
-        card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (card.cardType && card.cardType.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesRarity =
-        selectedRarity === 'all' ||
-        card.rarity.toLowerCase() === selectedRarity.toLowerCase();
-      return matchesSearch && matchesRarity;
-    });
-  }, [chaseCards, searchTerm, selectedRarity]);
+  // Filter to the top 5 most valuable chase cards for this product
+  const topChaseCards = useMemo(() => {
+    const sorted = [...chaseCards].sort((a, b) => (b.price || 0) - (a.price || 0));
+    return sorted.slice(0, 5);
+  }, [chaseCards]);
 
   // Helper for rarity styling
   const getRarityBadge = (rarity: string) => {
@@ -110,46 +101,21 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-amber-500" />
             <h4 className="text-base font-bold text-slate-900 tracking-tight">
-              Chase Cards Within This Product ({chaseCards.length} Hits Identified)
+              Top 5 Most Valuable Chase Cards
             </h4>
             <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
-              {isDeck ? 'Deck Key Singles' : isCollector ? 'Collector Hits & Foils' : 'Top Set Hits'}
+              {isDeck ? 'Deck Key Singles' : isCollector ? 'Collector Top Hits' : 'Top 5 Hits'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             {isDeck
-              ? `Guaranteed high-value singles included in ${product.displayName}.`
-              : `Top chase cards pullable from ${product.displayName} with estimated slot odds and real market values.`}
+              ? `Guaranteed highest-value singles included in ${product.displayName}.`
+              : `Top 5 most valuable cards pullable from ${product.displayName} sorted by live market price.`}
           </p>
-        </div>
-
-        {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Filter chase cards..."
-              className="pl-8 pr-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-indigo-600 w-36 sm:w-44"
-            />
-          </div>
-
-          <select
-            value={selectedRarity}
-            onChange={(e) => setSelectedRarity(e.target.value)}
-            className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium cursor-pointer"
-          >
-            <option value="all">All Rarities</option>
-            <option value="mythic">Mythics</option>
-            <option value="rare">Rares</option>
-            <option value="special">Special Guests</option>
-          </select>
         </div>
       </div>
 
-      {/* Grid of Chase Cards */}
+      {/* Grid of Top 5 Chase Cards */}
       {loadingLive ? (
         <div className="text-center py-8 space-y-2">
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -157,13 +123,13 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
             Fetching authentic live market cards from Scryfall API...
           </p>
         </div>
-      ) : filteredCards.length === 0 ? (
+      ) : topChaseCards.length === 0 ? (
         <div className="text-center py-8 text-slate-400 text-xs">
-          No chase cards match your filter criteria.
+          No chase cards found for this product.
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 pt-1">
-          {filteredCards.map((card) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 pt-1">
+          {topChaseCards.map((card, cardIndex) => {
             const displayPriceNormal =
               priceMode === 'cheapest_reprint'
                 ? Number((card.priceNormal * 0.74).toFixed(2))

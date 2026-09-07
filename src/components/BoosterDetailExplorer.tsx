@@ -19,7 +19,10 @@ import {
   ExternalLink,
   Tag,
   Boxes,
-  Compass
+  Compass,
+  Search,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
@@ -64,7 +67,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor
-  const rawSetBoosters = boosterRecords.filter((b) => b.setCode === selectedSetCode);
+  const rawSetBoosters = boosterRecords.filter((b) => b.setCode.toUpperCase() === selectedSetCode.toUpperCase());
   const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const normVendor = normalizeVendor(vendor);
   const vendorEvMultiplier =
@@ -72,6 +75,31 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     normVendor === 'cardkingdom' ? 1.15 :
     normVendor === 'manapool' ? 0.98 :
     1.0;
+
+  // Search & sorting state for MTG Sets dropdown
+  const [setSearchQuery, setSetSearchQuery] = useState<string>('');
+  const [isSetDropdownOpen, setIsSetDropdownOpen] = useState<boolean>(false);
+
+  // Sets sorted by release date descending (newest first)
+  const sortedSets = useMemo(() => {
+    return [...availableSets].sort((a, b) => {
+      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+      if (dateA !== dateB) return dateB - dateA;
+      return a.name.localeCompare(b.name);
+    });
+  }, [availableSets]);
+
+  const filteredSets = useMemo(() => {
+    if (!setSearchQuery.trim()) return sortedSets;
+    const q = setSearchQuery.toLowerCase().trim();
+    return sortedSets.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.code.toLowerCase().includes(q) ||
+        (s.block && s.block.toLowerCase().includes(q))
+    );
+  }, [sortedSets, setSearchQuery]);
 
   // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
   // active priceMode, then pick the row for the exact selected vendor (falling back to the
@@ -157,11 +185,58 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           pCount = sp.contents.sealed.reduce((sum: number, s: any) => sum + (s.count || 1), 0);
         }
 
-        const boosterNameType = (
-          ['play', 'draft', 'set', 'collector', 'jumpstart', 'starter'].includes((sp.subtype || '').toLowerCase())
-            ? (sp.subtype || '').toLowerCase()
-            : 'draft'
-        ) as 'play' | 'draft' | 'set' | 'collector' | 'jumpstart' | 'starter';
+        const rawCode = sp.contents?.pack?.[0]?.code?.toLowerCase() || '';
+        const rawSubtype = (sp.subtype || '').toLowerCase();
+        const pLower = pName.toLowerCase();
+
+        let boosterNameType = 'play';
+        if (rawCode) {
+          boosterNameType = rawCode;
+        } else if (rawSubtype.includes('topper') || pLower.includes('topper')) {
+          boosterNameType = 'box-topper';
+        } else if (rawSubtype.includes('collector') || pLower.includes('collector')) {
+          boosterNameType = 'collector';
+        } else if (rawSubtype.includes('play') || pLower.includes('play')) {
+          boosterNameType = 'play';
+        } else if (rawSubtype.includes('draft') || pLower.includes('draft')) {
+          boosterNameType = 'draft';
+        } else if (rawSubtype.includes('set') || pLower.includes('set booster')) {
+          boosterNameType = 'set';
+        } else if (rawSubtype.includes('jumpstart') || pLower.includes('jumpstart')) {
+          boosterNameType = 'jumpstart';
+        } else if (rawSubtype.includes('prerelease') || pLower.includes('prerelease')) {
+          boosterNameType = 'prerelease';
+        } else if (rawSubtype) {
+          boosterNameType = rawSubtype;
+        }
+
+        // Vendor-adjusted sealed market price
+        let basePrice = Number(sp.marketPrice || sp.tcgplayer_price || 0);
+        if (basePrice === 0 && (boosterNameType === 'box-topper' || pLower.includes('topper'))) {
+          basePrice = 9.99;
+        }
+        if (vendor === 'cardmarket') {
+          basePrice = Number(sp.cardmarket_price || (basePrice > 0 ? basePrice * 0.92 : 0));
+        } else if (vendor === 'cardkingdom') {
+          basePrice = Number(sp.cardkingdom_price || (basePrice > 0 ? basePrice * 1.15 : 0));
+        } else if (vendor === 'manapool') {
+          basePrice = Number(sp.manapool_price || (basePrice > 0 ? basePrice * 0.98 : 0));
+        } else if (vendor === 'all') {
+          basePrice = Number(basePrice > 0 ? basePrice * 0.94 : 0);
+        }
+
+        // Determine EV from matching booster record in booster_ev.json
+        const matchingBoosterEv = rawSetBoosters.find(
+          (b) => b.boosterName.toLowerCase() === boosterNameType.toLowerCase()
+        );
+        let computedEv = 0;
+        if (matchingBoosterEv && matchingBoosterEv.evAverage > 0) {
+          computedEv = Number((matchingBoosterEv.evAverage * pCount * reprintMultiplier * vendorEvMultiplier).toFixed(2));
+        } else if (sp.estimatedEv) {
+          computedEv = Number((sp.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2));
+        } else if (basePrice > 0) {
+          computedEv = Number((basePrice * 1.05 * reprintMultiplier * vendorEvMultiplier).toFixed(2));
+        }
 
         return {
           id: sp.id || sp.uuid || `${sCode}-${pName}`,
@@ -175,8 +250,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           packagingType: packType,
           packsCount: pCount > 0 ? pCount : 1,
           cardCount: sp.cardCount || (packType === 'starter_deck' ? 100 : undefined),
-          marketPrice: Number((sp.marketPrice || 0).toFixed(2)),
-          estimatedEv: Number(((sp.estimatedEv || sp.marketPrice || 0) * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+          marketPrice: Number(basePrice.toFixed(2)),
+          estimatedEv: computedEv > 0 ? computedEv : Number(((sp.estimatedEv || basePrice || 0) * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
           rawCategory: cat,
           specialFeatures: [],
           rawContents: sp.contents,
@@ -379,25 +454,111 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             </div>
           </div>
 
-          {/* Set Selector Dropdown */}
-          <div className="w-full sm:w-auto shrink-0">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Select MTG Set
+          {/* Searchable MTG Set Selector with Release Date Sort and Set Icons */}
+          <div className="w-full sm:w-80 shrink-0 relative" id="mtg-set-search-combobox">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span>Select & Search MTG Set</span>
+              <span className="text-[9px] text-slate-400 font-normal">Sorted by release date</span>
             </label>
-            <select
-              id="set-picker-select"
-              value={selectedSetCode}
-              onChange={(e) => {
-                onSelectSetCode(e.target.value);
-              }}
-              className="w-full sm:w-64 text-sm font-semibold bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-2xs"
-            >
-              {availableSets.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.name} ({s.code})
-                </option>
-              ))}
-            </select>
+            
+            <div className="relative">
+              <button 
+                type="button"
+                id="set-picker-select-button"
+                onClick={() => setIsSetDropdownOpen(!isSetDropdownOpen)}
+                className="w-full flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-xl px-3 py-2 text-sm font-semibold cursor-pointer shadow-2xs transition text-left"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-6 h-6 shrink-0 flex items-center justify-center bg-white rounded border border-slate-200 p-0.5">
+                    <SetSymbolIcon setCode={currentSet?.code || selectedSetCode} size="sm" className="w-full h-full object-contain" />
+                  </div>
+                  <span className="truncate">{currentSet?.name || selectedSetCode}</span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 uppercase shrink-0">
+                    {currentSet?.code || selectedSetCode}
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isSetDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isSetDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-full sm:w-96 max-h-96 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* Search Input */}
+                  <div className="p-2.5 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+                    <input
+                      type="text"
+                      placeholder="Search by set name or code (e.g. DFT, Bloom...)..."
+                      value={setSearchQuery}
+                      onChange={(e) => setSetSearchQuery(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-xs bg-transparent border-0 focus:outline-none text-slate-900 placeholder:text-slate-400"
+                      autoFocus
+                    />
+                    {setSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSetSearchQuery('');
+                        }}
+                        className="text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Scrollable Set Options List */}
+                  <div className="overflow-y-auto divide-y divide-slate-100 max-h-72">
+                    {filteredSets.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">
+                        No sets matching &ldquo;{setSearchQuery}&rdquo;
+                      </div>
+                    ) : (
+                      filteredSets.map((s) => {
+                        const isSelected = s.code.toUpperCase() === selectedSetCode.toUpperCase();
+                        return (
+                          <div
+                            key={s.code}
+                            onClick={() => {
+                              onSelectSetCode(s.code);
+                              setIsSetDropdownOpen(false);
+                              setSetSearchQuery('');
+                            }}
+                            className={`px-3 py-2.5 flex items-center justify-between gap-2.5 cursor-pointer text-xs transition ${
+                              isSelected
+                                ? 'bg-indigo-50/90 text-indigo-950 font-bold'
+                                : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-6 h-6 shrink-0 flex items-center justify-center bg-white rounded border border-slate-200/80 p-0.5">
+                                <SetSymbolIcon setCode={s.code} size="sm" className="w-full h-full object-contain" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="truncate flex items-center gap-1.5">
+                                  <span>{s.name}</span>
+                                  <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                    {s.code}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                  <span>{s.releaseDate || 'N/A'}</span>
+                                  {s.type && <span className="capitalize">• {s.type}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span className="text-indigo-600 text-xs shrink-0 font-bold">✓</span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

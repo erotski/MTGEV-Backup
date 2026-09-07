@@ -213,47 +213,37 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     };
   }, [isPreconstructed, fixedDeckEv, activeBooster, scale]);
 
-  // Calculate Breakeven Percentile & EV Score (0 - 100) for TCGplayer vs Sealed Cost
-  const evScore = useMemo(() => {
-    if (sealedPrice <= 0) return 100;
-    if (isPreconstructed) {
-      if (fixedDeckEv >= sealedPrice) return 100;
-      return Math.max(0, Math.min(99, Math.round((fixedDeckEv / sealedPrice) * 100)));
+  const vendorKey = useMemo(() => {
+    if (vendor && ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
+      return vendor as 'all' | 'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom' | 'manapool';
     }
-    const minCurve = allCurveData[0]?.tcgplayer ?? 0;
-    const maxCurve = allCurveData[allCurveData.length - 1]?.tcgplayer ?? 0;
-    if (sealedPrice <= minCurve) return 100;
-    if (sealedPrice > maxCurve) return 0;
-    const point = allCurveData.find((d) => d.tcgplayer >= sealedPrice);
-    if (!point) return 0;
-    return Math.max(0, Math.min(100, 100 - point.percentileNum));
-  }, [isPreconstructed, fixedDeckEv, sealedPrice, allCurveData]);
+    return 'tcgplayer';
+  }, [vendor]);
 
   const breakevenPoint = useMemo(() => {
+    const activeVendorVal = scaledAverages[vendorKey];
     if (isPreconstructed) {
-      const isProfitable = scaledAverages.tcgplayer >= sealedPrice;
+      const isProfitable = activeVendorVal >= sealedPrice;
       return {
-        percentile: '0%',
-        percentileNum: 0,
-        profitablePct: isProfitable ? 100 : evScore,
+        percentile: isProfitable ? '100%' : '0%',
+        percentileNum: isProfitable ? 100 : 0,
+        profitablePct: isProfitable ? 100 : 0,
         isDeterministic: true,
-        diff: Number((scaledAverages.tcgplayer - sealedPrice).toFixed(2)),
-        diffPct: Number((((scaledAverages.tcgplayer - sealedPrice) / sealedPrice) * 100).toFixed(1)),
-        evScore,
+        diff: Number((activeVendorVal - sealedPrice).toFixed(2)),
+        diffPct: Number((((activeVendorVal - sealedPrice) / sealedPrice) * 100).toFixed(1)),
       };
     }
-    const point = allCurveData.find((d) => d.tcgplayer >= sealedPrice);
-    const profitablePct = point ? (100 - point.percentileNum) : (sealedPrice <= (allCurveData[0]?.tcgplayer || 0) ? 100 : 0);
+    const point = allCurveData.find((d) => d[vendorKey] >= sealedPrice);
+    const profitablePct = point ? (100 - point.percentileNum) : (sealedPrice <= (allCurveData[0]?.[vendorKey] || 0) ? 100 : 0);
     return {
-      percentile: point ? point.percentile : (sealedPrice <= (allCurveData[0]?.tcgplayer || 0) ? '0%' : '>100%'),
+      percentile: point ? point.percentile : (sealedPrice <= (allCurveData[0]?.[vendorKey] || 0) ? '0%' : '>100%'),
       percentileNum: point ? point.percentileNum : 100,
       profitablePct,
       isDeterministic: false,
-      diff: Number((scaledAverages.tcgplayer - sealedPrice).toFixed(2)),
-      diffPct: Number((((scaledAverages.tcgplayer - sealedPrice) / sealedPrice) * 100).toFixed(1)),
-      evScore,
+      diff: Number((activeVendorVal - sealedPrice).toFixed(2)),
+      diffPct: Number((((activeVendorVal - sealedPrice) / sealedPrice) * 100).toFixed(1)),
     };
-  }, [isPreconstructed, scaledAverages.tcgplayer, sealedPrice, allCurveData, evScore]);
+  }, [isPreconstructed, scaledAverages, vendorKey, sealedPrice, allCurveData]);
 
   // Quick Sealed Price Adjustment buttons
   const stepAmount = scale > 1 || isPreconstructed ? Math.max(1, Math.round((isPreconstructed ? fixedDeckEv : scale) * 0.05)) : 0.5;
@@ -309,39 +299,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* EV Score (0 - 100 Profit Chance) */}
-          <div
-            id="ev-score-badge"
-            className="flex items-center gap-3 bg-slate-900 text-white p-2.5 px-3.5 rounded-xl border border-slate-800 shadow-sm"
-            title={`EV Score: ${evScore}/100. ${evScore}% probability that opening this product yields singles value equal to or greater than its sealed cost.`}
-          >
-            <div className="text-center">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">EV Score</span>
-              <div className="flex items-baseline justify-center gap-0.5">
-                <span
-                  className={`text-2xl font-black font-mono tracking-tight ${
-                    evScore >= 60 ? 'text-emerald-400' : evScore >= 35 ? 'text-amber-400' : 'text-rose-400'
-                  }`}
-                >
-                  {evScore}
-                </span>
-                <span className="text-[11px] font-bold text-slate-500 font-mono">/100</span>
-              </div>
-            </div>
-            <div className="border-l border-slate-800 pl-3 text-left">
-              <span
-                className={`text-[10px] font-black uppercase tracking-wider block ${
-                  evScore >= 60 ? 'text-emerald-300' : evScore >= 35 ? 'text-amber-300' : 'text-rose-300'
-                }`}
-              >
-                {evScore >= 80 ? 'High Profit Chance' : evScore >= 50 ? 'Moderate Win Rate' : evScore >= 25 ? 'Low / High Variance' : 'Heavy Dud Probability'}
-              </span>
-              <span className="text-[10px] text-slate-300 block leading-tight">
-                {evScore}% chance to exceed ${sealedPrice.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
           {/* Sealed Price Controller */}
           <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
             <div className="text-xs">

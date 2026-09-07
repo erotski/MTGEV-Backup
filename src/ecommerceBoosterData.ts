@@ -67,7 +67,7 @@ export interface CatalogPackProduct {
   releaseDate: string;
   block: string;
   packagingType: ProductPackagingType;
-  boosterName: 'play' | 'draft' | 'set' | 'collector' | 'jumpstart' | 'starter';
+  boosterName: 'play' | 'draft' | 'set' | 'collector' | 'jumpstart' | 'starter' | 'box-topper' | 'topper' | string;
   displayName: string;
   marketPrice: number;
   estimatedEv: number;

@@ -4,12 +4,11 @@ import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord } fro
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
-import { CubeBuilderStudio } from './components/CubeBuilderStudio';
 import { AdminPortal } from './components/AdminPortal';
-import { TrendingUp, Layers, Sparkles, Box, Sliders, Dices, Package, Database } from 'lucide-react';
+import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'cube' | 'admin'>('arbitrage');
+  const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'admin'>('arbitrage');
   const [selectedSetCode, setSelectedSetCode] = useState<string>('MH3');
   const [priceMode, setPriceMode] = useState<PriceMode>('direct');
   const [vendor, setVendor] = useState<Vendor>('all');
@@ -121,18 +120,6 @@ export default function App() {
                 Booster EV & Chase Cards
               </button>
               <button
-                id="tab-cube-btn"
-                onClick={() => setActiveTab('cube')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'cube'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Dices className="w-3.5 h-3.5" />
-                Cube & Pack Builder
-              </button>
-              <button
                 id="tab-admin-btn"
                 onClick={() => setActiveTab('admin')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
@@ -177,8 +164,6 @@ export default function App() {
             onVendorChange={setVendor}
           />
         )}
-
-        {activeTab === 'cube' && <CubeBuilderStudio />}
 
         {activeTab === 'admin' && (
           <AdminPortal
