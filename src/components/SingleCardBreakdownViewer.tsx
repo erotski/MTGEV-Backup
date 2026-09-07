@@ -10,8 +10,10 @@ interface SingleCardBreakdownViewerProps {
 
 export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps> = ({
   product,
+  priceMode = 'direct',
   vendor = 'tcgplayer',
 }) => {
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const rawCards = product.rawContents?.card || [];
   const isMultiCard = rawCards.length > 1;
 
@@ -40,9 +42,12 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
     const cm = prices.cardmarket ?? (tcg ? Number((tcg * 0.94).toFixed(2)) : null);
     const avg = prices.all ?? (tcg ?? 0);
 
-    if (vend === 'cardkingdom') return ck ?? avg;
-    if (vend === 'cardmarket') return cm ?? avg;
-    return tcg ?? avg;
+    let price = avg;
+    if (vend === 'cardkingdom') price = ck ?? avg;
+    else if (vend === 'cardmarket') price = cm ?? avg;
+    else price = tcg ?? avg;
+
+    return Number((price * reprintMultiplier).toFixed(2));
   };
 
   // Compute total singles value across all cards

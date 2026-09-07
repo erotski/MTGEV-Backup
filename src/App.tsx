@@ -160,6 +160,7 @@ export default function App() {
             onPriceModeChange={setPriceMode}
             vendor={vendor}
             onVendorChange={setVendor}
+            boosterEvMap={boosterEvMap}
           />
         )}
 
@@ -180,7 +181,13 @@ export default function App() {
         {activeTab === 'cube' && <CubeBuilderStudio />}
 
         {activeTab === 'admin' && (
-          <AdminPortal onNavigateToExplorer={handleNavigateToExplorerFromAdmin} />
+          <AdminPortal
+            onNavigateToExplorer={handleNavigateToExplorerFromAdmin}
+            vendor={vendor}
+            onVendorChange={setVendor}
+            priceMode={priceMode}
+            onPriceModeChange={setPriceMode}
+          />
         )}
       </main>
 

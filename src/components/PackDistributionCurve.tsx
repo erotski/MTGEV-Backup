@@ -65,17 +65,29 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
   // Key percentile benchmarks for the active product (scaled by product multiplier or preconstructed fixed EV)
   const fixedDeckEv = preconSinglesEv ?? activeBooster?.evAverage ?? 9.34;
-  const minVal = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin || 0.85) * scale).toFixed(2));
-  const p5Val = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin5 || 1.53) * scale).toFixed(2));
-  const midVal = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMid90 || 7.94) * scale).toFixed(2));
-  const p95Val = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax5 || 42.37) * scale).toFixed(2));
-  const maxVal = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax || 182.50) * scale).toFixed(2));
+  const rawMin = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin || 0.85) * scale).toFixed(2));
+  const rawP5 = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin5 || 1.53) * scale).toFixed(2));
+  const rawMid = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMid90 || 7.94) * scale).toFixed(2));
+  const rawP95 = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax5 || 42.37) * scale).toFixed(2));
+  const rawMax = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax || 182.50) * scale).toFixed(2));
 
-  // Precise 90th percentile value calculation
+  // Mathematically guaranteed ordered quantile anchors: Q(0) <= Q(0.05) <= Q(0.50) <= Q(0.95) <= Q(1.00)
+  const q0 = Math.max(0, rawMin);
+  const q5 = Math.max(q0, rawP5);
+  // Median (50th percentile) is typically 80-90% of trimmed mean evMid90 in right-skewed pack EV distributions
+  const rawMedian = (activeBooster?.evMid90 ? activeBooster.evMid90 * 0.88 : (activeBooster?.evAverage || 9.34) * 0.82) * scale;
+  const q50 = isPreconstructed
+    ? fixedDeckEv
+    : Math.max(q5 + 0.01, Math.min(Math.max(q5 + 0.05, rawP95 - 0.05), rawMedian));
+  const q95 = isPreconstructed ? fixedDeckEv : Math.max(q50 + 0.05, rawP95);
+  const q100 = isPreconstructed ? fixedDeckEv : Math.max(q95 + 0.05, rawMax);
+
+  // Precise 90th percentile value calculation (strictly bounded between median and 95th percentile)
   const p90Value = useMemo(() => {
     if (isPreconstructed) return fixedDeckEv;
-    return Number((midVal * 1.55).toFixed(2));
-  }, [isPreconstructed, fixedDeckEv, midVal]);
+    const subT = (0.90 - 0.50) / 0.45;
+    return Number((q50 + Math.pow(subT, 1.25) * (q95 - q50)).toFixed(2));
+  }, [isPreconstructed, fixedDeckEv, q50, q95]);
 
   // Default optimal Y-axis ceiling
   const defaultYCeiling = useMemo(() => {
@@ -97,9 +109,10 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
   const [visibleVendors, setVisibleVendors] = useState({
     all: true,
+    all_average: true,
     tcgplayer: true,
-    cardkingdom: true,
     cardmarket: true,
+    cardkingdom: true,
     manapool: true,
   });
 
@@ -108,59 +121,71 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   };
 
   // Generate 101 percentile data points (0% to 100%)
-  // For preconstructed decks, all percentiles are 100% constant / flat because contents do not vary.
+  // Quantile functions are mathematically monotonic (non-decreasing).
   const allCurveData = useMemo(() => {
-    const points = [];
+    const rawPoints: { percentile: string; percentileNum: number; baseVal: number }[] = [];
     for (let p = 0; p <= 100; p += 1) {
       const t = p / 100; // 0.0 to 1.0
 
-      let baseTcgVal: number;
+      let baseVal: number;
       if (isPreconstructed) {
         // Deterministic fixed cardlist value across all percentiles
-        baseTcgVal = fixedDeckEv;
+        baseVal = fixedDeckEv;
       } else {
-        // Realistic MTG Piecewise Quantile Curve (Log-normal / Pareto tail)
+        // Realistic MTG Piecewise Quantile Curve (Monotonically non-decreasing)
         if (t <= 0.05) {
           const subT = t / 0.05;
-          baseTcgVal = minVal + subT * (p5Val - minVal);
+          baseVal = q0 + subT * (q5 - q0);
         } else if (t <= 0.50) {
           const subT = (t - 0.05) / 0.45;
-          const medianVal = midVal * 0.82;
-          baseTcgVal = p5Val + Math.pow(subT, 0.85) * (medianVal - p5Val);
-        } else if (t <= 0.90) {
-          const subT = (t - 0.50) / 0.40;
-          const medianVal = midVal * 0.82;
-          const p90Val = p90Value;
-          baseTcgVal = medianVal + Math.pow(subT, 1.2) * (p90Val - medianVal);
+          baseVal = q5 + Math.pow(subT, 0.9) * (q50 - q5);
         } else if (t <= 0.95) {
-          const subT = (t - 0.90) / 0.05;
-          const p90Val = p90Value;
-          baseTcgVal = p90Val + Math.pow(subT, 1.4) * (p95Val - p90Val);
+          // Smooth progression from 50th percentile (median) up to 95th percentile
+          // Resolves the previous artifact where an unconstrained p90 exceeded p95 and dropped
+          const subT = (t - 0.50) / 0.45;
+          baseVal = q50 + Math.pow(subT, 1.25) * (q95 - q50);
         } else {
+          // Pareto tail for chase cards in top 5% of packs
           const subT = (t - 0.95) / 0.05;
-          baseTcgVal = p95Val + Math.pow(subT, 2.5) * (maxVal - p95Val);
+          baseVal = q95 + Math.pow(subT, 2.4) * (q100 - q95);
         }
       }
 
-      // Vendor adjustments
-      const tcgVal = Number(baseTcgVal.toFixed(2));
-      const ckVal = Number((baseTcgVal * 1.08).toFixed(2));
-      const cmVal = Number((baseTcgVal * 0.92).toFixed(2));
-      const mpVal = Number((baseTcgVal * 0.96).toFixed(2));
-      const allVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
-
-      points.push({
+      rawPoints.push({
         percentile: `${p}%`,
         percentileNum: p,
-        All: allVal,
-        tcgplayer: tcgVal,
-        cardkingdom: ckVal,
-        cardmarket: cmVal,
-        manapool: mpVal,
+        baseVal,
       });
     }
-    return points;
-  }, [isPreconstructed, fixedDeckEv, minVal, p5Val, midVal, p90Value, p95Val, maxVal]);
+
+    // Guarantee strict mathematical monotonicity across all 101 percentiles (the curve only goes up)
+    let runningMax = 0;
+    return rawPoints.map((pt) => {
+      if (pt.baseVal < runningMax) {
+        pt.baseVal = runningMax;
+      } else {
+        runningMax = pt.baseVal;
+      }
+
+      const tcgVal = Number(pt.baseVal.toFixed(2));
+      const ckVal = Number((pt.baseVal * 1.08).toFixed(2));
+      const cmVal = Number((pt.baseVal * 0.92).toFixed(2));
+      const mpVal = Number((pt.baseVal * 0.96).toFixed(2));
+      const allCheapestVal = Math.min(tcgVal, ckVal, cmVal, mpVal);
+      const allAvgVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+
+      return {
+        percentile: pt.percentile,
+        percentileNum: pt.percentileNum,
+        all: allCheapestVal,
+        all_average: allAvgVal,
+        tcgplayer: tcgVal,
+        cardmarket: cmVal,
+        cardkingdom: ckVal,
+        manapool: mpVal,
+      };
+    });
+  }, [isPreconstructed, fixedDeckEv, q0, q5, q50, q95, q100]);
 
   // Filtered curve data for X-Axis Slider Range
   const filteredCurveData = useMemo(() => {
@@ -172,12 +197,19 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   // Scaled Vendor Averages for reference lines
   const scaledAverages = useMemo(() => {
     const baseAvg = isPreconstructed ? fixedDeckEv : (activeBooster?.evAverage || 9.34) * scale;
+    const tcgAvg = Number(baseAvg.toFixed(2));
+    const ckAvg = Number((baseAvg * 1.08).toFixed(2));
+    const cmAvg = Number((baseAvg * 0.92).toFixed(2));
+    const mpAvg = Number((baseAvg * 0.96).toFixed(2));
+    const cheapestAvg = Math.min(tcgAvg, ckAvg, cmAvg, mpAvg);
+    const averageAvg = Number(((tcgAvg + ckAvg + cmAvg + mpAvg) / 4).toFixed(2));
     return {
-      all: Number(baseAvg.toFixed(2)),
-      tcgplayer: Number(baseAvg.toFixed(2)),
-      cardkingdom: Number((baseAvg * 1.08).toFixed(2)),
-      cardmarket: Number((baseAvg * 0.92).toFixed(2)),
-      manapool: Number((baseAvg * 0.96).toFixed(2)),
+      all: cheapestAvg,
+      all_average: averageAvg,
+      tcgplayer: tcgAvg,
+      cardmarket: cmAvg,
+      cardkingdom: ckAvg,
+      manapool: mpAvg,
     };
   }, [isPreconstructed, fixedDeckEv, activeBooster, scale]);
 
@@ -244,7 +276,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const sliderYMin = isPreconstructed ? Math.max(5, Math.floor(Math.min(fixedDeckEv, sealedPrice) * 0.5)) : (scale > 1 ? 20 : 6);
   const sliderYMax = isPreconstructed
     ? Math.ceil(Math.max(fixedDeckEv * 1.75, sealedPrice * 1.75))
-    : Math.ceil(Math.max(maxVal * 1.1, sealedPrice * 1.25));
+    : Math.ceil(Math.max(q100 * 1.1, sealedPrice * 1.25));
 
   return (
     <div
@@ -392,62 +424,79 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       {/* Control Toggles & Breakeven Analytics Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* Vendor Toggles */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div id="pack-curve-vendor-toggles" className="flex flex-wrap items-center gap-2">
           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider mr-1">Vendors:</span>
 
           <button
+            id="toggle-curve-vendor-all"
             onClick={() => toggleVendor('all')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
               visibleVendors.all
                 ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200 line-through'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
             }`}
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> All Consensus
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> All vendors ( cheapest )
           </button>
 
           <button
+            id="toggle-curve-vendor-all-average"
+            onClick={() => toggleVendor('all_average')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              visibleVendors.all_average
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-xs'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" /> All vendors ( average )
+          </button>
+
+          <button
+            id="toggle-curve-vendor-tcgplayer"
             onClick={() => toggleVendor('tcgplayer')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
               visibleVendors.tcgplayer
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200 line-through'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
             }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" /> TCGplayer
           </button>
 
           <button
+            id="toggle-curve-vendor-cardmarket"
+            onClick={() => toggleVendor('cardmarket')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              visibleVendors.cardmarket
+                ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-xs'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Cardmarket
+          </button>
+
+          <button
+            id="toggle-curve-vendor-cardkingdom"
             onClick={() => toggleVendor('cardkingdom')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
               visibleVendors.cardkingdom
                 ? 'bg-orange-50 text-orange-700 border-orange-200 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200 line-through'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
             }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block" /> Card Kingdom
           </button>
 
           <button
-            onClick={() => toggleVendor('cardmarket')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-              visibleVendors.cardmarket
-                ? 'bg-yellow-50 text-yellow-800 border-yellow-300 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200 line-through'
-            }`}
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block" /> Cardmarket (EUR)
-          </button>
-
-          <button
+            id="toggle-curve-vendor-manapool"
             onClick={() => toggleVendor('manapool')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
               visibleVendors.manapool
                 ? 'bg-rose-50 text-rose-800 border-rose-200 shadow-xs'
-                : 'bg-slate-50 text-slate-400 border-slate-200 line-through'
+                : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
             }`}
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-800 inline-block" /> ManaPool
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-700 inline-block" /> Manapool
           </button>
         </div>
 
@@ -561,12 +610,23 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             {visibleVendors.all && (
               <Line
                 type={isPreconstructed ? 'linear' : 'monotone'}
-                dataKey="All"
+                dataKey="all"
                 stroke="#2563eb"
                 strokeWidth={2.4}
                 dot={false}
                 activeDot={{ r: 5 }}
-                name="All Consensus"
+                name="All vendors ( cheapest )"
+              />
+            )}
+            {visibleVendors.all_average && (
+              <Line
+                type={isPreconstructed ? 'linear' : 'monotone'}
+                dataKey="all_average"
+                stroke="#6366f1"
+                strokeWidth={2.2}
+                dot={false}
+                activeDot={{ r: 5 }}
+                name="All vendors ( average )"
               />
             )}
             {visibleVendors.tcgplayer && (
@@ -580,17 +640,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 name="TCGplayer"
               />
             )}
-            {visibleVendors.cardkingdom && (
-              <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
-                dataKey="cardkingdom"
-                stroke="#ea580c"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 5 }}
-                name="Card Kingdom"
-              />
-            )}
             {visibleVendors.cardmarket && (
               <Line
                 type={isPreconstructed ? 'linear' : 'monotone'}
@@ -602,15 +651,26 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 name="Cardmarket"
               />
             )}
+            {visibleVendors.cardkingdom && (
+              <Line
+                type={isPreconstructed ? 'linear' : 'monotone'}
+                dataKey="cardkingdom"
+                stroke="#ea580c"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 5 }}
+                name="Card Kingdom"
+              />
+            )}
             {visibleVendors.manapool && (
               <Line
                 type={isPreconstructed ? 'linear' : 'monotone'}
                 dataKey="manapool"
-                stroke="#991b1b"
+                stroke="#be123c"
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 5 }}
-                name="ManaPool"
+                name="Manapool"
               />
             )}
 
@@ -622,8 +682,22 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `All Avg: $${scaledAverages.all.toFixed(2)}`,
+                  value: `Cheapest Avg: $${scaledAverages.all.toFixed(2)}`,
                   fill: '#2563eb',
+                  fontSize: 10,
+                  position: 'insideBottomLeft',
+                }}
+              />
+            )}
+            {showAverages && visibleVendors.all_average && (
+              <ReferenceLine
+                y={scaledAverages.all_average}
+                stroke="#6366f1"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `All Avg: $${scaledAverages.all_average.toFixed(2)}`,
+                  fill: '#6366f1',
                   fontSize: 10,
                   position: 'insideBottomLeft',
                 }}
@@ -643,6 +717,20 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 }}
               />
             )}
+            {showAverages && visibleVendors.cardmarket && (
+              <ReferenceLine
+                y={scaledAverages.cardmarket}
+                stroke="#eab308"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `CM Singles: $${scaledAverages.cardmarket.toFixed(2)}`,
+                  fill: '#ca8a04',
+                  fontSize: 10,
+                  position: 'insideBottomLeft',
+                }}
+              />
+            )}
             {showAverages && visibleVendors.cardkingdom && (
               <ReferenceLine
                 y={scaledAverages.cardkingdom}
@@ -652,6 +740,20 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 label={{
                   value: `CK Singles: $${scaledAverages.cardkingdom.toFixed(2)}`,
                   fill: '#ea580c',
+                  fontSize: 10,
+                  position: 'insideBottomLeft',
+                }}
+              />
+            )}
+            {showAverages && visibleVendors.manapool && (
+              <ReferenceLine
+                y={scaledAverages.manapool}
+                stroke="#be123c"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `Manapool Singles: $${scaledAverages.manapool.toFixed(2)}`,
+                  fill: '#be123c',
                   fontSize: 10,
                   position: 'insideBottomLeft',
                 }}

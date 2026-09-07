@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor } from '../types';
+import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord } from '../types';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { calculateEvScore, getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
+import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -33,6 +34,7 @@ interface ArbitrageLeaderboardProps {
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
   onVendorChange: (vendor: Vendor) => void;
+  boosterEvMap?: Record<string, BoosterEVRecord[]>;
 }
 
 export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
@@ -42,6 +44,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   onPriceModeChange,
   vendor,
   onVendorChange,
+  boosterEvMap,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
@@ -86,30 +89,47 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
   const adjustedRecords = useMemo(() => {
-    // Pricing multipliers based on priceMode & vendor
     const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-
-    const vendorSettings = {
-      all: { priceMult: 1.0, evMult: 1.0 },
-      tcgplayer: { priceMult: 1.0, evMult: 0.98 },
-      cardmarket: { priceMult: 0.91, evMult: 0.94 }, // European market conversion & lower fee
-      cardkingdom: { priceMult: 1.10, evMult: 1.05 }, // Higher retail singles premium
-    }[vendor] || { priceMult: 1.0, evMult: 1.0 };
+    const normVendor = normalizeVendor(vendor);
 
     return records.map((r) => {
-      const rawMin = typeof r.unitEvMin === 'number' && r.unitEvMin > 0 ? r.unitEvMin : (r.unitEvAvg > 0 ? r.unitEvAvg * 0.15 : 0);
-      const rawMax = typeof r.unitEvMax === 'number' && r.unitEvMax > 0 ? r.unitEvMax : (r.unitEvAvg > 0 ? r.unitEvAvg * 4.5 : 0);
+      // Market price is always the authentic sealed market price collected from TCGplayer (never scaled by vendor)
+      const adjustedBoxPrice = r.marketPrice;
 
-      const adjustedPackMin = rawMin * reprintMultiplier * vendorSettings.evMult;
-      const adjustedPackEv = r.unitEvAvg * reprintMultiplier * vendorSettings.evMult;
-      const adjustedPackMid90 = r.unitEvMid90 * reprintMultiplier * vendorSettings.evMult;
-      const adjustedPackMax = rawMax * reprintMultiplier * vendorSettings.evMult;
-      const adjustedBoxPrice = r.marketPrice * vendorSettings.priceMult;
+      let adjustedPackMin = 0;
+      let adjustedPackEv = 0;
+      let adjustedPackMid90 = 0;
+      let adjustedPackMax = 0;
+
+      if (r.packCount > 0) {
+        const foundEv = boosterEvMap ? findBoosterEv(boosterEvMap, r.setCode, r.boosterName, priceMode, normVendor) : undefined;
+        if (foundEv) {
+          adjustedPackMin = foundEv.evMin;
+          adjustedPackEv = foundEv.evAverage;
+          adjustedPackMid90 = foundEv.evMid90;
+          adjustedPackMax = foundEv.evMax;
+        } else {
+          // Vendor-specific EV ratio based on authentic market data without simulated seller fees
+          const vendorEvRatio =
+            normVendor === 'cardmarket' ? 0.868 :
+            normVendor === 'cardkingdom' ? 1.15 :
+            normVendor === 'manapool' ? 0.98 :
+            1.0;
+
+          const rawMin = typeof r.unitEvMin === 'number' && r.unitEvMin > 0 ? r.unitEvMin : (r.unitEvAvg > 0 ? r.unitEvAvg * 0.15 : 0);
+          const rawMax = typeof r.unitEvMax === 'number' && r.unitEvMax > 0 ? r.unitEvMax : (r.unitEvAvg > 0 ? r.unitEvAvg * 4.5 : 0);
+
+          adjustedPackMin = rawMin * reprintMultiplier * vendorEvRatio;
+          adjustedPackEv = r.unitEvAvg * reprintMultiplier * vendorEvRatio;
+          adjustedPackMid90 = r.unitEvMid90 * reprintMultiplier * vendorEvRatio;
+          adjustedPackMax = rawMax * reprintMultiplier * vendorEvRatio;
+        }
+      }
 
       let baseCardEv = r.totalEvAvg;
       if (r.packCount === 0 && r.contents?.card && Array.isArray(r.contents.card)) {
         const vendorCardSum = r.contents.card.reduce((sum: number, cd: any) => {
-          const p = cd.prices?.[vendor] ?? (vendor === 'all' ? (cd.prices?.all ?? cd.prices?.tcgplayer) : (cd.prices?.[vendor] ?? cd.prices?.tcgplayer));
+          const p = resolveCardPrice(cd, normVendor, cd.foil);
           return sum + (typeof p === 'number' && p > 0 ? p : 0);
         }, 0);
         if (vendorCardSum > 0) {
@@ -123,6 +143,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
       const adjustedBoxMax = r.packCount > 0 ? adjustedPackMax * r.packCount : baseCardEv * reprintMultiplier;
       
       // Calculate Profit/Loss and ROI based on selected EV Calculation Basis (Min, Mid90, Avg, Max)
+      // Pure expected arbitrage calculation without simulated platform fee deductions
       const effectiveEv =
         evBasis === 'min'
           ? adjustedBoxMin
@@ -162,7 +183,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         roiPct,
       };
     });
-  }, [records, priceMode, vendor, evBasis]);
+  }, [records, priceMode, vendor, evBasis, boosterEvMap]);
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;
@@ -774,10 +795,12 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
               onChange={(e) => onVendorChange(e.target.value as Vendor)}
               className="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-xs cursor-pointer"
             >
-              <option value="all">All Vendors (Cheapest Available)</option>
-              <option value="tcgplayer">TCGplayer Live Market (12.5% Fee)</option>
-              <option value="cardmarket">Cardmarket (EUR / 5% Fee)</option>
-              <option value="cardkingdom">Card Kingdom (Retail Spread)</option>
+              <option value="all">All vendors ( cheapest )</option>
+              <option value="all_average">All vendors ( average )</option>
+              <option value="tcgplayer">TCGplayer</option>
+              <option value="cardmarket">Cardmarket</option>
+              <option value="cardkingdom">Card Kingdom</option>
+              <option value="manapool">Manapool</option>
             </select>
           </div>
         </div>

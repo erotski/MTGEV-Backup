@@ -17,20 +17,24 @@ BOOSTER_ALIASES = {
 }
 
 
-def get_pack_ev(booster_ev_lookup, set_code, booster_code):
-    """Look up a booster_ev.json row for a given (set, booster type), trying the most
-    specific vendor/priceMode combination first before falling back to broader rows."""
+def get_pack_ev(booster_ev_lookup, set_code, booster_code, vendor="tcgplayer", price_mode="direct"):
+    """Look up a booster_ev.json row for a given (set, booster type), trying the requested
+    vendor/priceMode combination first before falling back to broader rows."""
     s_code = (set_code or "").lower()
     b_key = BOOSTER_ALIASES.get((booster_code or "").lower(), (booster_code or "").lower())
+    v_key = (vendor or "tcgplayer").lower()
+    p_key = (price_mode or "direct").lower()
 
     return (
-        booster_ev_lookup.get((s_code, b_key, "direct", "tcgplayer"))
-        or booster_ev_lookup.get((s_code, b_key, "direct", "all"))
-        or booster_ev_lookup.get((s_code, "default", "direct", "tcgplayer"))
+        booster_ev_lookup.get((s_code, b_key, p_key, v_key))
+        or booster_ev_lookup.get((s_code, b_key, p_key, "tcgplayer"))
+        or booster_ev_lookup.get((s_code, b_key, p_key, "all"))
+        or booster_ev_lookup.get((s_code, "default", p_key, v_key))
+        or booster_ev_lookup.get((s_code, "default", p_key, "tcgplayer"))
     )
 
 
-def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_decks, single_prices, depth=0, visited=None):
+def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_decks, single_prices, depth=0, visited=None, vendor="tcgplayer", price_mode="direct"):
     """Recursively resolve a sealed product's total pack/card count and EV (avg/min/mid90/max)
     from its MTGJSON `contents` (sealed sub-products, packs, cards, decks)."""
     if visited is None:
@@ -56,7 +60,7 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
             suuid = s.get("uuid")
             sub_prod = product_map.get(suuid)
             if sub_prod:
-                res = evaluate_product_composite(sub_prod, product_map, booster_ev_lookup, precon_decks, single_prices, depth + 1, visited.copy())
+                res = evaluate_product_composite(sub_prod, product_map, booster_ev_lookup, precon_decks, single_prices, depth + 1, visited.copy(), vendor=vendor, price_mode=price_mode)
                 total_packs += scnt * res["packs"]
                 total_cards += scnt * res["cards"]
                 if res.get("boosterName") and res["boosterName"] not in ["draft", "custom", "deck"]:
@@ -77,7 +81,7 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
             else:
                 sname = (s.get("name") or "").lower()
                 sset = (s.get("set") or prod.get("setCode") or "").lower()
-                ev_row = get_pack_ev(booster_ev_lookup, sset, "draft")
+                ev_row = get_pack_ev(booster_ev_lookup, sset, "draft", vendor=vendor, price_mode=price_mode)
                 if ev_row and ("pack" in sname or "booster" in sname):
                     p_ev = float(ev_row.get("evAverage", 0) or 0)
                     ev_avg += scnt * p_ev
@@ -95,7 +99,7 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
             pcnt = int(pk.get("count", 1) or 1)
             pcode = pk.get("code") or "draft"
             pset = pk.get("set") or prod.get("setCode") or ""
-            ev_row = get_pack_ev(booster_ev_lookup, pset, pcode)
+            ev_row = get_pack_ev(booster_ev_lookup, pset, pcode, vendor=vendor, price_mode=price_mode)
             if ev_row:
                 p_ev = float(ev_row.get("evAverage", 0) or 0)
                 ev_avg += pcnt * p_ev
@@ -128,7 +132,14 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
 
             if card_info:
                 is_foil = cd.get("foil", False) or "foil" in (cd.get("finishes") or [])
-                card_val = float(card_info.get("foilPrice" if is_foil else "price", 0.0) or 0.0)
+                prices_dict = card_info.get("prices") or {}
+                if vendor in prices_dict:
+                    card_val = float(prices_dict[vendor] or 0.0)
+                elif vendor == "all_average" and prices_dict:
+                    v_prices = [float(v) for k, v in prices_dict.items() if k in ("tcgplayer", "cardmarket", "cardkingdom", "manapool") and float(v) > 0]
+                    card_val = sum(v_prices) / len(v_prices) if v_prices else float(card_info.get("price", 0.0) or 0.0)
+                else:
+                    card_val = float(card_info.get("foilPrice" if is_foil else "price", 0.0) or 0.0)
             elif cd.get("price"):
                 card_val = float(cd.get("price") or 0.0)
 
@@ -201,7 +212,7 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
             total_packs = packs
             total_cards = packs * 15
 
-            ev_row = get_pack_ev(booster_ev_lookup, s_code, b_key)
+            ev_row = get_pack_ev(booster_ev_lookup, s_code, b_key, vendor=vendor, price_mode=price_mode)
             if ev_row:
                 p_ev = float(ev_row.get("evAverage", 0) or 0)
                 ev_avg = packs * p_ev

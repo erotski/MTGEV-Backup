@@ -30,9 +30,10 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
-import { BoxArbitrageRecord, BoosterEVRecord } from '../types';
+import { BoxArbitrageRecord, BoosterEVRecord, Vendor, PriceMode } from '../types';
 import { ProductBreakdownModal } from './ProductBreakdownModal';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
+import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
 
 export interface SealedProductItem {
   id: string;
@@ -108,7 +109,28 @@ function findPreconDeck(
   return undefined;
 }
 
-export const ProductHierarchyInspector: React.FC = () => {
+export interface ProductHierarchyInspectorProps {
+  vendor?: Vendor;
+  onVendorChange?: (vendor: Vendor) => void;
+  priceMode?: PriceMode;
+  onPriceModeChange?: (mode: PriceMode) => void;
+}
+
+export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps> = ({
+  vendor: externalVendor,
+  onVendorChange: externalOnVendorChange,
+  priceMode: externalPriceMode,
+  onPriceModeChange: externalOnPriceModeChange,
+}) => {
+  const [internalVendor, setInternalVendor] = useState<Vendor>('all');
+  const vendor = externalVendor || internalVendor;
+  const onVendorChange = externalOnVendorChange || setInternalVendor;
+
+  const [internalPriceMode, setInternalPriceMode] = useState<PriceMode>('direct');
+  const priceMode = externalPriceMode || internalPriceMode;
+  const onPriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
+
   const [sealedProducts, setSealedProducts] = useState<SealedProductItem[]>([]);
   const [arbitrageMap, setArbitrageMap] = useState<Record<string, BoxArbitrageRecord>>({});
   const [preconDecks, setPreconDecks] = useState<Record<string, any>>({});
@@ -316,6 +338,12 @@ export const ProductHierarchyInspector: React.FC = () => {
       };
     }
 
+    // Resolve EV according to chosen vendor without artificial fee deductions
+    const resolvedVendorPrice = resolveCardPrice({ prices, ...fromIndex, ...cd }, vendor, isFoil);
+    if (resolvedVendorPrice > 0) {
+      unitEv = Number((resolvedVendorPrice * reprintMultiplier).toFixed(2));
+    }
+
     return {
       name,
       number: cd.number || '',
@@ -337,11 +365,21 @@ export const ProductHierarchyInspector: React.FC = () => {
     const pkSet = (pk.set || parentSetCode || '').toUpperCase();
     const pkCode = (pk.code || 'play').toLowerCase();
 
-    // 1. Pack EV from boosterEvMap
+    // 1. Pack EV from boosterEvMap with vendor and priceMode resolution
+    const normVendor = normalizeVendor(vendor);
     const setBoosters = boosterEvMap[pkSet] || [];
-    let matchedBooster = setBoosters.find(
-      (b) => b.boosterName.toLowerCase() === pkCode
-    );
+    let matchedBooster = findBoosterEv(boosterEvMap, pkSet, pkCode, priceMode, normVendor);
+
+    if (!matchedBooster) {
+      matchedBooster = setBoosters.find(
+        (b) => b.boosterName.toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
+      );
+    }
+    if (!matchedBooster) {
+      matchedBooster = setBoosters.find(
+        (b) => b.boosterName.toLowerCase() === pkCode
+      );
+    }
 
     // Common alias fallback (e.g. 'draft' vs 'default', 'collector-sample', 'fin-elementals')
     if (!matchedBooster) {
@@ -370,10 +408,17 @@ export const ProductHierarchyInspector: React.FC = () => {
       }
     }
 
-    const unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
-    const unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
-    const unitEvMin = matchedBooster ? matchedBooster.evMin : 0;
-    const unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
+    let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
+    let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
+    let unitEvMin = matchedBooster ? matchedBooster.evMin : 0;
+    let unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
+
+    if (matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint' && priceMode === 'cheapest_reprint') {
+      unitEvAvg = Number((unitEvAvg * reprintMultiplier).toFixed(2));
+      unitEvMid90 = Number((unitEvMid90 * reprintMultiplier).toFixed(2));
+      unitEvMin = Number((unitEvMin * reprintMultiplier).toFixed(2));
+      unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
+    }
 
     return {
       setCode: pkSet,
@@ -391,7 +436,7 @@ export const ProductHierarchyInspector: React.FC = () => {
       const uid = prod.id || prod.uuid || '';
       const directArb = arbitrageMap[uid];
       if (directArb && directArb.totalEvAvg > 0) {
-        return Number((directArb.totalEvAvg * multiplier).toFixed(2));
+        return Number((directArb.totalEvAvg * reprintMultiplier * multiplier).toFixed(2));
       }
       if (!prod.contents) return 0;
 
@@ -445,9 +490,14 @@ export const ProductHierarchyInspector: React.FC = () => {
                 else if (c.foilPrice) price = c.foilPrice;
                 else if (price > 0 && !c.foil) price = Number((price * 1.5).toFixed(2));
               }
-              return sum + price * (c.count || 1);
+              const cardPrice = Number((price * reprintMultiplier).toFixed(2));
+              return sum + cardPrice * (c.count || 1);
             }, 0);
-            if (cardSum > 0) deckEv = cardSum;
+            if (cardSum > 0) {
+              deckEv = cardSum;
+            } else if (deckEv > 0 && priceMode === 'cheapest_reprint') {
+              deckEv = Number((deckEv * reprintMultiplier).toFixed(2));
+            }
           }
           total += count * deckEv;
         });
@@ -483,7 +533,7 @@ export const ProductHierarchyInspector: React.FC = () => {
             if (cfg.deck) {
               cfg.deck.forEach((dk: any) => {
                 const matched = findPreconDeck(preconDecks, dk.name, dk.set || prod.setCode);
-                cfgEv += matched?.totalSinglesEv || 0;
+                cfgEv += (matched?.totalSinglesEv || 0) * reprintMultiplier;
               });
             }
             total += prob * cfgEv * multiplier;
@@ -504,7 +554,7 @@ export const ProductHierarchyInspector: React.FC = () => {
 
       return Number(total.toFixed(2));
     },
-    [arbitrageMap, preconDecks, productMap, singleCardPrices, boosterEvMap]
+    [arbitrageMap, preconDecks, productMap, singleCardPrices, boosterEvMap, vendor, priceMode, reprintMultiplier]
   );
 
   // Filter products
@@ -655,7 +705,7 @@ export const ProductHierarchyInspector: React.FC = () => {
 
         let unitEv = 0;
         if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = childArb.totalEvAvg;
+          unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
         } else if (childProd) {
           unitEv = computeProductContentsEv(childProd);
         }
@@ -731,17 +781,21 @@ export const ProductHierarchyInspector: React.FC = () => {
             }
           }
           const cCount = c.count || 1;
+          const adjustedPrice = Number((price * reprintMultiplier).toFixed(2));
           return {
             ...c,
             foil: cardFoil,
             isFoil: cardFoil,
             finish: cardFoil ? 'Foil' : 'Nonfoil',
-            price,
-            totalPrice: Number((price * cCount).toFixed(2)),
+            price: adjustedPrice,
+            totalPrice: Number((adjustedPrice * cCount).toFixed(2)),
           };
         });
 
         let singlesEv = matchedDeck?.totalSinglesEv || 0;
+        if (priceMode === 'cheapest_reprint' && singlesEv > 0) {
+          singlesEv = Number((singlesEv * reprintMultiplier).toFixed(2));
+        }
         if (cards.length > 0) {
           const calculatedCardSum = Number(
             cards.reduce((sum: number, c: any) => sum + (c.totalPrice || c.price || 0), 0).toFixed(2)
@@ -850,7 +904,7 @@ export const ProductHierarchyInspector: React.FC = () => {
           if (cfg.deck) {
             cfg.deck.forEach((dk: any) => {
               const matched = findPreconDeck(preconDecks, dk.name, dk.set || selectedProduct.setCode);
-              const dEv = matched?.totalSinglesEv || 0;
+              const dEv = (matched?.totalSinglesEv || 0) * reprintMultiplier;
               configEv += dEv;
               items.push({
                 type: 'deck',
@@ -921,7 +975,7 @@ export const ProductHierarchyInspector: React.FC = () => {
     const calculatedTotalEv = Number((totalPackEv + totalCardsEv + totalSealedEv + totalDeckEv + totalVariableEv).toFixed(2));
     const statedMarketPrice = selectedProduct.marketPrice || 0;
     const hasCalculatedEv = (arb && arb.totalEvAvg > 0) || calculatedTotalEv > 0;
-    const finalEv = arb && arb.totalEvAvg > 0 ? arb.totalEvAvg : calculatedTotalEv;
+    const finalEv = arb && arb.totalEvAvg > 0 ? Number((arb.totalEvAvg * reprintMultiplier).toFixed(2)) : calculatedTotalEv;
     const netSpread = hasCalculatedEv ? Number((finalEv - statedMarketPrice).toFixed(2)) : 0;
     const roiPct = (hasCalculatedEv && statedMarketPrice > 0) ? Number(((netSpread / statedMarketPrice) * 100).toFixed(1)) : 0;
 
@@ -944,7 +998,7 @@ export const ProductHierarchyInspector: React.FC = () => {
       netSpread,
       roiPct,
     };
-  }, [selectedProduct, arbitrageMap, productMap, preconDecks, boosterEvMap, singleCardPrices, computeProductContentsEv]);
+  }, [selectedProduct, arbitrageMap, productMap, preconDecks, boosterEvMap, singleCardPrices, computeProductContentsEv, vendor, priceMode, reprintMultiplier]);
 
   // Recursive Tree Node Renderer for Product Contents
   const renderProductTree = (
@@ -1854,10 +1908,11 @@ export const ProductHierarchyInspector: React.FC = () => {
             </div>
 
             {/* Filters Row */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Set Code</label>
                 <select
+                  id="admin-hierarchy-set-select"
                   value={selectedSet}
                   onChange={(e) => setSelectedSet(e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:outline-none"
@@ -1874,6 +1929,7 @@ export const ProductHierarchyInspector: React.FC = () => {
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase">Category</label>
                 <select
+                  id="admin-hierarchy-category-select"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:outline-none capitalize"
@@ -1884,6 +1940,36 @@ export const ProductHierarchyInspector: React.FC = () => {
                       {c.replace(/_/g, ' ')}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Pricing Vendor</label>
+                <select
+                  id="admin-hierarchy-vendor-select"
+                  value={vendor}
+                  onChange={(e) => onVendorChange(e.target.value as Vendor)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All vendors ( cheapest )</option>
+                  <option value="all_average">All vendors ( average )</option>
+                  <option value="tcgplayer">TCGplayer</option>
+                  <option value="cardmarket">Cardmarket</option>
+                  <option value="cardkingdom">Card Kingdom</option>
+                  <option value="manapool">Manapool</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Price Mode</label>
+                <select
+                  id="admin-hierarchy-price-mode-select"
+                  value={priceMode}
+                  onChange={(e) => onPriceModeChange(e.target.value as PriceMode)}
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  <option value="direct">Direct Print</option>
+                  <option value="cheapest_reprint">Cheapest Reprint</option>
                 </select>
               </div>
             </div>
@@ -1986,7 +2072,7 @@ export const ProductHierarchyInspector: React.FC = () => {
                         </div>
                         {arb && (
                           <div className="font-mono text-[10px] text-amber-600 font-bold">
-                            EV: ${Number(arb.totalEvAvg || 0).toFixed(2)}
+                            EV: ${Number((arb.totalEvAvg || 0) * reprintMultiplier).toFixed(2)}
                           </div>
                         )}
                       </div>
@@ -2031,24 +2117,50 @@ export const ProductHierarchyInspector: React.FC = () => {
                     </div>
                   </div>
 
-                                    {/* View Mode Toggle */}
-                  <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-                    <button
-                      onClick={() => setViewMode('visual_tree')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        viewMode === 'visual_tree' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                      }`}
-                    >
-                      Visual Tree
-                    </button>
-                    <button
-                      onClick={() => setViewMode('raw_json')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        viewMode === 'raw_json' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                      }`}
-                    >
-                      Raw MTGJSON
-                    </button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Price Mode Pill Toggle */}
+                    <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        id="admin-hierarchy-mode-direct-pill"
+                        onClick={() => onPriceModeChange('direct')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          priceMode === 'direct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Direct Print
+                      </button>
+                      <button
+                        type="button"
+                        id="admin-hierarchy-mode-reprint-pill"
+                        onClick={() => onPriceModeChange('cheapest_reprint')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          priceMode === 'cheapest_reprint' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Cheapest Reprint
+                      </button>
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                      <button
+                        onClick={() => setViewMode('visual_tree')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          viewMode === 'visual_tree' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                        }`}
+                      >
+                        Visual Tree
+                      </button>
+                      <button
+                        onClick={() => setViewMode('raw_json')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          viewMode === 'raw_json' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                        }`}
+                      >
+                        Raw MTGJSON
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2077,7 +2189,7 @@ export const ProductHierarchyInspector: React.FC = () => {
                         packagingType: p.category as any,
                         boosterName: 'default' as any,
                         marketPrice: p.marketPrice || 0,
-                        estimatedEv: matchedDeck?.totalSinglesEv || arb?.totalEvAvg || (p.marketPrice ? p.marketPrice * 1.15 : 0),
+                        estimatedEv: (matchedDeck?.totalSinglesEv || arb?.totalEvAvg || (p.marketPrice ? p.marketPrice * 1.15 : 0)) * reprintMultiplier,
                         packsCount: arb?.packCount || (p.contents?.pack ? p.contents.pack.reduce((sum, pk) => sum + (pk.count || 1), 0) : 0),
                         cardCount: p.cardCount || matchedDeck?.cardCount || 0,
                         rawCategory: p.category,
@@ -2504,6 +2616,8 @@ export const ProductHierarchyInspector: React.FC = () => {
         product={breakdownProduct}
         isOpen={Boolean(breakdownProduct)}
         onClose={() => setBreakdownProduct(null)}
+        priceMode={priceMode}
+        vendor={vendor}
       />
     </div>
   );

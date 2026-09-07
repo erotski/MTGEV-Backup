@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo } from '../types';
 import { dataService } from '../services/dataService';
+import { normalizeVendor } from '../utils/vendorUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
   ShieldCheck, 
@@ -65,13 +66,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // Calculate dynamically adjusted booster records based on priceMode & vendor
   const rawSetBoosters = boosterRecords.filter((b) => b.setCode === selectedSetCode);
   const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-  // No real per-vendor sealed product price data exists, so market prices for static/db
-  // catalog entries still use an approximate adjustment. Booster EV itself uses the exact
-  // per-vendor simulated row below instead of an approximation.
-  const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
-  // Approximation used only for pre-baked estimatedEv fields (static catalog/db products)
-  // that don't have real per-vendor Monte Carlo rows to look up.
-  const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
+  const normVendor = normalizeVendor(vendor);
+  const vendorEvMultiplier =
+    normVendor === 'cardmarket' ? 0.868 :
+    normVendor === 'cardkingdom' ? 1.15 :
+    normVendor === 'manapool' ? 0.98 :
+    1.0;
 
   // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
   // active priceMode, then pick the row for the exact selected vendor (falling back to the
@@ -88,7 +88,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   });
 
   const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
-    const base = rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all') || rows[0];
+    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all') || rows[0];
     const mult = base.priceMode === priceMode ? 1.0 : reprintMultiplier;
     return {
       ...base,
@@ -103,17 +103,17 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     };
   });
 
-  // Catalog products for this set, with prices and EV scaled by active priceMode and vendor
+  // Catalog products for this set, with EV scaled by active priceMode and vendor (marketPrice untouched)
   const setCatalogProducts = useMemo(() => {
     const prods = ECOMMERCE_CATALOG_PACKS.filter(
       (p) => p.setCode.toUpperCase() === selectedSetCode.toUpperCase()
     );
     return prods.map((p) => ({
       ...p,
-      marketPrice: Number((p.marketPrice * vendorPriceMultiplier).toFixed(2)),
+      marketPrice: Number((p.marketPrice || 0).toFixed(2)),
       estimatedEv: Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
     }));
-  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, vendorPriceMultiplier]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier]);
 
   // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
   const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
@@ -175,7 +175,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           packagingType: packType,
           packsCount: pCount > 0 ? pCount : 1,
           cardCount: sp.cardCount || (packType === 'starter_deck' ? 100 : undefined),
-          marketPrice: Number(((sp.marketPrice || 0) * vendorPriceMultiplier).toFixed(2)),
+          marketPrice: Number((sp.marketPrice || 0).toFixed(2)),
           estimatedEv: Number(((sp.estimatedEv || sp.marketPrice || 0) * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
           rawCategory: cat,
           specialFeatures: [],
@@ -193,7 +193,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }).catch(() => {});
     return () => { isMounted = false; };
-  }, [selectedSetCode, vendorPriceMultiplier, reprintMultiplier, vendorEvMultiplier]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier]);
 
   // Sync when set changes
   useEffect(() => {
@@ -261,7 +261,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return activeProduct.packagingType === 'box_set' || cat === 'box_set';
   }, [activeProduct]);
 
-  const packMarketPrice = Number((getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play') * vendorPriceMultiplier).toFixed(2));
+  const packMarketPrice = Number(getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play').toFixed(2));
 
   // Product level scaled metrics
   const productPacksCount = activeProduct?.packsCount || 1;

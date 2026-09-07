@@ -5,7 +5,7 @@ export interface BoosterEVRecord {
   boosterName: string;
   fullBoosterName: string;
   priceMode: 'direct' | 'cheapest_reprint';
-  vendor: 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
+  vendor: Vendor | string;
   evAverage: number;
   evMid90: number;
   evMin: number;
@@ -263,7 +263,14 @@ export interface SetOption {
 }
 
 export type PriceMode = 'direct' | 'cheapest_reprint';
-export type Vendor = 'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
+export type Vendor =
+  | 'all'
+  | 'all_cheapest'
+  | 'all_average'
+  | 'tcgplayer'
+  | 'cardmarket'
+  | 'cardkingdom'
+  | 'manapool';
 export type ProductCategory =
   | 'all'
   | 'booster_box'

@@ -8,6 +8,7 @@ import { BoosterFoilPackMockup } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
 import { BoosterDisplayBoxMockup } from './BoosterDisplayBoxMockup';
 import { SetSymbolIcon } from './SetSymbolIcon';
+import { Vendor, PriceMode } from '../types';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -37,6 +38,10 @@ import {
 
 interface AdminPortalProps {
   onNavigateToExplorer?: (setCode: string) => void;
+  vendor?: Vendor;
+  onVendorChange?: (vendor: Vendor) => void;
+  priceMode?: PriceMode;
+  onPriceModeChange?: (mode: PriceMode) => void;
 }
 
 interface ProductIntegrityIssue {
@@ -47,7 +52,21 @@ interface ProductIntegrityIssue {
   issue: string;
 }
 
-export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }) => {
+export const AdminPortal: React.FC<AdminPortalProps> = ({
+  onNavigateToExplorer,
+  vendor: externalVendor,
+  onVendorChange: externalOnVendorChange,
+  priceMode: externalPriceMode,
+  onPriceModeChange: externalOnPriceModeChange,
+}) => {
+  const [internalVendor, setInternalVendor] = useState<Vendor>('all');
+  const activeVendor = externalVendor || internalVendor;
+  const handleVendorChange = externalOnVendorChange || setInternalVendor;
+
+  const [internalPriceMode, setInternalPriceMode] = useState<PriceMode>('direct');
+  const activePriceMode = externalPriceMode || internalPriceMode;
+  const handlePriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
+
   // Top-level Admin Section Tab
   const [activeAdminSection, setActiveAdminSection] = useState<'hierarchy' | 'integrity' | 'audit' | 'studio'>('hierarchy');
 
@@ -65,7 +84,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
 
   // Simulation & Engine Parameter Controls
   const [monteCarloDraws, setMonteCarloDraws] = useState<number>(5000);
-  const [marketFeePct, setMarketFeePct] = useState<number>(12.5);
   const [packSleeveMargin, setPackSleeveMargin] = useState<number>(0.15);
   const [cacheTimestamp, setCacheTimestamp] = useState<string>(new Date().toLocaleTimeString());
   const [isRefreshingCache, setIsRefreshingCache] = useState<boolean>(false);
@@ -375,6 +393,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
+            {/* Vendor Selector Filter */}
+            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                Vendor:
+              </span>
+              <select
+                id="admin-header-vendor-select"
+                value={activeVendor}
+                onChange={(e) => handleVendorChange(e.target.value as Vendor)}
+                className="text-xs font-bold bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer shadow-xs"
+              >
+                <option value="all">All vendors ( cheapest )</option>
+                <option value="all_average">All vendors ( average )</option>
+                <option value="tcgplayer">TCGplayer</option>
+                <option value="cardmarket">Cardmarket</option>
+                <option value="cardkingdom">Card Kingdom</option>
+                <option value="manapool">Manapool</option>
+              </select>
+            </div>
+
+            {/* Price Mode Selector Filter */}
+            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                Price Mode:
+              </span>
+              <select
+                id="admin-header-price-mode-select"
+                value={activePriceMode}
+                onChange={(e) => handlePriceModeChange(e.target.value as PriceMode)}
+                className="text-xs font-bold bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer shadow-xs"
+              >
+                <option value="direct">Direct Print</option>
+                <option value="cheapest_reprint">Cheapest Reprint</option>
+              </select>
+            </div>
+
             <button
               onClick={handleRefreshCache}
               disabled={isRefreshingCache}
@@ -460,7 +514,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
 
       {/* Render Active Section */}
       {activeAdminSection === 'hierarchy' && (
-        <ProductHierarchyInspector />
+        <ProductHierarchyInspector
+          vendor={activeVendor}
+          onVendorChange={handleVendorChange}
+          priceMode={activePriceMode}
+          onPriceModeChange={handlePriceModeChange}
+        />
       )}
 
       {activeAdminSection === 'integrity' && (
@@ -1523,7 +1582,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">Simulation Engine & Arbitrage Parameters</h2>
-              <p className="text-xs text-slate-500">Tune Monte Carlo iterations, market fee assumptions, and pricing caches.</p>
+              <p className="text-xs text-slate-500">Tune Monte Carlo iterations, vendor pricing sources, and system caches.</p>
             </div>
           </div>
           <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
@@ -1554,29 +1613,59 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateToExplorer }
             </p>
           </div>
 
-          {/* Setting 2: Market Platform Fee */}
+          {/* Setting 2: Active Vendor Pricing Feed */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900">Market Seller Fee Deductions</span>
-              <span className="font-mono font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                {marketFeePct}%
+              <span className="font-bold text-slate-900">Active Vendor Feed</span>
+              <span className="font-mono font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded capitalize">
+                {activeVendor === 'all'
+                  ? 'Cheapest'
+                  : activeVendor === 'all_average'
+                  ? 'Average'
+                  : activeVendor}
               </span>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="20"
-              step="0.5"
-              value={marketFeePct}
-              onChange={(e) => setMarketFeePct(Number(e.target.value))}
-              className="w-full accent-amber-600 cursor-pointer"
-            />
+            <select
+              id="admin-engine-vendor-select"
+              value={activeVendor}
+              onChange={(e) => handleVendorChange(e.target.value as Vendor)}
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+            >
+              <option value="all">All vendors ( cheapest )</option>
+              <option value="all_average">All vendors ( average )</option>
+              <option value="tcgplayer">TCGplayer</option>
+              <option value="cardmarket">Cardmarket</option>
+              <option value="cardkingdom">Card Kingdom</option>
+              <option value="manapool">Manapool</option>
+            </select>
             <p className="text-[11px] text-slate-500">
-              TCGplayer/eBay seller transaction & processing fees applied when computing net profit margins.
+              Live vendor price feed and collation engine target for EV models without artificial fee deductions.
             </p>
           </div>
 
-          {/* Setting 3: Bulk Single Squeeze Margin */}
+          {/* Setting 3: Price Mode / Reprint Valuation Model */}
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-900">Price Mode Valuation</span>
+              <span className="font-mono font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded capitalize">
+                {activePriceMode === 'cheapest_reprint' ? 'Cheapest Reprint' : 'Direct Print'}
+              </span>
+            </div>
+            <select
+              id="admin-engine-price-mode-select"
+              value={activePriceMode}
+              onChange={(e) => handlePriceModeChange(e.target.value as PriceMode)}
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+            >
+              <option value="direct">Direct Print (Specific Set Printing)</option>
+              <option value="cheapest_reprint">Cheapest Reprint (Across All Printings)</option>
+            </select>
+            <p className="text-[11px] text-slate-500">
+              Select whether singles EV is calculated using the exact expansion print price (Direct) or the cheapest tournament-legal reprint available on the market (Cheapest Reprint).
+            </p>
+          </div>
+
+          {/* Setting 4: Bulk Single Squeeze Margin */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-900">Sleeve & Shipping Allowance</span>

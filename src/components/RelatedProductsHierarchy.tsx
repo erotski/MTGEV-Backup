@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor } from '../types';
 import { dataService } from '../services/dataService';
+import { resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
 import {
   CatalogPackProduct,
   ProductPackagingType,
@@ -191,7 +192,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 computedEv = Number((pCount * activeBooster.evAverage).toFixed(2));
               } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
                 computedEv = sp.contents.card.reduce((sum: number, cd: any) => {
-                  const p = cd.prices?.[vendor] ?? (vendor === 'all' ? (cd.prices?.all ?? cd.prices?.tcgplayer) : (cd.prices?.[vendor] ?? cd.prices?.tcgplayer));
+                  const p = resolveCardPrice(cd, vendor, cd.foil);
                   return sum + (typeof p === 'number' && p > 0 ? p : 0);
                 }, 0);
               }
@@ -498,28 +499,32 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     ];
   };
 
-  // Price & EV multipliers based on priceMode & vendor
+  // Price & EV scaling based on priceMode & vendor
   const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-  const vendorEvMultiplier = vendor === 'cardmarket' ? 0.94 : vendor === 'cardkingdom' ? 1.05 : 1.0;
-  const vendorPriceMultiplier = vendor === 'cardmarket' ? 0.91 : vendor === 'cardkingdom' ? 1.10 : 1.0;
+  const normVendor = normalizeVendor(vendor);
+  const vendorEvMultiplier =
+    normVendor === 'cardmarket' ? 0.868 :
+    normVendor === 'cardkingdom' ? 1.15 :
+    normVendor === 'manapool' ? 0.98 :
+    1.0;
 
   const rawProducts = dbSealedProducts;
 
-  // Dynamically scale products for active PriceMode (Direct vs Cheapest Reprint) & Vendor
+  // Dynamically scale EV for active PriceMode & Vendor; marketPrice remains authentic TCGplayer price
   const setProducts = useMemo(() => {
     return rawProducts.map((p) => {
       const scaledEv = Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2));
-      const scaledPrice = Number((p.marketPrice * vendorPriceMultiplier).toFixed(2));
+      const scaledPrice = Number((p.marketPrice || 0).toFixed(2));
 
       const scaledContains = p.contains?.map((item) => ({
         ...item,
-        marketPrice: Number((item.marketPrice * vendorPriceMultiplier).toFixed(2)),
+        marketPrice: Number((item.marketPrice || 0).toFixed(2)),
         estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
       }));
 
       const scaledContainedIn = p.containedIn?.map((item) => ({
         ...item,
-        marketPrice: Number((item.marketPrice * vendorPriceMultiplier).toFixed(2)),
+        marketPrice: Number((item.marketPrice || 0).toFixed(2)),
         estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
       }));
 
@@ -531,7 +536,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         containedIn: scaledContainedIn,
       };
     });
-  }, [rawProducts, reprintMultiplier, vendorEvMultiplier, vendorPriceMultiplier]);
+  }, [rawProducts, reprintMultiplier, vendorEvMultiplier]);
 
   // Active selected product for deep containment inspection
   const [selectedProductId, setSelectedProductId] = useState<string>(
@@ -921,10 +926,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   onChange={(e) => onVendorChange(e.target.value as Vendor)}
                   className="text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer w-full sm:w-auto shadow-2xs"
                 >
-                  <option value="all">Blended Average (All)</option>
-                  <option value="tcgplayer">TCGplayer Direct</option>
-                  <option value="cardmarket">Cardmarket (EUR conv)</option>
+                  <option value="all">All vendors ( cheapest )</option>
+                  <option value="all_average">All vendors ( average )</option>
+                  <option value="tcgplayer">TCGplayer</option>
+                  <option value="cardmarket">Cardmarket</option>
                   <option value="cardkingdom">Card Kingdom</option>
+                  <option value="manapool">Manapool</option>
                 </select>
               </div>
             )}
