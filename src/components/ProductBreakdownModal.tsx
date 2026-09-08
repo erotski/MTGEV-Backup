@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
+import { PreconstructedDeckDetail } from '../types';
 import { BoosterSlotViewer } from './BoosterSlotViewer';
 import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
@@ -27,6 +28,8 @@ interface ProductBreakdownModalProps {
   onClose: () => void;
   priceMode?: string;
   vendor?: string;
+  preconDecks?: Record<string, PreconstructedDeckDetail>;
+  deckDetail?: PreconstructedDeckDetail;
   onNavigateToSet?: (setCode: string, boosterName?: string) => void;
 }
 
@@ -36,6 +39,8 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
   onClose,
   priceMode = 'direct',
   vendor = 'tcgplayer',
+  preconDecks,
+  deckDetail,
   onNavigateToSet,
 }) => {
   if (!isOpen || !product) return null;
@@ -265,6 +270,8 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                   setCode={product.setCode}
                   marketPrice={product.marketPrice}
                   estimatedEv={product.estimatedEv}
+                  preconDecks={preconDecks}
+                  deckDetail={deckDetail || (product as any)?.deckDetail}
                 />
               ) : (
                 <BoosterSlotViewer
@@ -296,6 +303,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 product={product}
                 vendor={vendor as any}
                 priceMode={priceMode as any}
+                hideModalLaunchButton={true}
               />
 
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
@@ -320,6 +328,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {product.rawContents.card.map((c: any, idx: number) => {
+                        if (!c) return null;
                         const cPrices = c.prices || {};
                         const isFoil = c.foil || (c.finishes && c.finishes.includes('foil'));
                         return (

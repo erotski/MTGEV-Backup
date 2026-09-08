@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord } from '../types';
+import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { calculateEvScore, getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
+import { getCanonicalProductMetrics } from '../utils/productUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -52,8 +54,32 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [sortBy, setSortBy] = useState<'roi' | 'profit' | 'boxPrice' | 'boxEv' | 'evScore' | 'packs' | 'cards'>('roi');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
+  const [preconDecks, setPreconDecks] = useState<Record<string, any>>({});
+  const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      dataService.getPreconDecks(),
+      dataService.getSingleCardPrices(),
+    ]).then(([pd, sc]) => {
+      if (isMounted) {
+        if (pd) setPreconDecks(pd);
+        if (sc) setSingleCardPrices(sc);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
 
   const recordByUuid = useMemo(() => new Map(records.map((r) => [r.productUuid, r])), [records]);
+  const recordByUuidObj = useMemo(() => {
+    const obj: Record<string, any> = {};
+    records.forEach((r) => {
+      if (r.productUuid) obj[r.productUuid] = r;
+      if (r.id) obj[r.id] = r;
+    });
+    return obj;
+  }, [records]);
 
   const getCardCount = (box: BoxArbitrageRecord, visited = new Set<string>()): number => {
     const uid = box.productUuid || '';
@@ -121,74 +147,38 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
   const adjustedRecords = useMemo(() => {
-    const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-    const normVendor = normalizeVendor(vendor);
-
     return records.map((r) => {
-      // Market price is always the authentic sealed market price collected from TCGplayer (never scaled by vendor)
+      // Single canonical source of truth for containment, breakdown, and EV calculation
+      const metrics = getCanonicalProductMetrics(
+        r,
+        recordByUuid,
+        recordByUuidObj,
+        boosterEvMap || {},
+        preconDecks,
+        singleCardPrices,
+        vendor,
+        priceMode,
+        evBasis
+      );
+
       const adjustedBoxPrice = r.marketPrice;
+      const adjustedBoxEv = metrics.estimatedEv;
+      const adjustedBoxMin = metrics.minEv;
+      const adjustedBoxMid90 = metrics.mid90Ev;
+      const adjustedBoxMax = metrics.maxEv;
+      const effectiveEv = metrics.effectiveEv;
+      const profitUsd = metrics.netSpread;
+      const roiPct = metrics.roiPct;
+      const pCount = metrics.packsCount;
+      const cCount = metrics.cardCount;
+      const boosterName = metrics.primaryBoosterName;
 
-      let adjustedPackMin = 0;
-      let adjustedPackEv = 0;
-      let adjustedPackMid90 = 0;
-      let adjustedPackMax = 0;
+      const adjustedPackEv = pCount > 0 ? Number((adjustedBoxEv / pCount).toFixed(2)) : 0;
+      const adjustedPackMin = pCount > 0 ? Number((adjustedBoxMin / pCount).toFixed(2)) : 0;
+      const adjustedPackMid90 = pCount > 0 ? Number((adjustedBoxMid90 / pCount).toFixed(2)) : 0;
+      const adjustedPackMax = pCount > 0 ? Number((adjustedBoxMax / pCount).toFixed(2)) : 0;
 
-      if (r.packCount > 0) {
-        const foundEv = boosterEvMap ? findBoosterEv(boosterEvMap, r.setCode, r.boosterName, priceMode, normVendor) : undefined;
-        if (foundEv) {
-          adjustedPackMin = foundEv.evMin;
-          adjustedPackEv = foundEv.evAverage;
-          adjustedPackMid90 = foundEv.evMid90;
-          adjustedPackMax = foundEv.evMax;
-        } else {
-          // Vendor-specific EV ratio based on authentic market data without simulated seller fees
-          const vendorEvRatio =
-            normVendor === 'cardmarket' ? 0.868 :
-            normVendor === 'cardkingdom' ? 1.15 :
-            normVendor === 'manapool' ? 0.98 :
-            1.0;
-
-          const rawMin = typeof r.unitEvMin === 'number' && r.unitEvMin > 0 ? r.unitEvMin : (r.unitEvAvg > 0 ? r.unitEvAvg * 0.15 : 0);
-          const rawMax = typeof r.unitEvMax === 'number' && r.unitEvMax > 0 ? r.unitEvMax : (r.unitEvAvg > 0 ? r.unitEvAvg * 4.5 : 0);
-
-          adjustedPackMin = rawMin * reprintMultiplier * vendorEvRatio;
-          adjustedPackEv = r.unitEvAvg * reprintMultiplier * vendorEvRatio;
-          adjustedPackMid90 = r.unitEvMid90 * reprintMultiplier * vendorEvRatio;
-          adjustedPackMax = rawMax * reprintMultiplier * vendorEvRatio;
-        }
-      }
-
-      let baseCardEv = r.totalEvAvg;
-      if (r.packCount === 0 && r.contents?.card && Array.isArray(r.contents.card)) {
-        const vendorCardSum = r.contents.card.reduce((sum: number, cd: any) => {
-          const p = resolveCardPrice(cd, normVendor, cd.foil);
-          return sum + (typeof p === 'number' && p > 0 ? p : 0);
-        }, 0);
-        if (vendorCardSum > 0) {
-          baseCardEv = vendorCardSum;
-        }
-      }
-
-      const adjustedBoxMin = r.packCount > 0 ? adjustedPackMin * r.packCount : baseCardEv * reprintMultiplier;
-      const adjustedBoxEv = r.packCount > 0 ? adjustedPackEv * r.packCount : baseCardEv * reprintMultiplier;
-      const adjustedBoxMid90 = r.packCount > 0 ? adjustedPackMid90 * r.packCount : baseCardEv * reprintMultiplier;
-      const adjustedBoxMax = r.packCount > 0 ? adjustedPackMax * r.packCount : baseCardEv * reprintMultiplier;
-      
-      // Calculate Profit/Loss and ROI based on selected EV Calculation Basis (Min, Mid90, Avg, Max)
-      // Pure expected arbitrage calculation without simulated platform fee deductions
-      const effectiveEv =
-        evBasis === 'min'
-          ? adjustedBoxMin
-          : evBasis === 'mid90'
-          ? adjustedBoxMid90
-          : evBasis === 'max'
-          ? adjustedBoxMax
-          : adjustedBoxEv;
-
-      const profitUsd = effectiveEv - adjustedBoxPrice;
-      const roiPct = adjustedBoxPrice > 0 ? (profitUsd / adjustedBoxPrice) * 100 : 0;
-
-      const isPrecon = (r.category || '').toLowerCase().includes('deck') || r.packCount === 0;
+      const isPrecon = (r.category || '').toLowerCase().includes('deck') || pCount === 0;
       const evScore = calculateEvScore(
         adjustedBoxPrice,
         adjustedBoxEv,
@@ -200,6 +190,9 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
       return {
         ...r,
+        boosterName,
+        packCount: pCount,
+        cardCount: cCount,
         marketPrice: adjustedBoxPrice,
         unitEvMin: adjustedPackMin,
         unitEvAvg: adjustedPackEv,
@@ -215,7 +208,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         roiPct,
       };
     });
-  }, [records, priceMode, vendor, evBasis, boosterEvMap]);
+  }, [records, priceMode, vendor, evBasis, boosterEvMap, recordByUuid, recordByUuidObj, preconDecks, singleCardPrices]);
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;

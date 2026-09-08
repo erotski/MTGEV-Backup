@@ -34,6 +34,7 @@ import { BoxArbitrageRecord, BoosterEVRecord, Vendor, PriceMode } from '../types
 import { ProductBreakdownModal } from './ProductBreakdownModal';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
+import { getCanonicalProductMetrics, getCardsPerPack } from '../utils/productUtils';
 
 export interface SealedProductItem {
   id: string;
@@ -157,9 +158,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
   const [expandedDecks, setExpandedDecks] = useState<Record<string, boolean>>({});
   const [deckCardSearch, setDeckCardSearch] = useState<Record<string, string>>({});
   const [deckCardSort, setDeckCardSort] = useState<Record<string, 'price_desc' | 'price_asc' | 'name'>>({});
-  const [expandedAuditDeck, setExpandedAuditDeck] = useState<number | null>(null);
-  const [auditDeckSearch, setAuditDeckSearch] = useState<string>('');
-  const [auditDeckSort, setAuditDeckSort] = useState<'price_desc' | 'price_asc' | 'name'>('price_desc');
   const [viewMode, setViewMode] = useState<'visual_tree' | 'raw_json'>('visual_tree');
 
   // Load authoritative data
@@ -248,6 +246,28 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
   // Helper to resolve card prices and EV
   const resolveCard = (cd: any, parentSetCode: string, parentProduct?: SealedProductItem) => {
+    if (!cd) {
+      return {
+        name: 'Promo Card',
+        number: '',
+        set: (parentSetCode || '').toUpperCase(),
+        uuid: '',
+        foil: false,
+        isFoil: false,
+        finish: 'Nonfoil',
+        price: 0,
+        ev: 0,
+        prices: {
+          tcgplayer: 0,
+          cardkingdom: 0,
+          cardmarket: 0,
+          cardmarketEur: 0,
+          all: 0,
+        },
+        isEstimated: false,
+      };
+    }
+
     const name = cd.name || 'Promo Card';
     const normName = name.toLowerCase().trim();
     const setCode = (cd.set || parentSetCode || '').toLowerCase();
@@ -271,10 +291,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
     // Lookup hierarchy: uuid -> name___set -> name_set -> name
     const fromIndex =
-      (uuid && singleCardPrices.byUuid[uuid]) ||
-      singleCardPrices.byNameSet[`${normName}___${setCode}`] ||
-      singleCardPrices.byNameSet[`${normName}_${setCode}`] ||
-      singleCardPrices.byName[normName];
+      (uuid && singleCardPrices?.byUuid?.[uuid]) ||
+      singleCardPrices?.byNameSet?.[`${normName}___${setCode}`] ||
+      singleCardPrices?.byNameSet?.[`${normName}_${setCode}`] ||
+      singleCardPrices?.byName?.[normName];
 
     let unitPrice = 0;
     let unitEv = 0;
@@ -430,9 +450,22 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     };
   };
 
-  // Helper to compute pure Contents EV for any sealed item (without using sub-item market prices)
+  // Helper to compute pure Contents EV for any sealed item (single canonical source of truth)
   const computeProductContentsEv = useCallback(
     (prod: SealedProductItem, multiplier: number = 1): number => {
+      const canonical = getCanonicalProductMetrics(
+        prod,
+        productMap,
+        arbitrageMap,
+        boosterEvMap,
+        preconDecks,
+        singleCardPrices,
+        vendor,
+        priceMode
+      );
+      if (canonical.estimatedEv > 0) {
+        return Number((canonical.estimatedEv * multiplier).toFixed(2));
+      }
       const uid = prod.id || prod.uuid || '';
       const directArb = arbitrageMap[uid];
       if (directArb && directArb.totalEvAvg > 0) {
@@ -482,10 +515,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
               let price = c.price || 0;
               if (cardFoil) {
                 const fromIdx =
-                  (c.uuid && singleCardPrices.byUuid[c.uuid]) ||
-                  singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
-                  singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
-                  singleCardPrices.byName[(c.name || '').toLowerCase()];
+                  (c.uuid && singleCardPrices?.byUuid?.[c.uuid]) ||
+                  singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
+                  singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
+                  singleCardPrices?.byName?.[(c.name || '').toLowerCase()];
                 if (fromIdx?.foilPrice) price = fromIdx.foilPrice;
                 else if (c.foilPrice) price = c.foilPrice;
                 else if (price > 0 && !c.foil) price = Number((price * 1.5).toFixed(2));
@@ -635,6 +668,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       code: string;
       set: string;
       count: number;
+      cardsPerPack: number;
+      totalCards: number;
       unitEv: number;
       unitMid90: number;
       subtotalEv: number;
@@ -644,11 +679,14 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       selectedProduct.contents.pack.forEach((pk) => {
         const count = pk.count || 1;
         const res = resolvePack(pk, parentSet);
+        const cardsPerPack = getCardsPerPack(res.boosterCode, selectedProduct.category, selectedProduct.subtype);
         packItems.push({
           packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
           code: res.boosterCode,
           set: res.setCode,
           count,
+          cardsPerPack,
+          totalCards: count * cardsPerPack,
           unitEv: res.unitEvAvg,
           unitMid90: res.unitEvMid90,
           subtotalEv: Number((count * res.unitEvAvg).toFixed(2)),
@@ -663,6 +701,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       set: string;
       foil: boolean;
       count: number;
+      totalCards: number;
       unitEv: number;
       subtotalEv: number;
       prices: any;
@@ -679,6 +718,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           set: res.set,
           foil: res.foil,
           count,
+          totalCards: count,
           unitEv: res.ev,
           subtotalEv: Number((count * res.ev).toFixed(2)),
           prices: res.prices,
@@ -693,6 +733,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       count: number;
       set: string;
       uuid?: string;
+      totalCards: number;
       unitEv: number;
       subtotalEv: number;
     }> = [];
@@ -710,11 +751,14 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           unitEv = computeProductContentsEv(childProd);
         }
 
+        const totalCards = (childProd?.cardCount || 15) * count;
+
         sealedItems.push({
           name: sub.name,
           count,
           set: (sub.set || '').toUpperCase(),
           uuid: sub.uuid,
+          totalCards,
           unitEv: unitEv,
           subtotalEv: Number((count * unitEv).toFixed(2)),
         });
@@ -727,6 +771,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       set: string;
       count: number;
       cardCount: number;
+      totalCards: number;
       isFoil: boolean;
       finish: 'Foil' | 'Nonfoil';
       unitSinglesEv: number;
@@ -765,10 +810,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           let price = c.price || 0;
           if (cardFoil) {
             const fromIdx =
-              (c.uuid && singleCardPrices.byUuid[c.uuid]) ||
-              singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || parentSet).toLowerCase()}`] ||
-              singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || parentSet).toLowerCase()}`] ||
-              singleCardPrices.byName[(c.name || '').toLowerCase()];
+              (c.uuid && singleCardPrices?.byUuid?.[c.uuid]) ||
+              singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || parentSet).toLowerCase()}`] ||
+              singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || parentSet).toLowerCase()}`] ||
+              singleCardPrices?.byName?.[(c.name || '').toLowerCase()];
 
             if (fromIdx?.foilPrice) {
               price = fromIdx.foilPrice;
@@ -805,11 +850,13 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           }
         }
 
+        const deckTotalCards = count * (cardCount || 100);
         deckItems.push({
           name: dk.name,
           set: (dk.set || parentSet).toUpperCase(),
           count,
           cardCount,
+          totalCards: deckTotalCards,
           isFoil,
           finish: isFoil ? 'Foil' : 'Nonfoil',
           unitSinglesEv: singlesEv,
@@ -979,6 +1026,21 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     const netSpread = hasCalculatedEv ? Number((finalEv - statedMarketPrice).toFixed(2)) : 0;
     const roiPct = (hasCalculatedEv && statedMarketPrice > 0) ? Number(((netSpread / statedMarketPrice) * 100).toFixed(1)) : 0;
 
+    const totalPackCards = packItems.reduce((acc, p) => acc + (p.totalCards || (p.count * (p.cardsPerPack || 15))), 0);
+    const totalCardCards = cardItems.reduce((acc, c) => acc + c.count, 0);
+    const totalSealedCards = sealedItems.reduce((acc, s) => acc + (s.totalCards || (s.count * 15)), 0);
+    const totalDeckCards = deckItems.reduce((acc, d) => acc + (d.totalCards || (d.count * 100)), 0);
+    const totalVariableCards = variableItems.length;
+    const totalCards = selectedProduct.cardCount || (totalPackCards + totalCardCards + totalSealedCards + totalDeckCards + totalVariableCards);
+
+    const totalQty = 
+      packItems.reduce((acc, p) => acc + p.count, 0) +
+      cardItems.reduce((acc, c) => acc + c.count, 0) +
+      sealedItems.reduce((acc, s) => acc + s.count, 0) +
+      deckItems.reduce((acc, d) => acc + d.count, 0) +
+      variableItems.length +
+      otherItems.reduce((acc, o) => acc + o.count, 0);
+
     return {
       packItems,
       cardItems,
@@ -986,6 +1048,13 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       deckItems,
       variableItems,
       otherItems,
+      totalPackCards,
+      totalCardCards,
+      totalSealedCards,
+      totalDeckCards,
+      totalVariableCards,
+      totalCards,
+      totalQty,
       totalPackEv,
       totalCardsEv,
       totalSealedEv,
@@ -1308,12 +1377,12 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-mono">
-                            <span>TCG: ${res.prices.tcgplayer?.toFixed(2) || res.price.toFixed(2)}</span>
+                            <span>TCG: ${res?.prices?.tcgplayer?.toFixed(2) || res?.price?.toFixed(2) || '0.00'}</span>
                             <span>•</span>
-                            <span>CK: ${res.prices.cardkingdom?.toFixed(2) || (res.price * 1.12).toFixed(2)}</span>
+                            <span>CK: ${res?.prices?.cardkingdom?.toFixed(2) || ((res?.price || 0) * 1.12).toFixed(2)}</span>
                             <span>•</span>
-                            <span>CM: €{res.prices.cardmarketEur?.toFixed(2) || (res.price * 0.85).toFixed(2)}</span>
-                            {res.isEstimated && (
+                            <span>CM: €{res?.prices?.cardmarketEur?.toFixed(2) || ((res?.price || 0) * 0.85).toFixed(2)}</span>
+                            {res?.isEstimated && (
                               <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                                 allocated share
                               </span>
@@ -1393,10 +1462,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                       let price = c.price || 0;
                       if (cardFoil) {
                         const fromIdx =
-                          (c.uuid && singleCardPrices.byUuid[c.uuid]) ||
-                          singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || item.setCode).toLowerCase()}`] ||
-                          singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || item.setCode).toLowerCase()}`] ||
-                          singleCardPrices.byName[(c.name || '').toLowerCase()];
+                          (c.uuid && singleCardPrices?.byUuid?.[c.uuid]) ||
+                          singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || item.setCode).toLowerCase()}`] ||
+                          singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || item.setCode).toLowerCase()}`] ||
+                          singleCardPrices?.byName?.[(c.name || '').toLowerCase()];
                         if (fromIdx?.foilPrice) {
                           price = fromIdx.foilPrice;
                         } else if (c.foilPrice) {
@@ -2233,6 +2302,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           <th className="text-left pb-2 font-bold">Sub-Item Component</th>
                           <th className="text-left pb-2 font-bold">Classification & Finish</th>
                           <th className="text-center pb-2 font-bold">Qty</th>
+                          <th className="text-right pb-2 font-bold text-amber-300">Cards SubTotal</th>
+                          <th className="text-right pb-2 font-bold text-slate-300">Unit Cards</th>
                           <th className="text-right pb-2 font-bold text-slate-300">Unit EV</th>
                           <th className="text-right pb-2 font-bold text-amber-400">Contents EV Subtotal</th>
                           <th className="text-right pb-2 font-bold text-indigo-300">EV Share</th>
@@ -2244,6 +2315,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           const evShare = productAudit.calculatedTotalEv > 0
                             ? ((p.subtotalEv / productAudit.calculatedTotalEv) * 100).toFixed(1)
                             : '0.0';
+                          const unitCards = p.cardsPerPack || 15;
                           return (
                             <tr key={`audit-pack-${idx}`} className="hover:bg-slate-800/40">
                               <td className="py-2.5 text-slate-200 font-medium">
@@ -2256,6 +2328,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                                 </span>
                               </td>
                               <td className="py-2.5 text-center font-bold text-indigo-300">×{p.count}</td>
+                              <td className="py-2.5 text-right font-semibold text-slate-200">{p.totalCards || (p.count * (p.cardsPerPack || 15))}</td>
+                              <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
                               <td className="py-2.5 text-right text-slate-300">${p.unitEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-amber-400">${p.subtotalEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
@@ -2287,6 +2361,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                                 Singles / Promo • {c.set}
                               </td>
                               <td className="py-2.5 text-center font-bold text-indigo-300">×{c.count}</td>
+                              <td className="py-2.5 text-right font-semibold text-slate-200">{c.count}</td>
+                              <td className="py-2.5 text-right font-medium text-slate-300">1</td>
                               <td className="py-2.5 text-right text-slate-300">${c.unitEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-amber-400">${c.subtotalEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
@@ -2299,6 +2375,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           const evShare = productAudit.calculatedTotalEv > 0
                             ? ((s.subtotalEv / productAudit.calculatedTotalEv) * 100).toFixed(1)
                             : '0.0';
+                          const unitCards = Math.round((s.totalCards || 15) / (s.count || 1));
                           return (
                             <tr key={`audit-sealed-${idx}`} className="hover:bg-slate-800/40">
                               <td className="py-2.5 text-slate-200 font-medium">
@@ -2309,6 +2386,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                                 Sealed Unit • {s.set}
                               </td>
                               <td className="py-2.5 text-center font-bold text-indigo-300">×{s.count}</td>
+                              <td className="py-2.5 text-right font-semibold text-slate-200">{s.totalCards}</td>
+                              <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
                               <td className="py-2.5 text-right text-slate-300">${s.unitEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-amber-400">${s.subtotalEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
@@ -2321,156 +2400,35 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           const evShare = productAudit.calculatedTotalEv > 0
                             ? ((d.subtotalSinglesEv / productAudit.calculatedTotalEv) * 100).toFixed(1)
                             : '0.0';
-                          const isDeckAuditOpen = expandedAuditDeck === idx;
-                          const deckCards = d.cards || [];
-                          const filterTerm = auditDeckSearch.toLowerCase().trim();
-                          const filteredDeckCards = deckCards.filter((c: any) =>
-                            !filterTerm || (c.name || '').toLowerCase().includes(filterTerm) || (c.type || '').toLowerCase().includes(filterTerm)
-                          );
-                          const sortedDeckCards = [...filteredDeckCards].sort((a: any, b: any) => {
-                            if (auditDeckSort === 'price_desc') return (b.totalPrice || b.price || 0) - (a.totalPrice || a.price || 0);
-                            if (auditDeckSort === 'price_asc') return (a.totalPrice || a.price || 0) - (b.totalPrice || b.price || 0);
-                            return (a.name || '').localeCompare(b.name || '');
-                          });
-                          const top3 = [...deckCards].sort((a: any, b: any) => (b.price || 0) - (a.price || 0)).slice(0, 3);
+                          const unitCards = d.cardCount || 100;
 
                           return (
-                            <React.Fragment key={`audit-deck-fragment-${idx}`}>
-                              <tr className="hover:bg-slate-800/40">
-                                <td className="py-2.5 text-slate-200 font-medium">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-purple-400">🎴</span>
-                                    <span>{d.name}</span>
-                                    {d.isFoil ? (
-                                      <span className="text-[10px] text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-400/15 border border-amber-400/30">
-                                        ★ Foil Deck
-                                      </span>
-                                    ) : (
-                                      <span className="text-[10px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700">
-                                        Nonfoil Deck
-                                      </span>
-                                    )}
-                                    {deckCards.length > 0 && (
-                                      <button
-                                        onClick={() => setExpandedAuditDeck(isDeckAuditOpen ? null : idx)}
-                                        className="ml-2 px-2 py-0.5 rounded text-[11px] font-bold bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700 transition flex items-center gap-1 cursor-pointer"
-                                      >
-                                        {isDeckAuditOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                                        <span>{isDeckAuditOpen ? 'Hide Cards' : `Breakdown ${d.cardCount} Cards`}</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-2.5 text-slate-400 text-[11px]">
-                                  Precon Deck • {d.cardCount} Cards
-                                </td>
-                                <td className="py-2.5 text-center font-bold text-indigo-300">×{d.count}</td>
-                                <td className="py-2.5 text-right text-slate-300">${d.unitSinglesEv.toFixed(2)}</td>
-                                <td className="py-2.5 text-right font-bold text-amber-400">${d.subtotalSinglesEv.toFixed(2)}</td>
-                                <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
-                              </tr>
-
-                              {/* Inline Deck Cards Pricing Breakdown */}
-                              {isDeckAuditOpen && deckCards.length > 0 && (
-                                <tr>
-                                  <td colSpan={6} className="p-3 bg-slate-950/80 border-y border-slate-800">
-                                    <div className="space-y-2.5">
-                                      {/* Top singles pills */}
-                                      {top3.length > 0 && top3[0]?.price > 0 && (
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="text-[10px] font-bold uppercase text-slate-400 font-sans">
-                                            Top Singles:
-                                          </span>
-                                          {top3.map((tc, tcIdx) => (
-                                            <span
-                                              key={tcIdx}
-                                              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-mono flex items-center gap-1.5"
-                                            >
-                                              <span>{tc.name}</span>
-                                              <strong className="text-emerald-400">${Number(tc.price || 0).toFixed(2)}</strong>
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      {/* Search & Sort Controls */}
-                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                                        <div className="relative flex-1">
-                                          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                          <input
-                                            type="text"
-                                            placeholder="Search deck cards by name or type..."
-                                            value={auditDeckSearch}
-                                            onChange={(e) => setAuditDeckSearch(e.target.value)}
-                                            className="w-full pl-8 pr-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-purple-500 font-mono"
-                                          />
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                          <span className="text-[11px] text-slate-400 font-mono">Sort:</span>
-                                          <select
-                                            value={auditDeckSort}
-                                            onChange={(e) => setAuditDeckSort(e.target.value as any)}
-                                            className="bg-slate-900 border border-slate-700 text-slate-300 rounded-lg text-xs py-1 px-2 focus:outline-hidden font-mono"
-                                          >
-                                            <option value="price_desc">Highest Price First</option>
-                                            <option value="price_asc">Lowest Price First</option>
-                                            <option value="name">Alphabetical (A-Z)</option>
-                                          </select>
-                                        </div>
-                                      </div>
-
-                                      {/* Cards List Table */}
-                                      <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-800 bg-slate-900/50">
-                                        <table className="w-full text-left text-xs font-mono">
-                                          <thead className="sticky top-0 bg-slate-900 text-slate-400 text-[10px] uppercase border-b border-slate-800">
-                                            <tr>
-                                              <th className="p-2">Card Name</th>
-                                              <th className="p-2">Type / Collector #</th>
-                                              <th className="p-2 text-center">Finish</th>
-                                              <th className="p-2 text-center">Qty</th>
-                                              <th className="p-2 text-right">Unit Price</th>
-                                              <th className="p-2 text-right">Subtotal</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-slate-800/40">
-                                            {sortedDeckCards.map((c: any, cIdx: number) => (
-                                              <tr key={cIdx} className="hover:bg-slate-800/30">
-                                                <td className="p-2 font-medium text-slate-200">
-                                                  {c.name}
-                                                </td>
-                                                <td className="p-2 text-slate-400 text-[11px]">
-                                                  {c.type || 'Card'} {c.number ? `• #${c.number}` : ''}
-                                                </td>
-                                                <td className="p-2 text-center">
-                                                  {c.foil ? (
-                                                    <span className="text-[10px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded border border-amber-400/30">
-                                                      ★ Foil
-                                                    </span>
-                                                  ) : (
-                                                    <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
-                                                      Nonfoil
-                                                    </span>
-                                                  )}
-                                                </td>
-                                                <td className="p-2 text-center text-slate-300 font-bold">
-                                                  {c.count || 1}
-                                                </td>
-                                                <td className="p-2 text-right text-slate-300 font-mono">
-                                                  ${Number(c.price || 0).toFixed(2)}
-                                                </td>
-                                                <td className="p-2 text-right font-bold text-emerald-400 font-mono">
-                                                  ${Number(c.totalPrice || c.price || 0).toFixed(2)}
-                                                </td>
-                                              </tr>
-                                            ))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
+                            <tr key={`audit-deck-${idx}`} className="hover:bg-slate-800/40">
+                              <td className="py-2.5 text-slate-200 font-medium">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-purple-400">🎴</span>
+                                  <span>{d.name}</span>
+                                  {d.isFoil ? (
+                                    <span className="text-[10px] text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-400/15 border border-amber-400/30">
+                                      ★ Foil Deck
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700">
+                                      Nonfoil Deck
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2.5 text-slate-400 text-[11px]">
+                                Precon Deck
+                              </td>
+                              <td className="py-2.5 text-center font-bold text-indigo-300">×{d.count}</td>
+                              <td className="py-2.5 text-right font-semibold text-slate-200">{d.totalCards || (d.count * d.cardCount)}</td>
+                              <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
+                              <td className="py-2.5 text-right text-slate-300">${d.unitSinglesEv.toFixed(2)}</td>
+                              <td className="py-2.5 text-right font-bold text-amber-400">${d.subtotalSinglesEv.toFixed(2)}</td>
+                              <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
+                            </tr>
                           );
                         })}
 
@@ -2492,6 +2450,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                                 Probabilistic Bonus Slot
                               </td>
                               <td className="py-2.5 text-center font-bold text-indigo-300">×1</td>
+                              <td className="py-2.5 text-right font-semibold text-slate-200">1</td>
+                              <td className="py-2.5 text-right font-medium text-slate-300">1</td>
                               <td className="py-2.5 text-right text-slate-300">${v.slotEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-amber-400">${v.slotEv.toFixed(2)}</td>
                               <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
@@ -2523,12 +2483,38 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                               {ot.category} • No Market EV
                             </td>
                             <td className="py-2.5 text-center font-bold text-slate-400">×{ot.count}</td>
+                            <td className="py-2.5 text-right text-slate-500 font-mono">0</td>
+                            <td className="py-2.5 text-right text-slate-500 font-mono">0</td>
                             <td className="py-2.5 text-right text-slate-500 font-mono">$0.00</td>
                             <td className="py-2.5 text-right font-medium text-slate-500 font-mono">$0.00</td>
                             <td className="py-2.5 text-right text-slate-500 font-mono">0.0%</td>
                           </tr>
                         ))}
                       </tbody>
+                      <tfoot className="border-t-2 border-slate-700 bg-slate-800/40">
+                        <tr className="text-slate-100 font-bold">
+                          <td className="py-3 text-slate-100 uppercase tracking-wider text-[11px] font-bold">
+                            Total / Aggregated
+                          </td>
+                          <td className="py-3 text-slate-400 text-[11px] font-normal">
+                            {productAudit.packItems.length + productAudit.cardItems.length + productAudit.sealedItems.length + productAudit.deckItems.length + productAudit.variableItems.length} components
+                          </td>
+                          <td className="py-3 text-center text-indigo-300 font-mono font-bold">
+                            ×{productAudit.totalQty}
+                          </td>
+                          <td className="py-3 text-right font-mono font-black text-amber-300 text-sm">
+                            {productAudit.totalCards} cards
+                          </td>
+                          <td className="py-3 text-right text-slate-500 font-mono font-normal">—</td>
+                          <td className="py-3 text-right text-slate-500 font-mono font-normal">—</td>
+                          <td className="py-3 text-right font-mono font-black text-amber-400 text-sm">
+                            ${productAudit.calculatedTotalEv.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right font-mono font-bold text-indigo-300">
+                            100.0%
+                          </td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
 

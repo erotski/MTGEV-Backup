@@ -84,6 +84,9 @@ export interface CatalogPackProduct {
   containedIn?: ProductContainmentItem[]; // Parent containers this product belongs to
   bonusAccessories?: string[];
   rawContents?: any; // MTGJSON sealedProducts.contents JSON
+  contents?: any;
+  category?: string;
+  subtype?: string;
 }
 
 export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [

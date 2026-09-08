@@ -1,5 +1,15 @@
 import { SetOption, BoosterEVRecord, BoxArbitrageRecord } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
+import { 
+  loadScryfallHierarchy, 
+  getChildSets, 
+  getScryfallNode, 
+  getParentSetCode, 
+  isCommanderSubSet, 
+  isSubSet, 
+  getAllRelatedSetCodes,
+  resolveToMainSetCode
+} from '../utils/setHierarchyUtils';
 
 export interface DbBoosterSheet {
   sheetName: string;
@@ -89,6 +99,8 @@ class DataService {
   private arbitrageCache: BoxArbitrageRecord[] | null = null;
   private boosterEvCache: Record<string, BoosterEVRecord[]> | null = null;
   private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
+  private preconDecksCache: Record<string, any> | null = null;
+  private preconDecksPromise: Promise<Record<string, any>> | null = null;
   private isLoadedFromPipeline = false;
 
   /**
@@ -100,25 +112,93 @@ class DataService {
     }
 
     try {
+      // 1. Ensure Scryfall Set Hierarchy is loaded first
+      await loadScryfallHierarchy();
+
+      // 2. Fetch MTGJSON sets pipeline data
       const response = await fetch('/data/sets.json', { cache: 'no-cache' });
       if (response.ok) {
         const rawSets = await response.json();
         if (Array.isArray(rawSets) && rawSets.length > 0) {
-          this.setsCache = rawSets.map((s: any) => ({
-            code: s.code || s.setCode,
-            name: s.name,
-            releaseDate: s.releaseDate || '2025-01-01',
-            type: s.type || 'expansion',
-            totalSetSize: s.totalSetSize || s.baseSetSize || 280,
-            boosterCount: Number(s.boosterTypesCount || 2),
-            boosters: ['play', 'collector'],
-          }));
+          const rawByCode = new Map<string, any>();
+          rawSets.forEach((s: any) => {
+            const c = (s.code || s.setCode || '').toUpperCase();
+            if (c) rawByCode.set(c, s);
+          });
+
+          this.setsCache = rawSets.map((s: any) => {
+            const sCode = (s.code || s.setCode || '').toUpperCase();
+            const scryfallNode = getScryfallNode(sCode);
+            const isSub = isSubSet(sCode);
+            const parent = getParentSetCode(sCode);
+            const scryfallChildren = getChildSets(sCode);
+
+            // Build rich child sets array from Scryfall
+            const childSets: any[] = [];
+
+            if (scryfallChildren && scryfallChildren.length > 0) {
+              scryfallChildren.forEach((sc) => {
+                const rawType = sc.setType || '';
+                const formattedType =
+                  rawType === 'memorabilia'
+                    ? sc.name.toLowerCase().includes('scene box')
+                      ? 'Scene Box'
+                      : sc.name.toLowerCase().includes('art')
+                      ? 'Art Series'
+                      : 'Memorabilia'
+                    : rawType === 'masterpiece'
+                    ? 'Masterpiece'
+                    : rawType === 'commander'
+                    ? 'Commander Decks'
+                    : rawType === 'token'
+                    ? 'Tokens'
+                    : rawType === 'promo'
+                    ? 'Promos'
+                    : rawType
+                    ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+                    : 'Sub-set';
+
+                childSets.push({
+                  code: sc.code,
+                  name: sc.name,
+                  type: formattedType,
+                  cardCount: sc.cardCount,
+                  iconCode: sc.code,
+                  iconSvgUri: sc.iconSvgUri,
+                  parentCode: sCode,
+                });
+              });
+            }
+
+            // Fallback to tokenSetCode if Scryfall had no children
+            if (childSets.length === 0 && s.tokenSetCode) {
+              childSets.push({
+                code: s.tokenSetCode,
+                name: `${s.name} Tokens`,
+                type: 'Tokens',
+              });
+            }
+
+            return {
+              code: sCode,
+              name: scryfallNode?.name || s.name,
+              tokenSetCode: s.tokenSetCode,
+              releaseDate: scryfallNode?.releaseDate || s.releaseDate || '2025-01-01',
+              type: scryfallNode?.setType ? scryfallNode.setType.charAt(0).toUpperCase() + scryfallNode.setType.slice(1) : s.type || 'Expansion',
+              totalSetSize: scryfallNode?.cardCount || s.totalSetSize || s.baseSetSize || 280,
+              boosterCount: Number(s.boosterTypesCount || 2),
+              boosters: ['play', 'collector'],
+              isCommanderSubSet: isCommanderSubSet(sCode),
+              parentCode: parent || undefined,
+              childSets: childSets.length > 0 ? childSets : undefined,
+            };
+          });
           this.isLoadedFromPipeline = true;
           return { sets: this.setsCache, isLive: true };
         }
       }
     } catch (e) {
-      console.warn('Could not fetch /data/sets.json:', e);
+      console.warn('Could not fetch /data/sets.json or scryfall hierarchy:', e);
     }
 
     this.setsCache = [];
@@ -235,21 +315,35 @@ class DataService {
   }
 
   /**
-   * Loads Preconstructed Decks from /data/precon_decks.json
+   * Loads Preconstructed Decks from /data/precon_decks.json with in-memory caching & request deduplication
    */
   public async getPreconDecks(): Promise<Record<string, any>> {
-    try {
-      const response = await fetch('/data/precon_decks.json', { cache: 'no-cache' });
-      if (response.ok) {
-        const raw = await response.json();
-        if (typeof raw === 'object' && raw !== null) {
-          return raw;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not fetch /data/precon_decks.json:', e);
+    if (this.preconDecksCache && Object.keys(this.preconDecksCache).length > 0) {
+      return this.preconDecksCache;
     }
-    return {};
+    if (this.preconDecksPromise) {
+      return this.preconDecksPromise;
+    }
+
+    this.preconDecksPromise = (async () => {
+      try {
+        const response = await fetch('/data/precon_decks.json');
+        if (response.ok) {
+          const raw = await response.json();
+          if (typeof raw === 'object' && raw !== null) {
+            this.preconDecksCache = raw;
+            return raw;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch /data/precon_decks.json:', e);
+      } finally {
+        this.preconDecksPromise = null;
+      }
+      return {};
+    })();
+
+    return this.preconDecksPromise;
   }
 
   /**

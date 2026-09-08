@@ -121,6 +121,7 @@ export interface DeckCardItem {
   manaValue?: number;
   scryfallId?: string;
   imageUrl?: string;
+  text?: string;
   price: number;
   totalPrice?: number;
   foil?: boolean;
@@ -143,7 +144,7 @@ export interface PreconstructedDeckDetail {
   theme: string;
   cardCount: number;
   totalSinglesEv?: number;
-  commander: {
+  commander?: {
     name: string;
     manaCost: string;
     type: string;
@@ -249,6 +250,8 @@ export interface ChildSetInfo {
   type: string;
   cardCount?: number;
   iconCode?: string;
+  iconSvgUri?: string;
+  parentCode?: string;
 }
 
 export interface SetOption {
@@ -262,6 +265,8 @@ export interface SetOption {
   languages?: string[];
   block?: string;
   childSets?: ChildSetInfo[];
+  parentCode?: string;
+  isCommanderSubSet?: boolean;
   boosterCount: number;
   boosters: string[];
 }

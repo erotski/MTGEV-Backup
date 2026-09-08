@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 import { INITIAL_SETS } from '../data';
 import { dataService } from '../services/dataService';
-import { ProductHierarchyInspector } from './ProductHierarchyInspector';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { BoosterFoilPackMockup } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
@@ -68,7 +67,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const handlePriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
 
   // Top-level Admin Section Tab
-  const [activeAdminSection, setActiveAdminSection] = useState<'hierarchy' | 'integrity' | 'audit' | 'studio'>('hierarchy');
+  const [activeAdminSection, setActiveAdminSection] = useState<'audit' | 'integrity' | 'studio'>('audit');
 
   // Filters & State
   const [selectedSetFilter, setSelectedSetFilter] = useState<string>('all');
@@ -471,21 +470,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* Admin Module Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
         <button
-          onClick={() => setActiveAdminSection('hierarchy')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeAdminSection === 'hierarchy'
-              ? 'bg-slate-900 text-white shadow-md'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Layers className={`w-4 h-4 ${activeAdminSection === 'hierarchy' ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Product Hierarchy & Sub-Item Auditor</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] bg-indigo-500/20 text-indigo-700 font-mono">
-            Recursive MTGJSON
-          </span>
-        </button>
-
-        <button
           onClick={() => setActiveAdminSection('audit')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             activeAdminSection === 'audit'
@@ -529,15 +513,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       {/* Render Active Section */}
-      {activeAdminSection === 'hierarchy' && (
-        <ProductHierarchyInspector
-          vendor={activeVendor}
-          onVendorChange={handleVendorChange}
-          priceMode={activePriceMode}
-          onPriceModeChange={handlePriceModeChange}
-        />
-      )}
-
       {activeAdminSection === 'integrity' && (
         <div className="space-y-6">
           {/* Summary Metric Cards */}

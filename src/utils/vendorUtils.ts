@@ -75,10 +75,11 @@ export function getVendorShortLabel(vendor: Vendor | string): string {
  * NO simulated platform fee is subtracted or added.
  */
 export function resolveCardPrice(
-  card: { price?: number; foilPrice?: number; prices?: Record<string, number> },
-  vendor: Vendor | string,
+  card?: { price?: number; foilPrice?: number; prices?: Record<string, number> } | null,
+  vendor?: Vendor | string,
   isFoil = false
 ): number {
+  if (!card) return 0;
   const prices = card.prices || {};
   const v = normalizeVendor(vendor);
 

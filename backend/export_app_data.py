@@ -302,11 +302,19 @@ def export_all():
             elif p_tcg:
                 res['cardmarket'] = round(float(p_tcg) * 0.94, 2)
 
-            valid_vals = [v for k, v in res.items() if k in ['tcgplayer', 'cardkingdom', 'cardmarket'] and v is not None and v > 0]
+            # Manapool
+            mp = card_p.get('manapool', {})
+            p_mp = (mp.get('foil') if want_foil else mp.get('normal')) or mp.get('foil') or mp.get('normal')
+            if p_mp:
+                res['manapool'] = round(float(p_mp), 2)
+
+            valid_vals = [v for k, v in res.items() if k in ['tcgplayer', 'cardkingdom', 'cardmarket', 'manapool'] and v is not None and v > 0]
             if valid_vals:
-                res['all'] = round(sum(valid_vals) / len(valid_vals), 2)
+                res['all'] = round(min(valid_vals), 2)
+                res['all_average'] = round(sum(valid_vals) / len(valid_vals), 2)
             elif p_tcg:
                 res['all'] = round(float(p_tcg), 2)
+                res['all_average'] = round(float(p_tcg), 2)
 
             return res
 
@@ -459,6 +467,74 @@ def export_all():
         print(f"  ✔ Exported {len(valid_arbs)} product arbitrage opportunities")
     except Exception as e:
         print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
+
+    # 5. Export / Update single_card_prices.json with genuine DB prices
+    print("\n▶ 5. Exporting single_card_prices.json from MTGJSON prices table...")
+    try:
+        single_prices_file = OUTPUT_DIR / "single_card_prices.json"
+        existing_single_prices = {"byUuid": {}, "byName": {}, "byNameSet": {}}
+        if single_prices_file.exists():
+            try:
+                with open(single_prices_file, "r", encoding="utf-8") as sf:
+                    existing_single_prices = json.load(sf)
+            except Exception as ex:
+                print(f"  [WARN] Reading existing single_card_prices.json: {ex}")
+
+        by_uuid = existing_single_prices.get("byUuid", {})
+        by_name = existing_single_prices.get("byName", {})
+        by_name_set = existing_single_prices.get("byNameSet", {})
+
+        # For each card encountered in sealed products contents
+        updated_count = 0
+        for a in arbs:
+            contents = a.get("contents")
+            if contents and isinstance(contents, dict) and contents.get("card"):
+                for cd in contents["card"]:
+                    u = cd.get("uuid")
+                    if not u:
+                        continue
+                    cname = cd.get("name") or ""
+                    cnum = cd.get("number") or ""
+                    cset = (cd.get("set") or a.get("setCode") or "").lower()
+                    finishes = cd.get("finishes") or []
+                    is_foil = cd.get("foil", False) or ('foil' in finishes and 'nonfoil' not in finishes)
+                    resolved_p = resolve_card_prices(u, finishes, is_foil)
+
+                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all") or resolved_p.get("cardkingdom") or 0.0
+                    if p_val > 0:
+                        card_entry = {
+                            "name": cname,
+                            "set": cset,
+                            "number": str(cnum),
+                            "uuid": u,
+                            "price": p_val,
+                            "ev": p_val,
+                            "prices": resolved_p,
+                            "foil": is_foil,
+                            "finishes": finishes,
+                        }
+                        by_uuid[u] = card_entry
+                        if cname:
+                            by_name[cname.lower()] = card_entry
+                            by_name_set[f"{cname.lower()}___{cset}"] = card_entry
+                            by_name_set[f"{cname.lower()}_{cset}"] = card_entry
+                        updated_count += 1
+
+        existing_single_prices["byUuid"] = by_uuid
+        existing_single_prices["byName"] = by_name
+        existing_single_prices["byNameSet"] = by_name_set
+
+        with open(single_prices_file, "w", encoding="utf-8") as sf:
+            json.dump(existing_single_prices, sf, indent=2)
+
+        dist_single_prices = Path(__file__).resolve().parent.parent / "dist" / "data"
+        if dist_single_prices.exists():
+            with open(dist_single_prices / "single_card_prices.json", "w", encoding="utf-8") as sf:
+                json.dump(existing_single_prices, sf, indent=2)
+
+        print(f"  ✔ Exported single_card_prices.json with {updated_count} cards updated from MTGJSON DB ({len(by_uuid)} total indexed)")
+    except Exception as e:
+        print(f"  ✘ Error exporting single_card_prices.json: {e}")
 
     cursor.close()
     conn.close()

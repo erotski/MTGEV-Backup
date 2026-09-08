@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PreconstructedDeckDetail, DeckCardItem } from '../types';
 import { ManaCostRenderer } from './ManaCostRenderer';
+import { dataService } from '../services/dataService';
+import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
 import {
   Layers3,
   Sparkles,
@@ -21,6 +23,7 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react';
 
 interface PreconstructedDeckViewerProps {
@@ -30,10 +33,9 @@ interface PreconstructedDeckViewerProps {
   marketPrice: number;
   estimatedEv: number;
   className?: string;
+  preconDecks?: Record<string, PreconstructedDeckDetail>;
+  deckDetail?: PreconstructedDeckDetail;
 }
-
-// In-memory cache for precon decks data file
-let preconDecksCache: Record<string, PreconstructedDeckDetail> | null = null;
 
 export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> = ({
   productId,
@@ -42,11 +44,15 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
   marketPrice,
   estimatedEv,
   className = '',
+  preconDecks,
+  deckDetail: propDeckDetail,
 }) => {
   const [allDecks, setAllDecks] = useState<Record<string, PreconstructedDeckDetail> | null>(
-    preconDecksCache
+    preconDecks || null
   );
-  const [isLoading, setIsLoading] = useState<boolean>(!preconDecksCache);
+  const [isLoading, setIsLoading] = useState<boolean>(
+    !propDeckDetail && !preconDecks
+  );
 
   // Grouping & Display States
   const [groupBy, setGroupBy] = useState<'type' | 'rarity' | 'flat'>('type');
@@ -56,33 +62,36 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [cmcFilter, setCmcFilter] = useState<string>('all');
   const [colorFilter, setColorFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'price_desc' | 'price_asc' | 'total_ev_desc' | 'name_asc' | 'cmc_desc' | 'cmc_asc' | 'rarity'>('total_ev_desc');
+  const [sortBy, setSortBy] = useState<
+    'price_desc' | 'price_asc' | 'total_ev_desc' | 'name_asc' | 'cmc_desc' | 'cmc_asc' | 'rarity' | 'commander'
+  >('total_ev_desc');
   const [vendorMode, setVendorMode] = useState<'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom'>('all');
   const [previewCard, setPreviewCard] = useState<DeckCardItem | null>(null);
 
-  // Load precon decks json
+  // Load precon decks json via dataService (cached & deduplicated)
   useEffect(() => {
-    if (preconDecksCache) {
-      setAllDecks(preconDecksCache);
+    if (propDeckDetail && propDeckDetail.cards && propDeckDetail.cards.length > 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (preconDecks && Object.keys(preconDecks).length > 0) {
+      setAllDecks(preconDecks);
       setIsLoading(false);
       return;
     }
 
     let isMounted = true;
-    fetch('/data/precon_decks.json')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load precon decks');
-        return res.json();
-      })
+    dataService
+      .getPreconDecks()
       .then((data: Record<string, PreconstructedDeckDetail>) => {
-        preconDecksCache = data;
         if (isMounted) {
           setAllDecks(data);
           setIsLoading(false);
         }
       })
       .catch((err) => {
-        console.warn('Could not load precon_decks.json:', err);
+        console.warn('Could not load precon_decks:', err);
         if (isMounted) {
           setIsLoading(false);
         }
@@ -91,63 +100,123 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [propDeckDetail, preconDecks]);
 
   // Match the deck for this product
   const deckDetail: PreconstructedDeckDetail = useMemo(() => {
+    // 0. If directly passed via prop, use it immediately
+    if (propDeckDetail && propDeckDetail.cards && propDeckDetail.cards.length > 0) {
+      return propDeckDetail;
+    }
+
     const cleanId = (productId || '').toLowerCase().trim();
     const cleanName = (productName || '').toLowerCase().trim();
     const cleanSet = (setCode || '').toUpperCase().trim();
 
-    if (allDecks) {
-      const decksList = Object.values(allDecks) as PreconstructedDeckDetail[];
+    // 1. Synchronous bundled decks (instant, 0ms latency)
+    if (PRECON_DECK_DETAILS[cleanId]) return PRECON_DECK_DETAILS[cleanId];
+    if (PRECON_DECK_DETAILS[productId]) return PRECON_DECK_DETAILS[productId];
+    if (PRECON_DECK_DETAILS[cleanName]) return PRECON_DECK_DETAILS[cleanName];
+    if (PRECON_DECK_DETAILS[productName]) return PRECON_DECK_DETAILS[productName];
 
-      // 1. Direct ID match
-      if (allDecks[cleanId]) return allDecks[cleanId];
-      if (allDecks[productId]) return allDecks[productId];
-
-      // 2. Exact deck name match
-      for (const d of decksList) {
-        if (d.deckName && cleanName.includes(d.deckName.toLowerCase())) {
+    for (const d of Object.values(PRECON_DECK_DETAILS)) {
+      if (d.deckName) {
+        const dNameLower = d.deckName.toLowerCase().trim();
+        if (
+          dNameLower === cleanName ||
+          cleanName.includes(dNameLower) ||
+          dNameLower.includes(cleanName)
+        ) {
           return d;
         }
       }
+    }
 
-      // 3. Keyword matching
+    const availableDecks = preconDecks || allDecks;
+    if (availableDecks) {
+      const decksList = Object.values(availableDecks) as PreconstructedDeckDetail[];
+
+      // 2. Direct ID, Name, or Key matches
+      if (availableDecks[cleanId]) return availableDecks[cleanId];
+      if (availableDecks[productId]) return availableDecks[productId];
+      if (availableDecks[cleanName]) return availableDecks[cleanName];
+      if (availableDecks[productName]) return availableDecks[productName];
+
+      // 3. Exact or bidirectional substring deck name match
       for (const d of decksList) {
         if (d.deckName) {
-          const keywords = d.deckName.toLowerCase().split(' ');
-          const matchedKeywords = keywords.filter(
-            (kw) => kw.length > 3 && cleanName.includes(kw)
-          );
-          if (matchedKeywords.length >= 2) {
+          const dNameLower = d.deckName.toLowerCase().trim();
+          if (
+            dNameLower === cleanName ||
+            cleanName.includes(dNameLower) ||
+            dNameLower.includes(cleanName)
+          ) {
             return d;
           }
         }
       }
 
-      // 4. Set match first deck if only 1 in set
+      // 4. Alphanumeric match (ignoring spaces, dashes, punctuation)
+      const cleanAlpha = cleanName.replace(/[^a-z0-9]/g, '');
+      if (cleanAlpha.length >= 4) {
+        for (const d of decksList) {
+          if (d.deckName) {
+            const dAlpha = d.deckName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (dAlpha === cleanAlpha || cleanAlpha.includes(dAlpha) || dAlpha.includes(cleanAlpha)) {
+              return d;
+            }
+          }
+        }
+      }
+
+      // 5. Keyword matching (including numbers and short tokens)
+      for (const d of decksList) {
+        if (d.deckName) {
+          const keywords = d.deckName.toLowerCase().split(/\s+/).filter((kw) => kw.length >= 2);
+          const matchedKeywords = keywords.filter((kw) => cleanName.includes(kw));
+          if (matchedKeywords.length >= Math.min(2, keywords.length)) {
+            return d;
+          }
+        }
+      }
+
+      // 6. Set match first deck if only 1 in set
       const setDecks = decksList.filter(
         (d) => d.setCode && d.setCode.toUpperCase() === cleanSet
       );
       if (setDecks.length === 1) return setDecks[0];
     }
 
+    // Determine if the product name or id implies a commander deck format
+    const isCommanderProduct = Boolean(
+      cleanName.includes('commander') ||
+      cleanId.includes('commander') ||
+      cleanId.includes('edh') ||
+      cleanName.includes('win') ||
+      cleanName.includes('sld') ||
+      cleanSet === 'SLD' ||
+      (cleanSet && cleanSet.endsWith('C'))
+    );
+
     // Default synthesized precon deck structure if not in prebuilt json
     return {
-      deckName: productName || 'Preconstructed Commander Deck',
+      deckName: productName || (isCommanderProduct ? 'Preconstructed Commander Deck' : 'Preconstructed Deck'),
       setCode: setCode || 'MTG',
-      theme: 'Factory-Sealed 100-Card Ready-to-Play Commander Deck',
-      cardCount: 100,
+      theme: isCommanderProduct
+        ? 'Factory-Sealed 100-Card Ready-to-Play Commander Deck'
+        : 'Factory-Sealed Ready-to-Play Preconstructed Deck',
+      cardCount: isCommanderProduct ? 100 : 60,
       totalSinglesEv: estimatedEv || marketPrice * 1.15 || 99.99,
-      commander: {
-        name: 'Face Commander',
-        manaCost: '{2}{G}{U}',
-        type: 'Legendary Creature',
-        rarity: 'mythic',
-        text: 'Guaranteed foil etched face commander card designed specifically for the Commander format with dedicated synergy.',
-        price: 9.99,
-      },
+      commander: isCommanderProduct
+        ? {
+            name: 'Face Commander',
+            manaCost: '{2}{G}{U}',
+            type: 'Legendary Creature',
+            rarity: 'mythic',
+            text: 'Guaranteed foil etched face commander card designed specifically for the Commander format with dedicated synergy.',
+            price: 9.99,
+          }
+        : undefined,
       colors: ['W', 'U', 'B', 'R', 'G'],
       contentsSummary: {
         creatures: 32,
@@ -156,34 +225,101 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
         planeswalkers: 1,
         lands: 35,
       },
-      keyCards: [
-        { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
-        { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
-        { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
-        { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
-      ],
-      cards: [
-        { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
-        { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
-        { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
-        { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
-      ],
+      keyCards: isCommanderProduct
+        ? [
+            { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
+            { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+            { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+            { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
+          ]
+        : [
+            { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+            { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+            { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
+          ],
+      cards: isCommanderProduct
+        ? [
+            { name: 'Face Commander', count: 1, rarity: 'mythic', type: 'Legendary Creature', primaryType: 'Creature', manaCost: '{2}{G}{U}', manaValue: 4, price: 9.99, foil: true, isCommander: true },
+            { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+            { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+            { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
+          ]
+        : [
+            { name: 'Sol Ring', count: 1, rarity: 'uncommon', type: 'Artifact', primaryType: 'Artifact', manaCost: '{1}', manaValue: 1, price: 1.55 },
+            { name: 'Arcane Signet', count: 1, rarity: 'common', type: 'Artifact', primaryType: 'Artifact', manaCost: '{2}', manaValue: 2, price: 0.85 },
+            { name: 'Command Tower', count: 1, rarity: 'common', type: 'Land', primaryType: 'Land', manaCost: '', manaValue: 0, price: 0.5 },
+          ],
     };
   }, [allDecks, productId, productName, setCode, estimatedEv, marketPrice]);
 
-  // All cards array
+  // All cards array with normalized isCommander flag
   const rawCards: DeckCardItem[] = useMemo(() => {
+    let list: DeckCardItem[] = [];
     if (deckDetail.cards && deckDetail.cards.length > 0) {
-      return deckDetail.cards;
+      list = deckDetail.cards;
+    } else if (deckDetail.keyCards && deckDetail.keyCards.length > 0) {
+      list = deckDetail.keyCards;
     }
-    if (deckDetail.keyCards && deckDetail.keyCards.length > 0) {
-      return deckDetail.keyCards;
-    }
-    return [];
+
+    const commanderName =
+      deckDetail.commander?.name && deckDetail.commander.name.toLowerCase().trim() !== 'face commander'
+        ? deckDetail.commander.name.toLowerCase().trim()
+        : null;
+
+    return list.map((c) => {
+      const isCardCmd = Boolean(
+        c.isCommander ||
+        (c as any).commander ||
+        (commanderName && c.name.toLowerCase().trim() === commanderName)
+      );
+      return isCardCmd ? { ...c, isCommander: true } : c;
+    });
   }, [deckDetail]);
 
+  // Determine if a genuine commander card exists
+  const commanderCard: DeckCardItem | null = useMemo(() => {
+    // 1. Look for card with isCommander in rawCards (excluding generic dummy 'Face Commander')
+    const fromCards = rawCards.find(
+      (c) => c.isCommander && c.name.toLowerCase().trim() !== 'face commander'
+    );
+    if (fromCards) return fromCards;
+
+    // 2. Check deckDetail.commander if it's a genuine card
+    if (
+      deckDetail.commander &&
+      deckDetail.commander.name &&
+      deckDetail.commander.name.toLowerCase().trim() !== 'face commander' &&
+      deckDetail.commander.name.trim() !== ''
+    ) {
+      const matched = rawCards.find(
+        (c) => c.name.toLowerCase().trim() === deckDetail.commander!.name.toLowerCase().trim()
+      );
+      if (matched) {
+        return { ...matched, isCommander: true };
+      }
+      return {
+        name: deckDetail.commander.name,
+        count: 1,
+        rarity: (deckDetail.commander.rarity as any) || 'mythic',
+        type: deckDetail.commander.type || 'Legendary Creature',
+        primaryType: 'Creature',
+        manaCost: deckDetail.commander.manaCost || '',
+        price: deckDetail.commander.price || 0,
+        imageUrl: deckDetail.commander.imageUrl,
+        text: deckDetail.commander.text,
+        foil: true,
+        isCommander: true,
+      };
+    }
+
+    return null;
+  }, [rawCards, deckDetail.commander]);
+
+  const hasCommanderCard = Boolean(commanderCard);
+
   // Helper to compute unit card price dynamically based on vendorMode
-  const getCardPrice = (c: DeckCardItem): number => {
+  const getCardPrice = (c?: DeckCardItem | null): number => {
+    if (!c) return 0;
     if (vendorMode === 'cardkingdom' && c.prices?.cardkingdom) return c.prices.cardkingdom;
     if (vendorMode === 'cardmarket' && c.prices?.cardmarket) return c.prices.cardmarket;
     if (vendorMode === 'tcgplayer' && (c.prices?.tcgplayer || c.price)) return c.prices?.tcgplayer || c.price;
@@ -261,6 +397,11 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
         const aTotalVal = aUnitPrice * (a.count || 1);
         const bTotalVal = bUnitPrice * (b.count || 1);
 
+        if (sortBy === 'commander') {
+          if (a.isCommander && !b.isCommander) return -1;
+          if (!a.isCommander && b.isCommander) return 1;
+          return bTotalVal - aTotalVal;
+        }
         if (sortBy === 'total_ev_desc') return bTotalVal - aTotalVal;
         if (sortBy === 'price_desc') return bUnitPrice - aUnitPrice;
         if (sortBy === 'price_asc') return aUnitPrice - bUnitPrice;
@@ -332,6 +473,18 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
     return processedCards.reduce((sum, c) => sum + (c.count || 1), 0);
   }, [processedCards]);
 
+  if (isLoading) {
+    return (
+      <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[320px] text-white ${className}`}>
+        <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-3" />
+        <h4 className="text-base font-bold text-white">Loading Complete Decklist...</h4>
+        <p className="text-xs text-slate-400 mt-1 max-w-md">
+          Retrieving 100-card collation, live singles valuation, and card hierarchy.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-6 ${className}`}>
       {/* Header Banner */}
@@ -387,63 +540,67 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
       </div>
 
       {/* Commander Spotlight & Strategy Overview */}
-      <div className="px-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Commander Card Art Frame */}
-        <div className="lg:col-span-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-2.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded flex items-center gap-1">
-                <Crown className="w-3 h-3" />
-                Guaranteed Face Commander
-              </span>
-              <span className="text-xs font-mono text-amber-300 font-black">
-                ${getCardPrice(deckDetail.commander as any).toFixed(2)}
-              </span>
-            </div>
-
-            {deckDetail.commander.imageUrl ? (
-              <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl overflow-hidden bg-slate-900 relative mb-3.5 border border-indigo-500/30 shadow-xl group">
-                <img
-                  src={deckDetail.commander.imageUrl}
-                  alt={deckDetail.commander.name}
-                  className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
+      <div className={`px-6 ${hasCommanderCard ? 'grid grid-cols-1 lg:grid-cols-12 gap-5' : 'block'}`}>
+        {/* Commander Card Art Frame - rendered only if the commander card exists */}
+        {hasCommanderCard && commanderCard && (
+          <div className="lg:col-span-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded flex items-center gap-1">
+                  <Crown className="w-3 h-3" />
+                  Guaranteed Face Commander
+                </span>
+                <span className="text-xs font-mono text-amber-300 font-black">
+                  ${getCardPrice(commanderCard).toFixed(2)}
+                </span>
               </div>
-            ) : (
-              <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center p-4 text-center mb-3.5">
-                <Crown className="w-10 h-10 text-amber-400 mb-2" />
-                <span className="text-sm font-bold text-white">{deckDetail.commander.name}</span>
-                <span className="text-xs text-indigo-300 mt-1 font-mono">{deckDetail.commander.type}</span>
+
+              {commanderCard.imageUrl ? (
+                <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl overflow-hidden bg-slate-900 relative mb-3.5 border border-indigo-500/30 shadow-xl group">
+                  <img
+                    src={commanderCard.imageUrl}
+                    alt={commanderCard.name}
+                    className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-[5/7] w-full max-w-[240px] mx-auto rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col items-center justify-center p-4 text-center mb-3.5">
+                  <Crown className="w-10 h-10 text-amber-400 mb-2" />
+                  <span className="text-sm font-bold text-white">{commanderCard.name}</span>
+                  <span className="text-xs text-indigo-300 mt-1 font-mono">{commanderCard.type}</span>
+                </div>
+              )}
+
+              <div className="font-black text-base text-white mb-0.5 flex items-center justify-between gap-2">
+                <span className="truncate">{commanderCard.name}</span>
+                {commanderCard.manaCost && (
+                  <ManaCostRenderer manaCost={commanderCard.manaCost} size="md" />
+                )}
               </div>
-            )}
-
-            <div className="font-black text-base text-white mb-0.5 flex items-center justify-between gap-2">
-              <span className="truncate">{deckDetail.commander.name}</span>
-              <ManaCostRenderer manaCost={deckDetail.commander.manaCost} size="md" />
+              <div className="text-xs text-indigo-300 font-mono mb-2">
+                {commanderCard.type}
+              </div>
+              {commanderCard.text && (
+                <p className="text-[11px] text-slate-300 line-clamp-4 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-white/10">
+                  {commanderCard.text}
+                </p>
+              )}
             </div>
-            <div className="text-xs text-indigo-300 font-mono mb-2">
-              {deckDetail.commander.type}
-            </div>
-            {deckDetail.commander.text && (
-              <p className="text-[11px] text-slate-300 line-clamp-4 leading-relaxed bg-black/40 p-2.5 rounded-lg border border-white/10">
-                {deckDetail.commander.text}
-              </p>
-            )}
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300 font-mono">
-            <span className="text-amber-300 font-bold flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              Foil-Etched Display Card
-            </span>
-            <span className="text-emerald-400 font-bold">100% Guaranteed</span>
+            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300 font-mono">
+              <span className="text-amber-300 font-bold flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                Foil-Etched Display Card
+              </span>
+              <span className="text-emerald-400 font-bold">100% Guaranteed</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Deck Strategy, Inclusions & Card Type Matrix */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className={`${hasCommanderCard ? 'lg:col-span-8' : 'w-full'} space-y-4`}>
           {/* Deck Strategy */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
             <div className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
@@ -511,7 +668,11 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
               </div>
               <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>1x Foil-Etched Display Commander</span>
+                <span>
+                  {hasCommanderCard
+                    ? '1x Foil-Etched Display Commander'
+                    : '1x Complete Ready-to-Play Preconstructed Deck'}
+                </span>
               </div>
             </div>
           </div>
@@ -647,6 +808,7 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
               <option value="total_ev_desc">Total Value: High to Low</option>
               <option value="price_desc">Unit Price: High to Low</option>
               <option value="price_asc">Unit Price: Low to High</option>
+              <option value="commander">Commander Card First</option>
               <option value="name_asc">Name: A to Z</option>
               <option value="cmc_desc">Mana Cost: High to Low</option>
               <option value="cmc_asc">Mana Cost: Low to High</option>
@@ -902,6 +1064,7 @@ const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getC
             <th className="py-2.5 px-3 text-center">Mana Cost</th>
             <th className="py-2.5 px-3">Type Line</th>
             <th className="py-2.5 px-3">Rarity</th>
+            <th className="py-2.5 px-3 text-center">Commander</th>
             <th className="py-2.5 px-3 text-center">Finish</th>
             <th className="py-2.5 px-3 text-center">Qty</th>
             <th className="py-2.5 px-3 text-right">
@@ -958,6 +1121,16 @@ const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getC
                   >
                     {card.rarity}
                   </span>
+                </td>
+                <td className="py-2 px-3 text-center">
+                  {card.isCommander ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs font-mono">
+                      <Crown className="w-3 h-3 text-amber-600 shrink-0" />
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="text-slate-300 text-xs font-mono">—</span>
+                  )}
                 </td>
                 <td className="py-2 px-3 text-center">
                   {card.foil || card.isCommander ? (
@@ -1018,6 +1191,12 @@ const DeckGridSection: React.FC<GridSectionProps> = ({ cards, getCardPrice, onPr
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
+                {card.isCommander && (
+                  <span className="absolute top-1.5 left-1.5 bg-amber-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow flex items-center gap-1 font-mono">
+                    <Crown className="w-2.5 h-2.5 text-slate-950" />
+                    CMD
+                  </span>
+                )}
                 {qty > 1 && (
                   <span className="absolute top-1.5 right-1.5 bg-indigo-900/90 backdrop-blur-xs text-white text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow">
                     {qty}x
@@ -1026,6 +1205,12 @@ const DeckGridSection: React.FC<GridSectionProps> = ({ cards, getCardPrice, onPr
               </div>
             ) : (
               <div className="aspect-[5/7] rounded-lg bg-slate-800 text-white flex flex-col items-center justify-center p-2 text-center mb-2 relative">
+                {card.isCommander && (
+                  <span className="absolute top-1.5 left-1.5 bg-amber-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow flex items-center gap-1 font-mono">
+                    <Crown className="w-2.5 h-2.5 text-slate-950" />
+                    CMD
+                  </span>
+                )}
                 <span className="font-bold text-[11px] line-clamp-2">{card.name}</span>
                 {qty > 1 && (
                   <span className="absolute top-1.5 right-1.5 bg-indigo-600 text-white text-[10px] font-mono font-black px-1.5 py-0.5 rounded shadow">

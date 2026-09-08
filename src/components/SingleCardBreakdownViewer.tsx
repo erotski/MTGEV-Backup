@@ -36,6 +36,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
 
   // Helper to compute card vendor price
   const getCardPrice = (c: any, vend: string) => {
+    if (!c) return 0;
     const prices = c.prices || {};
     const tcg = prices.tcgplayer ?? (c.price ? Number(c.price) : null);
     const ck = prices.cardkingdom ?? (tcg ? Number((tcg * 1.15).toFixed(2)) : null);

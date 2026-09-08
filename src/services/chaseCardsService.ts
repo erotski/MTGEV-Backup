@@ -1,6 +1,7 @@
 import { ChaseCard, PreconstructedDeckDetail, DeckCardItem } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { dataService } from './dataService';
+import { TWENTY_WAYS_TO_WIN_DECK } from '../data/twentyWaysToWinDeck';
 
 // In-memory cache for dynamically fetched chase cards from Scryfall
 const dynamicChaseCardsCache: Record<string, ChaseCard[]> = {};
@@ -656,6 +657,11 @@ export const CURATED_CHASE_CARDS: Record<string, ChaseCard[]> = {
  * Provides structured 100-card content, face commanders, and key cards for precon decks
  */
 export const PRECON_DECK_DETAILS: Record<string, PreconstructedDeckDetail> = {
+  '20-ways-to-win': TWENTY_WAYS_TO_WIN_DECK,
+  '20 ways to win': TWENTY_WAYS_TO_WIN_DECK,
+  '20waystowin': TWENTY_WAYS_TO_WIN_DECK,
+  'secret lair commander deck 20 ways to win': TWENTY_WAYS_TO_WIN_DECK,
+  'eabce89c-56d8-5ec9-9cc3-6f35ea93f95e': TWENTY_WAYS_TO_WIN_DECK,
   'deck-mh3-eldrazi-incursion': {
     deckName: 'Modern Horizons 3 Commander: Eldrazi Incursion',
     setCode: 'M3C',

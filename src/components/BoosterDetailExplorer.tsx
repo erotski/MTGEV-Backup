@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
-import { resolveRecursiveProductAudit } from '../utils/productUtils';
+import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
+import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildCommanderSetCodes, getChildSets, getScryfallNode } from '../utils/setHierarchyUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
   ShieldCheck, 
@@ -27,7 +28,6 @@ import {
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
-import { ProductBreakdownTable } from './ProductBreakdownTable';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 
 interface BoosterDetailExplorerProps {
@@ -93,14 +93,22 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   }, [availableSets]);
 
   const filteredSets = useMemo(() => {
-    if (!setSearchQuery.trim()) return sortedSets;
+    if (!setSearchQuery.trim()) {
+      // By default, only show primary/main sets (exclude child commander sets that belong under parent sets)
+      return sortedSets.filter((s) => !s.isCommanderSubSet && !isCommanderSubSet(s.code));
+    }
     const q = setSearchQuery.toLowerCase().trim();
-    return sortedSets.filter(
-      (s) =>
+    return sortedSets.filter((s) => {
+      const matchesSelf =
         s.name.toLowerCase().includes(q) ||
         s.code.toLowerCase().includes(q) ||
-        (s.block && s.block.toLowerCase().includes(q))
-    );
+        (s.block && s.block.toLowerCase().includes(q));
+
+      // Also match if a child commander set code or name matches query
+      const childCodes = getChildCommanderSetCodes(s.code);
+      const matchesChild = childCodes.some((cc) => cc.toLowerCase().includes(q));
+      return matchesSelf || matchesChild;
+    });
   }, [sortedSets, setSearchQuery]);
 
   // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
@@ -234,64 +242,24 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         else if (cat === 'deck' || cat === 'multiple_decks' || cat === 'deck_box') packType = 'starter_deck';
         else if (cat === 'kit') packType = 'kit';
 
-        let pCount = 1;
-        if (sp.contents?.pack && Array.isArray(sp.contents.pack)) {
-          pCount = sp.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
-        } else if (sp.contents?.sealed && Array.isArray(sp.contents.sealed)) {
-          pCount = sp.contents.sealed.reduce((sum: number, s: any) => sum + (s.count || 1), 0);
-        }
-
-        const rawCode = sp.contents?.pack?.[0]?.code?.toLowerCase() || '';
-        const rawSubtype = (sp.subtype || '').toLowerCase();
-        const pLower = pName.toLowerCase();
-
-        let boosterNameType = 'play';
-        if (rawCode) {
-          boosterNameType = rawCode;
-        } else if (rawSubtype.includes('topper') || pLower.includes('topper')) {
-          boosterNameType = 'box-topper';
-        } else if (rawSubtype.includes('collector') || pLower.includes('collector')) {
-          boosterNameType = 'collector';
-        } else if (rawSubtype.includes('play') || pLower.includes('play')) {
-          boosterNameType = 'play';
-        } else if (rawSubtype.includes('draft') || pLower.includes('draft')) {
-          boosterNameType = 'draft';
-        } else if (rawSubtype.includes('set') || pLower.includes('set booster')) {
-          boosterNameType = 'set';
-        } else if (rawSubtype.includes('jumpstart') || pLower.includes('jumpstart')) {
-          boosterNameType = 'jumpstart';
-        } else if (rawSubtype.includes('prerelease') || pLower.includes('prerelease')) {
-          boosterNameType = 'prerelease';
-        } else if (rawSubtype) {
-          boosterNameType = rawSubtype;
-        }
-
-        // Vendor-adjusted sealed market price
-        let basePrice = Number(sp.marketPrice || sp.tcgplayer_price || 0);
-        if (basePrice === 0 && (boosterNameType === 'box-topper' || pLower.includes('topper'))) {
-          basePrice = 9.99;
-        }
-        if (vendor === 'cardmarket') {
-          basePrice = Number(sp.cardmarket_price || (basePrice > 0 ? basePrice * 0.92 : 0));
-        } else if (vendor === 'cardkingdom') {
-          basePrice = Number(sp.cardkingdom_price || (basePrice > 0 ? basePrice * 1.15 : 0));
-        } else if (vendor === 'manapool') {
-          basePrice = Number(sp.manapool_price || (basePrice > 0 ? basePrice * 0.98 : 0));
-        } else if (vendor === 'all') {
-          basePrice = Number(basePrice > 0 ? basePrice * 0.94 : 0);
-        }
-
-        // Determine EV from matching booster record in booster_ev.json
-        const matchingBoosterEv = rawSetBoosters.find(
-          (b) => b.boosterName.toLowerCase() === boosterNameType.toLowerCase()
+        // Single canonical source of truth for containment, breakdown, and EV calculation
+        const metrics = getCanonicalProductMetrics(
+          sp,
+          productMap,
+          arbitrageRecords,
+          boosterEvMap,
+          preconDecks,
+          singleCardPrices,
+          vendor,
+          priceMode
         );
-        let computedEv = 0;
-        if (matchingBoosterEv && matchingBoosterEv.evAverage > 0) {
-          computedEv = Number((matchingBoosterEv.evAverage * pCount * reprintMultiplier * vendorEvMultiplier).toFixed(2));
-        } else if (sp.estimatedEv) {
-          computedEv = Number((sp.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2));
-        } else if (basePrice > 0) {
-          computedEv = Number((basePrice * 1.05 * reprintMultiplier * vendorEvMultiplier).toFixed(2));
+
+        let basePrice = metrics.marketPrice;
+        if (basePrice === 0) {
+          basePrice = Number(sp.marketPrice || sp.tcgplayer_price || 0);
+        }
+        if (basePrice === 0 && (metrics.primaryBoosterName === 'box-topper' || pName.toLowerCase().includes('topper'))) {
+          basePrice = 9.99;
         }
 
         return {
@@ -302,12 +270,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           setName: currentSet?.name || sCode,
           releaseDate: sp.releaseDate || currentSet?.releaseDate || '',
           block: currentSet?.block || '',
-          boosterName: boosterNameType,
+          boosterName: metrics.primaryBoosterName,
           packagingType: packType,
-          packsCount: pCount > 0 ? pCount : 1,
-          cardCount: sp.cardCount || (packType === 'starter_deck' ? 100 : undefined),
+          packsCount: metrics.packsCount,
+          cardCount: metrics.cardCount,
           marketPrice: Number(basePrice.toFixed(2)),
-          estimatedEv: computedEv > 0 ? computedEv : Number(((sp.estimatedEv || basePrice || 0) * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+          estimatedEv: metrics.estimatedEv,
           rawCategory: cat,
           specialFeatures: [],
           rawContents: sp.contents,
@@ -324,7 +292,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }).catch(() => {});
     return () => { isMounted = false; };
-  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
 
   // Sync when set changes
   useEffect(() => {
@@ -365,8 +333,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Find active product details
   const activeProduct: CatalogPackProduct | undefined = useMemo(() => {
-    if (selectedProductOverride && selectedProductOverride.setCode.toUpperCase() === selectedSetCode.toUpperCase()) {
-      return selectedProductOverride;
+    if (selectedProductOverride) {
+      const overrideSet = selectedProductOverride.setCode.toUpperCase();
+      const related = getAllRelatedSetCodes(selectedSetCode);
+      if (related.includes(overrideSet)) {
+        return selectedProductOverride;
+      }
     }
     const dbMatch = dbProducts.find((p) => p.id === selectedProductId);
     if (dbMatch) return dbMatch;
@@ -378,10 +350,11 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     if (!activeProduct) return null;
     const uid = activeProduct.uuid || activeProduct.id;
     if (uid && productMap.has(uid)) return productMap.get(uid);
+    const related = getAllRelatedSetCodes(selectedSetCode);
     return (
       allRawProducts.find(
         (p) =>
-          (p.setCode || '').toUpperCase() === selectedSetCode.toUpperCase() &&
+          related.includes((p.setCode || '').toUpperCase()) &&
           ((p.displayName || p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase() ||
             (p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase())
       ) || activeProduct
@@ -499,10 +472,53 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     }
   };
 
-  const childSetsList: ChildSetInfo[] = currentSet?.childSets || [
-    { code: currentSet?.tokenSetCode || `T${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Tokens`, type: 'Tokens' },
-    { code: `A${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Art Series`, type: 'Art Series' },
-  ];
+  const childSetsList: ChildSetInfo[] = useMemo(() => {
+    const list: ChildSetInfo[] = currentSet?.childSets ? [...currentSet.childSets] : [];
+    
+    // Supplement directly with Scryfall child sets (including all linked subsets)
+    const scryfallChildren = getChildSets(selectedSetCode);
+    scryfallChildren.forEach((sc) => {
+      if (!list.some((c) => c.code.toUpperCase() === sc.code.toUpperCase())) {
+        const rawType = sc.setType || '';
+        const formattedType =
+          rawType === 'memorabilia'
+            ? sc.name.toLowerCase().includes('scene box')
+              ? 'Scene Box'
+              : sc.name.toLowerCase().includes('art')
+              ? 'Art Series'
+              : 'Memorabilia'
+            : rawType === 'masterpiece'
+            ? 'Masterpiece'
+            : rawType === 'commander'
+            ? 'Commander Decks'
+            : rawType === 'token'
+            ? 'Tokens'
+            : rawType === 'promo'
+            ? 'Promos'
+            : rawType
+            ? rawType.charAt(0).toUpperCase() + rawType.slice(1)
+            : 'Sub-set';
+
+        list.push({
+          code: sc.code,
+          name: sc.name,
+          type: formattedType,
+          cardCount: sc.cardCount,
+          iconCode: sc.code,
+          iconSvgUri: sc.iconSvgUri,
+          parentCode: selectedSetCode,
+        });
+      }
+    });
+
+    if (list.length === 0) {
+      list.push(
+        { code: currentSet?.tokenSetCode || `T${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Tokens`, type: 'Tokens' },
+        { code: `A${selectedSetCode}`, name: `${currentSet?.name || selectedSetCode} Art Series`, type: 'Art Series' }
+      );
+    }
+    return list;
+  }, [currentSet, selectedSetCode]);
 
   return (
     <div id="booster-explorer-container" className="space-y-6">
@@ -618,11 +634,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     ) : (
                       filteredSets.map((s) => {
                         const isSelected = s.code.toUpperCase() === selectedSetCode.toUpperCase();
+                        const childCmds = getChildCommanderSetCodes(s.code);
+                        const childCount = s.childSets ? s.childSets.length : getChildSets(s.code).length;
                         return (
                           <div
                             key={s.code}
                             onClick={() => {
-                              onSelectSetCode(s.code);
+                              onSelectSetCode(resolveToMainSetCode(s.code));
                               setIsSetDropdownOpen(false);
                               setSetSearchQuery('');
                             }}
@@ -646,6 +664,16 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                                 <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
                                   <span>{s.releaseDate || 'N/A'}</span>
                                   {s.type && <span className="capitalize">• {s.type}</span>}
+                                  {childCount > 0 && !s.isCommanderSubSet && !s.parentCode && (
+                                    <span className="text-indigo-600 font-medium">
+                                      • {childCount} linked sub-sets
+                                    </span>
+                                  )}
+                                  {(s.isCommanderSubSet || s.parentCode) && (
+                                    <span className="text-purple-600 font-medium">
+                                      • Sub-set ↳ {s.parentCode || resolveToMainSetCode(s.code)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -772,7 +800,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 >
                   {/* Smaller Child Set Icon */}
                   <div className="w-6 h-6 shrink-0 bg-white group-hover:border-indigo-200 rounded-lg border border-slate-200 flex items-center justify-center p-1 shadow-2xs transition">
-                    <SetSymbolIcon setCode={child.iconCode || child.code} size="xs" className="w-full h-full object-contain" />
+                    <SetSymbolIcon setCode={child.iconCode || child.code} iconSvgUri={child.iconSvgUri} size="xs" className="w-full h-full object-contain" />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -812,6 +840,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           selectedProductId={selectedProductId}
           onPriceModeChange={onPriceModeChange}
           onVendorChange={onVendorChange}
+          arbitrageMap={arbitrageRecords}
+          productMap={productMap}
+          preconDecks={preconDecks}
+          boosterEvMap={boosterEvMap}
+          singleCardPrices={singleCardPrices}
+          reprintMultiplier={reprintMultiplier}
           onSelectProduct={(prodId, bName, product) => {
             setSelectedProductId(prodId);
             if (product) {
@@ -1014,22 +1048,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               isPreconstructed={isPreconProduct}
               preconSinglesEv={productEstimatedEv}
               cardCount={productTotalCards}
-            />
-          )}
-
-          {/* Authoritative Product Breakdown & Child Reconciliation Table */}
-          {activeRawProduct && (
-            <ProductBreakdownTable
-              product={activeRawProduct}
-              arbitrageMap={arbitrageRecords}
-              productMap={productMap}
-              preconDecks={preconDecks}
-              boosterEvMap={boosterEvMap}
-              singleCardPrices={singleCardPrices}
-              vendor={vendor}
-              priceMode={priceMode}
-              reprintMultiplier={reprintMultiplier}
-              auditResult={productAudit}
             />
           )}
 

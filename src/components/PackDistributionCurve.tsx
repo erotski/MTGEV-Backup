@@ -91,16 +91,19 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     return Number((q50 + Math.pow(subT, 1.25) * (q95 - q50)).toFixed(2));
   }, [isPreconstructed, fixedDeckEv, q50, q95]);
 
-  // Default optimal Y-axis ceiling
+  // Default optimal Y-axis ceiling (scales to accommodate top 100% god packs)
   const defaultYCeiling = useMemo(() => {
     if (isPreconstructed) {
       return Math.ceil(Math.max(fixedDeckEv * 1.35, sealedPrice * 1.35, 10));
     }
-    return Math.ceil(Math.max(p90Value * 2, sealedPrice * 1.25));
-  }, [isPreconstructed, fixedDeckEv, p90Value, sealedPrice]);
+    const maxGodPack = (activeBooster?.evMax && activeBooster.evMax > 0)
+      ? activeBooster.evMax * scale
+      : (activeBooster?.quantiles?.[99] || p90Value * 2) * scale;
+    return Math.ceil(Math.max(maxGodPack * 1.05, p90Value * 2, sealedPrice * 1.25, 10));
+  }, [isPreconstructed, fixedDeckEv, activeBooster, scale, p90Value, sealedPrice]);
 
   // Sliders state: X-Axis Start/End Percentile and Y-Axis Max Ceiling
-  const [xMinPercent, setXMinPercent] = useState<number>(0);
+  const [xMinPercent, setXMinPercent] = useState<number>(1);
   const [xMaxPercent, setXMaxPercent] = useState<number>(100);
   const [yCeiling, setYCeiling] = useState<number>(defaultYCeiling);
 
@@ -148,7 +151,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     return byVendor;
   }, [allSetBoosters, activeBooster, priceMode]);
 
-  // Generate 101 percentile data points (0% to 100%)
+  // Generate 100 percentile data points (1% to 100%)
   // Uses authentic 100-sample empirical quantiles from 5,000 pack simulation when available!
   const allCurveData = useMemo(() => {
     const points: Array<{
@@ -169,7 +172,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         (v) => vendorRecords[v]?.quantiles && vendorRecords[v]!.quantiles!.length >= 100
       );
 
-    for (let p = 0; p <= 100; p += 1) {
+    for (let p = 1; p <= 100; p += 1) {
       if (isPreconstructed) {
         points.push({
           percentile: `${p}%`,
@@ -186,17 +189,17 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
       if (hasSimulatedQuantiles) {
         // Sample index in the 100-bucket array (0 to 99)
-        const qIdx = p === 0 ? 0 : Math.min(99, p - 1);
+        const qIdx = p - 1;
 
         const getVal = (v: string, fallbackRatio: number) => {
           const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
           const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
           if (rec?.quantiles && rec.quantiles.length >= 100) {
-            const rawVal = p === 0 ? Math.min(rec.quantiles[0], rec.evMin || rec.quantiles[0]) : rec.quantiles[qIdx];
+            const rawVal = rec.quantiles[qIdx];
             return Number((rawVal * modeMult * scale).toFixed(2));
           }
           if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-            const rawVal = p === 0 ? Math.min(activeBooster.quantiles[0], activeBooster.evMin || activeBooster.quantiles[0]) : activeBooster.quantiles[qIdx];
+            const rawVal = activeBooster.quantiles[qIdx];
             return Number((rawVal * fallbackRatio * modeMult * scale).toFixed(2));
           }
           return 0;
@@ -275,7 +278,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     });
 
     return points;
-  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, q0, q5, q50, q95, q100]);
+  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, priceMode, q0, q5, q50, q95, q100]);
 
   // Filtered curve data for X-Axis Slider Range
   const filteredCurveData = useMemo(() => {
@@ -283,6 +286,20 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       (d) => d.percentileNum >= xMinPercent && d.percentileNum <= xMaxPercent
     );
   }, [allCurveData, xMinPercent, xMaxPercent]);
+
+  // Dynamic X-Axis ticks based on current range
+  const xTicks = useMemo(() => {
+    const ticks: string[] = [];
+    const span = xMaxPercent - xMinPercent;
+    const step = span <= 25 ? 2 : span <= 50 ? 5 : 10;
+    const start = Math.ceil(xMinPercent / step) * step;
+    for (let p = start; p <= xMaxPercent; p += step) {
+      ticks.push(`${p}%`);
+    }
+    if (!ticks.includes(`${xMinPercent}%`)) ticks.unshift(`${xMinPercent}%`);
+    if (!ticks.includes(`${xMaxPercent}%`)) ticks.push(`${xMaxPercent}%`);
+    return Array.from(new Set(ticks)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  }, [xMinPercent, xMaxPercent]);
 
   // Scaled Vendor Averages for reference lines
   const scaledAverages = useMemo(() => {
@@ -367,7 +384,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
   // Reset Sliders helper
   const handleResetSliders = () => {
-    setXMinPercent(0);
+    setXMinPercent(1);
     setXMaxPercent(100);
     setYCeiling(defaultYCeiling);
   };
@@ -376,7 +393,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const sliderYMin = isPreconstructed ? Math.max(5, Math.floor(Math.min(fixedDeckEv, sealedPrice) * 0.5)) : (scale > 1 ? 20 : 6);
   const sliderYMax = isPreconstructed
     ? Math.ceil(Math.max(fixedDeckEv * 1.75, sealedPrice * 1.75))
-    : Math.ceil(Math.max(q100 * 1.1, sealedPrice * 1.25));
+    : Math.ceil(Math.max(q100 * 1.1, (activeBooster?.evMax || 0) * scale * 1.1, (activeBooster?.quantiles?.[99] || 0) * scale * 1.1, sealedPrice * 1.25, 20));
 
   return (
     <div
@@ -615,6 +632,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
               dataKey="percentile"
+              ticks={xTicks}
+              interval={0}
               tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
               label={{
                 value: isPreconstructed ? `Quantile Percentile (Deterministic Flat Line across ${xMinPercent}% → ${xMaxPercent}%)` : `Quantile Percentile (${xMinPercent}% → ${xMaxPercent}%)`,
@@ -681,7 +700,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#2563eb"
                 strokeWidth={2.4}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="All vendors ( cheapest )"
               />
             )}
@@ -692,7 +711,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#6366f1"
                 strokeWidth={2.2}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="All vendors ( average )"
               />
             )}
@@ -703,7 +722,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#16a34a"
                 strokeWidth={2.6}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="TCGplayer"
               />
             )}
@@ -714,7 +733,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#eab308"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Cardmarket"
               />
             )}
@@ -725,7 +744,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#ea580c"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Card Kingdom"
               />
             )}
@@ -736,7 +755,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 stroke="#be123c"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Manapool"
               />
             )}

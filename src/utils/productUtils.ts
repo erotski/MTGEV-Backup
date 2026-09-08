@@ -26,6 +26,9 @@ export interface RecursiveProductBreakdownResult {
   totalDecks: number;
   totalSealedUnits: number;
   totalEv: number;
+  totalMinEv: number;
+  totalMid90Ev: number;
+  totalMaxEv: number;
   items: ChildItemResolution[];
   packItems: Array<{
     packName: string;
@@ -99,6 +102,7 @@ export interface RecursiveProductBreakdownResult {
     count: number;
     category: string;
     ev: number;
+    cards?: number;
   }>;
 }
 
@@ -241,6 +245,20 @@ export function resolveSingleCardEv(
   priceMode: PriceMode | string = 'direct',
   reprintMultiplier: number = 1.0
 ) {
+  if (!cd) {
+    return {
+      name: 'Unknown Card',
+      number: '',
+      set: (parentSetCode || '').toUpperCase(),
+      foil: false,
+      price: 0,
+      ev: 0,
+      prices: { tcgplayer: 0, cardkingdom: 0, cardmarket: 0, all: 0 },
+      isEstimated: false,
+      uuid: '',
+    };
+  }
+
   const rawName = cd.name || 'Card';
   const rawNumber = cd.number || '';
   const cardSet = (cd.set || parentSetCode || '').toUpperCase();
@@ -250,11 +268,15 @@ export function resolveSingleCardEv(
     (parentProduct?.displayName && parentProduct.displayName.toLowerCase().includes('foil') && !parentProduct.displayName.toLowerCase().includes('non-foil'))
   );
 
+  const cardPricesByUuid = singleCardPrices?.byUuid || {};
+  const cardPricesByNameSet = singleCardPrices?.byNameSet || {};
+  const cardPricesByName = singleCardPrices?.byName || {};
+
   const priceIdx =
-    (cd.uuid && singleCardPrices.byUuid[cd.uuid]) ||
-    singleCardPrices.byNameSet[`${rawName.toLowerCase()}___${cardSet.toLowerCase()}`] ||
-    singleCardPrices.byNameSet[`${rawName.toLowerCase()}_${cardSet.toLowerCase()}`] ||
-    singleCardPrices.byName[rawName.toLowerCase()];
+    (cd.uuid && cardPricesByUuid[cd.uuid]) ||
+    cardPricesByNameSet[`${rawName.toLowerCase()}___${cardSet.toLowerCase()}`] ||
+    cardPricesByNameSet[`${rawName.toLowerCase()}_${cardSet.toLowerCase()}`] ||
+    cardPricesByName[rawName.toLowerCase()];
 
   let rawPrice = 0;
   let isEstimated = false;
@@ -380,8 +402,13 @@ export function resolveRecursiveProductAudit(
   let totalDecks = 0;
   let totalSealedUnits = 0;
   let totalEv = 0;
+  let totalMinEv = 0;
+  let totalMid90Ev = 0;
+  let totalMaxEv = 0;
 
-  if (!product || !product.contents) {
+  const prodContents = product?.contents || product?.rawContents;
+
+  if (!product || !prodContents) {
     // If leaf item with no explicit contents
     const directCards = product?.cardCount || 0;
     return {
@@ -390,6 +417,9 @@ export function resolveRecursiveProductAudit(
       totalDecks: 0,
       totalSealedUnits: 0,
       totalEv: 0,
+      totalMinEv: 0,
+      totalMid90Ev: 0,
+      totalMaxEv: 0,
       items: [],
       packItems: [],
       cardItems: [],
@@ -409,6 +439,9 @@ export function resolveRecursiveProductAudit(
         totalDecks: 0,
         totalSealedUnits: 0,
         totalEv: 0,
+        totalMinEv: 0,
+        totalMid90Ev: 0,
+        totalMaxEv: 0,
         items: [],
         packItems: [],
         cardItems: [],
@@ -422,8 +455,8 @@ export function resolveRecursiveProductAudit(
   }
 
   // 1. DIRECT PACKS
-  if (product.contents.pack && Array.isArray(product.contents.pack)) {
-    product.contents.pack.forEach((pk: any) => {
+  if (prodContents.pack && Array.isArray(prodContents.pack)) {
+    prodContents.pack.forEach((pk: any) => {
       const count = (pk.count || 1) * multiplier;
       const res = resolveBoosterPackEv(pk, parentSet, boosterEvMap, vendor, priceMode, reprintMultiplier);
       const cardsPerPack = getCardsPerPack(pk.code, product.category, product.subtype);
@@ -433,6 +466,9 @@ export function resolveRecursiveProductAudit(
       totalCards += packCardsTotal;
       totalPacks += count;
       totalEv += subtotalEv;
+      totalMinEv += Number((count * res.unitEvMin).toFixed(2));
+      totalMid90Ev += Number((count * res.unitEvMid90).toFixed(2));
+      totalMaxEv += Number((count * res.unitEvMax).toFixed(2));
 
       const pEntry = {
         packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
@@ -465,8 +501,8 @@ export function resolveRecursiveProductAudit(
   }
 
   // 2. STANDALONE CARDS & PROMOS
-  if (product.contents.card && Array.isArray(product.contents.card)) {
-    product.contents.card.forEach((cd: any) => {
+  if (prodContents.card && Array.isArray(prodContents.card)) {
+    prodContents.card.forEach((cd: any) => {
       const count = (cd.count || 1) * multiplier;
       const res = resolveSingleCardEv(cd, parentSet, product, singleCardPrices, vendor, priceMode, reprintMultiplier);
       const subtotalEv = Number((count * res.ev).toFixed(2));
@@ -502,8 +538,8 @@ export function resolveRecursiveProductAudit(
   }
 
   // 3. PRECONSTRUCTED DECKS
-  if (product.contents.deck && Array.isArray(product.contents.deck)) {
-    product.contents.deck.forEach((dk: any) => {
+  if (prodContents.deck && Array.isArray(prodContents.deck)) {
+    prodContents.deck.forEach((dk: any) => {
       const count = multiplier;
       const matchedDeck = findMatchingPreconDeck(preconDecks, dk.name, dk.set || parentSet);
       const isCommander = Boolean(
@@ -534,12 +570,23 @@ export function resolveRecursiveProductAudit(
 
       const rawCards = matchedDeck?.cards || [];
       const cards = rawCards.map((c: any) => {
+        if (!c) {
+          return {
+            name: 'Unknown Card',
+            count: 1,
+            foil: false,
+            isFoil: false,
+            finish: 'Nonfoil',
+            price: 0,
+            totalPrice: 0,
+          };
+        }
         const cardFoil = Boolean(c.foil || c.isFoil || isFoil);
         const fromIdx =
-          (c.uuid && singleCardPrices.byUuid[c.uuid]) ||
-          singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || parentSet).toLowerCase()}`] ||
-          singleCardPrices.byNameSet[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || parentSet).toLowerCase()}`] ||
-          singleCardPrices.byName[(c.name || '').toLowerCase()];
+          (c.uuid && cardPricesByUuid[c.uuid]) ||
+          cardPricesByNameSet[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || parentSet).toLowerCase()}`] ||
+          cardPricesByNameSet[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || parentSet).toLowerCase()}`] ||
+          cardPricesByName[(c.name || '').toLowerCase()];
 
         const cardPrices = c.prices || fromIdx?.prices || {
           tcgplayer: c.price || fromIdx?.price || 0,
@@ -618,8 +665,8 @@ export function resolveRecursiveProductAudit(
   }
 
   // 4. RECURSIVE SEALED SUBPRODUCTS (CRITICAL: drill down recursively!)
-  if (product.contents.sealed && Array.isArray(product.contents.sealed)) {
-    product.contents.sealed.forEach((sub: any) => {
+  if (prodContents.sealed && Array.isArray(prodContents.sealed)) {
+    prodContents.sealed.forEach((sub: any) => {
       const count = (sub.count || 1) * multiplier;
       const childProd = sub.uuid ? lookupProduct(sub.uuid) : null;
       const childArb = sub.uuid ? arbitrageMap[sub.uuid] : null;
@@ -646,14 +693,27 @@ export function resolveRecursiveProductAudit(
         totalDecks += childAudit.totalDecks;
 
         let unitEv = 0;
-        if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
-        } else if (childAudit.totalEv > 0) {
+        let unitMin = 0;
+        let unitMid90 = 0;
+        let unitMax = 0;
+
+        if (childAudit.totalEv > 0) {
           unitEv = Number((childAudit.totalEv / count).toFixed(2));
+          unitMin = Number((childAudit.totalMinEv / count).toFixed(2));
+          unitMid90 = Number((childAudit.totalMid90Ev / count).toFixed(2));
+          unitMax = Number((childAudit.totalMaxEv / count).toFixed(2));
+        } else if (childArb && childArb.totalEvAvg > 0) {
+          unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
+          unitMin = Number(((childArb.unitEvMin || childArb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
+          unitMid90 = Number(((childArb.unitEvMid90 || childArb.totalEvAvg * 0.85) * reprintMultiplier).toFixed(2));
+          unitMax = Number(((childArb.unitEvMax || childArb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
         totalEv += subtotalEv;
+        totalMinEv += Number((count * unitMin).toFixed(2));
+        totalMid90Ev += Number((count * unitMid90).toFixed(2));
+        totalMaxEv += Number((count * unitMax).toFixed(2));
 
         sealedItems.push({
           name: sub.name,
@@ -722,8 +782,8 @@ export function resolveRecursiveProductAudit(
   }
 
   // 5. VARIABLE SLOTS
-  if (product.contents.variable && Array.isArray(product.contents.variable)) {
-    product.contents.variable.forEach((vSlot: any, sIdx: number) => {
+  if (prodContents.variable && Array.isArray(prodContents.variable)) {
+    prodContents.variable.forEach((vSlot: any, sIdx: number) => {
       const configs = vSlot.configs || [];
       const totalWeight = configs.reduce(
         (sum: number, c: any) => sum + (c.variable_config?.[0]?.chance || 1),
@@ -832,31 +892,50 @@ export function resolveRecursiveProductAudit(
   }
 
   // 6. ACCESSORIES & PHYSICAL INCLUSIONS
-  if (product.contents.other && Array.isArray(product.contents.other)) {
-    product.contents.other.forEach((ot: any) => {
+  if (prodContents.other && Array.isArray(prodContents.other)) {
+    prodContents.other.forEach((ot: any) => {
       const name = ot.name || 'Accessory / Inclusion';
       const count = (ot.count || 1) * multiplier;
       const isDice = name.toLowerCase().includes('dice') || name.toLowerCase().includes('spindown');
       const isBox = name.toLowerCase().includes('deck box') || name.toLowerCase().includes('box');
       const isToken = name.toLowerCase().includes('token');
       const isCounter = name.toLowerCase().includes('counter');
+      const isLand = name.toLowerCase().includes('land');
+
+      let itemCards = 0;
+      if (isLand) {
+        const landMatch = name.match(/(\d+)\s+/);
+        itemCards = landMatch ? parseInt(landMatch[1], 10) * multiplier : 30 * multiplier;
+        totalCards += itemCards;
+      }
 
       otherItems.push({
         name,
         count,
-        category: isBox ? 'Cardboard Deck Box' : isDice ? 'Life Counter / Spindown' : isToken ? 'Tokens' : isCounter ? 'Counters' : 'Physical Accessory',
+        category: isBox
+          ? 'Cardboard Deck Box'
+          : isDice
+          ? 'Life Counter / Spindown'
+          : isToken
+          ? 'Tokens'
+          : isCounter
+          ? 'Counters'
+          : isLand
+          ? `Basic Lands (${itemCards} Cards)`
+          : 'Physical Accessory',
         ev: 0,
+        cards: itemCards,
       });
 
       items.push({
         type: 'other',
         name,
         count,
-        cardsPerUnit: 0,
-        totalCards: 0,
+        cardsPerUnit: itemCards ? Math.round(itemCards / count) : 0,
+        totalCards: itemCards,
         unitEv: 0,
         subtotalEv: 0,
-        details: 'Physical non-card inclusion (no singles EV)',
+        details: isLand ? `Basic lands inclusion (${itemCards} total cards)` : 'Physical non-card inclusion (no singles EV)',
         raw: ot,
       });
     });
@@ -868,6 +947,9 @@ export function resolveRecursiveProductAudit(
     totalDecks,
     totalSealedUnits,
     totalEv: Number(totalEv.toFixed(2)),
+    totalMinEv: Number(totalMinEv.toFixed(2)),
+    totalMid90Ev: Number(totalMid90Ev.toFixed(2)),
+    totalMaxEv: Number(totalMaxEv.toFixed(2)),
     items,
     packItems,
     cardItems,
@@ -875,5 +957,142 @@ export function resolveRecursiveProductAudit(
     deckItems,
     variableItems,
     otherItems,
+  };
+}
+
+export interface CanonicalProductMetrics {
+  marketPrice: number;
+  estimatedEv: number;
+  minEv: number;
+  mid90Ev: number;
+  maxEv: number;
+  effectiveEv: number;
+  cardCount: number;
+  packsCount: number;
+  primaryBoosterName: string;
+  auditResult: RecursiveProductBreakdownResult;
+  netSpread: number;
+  roiPct: number;
+}
+
+/**
+ * Single source of truth across all views (Overview, EV Explorer, Related Products Hierarchy, Admin Inspector)
+ * for sealed product pricing, containment, pack count, and EV.
+ */
+export function getCanonicalProductMetrics(
+  product: any,
+  productMap: Map<string, any> | Record<string, any> = new Map(),
+  arbitrageMap: Record<string, any> = {},
+  boosterEvMap: Record<string, BoosterEVRecord[]> = {},
+  preconDecks: Record<string, any> = {},
+  singleCardPrices: any = { byUuid: {}, byName: {}, byNameSet: {} },
+  vendor: Vendor | string = 'all',
+  priceMode: PriceMode = 'direct',
+  evBasis: 'min' | 'mid90' | 'avg' | 'max' = 'avg'
+): CanonicalProductMetrics {
+  const pId = product?.id || product?.uuid || product?.productUuid || '';
+  const arb = arbitrageMap[pId];
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
+  const normVendor = normalizeVendor(vendor);
+
+  // 1. Run canonical recursive audit
+  const audit = resolveRecursiveProductAudit(
+    product,
+    productMap,
+    arbitrageMap,
+    boosterEvMap,
+    preconDecks,
+    singleCardPrices,
+    normVendor,
+    priceMode,
+    1
+  );
+
+  let estimatedEv = audit.totalEv;
+  let minEv = audit.totalMinEv;
+  let mid90Ev = audit.totalMid90Ev;
+  let maxEv = audit.totalMaxEv;
+  let packsCount = audit.totalPacks;
+  let cardCount = audit.totalCards;
+
+  // If audit returned 0 EV (e.g. leaf pack or product without structured contents)
+  if (estimatedEv === 0) {
+    if (arb && arb.totalEvAvg > 0) {
+      estimatedEv = Number((arb.totalEvAvg * reprintMultiplier).toFixed(2));
+      minEv = Number(((arb.totalEvMin || arb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
+      mid90Ev = Number(((arb.totalEvMid90 || arb.totalEvAvg * 0.85) * reprintMultiplier).toFixed(2));
+      maxEv = Number(((arb.totalEvMax || arb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
+      if (packsCount === 0 && arb.packCount > 0) packsCount = arb.packCount;
+      if (cardCount === 0 && arb.cardCount > 0) cardCount = arb.cardCount;
+    } else {
+      // Look up booster directly if pack
+      const pSet = (product?.setCode || product?.set_code || '').toUpperCase();
+      const bCode = product?.boosterName || product?.boosterType || 'play';
+      const matched = findBoosterEv(boosterEvMap, pSet, bCode, priceMode, normVendor);
+      if (matched && matched.evAverage > 0) {
+        const pCnt = product?.packsCount || product?.packCount || 1;
+        estimatedEv = Number((matched.evAverage * pCnt * reprintMultiplier).toFixed(2));
+        minEv = Number((matched.evMin * pCnt * reprintMultiplier).toFixed(2));
+        mid90Ev = Number((matched.evMid90 * pCnt * reprintMultiplier).toFixed(2));
+        maxEv = Number((matched.evMax * pCnt * reprintMultiplier).toFixed(2));
+        if (packsCount === 0) packsCount = pCnt;
+      }
+    }
+  }
+
+  // Fallback cardCount
+  if (cardCount === 0) {
+    if (product?.cardCount) cardCount = Number(product.cardCount);
+    else if (packsCount > 0) cardCount = packsCount * 15;
+    else if (arb?.cardCount) cardCount = Number(arb.cardCount);
+  }
+
+  // Fallback packsCount
+  if (packsCount === 0) {
+    if (product?.packsCount) packsCount = Number(product.packsCount);
+    else if (product?.packCount) packsCount = Number(product.packCount);
+    else if (arb?.packCount) packsCount = Number(arb.packCount);
+  }
+
+  // Authentic market price
+  let marketPrice = Number(product?.marketPrice || product?.tcgplayer_price || arb?.marketPrice || 0);
+  if (marketPrice === 0 && product?.cardmarket_price) marketPrice = Number(product.cardmarket_price);
+
+  // Primary booster name determination
+  let primaryBoosterName = 'play';
+  if (audit.packItems.length > 0) {
+    // Find pack code with largest count (e.g. 36 draft packs vs 1 box topper pack -> draft)
+    const sorted = [...audit.packItems].sort((a, b) => b.count - a.count);
+    primaryBoosterName = sorted[0].code || 'play';
+  } else if (product?.boosterName) {
+    primaryBoosterName = product.boosterName;
+  } else if (product?.boosterType) {
+    primaryBoosterName = product.boosterType;
+  } else if (arb?.boosterName) {
+    primaryBoosterName = arb.boosterName;
+  }
+
+  // Effective EV based on evBasis
+  let effectiveEv = estimatedEv;
+  if (evBasis === 'min') effectiveEv = minEv > 0 ? minEv : estimatedEv;
+  else if (evBasis === 'mid90') effectiveEv = mid90Ev > 0 ? mid90Ev : estimatedEv;
+  else if (evBasis === 'max') effectiveEv = maxEv > 0 ? maxEv : estimatedEv;
+
+  const netSpread = effectiveEv > 0 && marketPrice > 0 ? Number((effectiveEv - marketPrice).toFixed(2)) : 0;
+  const roiPct = marketPrice > 0 ? Number(((netSpread / marketPrice) * 100).toFixed(1)) : 0;
+
+  return {
+    marketPrice,
+    estimatedEv,
+    minEv,
+    mid90Ev,
+    maxEv,
+    effectiveEv,
+    cardCount,
+    packsCount: packsCount > 0 ? packsCount : 1,
+    primaryBoosterName,
+    auditResult: audit,
+    netSpread,
+    roiPct,
   };
 }

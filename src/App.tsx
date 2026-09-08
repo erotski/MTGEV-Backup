@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CHASE_CARDS_BY_SET, INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
 import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord } from './types';
+import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
@@ -34,8 +35,11 @@ export default function App() {
           setAvailableSets(setsRes.sets);
           setIsLiveDatabase(setsRes.isLive);
           setSelectedSetCode((prev) => {
-            const exists = setsRes.sets.some((s) => s.code === prev);
-            return exists ? prev : setsRes.sets[0].code;
+            const resolved = resolveToMainSetCode(prev);
+            const exists = setsRes.sets.some((s) => s.code === resolved);
+            if (exists) return resolved;
+            const firstMain = setsRes.sets.find((s) => !s.isCommanderSubSet);
+            return firstMain ? firstMain.code : setsRes.sets[0].code;
           });
         }
         if (arbsRes && arbsRes.length > 0) {
@@ -59,12 +63,12 @@ export default function App() {
   const currentChaseCards = CHASE_CARDS_BY_SET[selectedSetCode] || CHASE_CARDS_BY_SET['MH3'] || [];
 
   const handleSelectSetFromArbitrage = (setCode: string) => {
-    setSelectedSetCode(setCode);
+    setSelectedSetCode(resolveToMainSetCode(setCode));
     setActiveTab('explorer');
   };
 
   const handleNavigateToExplorerFromAdmin = (setCode: string) => {
-    setSelectedSetCode(setCode);
+    setSelectedSetCode(resolveToMainSetCode(setCode));
     setActiveTab('explorer');
   };
 

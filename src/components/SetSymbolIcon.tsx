@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { getScryfallNode } from '../utils/setHierarchyUtils';
 
 interface SetSymbolIconProps {
   setCode: string;
+  iconSvgUri?: string;
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   alt?: string;
@@ -9,6 +11,7 @@ interface SetSymbolIconProps {
 
 export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
   setCode,
+  iconSvgUri,
   className = '',
   size = 'sm',
   alt,
@@ -18,7 +21,7 @@ export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
 
   useEffect(() => {
     setHasError(false);
-  }, [cleanCode]);
+  }, [cleanCode, iconSvgUri]);
 
   // Size mapping
   const sizeClasses = {
@@ -32,7 +35,8 @@ export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
     full: 'w-full h-full max-h-full',
   };
 
-  const scryfallSvgUrl = `https://svgs.scryfall.io/sets/${cleanCode}.svg`;
+  const scryfallNode = getScryfallNode(cleanCode);
+  const scryfallSvgUrl = iconSvgUri || scryfallNode?.iconSvgUri || `https://svgs.scryfall.io/sets/${cleanCode}.svg`;
 
   if (hasError || !cleanCode) {
     return (

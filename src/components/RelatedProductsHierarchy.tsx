@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor } from '../types';
 import { dataService } from '../services/dataService';
 import { resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
+import { getCanonicalProductMetrics } from '../utils/productUtils';
+import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
 import {
   CatalogPackProduct,
   ProductPackagingType,
@@ -11,10 +13,8 @@ import {
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { PackagingStockAssetGuide } from './PackagingStockAssetGuide';
-import { BoosterSlotViewer } from './BoosterSlotViewer';
-import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
-import { ProductBreakdownModal } from './ProductBreakdownModal';
+import { ProductBreakdownTable } from './ProductBreakdownTable';
 import {
   Layers,
   Package,
@@ -40,7 +40,6 @@ import {
   Crown,
   Filter,
   List,
-  Dices,
   HelpCircle,
 } from 'lucide-react';
 
@@ -51,6 +50,12 @@ interface RelatedProductsHierarchyProps {
   priceMode: PriceMode;
   vendor: Vendor;
   selectedProductId?: string;
+  arbitrageMap?: Record<string, any>;
+  productMap?: Map<string, any> | Record<string, any>;
+  preconDecks?: Record<string, any>;
+  boosterEvMap?: Record<string, BoosterEVRecord[]>;
+  singleCardPrices?: any;
+  reprintMultiplier?: number;
   onSelectProduct?: (productId: string, boosterName: string, product?: CatalogPackProduct) => void;
   onPriceModeChange?: (mode: PriceMode) => void;
   onVendorChange?: (vendor: Vendor) => void;
@@ -63,10 +68,18 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   priceMode,
   vendor,
   selectedProductId: propSelectedProductId,
+  arbitrageMap,
+  productMap,
+  preconDecks,
+  boosterEvMap,
+  singleCardPrices,
+  reprintMultiplier: propReprintMultiplier,
   onSelectProduct,
   onPriceModeChange,
   onVendorChange,
 }) => {
+  // Price & EV scaling based on priceMode & vendor
+  const reprintMultiplier = propReprintMultiplier ?? (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
   const cleanProductName = (name: string) => {
     if (!name) return '';
     let cleaned = name;
@@ -85,6 +98,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
   const [dbSealedProducts, setDbSealedProducts] = useState<CatalogPackProduct[]>([]);
+  const [internalProductMap, setInternalProductMap] = useState<Map<string, any>>(new Map());
   const [isLoadingDbProducts, setIsLoadingDbProducts] = useState(true);
   const [dbProductsError, setDbProductsError] = useState<string | null>(null);
 
@@ -94,7 +108,13 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       setIsLoadingDbProducts(true);
       setDbProductsError(null);
       try {
-        const raw = await dataService.getSealedProducts();
+        const [raw, boosterMap, rawArb, rawPrecon, rawSingle] = await Promise.all([
+          dataService.getSealedProducts(),
+          dataService.getBoosterEVs(),
+          dataService.getArbitrageRecords(),
+          dataService.getPreconDecks(),
+          dataService.getSingleCardPrices(),
+        ]);
         if (isMounted && Array.isArray(raw)) {
           const rawProductMap = new Map<string, any>();
           for (const item of raw) {
@@ -102,6 +122,21 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               rawProductMap.set(item.id || item.uuid, item);
             }
           }
+          setInternalProductMap(rawProductMap);
+
+          const arbitrageMap: Record<string, any> = {};
+          if (Array.isArray(rawArb)) {
+            rawArb.forEach((a: any) => {
+              if (a.productUuid) arbitrageMap[a.productUuid] = a;
+              if (a.id) arbitrageMap[a.id] = a;
+            });
+          }
+
+          const setBoosterRecords: BoosterEVRecord[] = 
+            boosterMap[setCode.toUpperCase()] ||
+            boosterMap[setCode.toLowerCase()] ||
+            boosterMap[setCode] ||
+            [];
 
           const resolveRecursivePacks = (product: any, visited = new Set<string>()): number => {
             const pId = product.id || product.uuid;
@@ -135,9 +170,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             return 0;
           };
 
-          const matching = raw.filter(
-            (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === setCode.toUpperCase()
-          );
+          const relatedCodes = getAllRelatedSetCodes(setCode);
+          const matching = raw.filter((sp) => {
+            const code = (sp.setCode || sp.set_code || '').toUpperCase();
+            return relatedCodes.includes(code);
+          });
           if (matching.length === 0) {
             setDbProductsError(`No MTGJSON sealed products were found for set ${setCode.toUpperCase()}.`);
             setDbSealedProducts([]);
@@ -175,28 +212,23 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'other';
               }
 
-              // Pack counts come from explicit MTGJSON contents only.
-              const pCount = resolveRecursivePacks(sp);
+              // Single canonical source of truth for containment, breakdown, and EV calculation
+              const metrics = getCanonicalProductMetrics(
+                sp,
+                rawProductMap,
+                arbitrageMap,
+                boosterMap,
+                rawPrecon,
+                rawSingle,
+                vendor,
+                priceMode
+              );
 
-              // Card counts come from the MTGJSON record or explicit fixed cards only.
-              let determinedCardCount: number | undefined = undefined;
-              if (sp.cardCount !== null && sp.cardCount !== undefined && Number(sp.cardCount) > 0) {
-                determinedCardCount = Number(sp.cardCount);
-              } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
-                determinedCardCount = sp.contents.card.length;
-              }
-
-              const mPrice = Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
-              let computedEv = 0;
-              if (pCount > 0 && activeBooster.evAverage > 0) {
-                computedEv = Number((pCount * activeBooster.evAverage).toFixed(2));
-              } else if (sp.contents?.card && Array.isArray(sp.contents.card)) {
-                computedEv = sp.contents.card.reduce((sum: number, cd: any) => {
-                  const p = resolveCardPrice(cd, vendor, cd.foil);
-                  return sum + (typeof p === 'number' && p > 0 ? p : 0);
-                }, 0);
-              }
-              const ev = Number(sp.estimatedEv || computedEv || 0);
+              const pCount = metrics.packsCount;
+              const determinedCardCount = metrics.cardCount;
+              const determinedBoosterName = metrics.primaryBoosterName;
+              const mPrice = metrics.marketPrice > 0 ? metrics.marketPrice : Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
+              const ev = metrics.estimatedEv;
 
               let badgeText = 'Factory Sealed';
               if (category === 'box_set') {
@@ -226,7 +258,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 releaseDate: sp.releaseDate || '2024-01-01',
                 block: `${setName} Products`,
                 packagingType: packType,
-                boosterName: (sp.boosterType || 'play') as any,
+                boosterName: determinedBoosterName as any,
                 displayName: pName,
                 marketPrice: mPrice,
                 estimatedEv: ev,
@@ -243,6 +275,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   ? ['Curated Box Set', 'Factory Sealed Collection']
                   : ['Authentic MTGJSON Sealed Product'],
                 rawContents: sp.contents,
+                contents: sp.contents,
+                category: sp.category || category,
+                subtype: sp.subtype || subtype,
               };
             });
             setDbSealedProducts(mapped);
@@ -262,7 +297,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     return () => {
       isMounted = false;
     };
-  }, [setCode, setName]);
+  }, [setCode, setName, priceMode, vendor, activeBooster]);
 
   /*
    * Legacy synthetic product definitions are retained below for reference only.
@@ -500,7 +535,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   };
 
   // Price & EV scaling based on priceMode & vendor
-  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const normVendor = normalizeVendor(vendor);
   const vendorEvMultiplier =
     normVendor === 'cardmarket' ? 0.868 :
@@ -534,6 +568,10 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         estimatedEv: scaledEv,
         contains: scaledContains,
         containedIn: scaledContainedIn,
+        contents: p.contents || p.rawContents,
+        rawContents: p.rawContents || p.contents,
+        category: p.category || (p as any).rawCategory,
+        subtype: p.subtype || (p as any).rawSubtype,
       };
     });
   }, [rawProducts, reprintMultiplier, vendorEvMultiplier]);
@@ -559,8 +597,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   const activeProduct = setProducts.find((p) => p.id === selectedProductId) || setProducts[0];
 
-  // Full product breakdown modal state
-  const [breakdownModalProduct, setBreakdownModalProduct] = useState<CatalogPackProduct | null>(null);
+  const effectiveProductMap = useMemo(() => {
+    if (productMap && (productMap instanceof Map ? productMap.size > 0 : Object.keys(productMap).length > 0)) {
+      return productMap;
+    }
+    return internalProductMap;
+  }, [productMap, internalProductMap]);
 
   // Helper for packaging badges
   const getCategoryStyle = (category?: string) => {
@@ -1257,394 +1299,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         </div>
       </div>
 
-      {/* 2. Deep "Products Within Products" Containment Inspector */}
+      {/* 2. Slot Information with Option Collation (0, 1, 2...) OR Preconstructed Deck Contents */}
       {activeProduct && (
         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-5">
-          {/* Active Product Title & Quick Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-            <div>
-              <div className="text-[11px] font-bold text-slate-500 font-mono uppercase tracking-wider">
-                Product Breakdown & Collation Inspector
-              </div>
-              <h3 className="text-lg font-black text-slate-900 flex flex-wrap items-center gap-2 mt-0.5">
-                <span>{cleanProductName(activeProduct.displayName)}</span>
-                <span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 uppercase">
-                  {activeProduct.packagingType.replace(/_/g, ' ')}
-                </span>
-                {activeProduct.packsCount > 0 && (
-                  <span className="text-xs font-mono font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                    {activeProduct.packsCount} {activeProduct.packsCount === 1 ? 'Pack' : 'Packs'}
-                  </span>
-                )}
-              </h3>
-            </div>
-
-            <button
-              onClick={() => setBreakdownModalProduct(activeProduct)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-xs cursor-pointer self-start sm:self-auto"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Full Breakdown Modal</span>
-            </button>
-          </div>
-
-          {/* Containment Hierarchy Sub-Panels: Items Inside vs Available in Bulk Parent Containers */}
-          {(() => {
-            const hasContains = Boolean(
-              (activeProduct.contains && activeProduct.contains.length > 0) ||
-              (activeProduct.bonusAccessories && activeProduct.bonusAccessories.length > 0)
-            );
-            const hasContainedIn = Boolean(activeProduct.containedIn && activeProduct.containedIn.length > 0);
-
-            if (!hasContains && !hasContainedIn) {
-              return null;
-            }
-
-            const gridClass = hasContains && hasContainedIn 
-              ? "grid grid-cols-1 lg:grid-cols-2 gap-5" 
-              : "grid grid-cols-1 gap-5";
-
-            return (
-              <div className={gridClass}>
-                {/* PANEL A: Items Inside this Container (Contains) */}
-                {hasContains && (
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                        <Package className="w-4 h-4 text-amber-500" />
-                        Sub-Products Contained Inside This {activeProduct.packagingType.toUpperCase()}
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">Nested Hierarchy</span>
-                    </div>
-
-                    {activeProduct.contains && activeProduct.contains.length > 0 && (
-                      <div className="space-y-2">
-                        {activeProduct.contains.map((sub, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs"
-                          >
-                            <div className="space-y-0.5">
-                              <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                                <span className="px-1.5 py-0.5 bg-slate-900 text-white rounded text-[10px] font-mono">
-                                  {sub.quantity}x
-                                </span>
-                                {cleanProductName(sub.name)}
-                              </div>
-                              <div className="text-slate-500 text-[11px]">{sub.unitDescription}</div>
-                            </div>
-                            <div className="text-right font-mono">
-                              <div className="font-bold text-slate-900">${(sub.marketPrice * sub.quantity).toFixed(2)}</div>
-                              <div className="text-[10px] text-slate-400">(${sub.marketPrice.toFixed(2)}/unit)</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Bonus Accessories (Promo Cards, Lands, Spindown Dice) */}
-                    {activeProduct.bonusAccessories && activeProduct.bonusAccessories.length > 0 && (
-                      <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                        <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                          Included Non-Pack Accessories & Promos:
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {activeProduct.bonusAccessories.map((acc, aIdx) => (
-                            <span
-                              key={aIdx}
-                              className="px-2 py-1 bg-amber-50 text-amber-800 rounded-md text-[11px] font-medium border border-amber-200/80 flex items-center gap-1"
-                            >
-                              <CheckCircle2 className="w-3 h-3 text-amber-600" /> {acc}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* PANEL B: Parent Bulk Containers (Contained In) */}
-                {hasContainedIn && (
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                        <Archive className="w-4 h-4 text-indigo-600" />
-                        Available in Bulk Container Packaging (Contained In)
-                      </div>
-                      <span className="text-[10px] text-emerald-600 font-semibold">Bulk Savings</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {activeProduct.containedIn!.map((parent, pIdx) => (
-                        <div
-                          key={pIdx}
-                          className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between gap-3"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                              {parent.packagingType === 'case' ? (
-                                <Archive className="w-3.5 h-3.5 text-rose-600" />
-                              ) : (
-                                <BoxIcon className="w-3.5 h-3.5 text-indigo-600" />
-                              )}
-                              {cleanProductName(parent.name)}
-                            </div>
-                            <div className="text-slate-500 text-[11px]">{parent.unitDescription}</div>
-                            {parent.savingsPct && (
-                              <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                                Save {parent.savingsPct}% vs buying single items
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="text-right font-mono flex flex-col items-end gap-1">
-                            <div className="font-black text-slate-900">${parent.marketPrice.toFixed(2)}</div>
-                            <button
-                              onClick={() => handleSelectProduct(parent.productId)}
-                              className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded text-[10px] border border-indigo-200 transition cursor-pointer"
-                            >
-                              Inspect Tier →
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* MTGJSON Sealed Product Contents Specification (Decks, Guaranteed Cards, and Variable Weighted Foil/Card Slots) */}
-          {activeProduct.rawContents && (
-            <div className="bg-white p-5 rounded-xl border border-indigo-200 shadow-sm space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Package className="w-4 h-4 text-indigo-600" />
-                    <span>MTGJSON Factory Sealed Contents Specification</span>
-                    <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
-                      sealedProducts.contents
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Verified database configuration for {cleanProductName(activeProduct.displayName)}
-                  </div>
-                </div>
-              </div>
-
-              {activeProduct.rawContents.note && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Collation Logic: </span>
-                    <span>{activeProduct.rawContents.note}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {/* 1. Contained Sealed Products / Secret Lair Drops */}
-                {activeProduct.rawContents.sealed && activeProduct.rawContents.sealed.length > 0 && (
-                  <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 space-y-2.5">
-                    <div className="text-xs font-bold text-indigo-950 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Archive className="w-4 h-4 text-indigo-600" />
-                        <span>Contained Sealed Drops & Products ({activeProduct.rawContents.sealed.length}):</span>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
-                        Sealed Collation
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {activeProduct.rawContents.sealed.map((s: any, idx: number) => (
-                        <div key={idx} className="bg-white p-3 rounded-lg border border-indigo-200 text-xs flex items-center justify-between gap-2 shadow-2xs">
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-slate-800 truncate" title={s.name}>
-                              {s.name}
-                            </div>
-                            {s.uuid && (
-                              <div className="text-[10px] font-mono text-slate-400 truncate mt-0.5" title={`UUID: ${s.uuid}`}>
-                                id: {s.uuid.slice(0, 8)}...
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {s.count > 1 && (
-                              <span className="font-mono text-[10px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
-                                {s.count}x Copies
-                              </span>
-                            )}
-                            <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase">
-                              {s.set || setCode}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Contained Booster Packs */}
-                {activeProduct.rawContents.pack && activeProduct.rawContents.pack.length > 0 && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Package className="w-4 h-4 text-indigo-600" />
-                      Contained Booster Packs ({activeProduct.rawContents.pack.length}):
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {activeProduct.rawContents.pack.map((pk: any, idx: number) => (
-                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
-                          <span className="font-semibold text-slate-800 capitalize">
-                            {pk.code ? `${pk.code.replace(/_/g, ' ')} Booster` : 'Booster Pack'}
-                          </span>
-                          <div className="flex items-center gap-1 font-mono text-[10px]">
-                            <span className="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded border border-indigo-200">
-                              {pk.count}x Packs
-                            </span>
-                            {pk.set && (
-                              <span className="text-slate-500 uppercase">({pk.set})</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Preconstructed Decks contained */}
-                {activeProduct.rawContents.deck && activeProduct.rawContents.deck.length > 0 && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Layers3 className="w-4 h-4 text-amber-600" />
-                      Contained Preconstructed Deck Lists ({activeProduct.rawContents.deck.length}):
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {activeProduct.rawContents.deck.map((d: any, idx: number) => (
-                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
-                          <span className="font-semibold text-slate-800">{d.name}</span>
-                          <span className="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
-                            Set: {d.set?.toUpperCase() || setCode}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. Guaranteed Fixed Promo Cards */}
-                {activeProduct.rawContents.card && activeProduct.rawContents.card.length > 0 && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      Guaranteed Fixed Cards & Promos ({activeProduct.rawContents.card.length}):
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {activeProduct.rawContents.card.map((c: any, idx: number) => (
-                        <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
-                          <span className="font-semibold text-slate-800 truncate pr-2">{c.name}</span>
-                          <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
-                            {c.foil && (
-                              <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">FOIL</span>
-                            )}
-                            {c.number && (
-                              <span className="text-slate-500">#{c.number}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Variable Weighted Slots (e.g. Signature Spellbook 1-of-8 Foil Slot) */}
-                {activeProduct.rawContents.variable && activeProduct.rawContents.variable.length > 0 && (
-                  <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-200/80 space-y-3">
-                    <div className="text-xs font-bold text-amber-900 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Dices className="w-4 h-4 text-amber-600" />
-                        <span>Variable Weighted Collation Slots ({activeProduct.rawContents.variable.length})</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded border border-amber-200">
-                        Probabilistic Pool
-                      </span>
-                    </div>
-
-                    {activeProduct.rawContents.variable.map((slot: any, vIdx: number) => {
-                      const totalWeight = (slot.configs || []).reduce(
-                        (sum: number, cfg: any) => sum + (cfg.variable_config?.[0]?.weight || 1),
-                        0
-                      );
-
-                      return (
-                        <div key={vIdx} className="bg-white rounded-lg border border-amber-200/70 p-3 space-y-2">
-                          <div className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-                            <span>Slot {vIdx + 1}: 1 Card Chosen Randomly from {slot.configs?.length || 0} Options</span>
-                            <span className="font-mono text-[11px] text-slate-500">Total Pool Weight: {totalWeight}</span>
-                          </div>
-
-                          <div className="overflow-x-auto rounded border border-slate-100">
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500">
-                                <tr>
-                                  <th className="py-1.5 px-2.5">Card / Option</th>
-                                  <th className="py-1.5 px-2.5 text-center">Finish</th>
-                                  <th className="py-1.5 px-2.5 text-right font-mono">Weight</th>
-                                  <th className="py-1.5 px-2.5 text-right font-mono text-amber-700">Pull Chance</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {slot.configs?.map((cfg: any, cIdx: number) => {
-                                  const cardItem = cfg.card?.[0];
-                                  const weight = cfg.variable_config?.[0]?.weight || 1;
-                                  const chancePct = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0.0';
-
-                                  return (
-                                    <tr key={cIdx} className="hover:bg-amber-50/30">
-                                      <td className="py-1.5 px-2.5 font-medium text-slate-800">
-                                        {cardItem ? (
-                                          <div className="flex items-center gap-1.5">
-                                            <span>{cardItem.name}</span>
-                                            {cardItem.number && (
-                                              <span className="font-mono text-[10px] text-slate-400">#{cardItem.number}</span>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          cfg.deck?.[0]?.name || cfg.booster?.[0]?.type || 'Option'
-                                        )}
-                                      </td>
-                                      <td className="py-1.5 px-2.5 text-center">
-                                        {cardItem?.foil ? (
-                                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                                            Foil
-                                          </span>
-                                        ) : (
-                                          <span className="text-slate-400 text-[11px]">Regular</span>
-                                        )}
-                                      </td>
-                                      <td className="py-1.5 px-2.5 text-right font-mono text-slate-600">
-                                        {weight}
-                                      </td>
-                                      <td className="py-1.5 px-2.5 text-right font-mono font-bold text-amber-700">
-                                        {chancePct}%
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 3. Slot Information with Option Collation (0, 1, 2...) OR Preconstructed Deck Contents */}
           {(() => {
             const isDeck =
               activeProduct.packagingType === 'starter_deck' ||
@@ -1653,26 +1310,23 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
             return (
               <div className="space-y-6">
-                {isDeck ? (
-                  <PreconstructedDeckViewer
-                    productId={activeProduct.id}
-                    productName={activeProduct.displayName}
-                    setCode={activeProduct.setCode}
-                    marketPrice={activeProduct.marketPrice}
-                    estimatedEv={activeProduct.estimatedEv}
-                  />
-                ) : (
-                  <BoosterSlotViewer
-                    setCode={activeProduct.setCode}
-                    boosterName={activeProduct.boosterName}
-                    variations={activeProduct.variations || []}
-                    packsCount={activeProduct.packsCount}
-                    packagingType={activeProduct.packagingType}
-                    productName={activeProduct.displayName}
-                  />
-                )}
+                {/* Product & Prize breakdown (Collapsible, default expanded, positioned above Authentic MTGJSON Booster Collation) */}
+                <ProductBreakdownTable
+                  product={activeProduct}
+                  vendor={vendor}
+                  priceMode={priceMode}
+                  arbitrageMap={arbitrageMap}
+                  productMap={effectiveProductMap}
+                  preconDecks={preconDecks}
+                  boosterEvMap={boosterEvMap}
+                  singleCardPrices={singleCardPrices}
+                  reprintMultiplier={reprintMultiplier}
+                  title="Product & Prize breakdown"
+                  collapsible={true}
+                  defaultCollapsed={false}
+                />
 
-                {/* 4. Chase Cards Within This Product (Booster products only) */}
+                {/* Chase Cards Within This Product (Booster products only) */}
                 {!isDeck && (
                   <ProductChaseCardsViewer
                     product={activeProduct}
@@ -1685,20 +1339,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           })()}
         </div>
       )}
-
-      {/* Universal Product Breakdown Modal */}
-      <ProductBreakdownModal
-        product={breakdownModalProduct}
-        isOpen={Boolean(breakdownModalProduct)}
-        onClose={() => setBreakdownModalProduct(null)}
-        priceMode={priceMode}
-        vendor={vendor}
-        onNavigateToSet={(sCode, bName) => {
-          if (onSelectProduct && breakdownModalProduct) {
-            onSelectProduct(breakdownModalProduct.id, bName || 'play', breakdownModalProduct);
-          }
-        }}
-      />
     </div>
   );
 };
