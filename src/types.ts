@@ -130,7 +130,10 @@ export interface DeckCardItem {
     cardkingdom?: number;
     cardmarket?: number;
     cardmarketEur?: number;
+    manapool?: number;
     all?: number;
+    all_cheapest?: number;
+    all_average?: number;
   };
 }
 

@@ -5,6 +5,7 @@ import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { SingleCardBreakdownViewer } from './SingleCardBreakdownViewer';
+import { ProductBreakdownTable } from './ProductBreakdownTable';
 import { calculateEvScore, getEvScoreBadgeClass } from '../utils/evScore';
 import {
   X,
@@ -289,101 +290,110 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
 
           {/* Tab 3: Factory Sealed Hierarchy & Contained Drops */}
           {activeTab === 'hierarchy' && product.rawContents && (
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <div className="text-xs font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Package className="w-4 h-4 text-indigo-600" />
-                <span>MTGJSON Factory Sealed Contents Specification</span>
-              </div>
+            <div className="space-y-4">
+              {/* Authoritative Sub-Item Price & EV Reconciliation Table */}
+              <ProductBreakdownTable
+                product={product}
+                vendor={vendor as any}
+                priceMode={priceMode as any}
+              />
 
-              {product.rawContents.note && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
-                  <span className="font-bold">Collation Logic Note: </span>
-                  <span>{product.rawContents.note}</span>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="text-xs font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Package className="w-4 h-4 text-indigo-600" />
+                  <span>MTGJSON Factory Sealed Contents Specification</span>
                 </div>
-              )}
 
-              {/* Contained Cards & Promotional Singles */}
-              {product.rawContents.card && product.rawContents.card.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Contained Promotional Cards / Singles ({product.rawContents.card.length}):</span>
+                {product.rawContents.note && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                    <span className="font-bold">Collation Logic Note: </span>
+                    <span>{product.rawContents.note}</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {product.rawContents.card.map((c: any, idx: number) => {
-                      const cPrices = c.prices || {};
-                      const isFoil = c.foil || (c.finishes && c.finishes.includes('foil'));
-                      return (
+                )}
+
+                {/* Contained Cards & Promotional Singles */}
+                {product.rawContents.card && product.rawContents.card.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Contained Promotional Cards / Singles ({product.rawContents.card.length}):</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.rawContents.card.map((c: any, idx: number) => {
+                        const cPrices = c.prices || {};
+                        const isFoil = c.foil || (c.finishes && c.finishes.includes('foil'));
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="font-semibold text-slate-800 truncate">{c.name}</div>
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                {c.number ? `#${c.number}` : ''} {isFoil ? '• Foil' : '• Nonfoil'}
+                              </div>
+                            </div>
+                            {cPrices.tcgplayer ? (
+                              <div className="text-right shrink-0">
+                                <span className="font-mono text-xs font-black text-indigo-700 block">
+                                  ${cPrices.tcgplayer.toFixed(2)}
+                                </span>
+                                <span className="text-[9px] text-slate-400 block">TCG Market</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contained Sealed Drops */}
+                {product.rawContents.sealed && product.rawContents.sealed.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-slate-700">
+                      Contained Drops & Sealed Products ({product.rawContents.sealed.length}):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.rawContents.sealed.map((s: any, idx: number) => (
                         <div
                           key={idx}
                           className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
                         >
-                          <div className="min-w-0 pr-2">
-                            <div className="font-semibold text-slate-800 truncate">{c.name}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              {c.number ? `#${c.number}` : ''} {isFoil ? '• Foil' : '• Nonfoil'}
-                            </div>
-                          </div>
-                          {cPrices.tcgplayer ? (
-                            <div className="text-right shrink-0">
-                              <span className="font-mono text-xs font-black text-indigo-700 block">
-                                ${cPrices.tcgplayer.toFixed(2)}
-                              </span>
-                              <span className="text-[9px] text-slate-400 block">TCG Market</span>
-                            </div>
-                          ) : null}
+                          <span className="font-semibold text-slate-800 truncate pr-2">{s.name}</span>
+                          <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                            {s.count || 1}x Copy
+                          </span>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Contained Sealed Drops */}
-              {product.rawContents.sealed && product.rawContents.sealed.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-slate-700">
-                    Contained Drops & Sealed Products ({product.rawContents.sealed.length}):
+                {/* Contained Booster Packs */}
+                {product.rawContents.pack && product.rawContents.pack.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-slate-700">
+                      Contained Booster Packs ({product.rawContents.pack.length}):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.rawContents.pack.map((pk: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
+                        >
+                          <span className="font-semibold text-slate-800 capitalize">
+                            {pk.code ? `${pk.code.replace(/_/g, ' ')} Booster` : 'Booster Pack'}
+                          </span>
+                          <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                            {pk.count}x Packs
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {product.rawContents.sealed.map((s: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
-                      >
-                        <span className="font-semibold text-slate-800 truncate pr-2">{s.name}</span>
-                        <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
-                          {s.count || 1}x Copy
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Contained Booster Packs */}
-              {product.rawContents.pack && product.rawContents.pack.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-slate-700">
-                    Contained Booster Packs ({product.rawContents.pack.length}):
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {product.rawContents.pack.map((pk: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
-                      >
-                        <span className="font-semibold text-slate-800 capitalize">
-                          {pk.code ? `${pk.code.replace(/_/g, ' ')} Booster` : 'Booster Pack'}
-                        </span>
-                        <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
-                          {pk.count}x Packs
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>

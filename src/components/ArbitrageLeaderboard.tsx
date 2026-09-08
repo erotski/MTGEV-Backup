@@ -55,30 +55,62 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   const recordByUuid = useMemo(() => new Map(records.map((r) => [r.productUuid, r])), [records]);
 
-  const getCardCount = (box: BoxArbitrageRecord): number => {
+  const getCardCount = (box: BoxArbitrageRecord, visited = new Set<string>()): number => {
+    const uid = box.productUuid || '';
+    if (uid) {
+      if (visited.has(uid)) return 0;
+      visited.add(uid);
+    }
+    const contents = box.contents;
+    const hasStructuredContents = Boolean(
+      contents &&
+      (
+        (contents.pack && contents.pack.length > 0) ||
+        (contents.sealed && contents.sealed.length > 0) ||
+        (contents.card && contents.card.length > 0) ||
+        (contents.deck && contents.deck.length > 0) ||
+        (contents.variable && contents.variable.length > 0)
+      )
+    );
+
+    if (hasStructuredContents && contents) {
+      let sum = 0;
+      if (contents.pack) {
+        contents.pack.forEach((pk: any) => {
+          const count = pk.count || 1;
+          const code = (pk.code || '').toLowerCase();
+          const cardsPerPack = (code.includes('sample') || code.includes('prerelease')) ? 2 : (code.includes('jumpstart') ? 20 : (code.includes('theme') ? 35 : 15));
+          sum += count * cardsPerPack;
+        });
+      }
+      if (contents.card) {
+        sum += contents.card.reduce((cAcc: number, c: any) => cAcc + (c.count || 1), 0);
+      }
+      if (contents.deck) {
+        const cat = (box.category || '').toLowerCase();
+        const isCommander = cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander');
+        sum += contents.deck.length * (isCommander ? 100 : 60);
+      }
+      if (contents.sealed) {
+        contents.sealed.forEach((s: any) => {
+          const count = s.count || 1;
+          const child = s.uuid ? recordByUuid.get(s.uuid) : null;
+          if (child) {
+            sum += count * getCardCount(child, new Set(visited));
+          } else {
+            const sName = (s.name || '').toLowerCase();
+            const childCards = sName.includes('sample') ? 2 : (sName.includes('booster box') ? 36 * 15 : (sName.includes('deck') ? 100 : 15));
+            sum += count * childCards;
+          }
+        });
+      }
+      if (contents.variable) {
+        sum += contents.variable.length;
+      }
+      if (sum > 0) return sum;
+    }
+
     if (typeof box.cardCount === 'number' && box.cardCount > 0) return box.cardCount;
-    if (box.contents?.card && Array.isArray(box.contents.card) && box.contents.card.length > 0) {
-      return box.contents.card.reduce((sum: number, c: any) => sum + (c.count || 1), 0);
-    }
-    if (box.contents?.deck && Array.isArray(box.contents.deck) && box.contents.deck.length > 0) {
-      const cat = (box.category || '').toLowerCase();
-      const isCommander = cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander');
-      return box.contents.deck.length * (isCommander ? 100 : 60);
-    }
-    if (box.contents?.sealed && Array.isArray(box.contents.sealed) && box.contents.sealed.length > 0) {
-      const childSum = box.contents.sealed.reduce((sum: number, s: any) => {
-        const child = recordByUuid.get(s.uuid);
-        if (child) {
-          const cCount = typeof child.cardCount === 'number' && child.cardCount > 0 ? child.cardCount : 5;
-          return sum + (s.count || 1) * cCount;
-        }
-        return sum + (s.count || 1) * 5;
-      }, 0);
-      if (childSum > 0) return childSum;
-    }
-    if (box.contents?.variable && Array.isArray(box.contents.variable) && box.contents.variable.length > 0) {
-      return box.contents.variable.length;
-    }
     const cat = (box.category || '').toLowerCase();
     if (cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander')) return 100;
     if (box.packCount > 0) {

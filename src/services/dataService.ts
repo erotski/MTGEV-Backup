@@ -212,6 +212,7 @@ class DataService {
               evMax: Number(item.evMax || item.ev_max || 0),
               evMin5: Number(item.evMin5 || item.ev_min5 || 0),
               evMax5: Number(item.evMax5 || item.ev_max5 || 0),
+              quantiles: Array.isArray(item.quantiles) && item.quantiles.length > 0 ? item.quantiles.map(Number) : undefined,
               completeBoosterPct: Number(item.completeBoosterPct || item.complete_booster_pct || 100),
               exactMatchPct: Number(item.exactMatchPct || item.exact_match_pct || 100),
               differentFinishPct: Number(item.differentFinishPct || item.different_finish_pct || 0),

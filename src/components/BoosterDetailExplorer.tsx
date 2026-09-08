@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo } from '../types';
+import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
+import { resolveRecursiveProductAudit } from '../utils/productUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
   ShieldCheck, 
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
+import { ProductBreakdownTable } from './ProductBreakdownTable';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 
 interface BoosterDetailExplorerProps {
@@ -126,6 +128,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       evMax: Number((base.evMax * mult).toFixed(2)),
       evMin5: Number((base.evMin5 * mult).toFixed(2)),
       evMax5: Number((base.evMax5 * mult).toFixed(2)),
+      quantiles: base.quantiles ? base.quantiles.map((q) => Number((q * mult).toFixed(2))) : undefined,
       priceMode,
       vendor,
     };
@@ -147,6 +150,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
   const [selectedProductOverride, setSelectedProductOverride] = useState<CatalogPackProduct | null>(null);
 
+  // Authoritative datasets for full recursive child resolution
+  const [allRawProducts, setAllRawProducts] = useState<any[]>([]);
+  const [arbitrageRecords, setArbitrageRecords] = useState<Record<string, any>>({});
+  const [preconDecks, setPreconDecks] = useState<Record<string, PreconstructedDeckDetail>>({});
+  const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
+
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
     setCatalogProducts[0]?.id || ''
@@ -155,6 +164,53 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [activeBoosterName, setActiveBoosterName] = useState<string>(
     setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
   );
+
+  // Global lookup map of all sealed products by UUID/ID
+  const productMap = useMemo(() => {
+    const map = new Map<string, any>();
+    allRawProducts.forEach((p) => {
+      if (p.uuid) map.set(p.uuid, p);
+      if (p.id) map.set(p.id, p);
+    });
+    return map;
+  }, [allRawProducts]);
+
+  // Booster EV map indexed by set code
+  const boosterEvMap = useMemo(() => {
+    const map: Record<string, BoosterEVRecord[]> = {};
+    boosterRecords.forEach((b) => {
+      const s = b.setCode.toUpperCase();
+      if (!map[s]) map[s] = [];
+      map[s].push(b);
+    });
+    return map;
+  }, [boosterRecords]);
+
+  // Load global authoritative data for decomposition
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      dataService.getSealedProducts(),
+      dataService.getArbitrageRecords(),
+      dataService.getPreconDecks(),
+      dataService.getSingleCardPrices(),
+    ]).then(([rawProds, rawArb, rawPrecon, rawSingle]) => {
+      if (!isMounted) return;
+      if (Array.isArray(rawProds)) setAllRawProducts(rawProds);
+      if (Array.isArray(rawArb)) {
+        const arbMap: Record<string, any> = {};
+        rawArb.forEach((a: any) => {
+          if (a.productUuid) arbMap[a.productUuid] = a;
+          if (a.id) arbMap[a.id] = a;
+        });
+        setArbitrageRecords(arbMap);
+      }
+      if (rawPrecon) setPreconDecks(rawPrecon);
+      if (rawSingle) setSingleCardPrices(rawSingle);
+    }).catch(() => {});
+
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -317,6 +373,37 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return setCatalogProducts.find((p) => p.id === selectedProductId) || dbProducts[0] || setCatalogProducts[0];
   }, [selectedProductOverride, selectedSetCode, dbProducts, selectedProductId, setCatalogProducts]);
 
+  // Lookup raw product with full contents metadata
+  const activeRawProduct = useMemo(() => {
+    if (!activeProduct) return null;
+    const uid = activeProduct.uuid || activeProduct.id;
+    if (uid && productMap.has(uid)) return productMap.get(uid);
+    return (
+      allRawProducts.find(
+        (p) =>
+          (p.setCode || '').toUpperCase() === selectedSetCode.toUpperCase() &&
+          ((p.displayName || p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase() ||
+            (p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase())
+      ) || activeProduct
+    );
+  }, [activeProduct, productMap, allRawProducts, selectedSetCode]);
+
+  // Compute recursive product audit (packs, singles, nested sealed, precon decks)
+  const productAudit = useMemo(() => {
+    if (!activeRawProduct) return null;
+    return resolveRecursiveProductAudit(
+      activeRawProduct,
+      productMap,
+      arbitrageRecords,
+      boosterEvMap,
+      preconDecks,
+      singleCardPrices,
+      vendor,
+      priceMode,
+      1
+    );
+  }, [activeRawProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
+
   const isPreconProduct = useMemo(() => {
     if (!activeProduct) return false;
     const cat = (activeProduct.rawCategory || '').toLowerCase();
@@ -326,9 +413,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       cat === 'deck' ||
       cat === 'commander_deck' ||
       cat === 'multiple_decks' ||
-      cat === 'deck_box'
+      cat === 'deck_box' ||
+      Boolean(productAudit && productAudit.totalDecks > 0 && productAudit.totalPacks === 0)
     );
-  }, [activeProduct]);
+  }, [activeProduct, productAudit]);
 
   const isBoxSetProduct = useMemo(() => {
     if (!activeProduct) return false;
@@ -338,15 +426,28 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const packMarketPrice = Number(getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play').toFixed(2));
 
-  // Product level scaled metrics
-  const productPacksCount = activeProduct?.packsCount || 1;
+  // Product level scaled metrics from authoritative breakdown
+  const productPacksCount =
+    productAudit && productAudit.totalPacks > 0
+      ? productAudit.totalPacks
+      : activeProduct?.packsCount || 1;
+
+  const productTotalCards =
+    productAudit && productAudit.totalCards > 0
+      ? productAudit.totalCards
+      : activeProduct?.cardCount || (isPreconProduct ? 100 : undefined);
+
   const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : packMarketPrice;
-  // Calculate dynamic product EV from pack EV and pack count (plus bundle bonuses if applicable)
-  // Preconstructed decks have deterministic fixed EV
+
+  // Calculate dynamic product EV from pack EV and pack count (or authoritative audit)
   const bundleBonusVal = activeProduct?.packagingType === 'bundle' ? 3.50 : 0;
-  const productEstimatedEv = isPreconProduct && activeProduct
-    ? Number(activeProduct.estimatedEv.toFixed(2))
-    : Number(((activeBooster.evAverage * productPacksCount) + (bundleBonusVal * reprintMultiplier * vendorEvMultiplier)).toFixed(2));
+  const productEstimatedEv =
+    productAudit && productAudit.totalEv > 0
+      ? productAudit.totalEv
+      : isPreconProduct && activeProduct
+      ? Number(activeProduct.estimatedEv.toFixed(2))
+      : Number(((activeBooster.evAverage * productPacksCount) + (bundleBonusVal * reprintMultiplier * vendorEvMultiplier)).toFixed(2));
+
   const productMid90Ev = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2));
   const productMin5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2));
   const productMax5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2));
@@ -912,7 +1013,23 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               vendor={vendor}
               isPreconstructed={isPreconProduct}
               preconSinglesEv={productEstimatedEv}
-              cardCount={activeProduct?.cardCount}
+              cardCount={productTotalCards}
+            />
+          )}
+
+          {/* Authoritative Product Breakdown & Child Reconciliation Table */}
+          {activeRawProduct && (
+            <ProductBreakdownTable
+              product={activeRawProduct}
+              arbitrageMap={arbitrageRecords}
+              productMap={productMap}
+              preconDecks={preconDecks}
+              boosterEvMap={boosterEvMap}
+              singleCardPrices={singleCardPrices}
+              vendor={vendor}
+              priceMode={priceMode}
+              reprintMultiplier={reprintMultiplier}
+              auditResult={productAudit}
             />
           )}
 

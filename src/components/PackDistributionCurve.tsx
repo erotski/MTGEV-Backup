@@ -125,15 +125,26 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   // Lookup exact vendor simulation records for active booster & priceMode
   const vendorRecords = useMemo(() => {
     const list = allSetBoosters || [];
-    const targetName = activeBooster?.boosterName?.toLowerCase();
+    const targetName = (activeBooster?.boosterName || '').toLowerCase().trim();
     const mode = priceMode || 'direct';
     const byVendor: Record<string, BoosterEVRecord | undefined> = {};
-    const candidates = list.filter(
-      (b) => b.boosterName?.toLowerCase() === targetName && b.priceMode === mode
+    const exactCandidates = list.filter(
+      (b) => (b.boosterName || '').toLowerCase().trim() === targetName && b.priceMode === mode
     );
-    ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
-      byVendor[v] = candidates.find((b) => b.vendor === v) || (activeBooster?.vendor === v ? activeBooster : undefined);
+    const fallbackCandidates = list.filter(
+      (b) => (b.boosterName || '').toLowerCase().trim() === targetName
+    );
+    const candidatePool = exactCandidates.length > 0 ? exactCandidates : fallbackCandidates;
+    ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+      byVendor[v] = candidatePool.find((b) => b.vendor === v) || (activeBooster?.vendor === v ? activeBooster : undefined);
     });
+    // Alias all and all_cheapest
+    if (byVendor['all_cheapest'] && !byVendor['all']) {
+      byVendor['all'] = byVendor['all_cheapest'];
+    }
+    if (byVendor['all'] && !byVendor['all_cheapest']) {
+      byVendor['all_cheapest'] = byVendor['all'];
+    }
     return byVendor;
   }, [allSetBoosters, activeBooster, priceMode]);
 
@@ -154,7 +165,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     // Check if authentic 100-sample quantiles exist on vendor records or activeBooster
     const hasSimulatedQuantiles =
       (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) ||
-      ['all', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].some(
+      ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].some(
         (v) => vendorRecords[v]?.quantiles && vendorRecords[v]!.quantiles!.length >= 100
       );
 
@@ -178,14 +189,15 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         const qIdx = p === 0 ? 0 : Math.min(99, p - 1);
 
         const getVal = (v: string, fallbackRatio: number) => {
-          const rec = vendorRecords[v];
+          const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
+          const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
           if (rec?.quantiles && rec.quantiles.length >= 100) {
             const rawVal = p === 0 ? Math.min(rec.quantiles[0], rec.evMin || rec.quantiles[0]) : rec.quantiles[qIdx];
-            return Number((rawVal * scale).toFixed(2));
+            return Number((rawVal * modeMult * scale).toFixed(2));
           }
           if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
             const rawVal = p === 0 ? Math.min(activeBooster.quantiles[0], activeBooster.evMin || activeBooster.quantiles[0]) : activeBooster.quantiles[qIdx];
-            return Number((rawVal * fallbackRatio * scale).toFixed(2));
+            return Number((rawVal * fallbackRatio * modeMult * scale).toFixed(2));
           }
           return 0;
         };
@@ -194,7 +206,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         const ckVal = getVal('cardkingdom', 1.15);
         const cmVal = getVal('cardmarket', 0.88);
         const mpVal = getVal('manapool', 0.98);
-        const allVal = vendorRecords['all']?.quantiles?.length
+        const allVal = (vendorRecords['all']?.quantiles?.length || vendorRecords['all_cheapest']?.quantiles?.length)
           ? getVal('all', 0.94)
           : Math.min(tcgVal, ckVal, cmVal, mpVal);
         const allAvgVal = vendorRecords['all_average']?.quantiles?.length
