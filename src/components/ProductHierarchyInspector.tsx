@@ -34,7 +34,7 @@ import { BoxArbitrageRecord, BoosterEVRecord, Vendor, PriceMode } from '../types
 import { ProductBreakdownModal } from './ProductBreakdownModal';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
-import { getCanonicalProductMetrics, getCardsPerPack } from '../utils/productUtils';
+import { getCanonicalProductMetrics, getCardsPerPack, findMatchingPreconDeck } from '../utils/productUtils';
 
 export interface SealedProductItem {
   id: string;
@@ -78,36 +78,11 @@ export interface SealedProductItem {
 function findPreconDeck(
   preconDecks: Record<string, any>,
   deckName: string,
-  setCode?: string
+  setCode?: string,
+  targetId?: string
 ): any {
   if (!deckName || !preconDecks) return undefined;
-  const lowerName = deckName.toLowerCase().trim();
-  const lowerSet = (setCode || '').toLowerCase().trim();
-
-  // 1. Direct key matches
-  if (preconDecks[deckName]) return preconDecks[deckName];
-  if (preconDecks[lowerName]) return preconDecks[lowerName];
-
-  // 2. Direct key with set: name___set
-  if (lowerSet && preconDecks[`${lowerName}___${lowerSet}`]) {
-    return preconDecks[`${lowerName}___${lowerSet}`];
-  }
-
-  // 3. Search dictionary by deckName and setCode
-  const cleanTarget = lowerName.replace(/[^a-z0-9]/g, '');
-  for (const [key, d] of Object.entries(preconDecks)) {
-    const dName = (d.deckName || key).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const dSet = (d.setCode || '').toLowerCase();
-
-    if (lowerSet && dSet === lowerSet && dName === cleanTarget) {
-      return d;
-    }
-    if (dName === cleanTarget) {
-      return d;
-    }
-  }
-
-  return undefined;
+  return findMatchingPreconDeck(preconDecks, deckName, setCode, targetId);
 }
 
 export interface ProductHierarchyInspectorProps {
@@ -773,6 +748,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       cardCount: number;
       totalCards: number;
       isFoil: boolean;
+      isCommander?: boolean;
       finish: 'Foil' | 'Nonfoil';
       unitSinglesEv: number;
       subtotalSinglesEv: number;
@@ -781,16 +757,30 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
     if (selectedProduct.contents?.deck) {
       selectedProduct.contents.deck.forEach((dk) => {
-        const matchedDeck = findPreconDeck(preconDecks, dk.name, dk.set || parentSet);
+        const matchedDeck = findPreconDeck(preconDecks, dk.name, dk.set || parentSet, selectedProduct.id || selectedProduct.uuid);
         const count = 1;
+        const matchedDeckCardsCount =
+          matchedDeck?.totalCards ||
+          matchedDeck?.cardCount ||
+          (matchedDeck?.cards && matchedDeck.cards.length > 0
+            ? matchedDeck.cards.reduce((sum: number, c: any) => sum + (c.count || 1), 0)
+            : 0);
+
         const isCommander = Boolean(
+          matchedDeck?.isCommander ||
+          matchedDeck?.format === 'commander' ||
+          Boolean(matchedDeck?.commander && matchedDeck.commander.name && matchedDeck.commander.name.toLowerCase().trim() !== 'face commander') ||
           (selectedProduct.subtype || '').toLowerCase().includes('commander') ||
           (selectedProduct.category || '').toLowerCase().includes('commander') ||
           (selectedProduct.displayName || (selectedProduct as any).name || '').toLowerCase().includes('commander') ||
           (dk.name || '').toLowerCase().includes('commander')
         );
-        const defaultCardCount = isCommander ? 100 : (selectedProduct.cardCount || 60);
-        const cardCount = matchedDeck?.cardCount || (matchedDeck?.cards ? matchedDeck.cards.length : defaultCardCount);
+
+        const cardCount = matchedDeckCardsCount > 0
+          ? matchedDeckCardsCount
+          : (selectedProduct.cardCount && selectedProduct.contents?.deck && selectedProduct.contents.deck.length > 0
+              ? Math.max(1, Math.floor(selectedProduct.cardCount / selectedProduct.contents.deck.length))
+              : (isCommander ? 100 : 60));
 
         // Check if deck or parent product is Foil Edition
         const isFoil = Boolean(
@@ -850,7 +840,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           }
         }
 
-        const deckTotalCards = count * (cardCount || 100);
+        const deckTotalCards = count * (cardCount || matchedDeck?.cardCount || (selectedProduct.cardCount ? Math.round(selectedProduct.cardCount / selectedProduct.contents.deck.length) : 0));
         deckItems.push({
           name: dk.name,
           set: (dk.set || parentSet).toUpperCase(),
@@ -858,6 +848,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           cardCount,
           totalCards: deckTotalCards,
           isFoil,
+          isCommander: Boolean(matchedDeck?.isCommander || (dk.name || '').toLowerCase().includes('commander')),
           finish: isFoil ? 'Foil' : 'Nonfoil',
           unitSinglesEv: singlesEv,
           subtotalSinglesEv: Number((count * singlesEv).toFixed(2)),
@@ -1029,7 +1020,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     const totalPackCards = packItems.reduce((acc, p) => acc + (p.totalCards || (p.count * (p.cardsPerPack || 15))), 0);
     const totalCardCards = cardItems.reduce((acc, c) => acc + c.count, 0);
     const totalSealedCards = sealedItems.reduce((acc, s) => acc + (s.totalCards || (s.count * 15)), 0);
-    const totalDeckCards = deckItems.reduce((acc, d) => acc + (d.totalCards || (d.count * 100)), 0);
+    const totalDeckCards = deckItems.reduce((acc, d) => acc + (d.totalCards || (d.count * (d.cardCount || 0))), 0);
     const totalVariableCards = variableItems.length;
     const totalCards = selectedProduct.cardCount || (totalPackCards + totalCardCards + totalSealedCards + totalDeckCards + totalVariableCards);
 
@@ -1491,8 +1482,8 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                       (item.displayName || (item as any).name || '').toLowerCase().includes('commander') ||
                       (dk.name || '').toLowerCase().includes('commander')
                     );
-                    const defaultCards = isCommander ? 100 : (item.cardCount || 60);
-                    const deckCardCount = matchedDeck?.cardCount || (cards.length > 0 ? cards.reduce((a: number, c: any) => a + (c.count || 1), 0) : defaultCards);
+                    const defaultCards = matchedDeck?.cardCount || matchedDeck?.totalCards || (cards.length > 0 ? cards.reduce((a: number, c: any) => a + (c.count || 1), 0) : (item.cardCount && item.contents?.deck?.length ? Math.round(item.cardCount / item.contents.deck.length) : (isCommander ? 100 : undefined)));
+                    const deckCardCount = defaultCards;
                     const deckSinglesEv = cards.length > 0
                       ? Number(cards.reduce((sum: number, c: any) => sum + (c.totalPrice || c.price || 0), 0).toFixed(2))
                       : (matchedDeck?.totalSinglesEv || 0);
@@ -2400,7 +2391,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           const evShare = productAudit.calculatedTotalEv > 0
                             ? ((d.subtotalSinglesEv / productAudit.calculatedTotalEv) * 100).toFixed(1)
                             : '0.0';
-                          const unitCards = d.cardCount || 100;
+                          const unitCards = d.cardCount || (d.totalCards ? Math.round(d.totalCards / d.count) : (d.isCommander ? 100 : '—'));
 
                           return (
                             <tr key={`audit-deck-${idx}`} className="hover:bg-slate-800/40">
@@ -2604,6 +2595,12 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
         onClose={() => setBreakdownProduct(null)}
         priceMode={priceMode}
         vendor={vendor}
+        preconDecks={preconDecks}
+        arbitrageMap={arbitrageMap}
+        productMap={productMap}
+        boosterEvMap={boosterEvMap}
+        singleCardPrices={singleCardPrices}
+        reprintMultiplier={reprintMultiplier}
       />
     </div>
   );

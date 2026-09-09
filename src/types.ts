@@ -103,6 +103,7 @@ export interface ChaseCard {
   number: string;
   priceNormal: number;
   priceFoil?: number;
+  price?: number;
   finish: string;
   imageUrl?: string;
   cardType?: string;
@@ -140,10 +141,20 @@ export interface DeckCardItem {
 
 export interface PreconstructedDeckDetail {
   deckName: string;
+  name?: string;
   setCode: string;
+  set?: string;
   theme: string;
+  format?: string;
   cardCount: number;
+  totalCards?: number;
+  singlesEv?: number;
   totalSinglesEv?: number;
+  estimatedEv?: number;
+  isCommander?: boolean;
+  isFoil?: boolean;
+  foil?: boolean;
+  treatment?: string;
   commander?: {
     name: string;
     manaCost: string;
@@ -156,6 +167,8 @@ export interface PreconstructedDeckDetail {
   };
   colors?: string[];
   typeSummary?: Record<string, { count: number; ev: number }>;
+  typesSummary?: Record<string, number>;
+  cardsByType?: Record<string, DeckCardItem[]>;
   raritySummary?: Record<string, { count: number; ev: number }>;
   contentsSummary?: {
     creatures: number;
@@ -165,8 +178,10 @@ export interface PreconstructedDeckDetail {
     lands: number;
   };
   keyCards?: DeckCardItem[];
+  topChases?: DeckCardItem[];
   cards?: DeckCardItem[];
   fullDecklist?: DeckCardItem[];
+  sealedProductUuids?: string[];
 }
 
 export interface CustomSlot {

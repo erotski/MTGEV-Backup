@@ -71,6 +71,7 @@ export interface RecursiveProductBreakdownResult {
     cardCount: number;
     totalCards: number;
     isFoil: boolean;
+    isCommander?: boolean;
     finish: 'Foil' | 'Nonfoil';
     unitSinglesEv: number;
     subtotalSinglesEv: number;
@@ -282,19 +283,26 @@ export function resolveSingleCardEv(
   let isEstimated = false;
 
   if (priceIdx) {
-    rawPrice = isFoil && priceIdx.foilPrice ? priceIdx.foilPrice : priceIdx.price;
-  } else if (cd.prices?.tcgplayer) {
-    rawPrice = Number(cd.prices.tcgplayer);
-  } else if (cd.prices?.cardmarket) {
-    rawPrice = Number(cd.prices.cardmarket);
-  } else if (cd.price) {
-    rawPrice = Number(cd.price);
-  } else if (cd.ev) {
-    rawPrice = Number(cd.ev);
-  } else {
-    // Estimating reasonable value if zero
-    rawPrice = isFoil ? 4.50 : 2.00;
-    isEstimated = true;
+    rawPrice = isFoil && priceIdx.foilPrice ? priceIdx.foilPrice : (priceIdx.price || priceIdx.foilPrice || 0);
+  }
+  
+  if (!rawPrice || rawPrice <= 0) {
+    if (cd.prices?.tcgplayer && Number(cd.prices.tcgplayer) > 0) {
+      rawPrice = Number(cd.prices.tcgplayer);
+    } else if (cd.prices?.cardmarket && Number(cd.prices.cardmarket) > 0) {
+      rawPrice = Number(cd.prices.cardmarket);
+    } else if (cd.price && Number(cd.price) > 0) {
+      rawPrice = Number(cd.price);
+    } else if (cd.ev && Number(cd.ev) > 0) {
+      rawPrice = Number(cd.ev);
+    } else {
+      // Estimating reasonable value based on parent product market price or baseline
+      const parentMkt = parentProduct?.marketPrice || parentProduct?.estimatedEv || 0;
+      const parentCards = parentProduct?.cardCount || 5;
+      const estFallback = parentMkt > 0 ? Math.max(1.5, Number((parentMkt / parentCards).toFixed(2))) : (isFoil ? 4.50 : 2.00);
+      rawPrice = isFoil ? Number((estFallback * 1.35).toFixed(2)) : estFallback;
+      isEstimated = true;
+    }
   }
 
   // Adjust by vendor
@@ -335,20 +343,93 @@ export function resolveSingleCardEv(
 /**
  * Finds a matching precon deck from preconDecks dictionary.
  */
-export function findMatchingPreconDeck(preconDecks: Record<string, any>, targetName?: string, targetSet?: string) {
+export function findMatchingPreconDeck(
+  preconDecks: Record<string, any>,
+  targetName?: string,
+  targetSet?: string,
+  targetId?: string
+) {
+  if (!preconDecks) return undefined;
+
+  // 1. Direct ID lookup if targetId provided
+  if (targetId) {
+    if (preconDecks[targetId]) return preconDecks[targetId];
+    const lowerId = targetId.toLowerCase().trim();
+    if (preconDecks[lowerId]) return preconDecks[lowerId];
+  }
+
   if (!targetName) return undefined;
   const cleanTarget = targetName.toLowerCase().trim();
   const lowerSet = targetSet ? targetSet.toLowerCase().trim() : '';
 
-  const directKey = `${cleanTarget}___${lowerSet}`;
-  if (preconDecks[directKey]) return preconDecks[directKey];
-
-  for (const d of Object.values(preconDecks)) {
-    const dName = (d.deckName || d.name || '').toLowerCase().trim();
-    const dSet = (d.set || d.setCode || '').toLowerCase().trim();
-    if (lowerSet && dSet === lowerSet && dName === cleanTarget) return d;
-    if (dName === cleanTarget) return d;
+  // 1b. Composite ID + deck name lookups
+  if (targetId) {
+    const lowerId = targetId.toLowerCase().trim();
+    if (preconDecks[`${lowerId}_${cleanTarget}`]) return preconDecks[`${lowerId}_${cleanTarget}`];
+    if (preconDecks[`${targetId}_${targetName}`]) return preconDecks[`${targetId}_${targetName}`];
   }
+
+  // 2. Direct exact keys with set
+  if (lowerSet) {
+    const setCompositeKey = `${cleanTarget}___${lowerSet}`;
+    if (preconDecks[setCompositeKey]) return preconDecks[setCompositeKey];
+    const prefixSetKey = `${lowerSet}_${cleanTarget}`;
+    if (preconDecks[prefixSetKey]) return preconDecks[prefixSetKey];
+    const upperSetKey = `${targetName}_${lowerSet.toUpperCase()}`;
+    if (preconDecks[upperSetKey]) return preconDecks[upperSetKey];
+  }
+
+  // 3. Normalize "Collector's Edition", "Collectors Edition", "Commander Deck", etc.
+  const strippedTarget = cleanTarget
+    .replace(/\bcollector'?s\s+edition\b/gi, '')
+    .replace(/\bcollectors\s+edition\b/gi, '')
+    .replace(/\bcollector'?s\b/gi, '')
+    .replace(/\bcollector\b/gi, '')
+    .replace(/\bedition\b/gi, '')
+    .replace(/\bcommander\s+deck\b/gi, '')
+    .replace(/\bcommander\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (strippedTarget && strippedTarget !== cleanTarget && lowerSet) {
+    const strippedDirectKey = `${strippedTarget}___${lowerSet}`;
+    if (preconDecks[strippedDirectKey]) return preconDecks[strippedDirectKey];
+  }
+
+  // 4. Exact set matches within preconDecks dictionary
+  if (lowerSet) {
+    for (const [key, d] of Object.entries(preconDecks)) {
+      if (targetId && (key === targetId || key.toLowerCase() === targetId.toLowerCase())) {
+        return d;
+      }
+      const dSet = (d.set || d.setCode || '').toLowerCase().trim();
+      if (dSet === lowerSet) {
+        const dName = (d.deckName || d.name || '').toLowerCase().trim();
+        if (dName === cleanTarget) return d;
+        if (strippedTarget && dName === strippedTarget) return d;
+        if (dName && (cleanTarget.includes(dName) || (strippedTarget && strippedTarget.includes(dName)))) {
+          return d;
+        }
+      }
+    }
+  }
+
+  // 5. If no set was provided (or no match within set), only allow exact match on targetName
+  if (!lowerSet) {
+    if (preconDecks[cleanTarget]) return preconDecks[cleanTarget];
+    if (preconDecks[targetName]) return preconDecks[targetName];
+    if (strippedTarget && preconDecks[strippedTarget]) return preconDecks[strippedTarget];
+
+    for (const d of Object.values(preconDecks)) {
+      const dName = (d.deckName || d.name || '').toLowerCase().trim();
+      if (dName === cleanTarget) return d;
+      if (strippedTarget && dName === strippedTarget) return d;
+      if (cleanTarget.length >= 8 && dName && (dName.includes(cleanTarget) || cleanTarget.includes(dName))) {
+        return d;
+      }
+    }
+  }
+
   return undefined;
 }
 
@@ -383,10 +464,28 @@ export function resolveRecursiveProductAudit(
   const cardPricesByUuid = singleCardPrices?.byUuid || {};
   const cardPricesByNameSet = singleCardPrices?.byNameSet || {};
   const cardPricesByName = singleCardPrices?.byName || {};
-  const lookupProduct = (key: string) => {
-    if (!key) return null;
-    if (productMap instanceof Map) return productMap.get(key) || null;
-    return productMap[key] || null;
+  const lookupProduct = (key: string, name?: string) => {
+    if (key) {
+      const byKey = productMap instanceof Map ? productMap.get(key) : productMap[key];
+      if (byKey) return byKey;
+    }
+    if (name) {
+      const normName = name.toLowerCase().trim();
+      const normWithoutDrop = normName.replace(/^secret lair drop\s+/i, '').trim();
+      const values = productMap instanceof Map ? Array.from(productMap.values()) : Object.values(productMap);
+      return (
+        values.find((p: any) => {
+          const pName = (p.displayName || p.name || '').toLowerCase().trim();
+          return (
+            pName === normName ||
+            pName === normWithoutDrop ||
+            (p.id && (p.id === key || p.id === name)) ||
+            (p.uuid && (p.uuid === key || p.uuid === name))
+          );
+        }) || null
+      );
+    }
+    return null;
   };
 
   const packItems: RecursiveProductBreakdownResult['packItems'] = [];
@@ -541,29 +640,60 @@ export function resolveRecursiveProductAudit(
   if (prodContents.deck && Array.isArray(prodContents.deck)) {
     prodContents.deck.forEach((dk: any) => {
       const count = multiplier;
-      const matchedDeck = findMatchingPreconDeck(preconDecks, dk.name, dk.set || parentSet);
+      const matchedDeck = findMatchingPreconDeck(
+        preconDecks,
+        dk.name,
+        dk.set || parentSet,
+        product.id || product.uuid || dk.uuid
+      );
+      const matchedDeckCardsCount =
+        matchedDeck?.totalCards ||
+        matchedDeck?.cardCount ||
+        (matchedDeck?.cards && matchedDeck.cards.length > 0
+          ? matchedDeck.cards.reduce((sum: number, c: any) => sum + (c.count || 1), 0)
+          : 0);
+
       const isCommander = Boolean(
+        matchedDeck?.isCommander ||
+        matchedDeck?.format === 'commander' ||
+        Boolean(matchedDeck?.commander && matchedDeck.commander.name && matchedDeck.commander.name.toLowerCase().trim() !== 'face commander') ||
         (product.subtype || '').toLowerCase().includes('commander') ||
         (product.category || '').toLowerCase().includes('commander') ||
         (product.displayName || product.name || '').toLowerCase().includes('commander') ||
         (dk.name || '').toLowerCase().includes('commander')
       );
-      const defaultCardCount = isCommander ? 100 : (product.cardCount || 60);
-      const deckCardCount = matchedDeck?.cardCount || (matchedDeck?.cards ? matchedDeck.cards.length : defaultCardCount);
+
+      const deckCardCount = matchedDeckCardsCount > 0
+        ? matchedDeckCardsCount
+        : (product.cardCount && prodContents.deck && prodContents.deck.length > 0
+            ? Math.max(1, Math.floor(product.cardCount / prodContents.deck.length))
+            : (isCommander ? 100 : (product.subtype === 'secret_lair' ? 5 : 60)));
       const deckCardsTotal = count * deckCardCount;
+
+      const isCollectorDeck = Boolean(
+        (product.displayName || product.name || '').toLowerCase().includes('collector') ||
+        (dk.name || '').toLowerCase().includes('collector') ||
+        (product.subtype || '').toLowerCase().includes('collector') ||
+        (dk.subtype || '').toLowerCase().includes('collector') ||
+        matchedDeck?.treatment?.toLowerCase().includes('foil') ||
+        matchedDeck?.deckName?.toLowerCase().includes('collector')
+      );
 
       const isFoil = Boolean(
         dk.foil ||
         dk.isFoil ||
         matchedDeck?.isFoil ||
         matchedDeck?.foil ||
+        isCollectorDeck ||
         (dk.name || '').toLowerCase().includes('foil') ||
         (matchedDeck?.deckName || '').toLowerCase().includes('foil') ||
         ((product.displayName || product.name || '').toLowerCase().includes('foil') &&
          !(product.displayName || product.name || '').toLowerCase().includes('non-foil'))
       );
 
-      let singlesEv = matchedDeck?.totalSinglesEv || 0;
+      const finishLabel = isCollectorDeck ? (matchedDeck?.treatment || 'Ripple Foil') : (isFoil ? 'Foil' : 'Nonfoil');
+
+      let singlesEv = matchedDeck?.totalSinglesEv || matchedDeck?.singlesEv || matchedDeck?.estimatedEv || 0;
       if (priceMode === 'cheapest_reprint' && singlesEv > 0) {
         singlesEv = Number((singlesEv * reprintMultiplier).toFixed(2));
       }
@@ -598,7 +728,7 @@ export function resolveRecursiveProductAudit(
         let price = resolveCardPrice(
           {
             price: c.price || fromIdx?.price || 0,
-            foilPrice: fromIdx?.foilPrice || c.foilPrice,
+            foilPrice: fromIdx?.foilPrice || c.foilPrice || (isCollectorDeck ? c.price : undefined),
             prices: cardPrices,
           },
           vendor,
@@ -618,7 +748,7 @@ export function resolveRecursiveProductAudit(
           ...c,
           foil: cardFoil,
           isFoil: cardFoil,
-          finish: cardFoil ? 'Foil' : 'Nonfoil',
+          finish: cardFoil ? finishLabel : 'Nonfoil',
           price: adjustedPrice,
           totalPrice: Number((adjustedPrice * cCount).toFixed(2)),
         };
@@ -629,6 +759,17 @@ export function resolveRecursiveProductAudit(
           cards.reduce((sum: number, c: any) => sum + (c.totalPrice || c.price || 0), 0).toFixed(2)
         );
         if (calculatedCardSum > 0) singlesEv = calculatedCardSum;
+      }
+
+      // Fallback singlesEv if still 0
+      if (singlesEv <= 0) {
+        if (matchedDeck?.totalSinglesEv > 0) singlesEv = matchedDeck.totalSinglesEv;
+        else if (matchedDeck?.singlesEv > 0) singlesEv = matchedDeck.singlesEv;
+        else if (matchedDeck?.estimatedEv > 0) singlesEv = matchedDeck.estimatedEv;
+        else if (product.estimatedEv > 0) {
+          const hasSample = prodContents.sealed && prodContents.sealed.some((s: any) => (s.name || '').toLowerCase().includes('sample'));
+          singlesEv = Math.max(0, Number((product.estimatedEv - (hasSample ? 9.73 : 0)).toFixed(2)));
+        }
       }
 
       const subtotalSinglesEv = Number((count * singlesEv).toFixed(2));
@@ -642,8 +783,9 @@ export function resolveRecursiveProductAudit(
         count,
         cardCount: deckCardCount,
         totalCards: deckCardsTotal,
-        isFoil,
-        finish: isFoil ? 'Foil' : 'Nonfoil',
+        isFoil: isFoil || isCollectorDeck,
+        isCommander,
+        finish: finishLabel,
         unitSinglesEv: singlesEv,
         subtotalSinglesEv,
         cards,
@@ -658,7 +800,7 @@ export function resolveRecursiveProductAudit(
         unitEv: singlesEv,
         subtotalEv: subtotalSinglesEv,
         set: (dk.set || parentSet).toUpperCase(),
-        foil: isFoil,
+        foil: isFoil || isCollectorDeck,
         raw: dk,
       });
     });
@@ -668,8 +810,41 @@ export function resolveRecursiveProductAudit(
   if (prodContents.sealed && Array.isArray(prodContents.sealed)) {
     prodContents.sealed.forEach((sub: any) => {
       const count = (sub.count || 1) * multiplier;
-      const childProd = sub.uuid ? lookupProduct(sub.uuid) : null;
-      const childArb = sub.uuid ? arbitrageMap[sub.uuid] : null;
+      let childProd = lookupProduct(sub.uuid, sub.name);
+      const childArb = sub.uuid
+        ? arbitrageMap[sub.uuid]
+        : Object.values(arbitrageMap).find((a: any) =>
+            (a.productUuid && a.productUuid === sub.uuid) ||
+            ((a.boxName || a.displayName || '').toLowerCase().trim() === (sub.name || '').toLowerCase().trim())
+          );
+
+      // If not directly in productMap, check if it matches a preconstructed deck / Secret Lair drop
+      if (!childProd && preconDecks) {
+        const matchedDeck = findMatchingPreconDeck(preconDecks, sub.name, sub.set || parentSet);
+        if (matchedDeck) {
+          const sSet = (sub.set || matchedDeck.set || parentSet).toLowerCase();
+          const isFoil = Boolean(matchedDeck.isFoil || sub.name.toLowerCase().includes('foil'));
+          childProd = {
+            id: matchedDeck.deckName,
+            uuid: matchedDeck.deckName,
+            displayName: matchedDeck.deckName,
+            setName: matchedDeck.setName || sSet.toUpperCase(),
+            setCode: sSet,
+            packagingType: 'starter_deck',
+            contents: {
+              deck: [
+                {
+                  name: matchedDeck.deckName,
+                  set: sSet,
+                  count: 1,
+                  foil: isFoil,
+                  cards: matchedDeck.cards,
+                },
+              ],
+            },
+          };
+        }
+      }
 
       totalSealedUnits += count;
 
@@ -707,6 +882,16 @@ export function resolveRecursiveProductAudit(
           unitMin = Number(((childArb.unitEvMin || childArb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
           unitMid90 = Number(((childArb.unitEvMid90 || childArb.totalEvAvg * 0.85) * reprintMultiplier).toFixed(2));
           unitMax = Number(((childArb.unitEvMax || childArb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
+        } else if (childArb && childArb.marketPrice > 0) {
+          unitEv = Number(childArb.marketPrice.toFixed(2));
+        } else if (childProd.marketPrice > 0) {
+          unitEv = Number(childProd.marketPrice.toFixed(2));
+        } else if (childProd.estimatedEv > 0) {
+          unitEv = Number(childProd.estimatedEv.toFixed(2));
+        } else if (childProd.price > 0) {
+          unitEv = Number(childProd.price.toFixed(2));
+        } else if (sub.price > 0) {
+          unitEv = Number(sub.price.toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
@@ -744,7 +929,11 @@ export function resolveRecursiveProductAudit(
         if (sName.includes('sample')) estimatedCards = 2;
         else if (sName.includes('booster box')) estimatedCards = 36 * 15;
         else if (sName.includes('case')) estimatedCards = 6 * 36 * 15;
-        else if (sName.includes('deck')) estimatedCards = 100;
+        else if (sName.includes('secret lair drop') || sName.includes('secret lair')) estimatedCards = 5;
+        else if (sName.includes('commander')) estimatedCards = 100;
+        else if (sName.includes('jumpstart')) estimatedCards = 20;
+        else if (sName.includes('starter') || sName.includes('half-deck')) estimatedCards = 30;
+        else if (sName.includes('deck')) estimatedCards = 60;
 
         const subCardsTotal = count * estimatedCards;
         totalCards += subCardsTotal;
@@ -752,6 +941,14 @@ export function resolveRecursiveProductAudit(
         let unitEv = 0;
         if (childArb && childArb.totalEvAvg > 0) {
           unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
+        } else if (childArb && childArb.marketPrice > 0) {
+          unitEv = Number(childArb.marketPrice.toFixed(2));
+        } else if (sub.price > 0) {
+          unitEv = Number(sub.price.toFixed(2));
+        } else if (sub.marketPrice > 0) {
+          unitEv = Number(sub.marketPrice.toFixed(2));
+        } else if (sub.estimatedEv > 0) {
+          unitEv = Number(sub.estimatedEv.toFixed(2));
         }
         const subtotalEv = Number((count * unitEv).toFixed(2));
         totalEv += subtotalEv;
@@ -843,7 +1040,7 @@ export function resolveRecursiveProductAudit(
 
         if (cfg.deck) {
           cfg.deck.forEach((dk: any) => {
-            const matched = findMatchingPreconDeck(preconDecks, dk.name, dk.set || parentSet);
+            const matched = findMatchingPreconDeck(preconDecks, dk.name, dk.set || parentSet, dk.uuid);
             const dEv = (matched?.totalSinglesEv || 0) * reprintMultiplier;
             configEv += dEv * multiplier;
             cItems.push({
@@ -939,6 +1136,23 @@ export function resolveRecursiveProductAudit(
         raw: ot,
       });
     });
+  }
+
+  if (totalEv === 0) {
+    const pUid = product.id || product.uuid || '';
+    const arb = pUid
+      ? arbitrageMap[pUid]
+      : Object.values(arbitrageMap).find((a: any) =>
+          (a.productUuid && a.productUuid === pUid) ||
+          ((a.boxName || a.displayName || '').toLowerCase().trim() === (product.displayName || product.name || '').toLowerCase().trim())
+        );
+    if (arb && arb.totalEvAvg > 0) {
+      totalEv = Number((arb.totalEvAvg * reprintMultiplier * multiplier).toFixed(2));
+    } else if (product.estimatedEv > 0) {
+      totalEv = Number((product.estimatedEv * multiplier).toFixed(2));
+    } else if (product.marketPrice > 0) {
+      totalEv = Number((product.marketPrice * multiplier).toFixed(2));
+    }
   }
 
   return {

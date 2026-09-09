@@ -101,7 +101,31 @@ class DataService {
   private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
   private preconDecksCache: Record<string, any> | null = null;
   private preconDecksPromise: Promise<Record<string, any>> | null = null;
+  private sealedProductsCache: any[] | null = null;
+  private singleCardPricesCache: {
+    byUuid: Record<string, any>;
+    byNameSet: Record<string, any>;
+    byName: Record<string, any>;
+    totalIndexed: number;
+  } | null = null;
   private isLoadedFromPipeline = false;
+
+  public getSingleCardPricesSync(): {
+    byUuid: Record<string, any>;
+    byNameSet: Record<string, any>;
+    byName: Record<string, any>;
+    totalIndexed: number;
+  } | null {
+    return this.singleCardPricesCache;
+  }
+
+  public getArbitrageRecordsSync(): BoxArbitrageRecord[] | null {
+    return this.arbitrageCache;
+  }
+
+  public getBoosterEvsSync(): Record<string, BoosterEVRecord[]> | null {
+    return this.boosterEvCache;
+  }
 
   /**
    * Loads all sets from /data/sets.json
@@ -332,7 +356,8 @@ class DataService {
           const raw = await response.json();
           if (typeof raw === 'object' && raw !== null) {
             this.preconDecksCache = raw;
-            return raw;
+            this.injectSldFallbackDecks(this.preconDecksCache);
+            return this.preconDecksCache;
           }
         }
       } catch (e) {
@@ -340,7 +365,11 @@ class DataService {
       } finally {
         this.preconDecksPromise = null;
       }
-      return {};
+      if (!this.preconDecksCache) {
+        this.preconDecksCache = {};
+      }
+      this.injectSldFallbackDecks(this.preconDecksCache);
+      return this.preconDecksCache;
     })();
 
     return this.preconDecksPromise;
@@ -350,11 +379,15 @@ class DataService {
    * Loads raw sealed products with contents column from /data/sealed_products.json
    */
   public async getSealedProducts(): Promise<any[]> {
+    if (this.sealedProductsCache && this.sealedProductsCache.length > 0) {
+      return this.sealedProductsCache;
+    }
     try {
       const response = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
       if (response.ok) {
         const raw = await response.json();
         if (Array.isArray(raw)) {
+          this.sealedProductsCache = raw;
           return raw;
         }
       }
@@ -362,6 +395,262 @@ class DataService {
       console.warn('Could not fetch /data/sealed_products.json:', e);
     }
     return [];
+  }
+
+  public getSealedProductsSync(): any[] | null {
+    return this.sealedProductsCache;
+  }
+
+  public getPreconDecksSync(): Record<string, any> | null {
+    if (!this.preconDecksCache) {
+      this.preconDecksCache = {};
+      this.injectSldFallbackDecks(this.preconDecksCache);
+    }
+    return this.preconDecksCache;
+  }
+
+  /**
+   * Injects fallback precon decks for 8 Secret Lair drops that lack explicit precon_decks.json mappings.
+   */
+  private injectSldFallbackDecks(cache: Record<string, any>): void {
+    const fallbackDecks: Record<string, {
+      name: string;
+      isFoil: boolean;
+      cards: Array<{ name: string; set: string; uuid?: string; number?: string; count: number; foil: boolean }>;
+    }> = {
+      "Artist Series: Mark Poole": {
+        name: "Artist Series: Mark Poole",
+        isFoil: false,
+        cards: [
+          { name: "Balance", set: "sld", number: "173", uuid: "afddf66d-0d75-5ab4-8bab-1026877a5fa2", count: 1, foil: false },
+          { name: "Brainstorm", set: "sld", number: "174", uuid: "85041861-3d64-544b-8aa2-97619186a8d0", count: 1, foil: false },
+          { name: "Counterspell", set: "sld", number: "175", uuid: "b2860b41-ceb3-5ea8-b9ca-17b49b167c2e", count: 1, foil: false },
+          { name: "Birds of Paradise", set: "sld", number: "176", uuid: "67e1f03c-37c4-5752-9ee2-ac5049cb0a8b", count: 1, foil: false },
+          { name: "Howling Mine", set: "sld", number: "177", uuid: "ca32c6fd-5119-5d34-b8b0-b0e7d23cb6cf", count: 1, foil: false },
+          { name: "Wasteland", set: "sld", number: "178", uuid: "da44e28c-7ea3-5ae5-89ad-3235f0504071", count: 1, foil: false }
+        ]
+      },
+      "Artist Series: Mark Poole Foil Edition": {
+        name: "Artist Series: Mark Poole Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Balance", set: "sld", number: "173", uuid: "afddf66d-0d75-5ab4-8bab-1026877a5fa2", count: 1, foil: true },
+          { name: "Brainstorm", set: "sld", number: "174", uuid: "85041861-3d64-544b-8aa2-97619186a8d0", count: 1, foil: true },
+          { name: "Counterspell", set: "sld", number: "175", uuid: "b2860b41-ceb3-5ea8-b9ca-17b49b167c2e", count: 1, foil: true },
+          { name: "Birds of Paradise", set: "sld", number: "176", uuid: "67e1f03c-37c4-5752-9ee2-ac5049cb0a8b", count: 1, foil: true },
+          { name: "Howling Mine", set: "sld", number: "177", uuid: "ca32c6fd-5119-5d34-b8b0-b0e7d23cb6cf", count: 1, foil: true },
+          { name: "Wasteland", set: "sld", number: "178", uuid: "da44e28c-7ea3-5ae5-89ad-3235f0504071", count: 1, foil: true }
+        ]
+      },
+      "Dan Frazier is Back: The Allied Signets": {
+        name: "Dan Frazier is Back: The Allied Signets",
+        isFoil: false,
+        cards: [
+          { name: "Arcane Signet", set: "sld", number: "589", uuid: "21046320-dffb-5487-a481-6ed322d0ac93", count: 1, foil: false },
+          { name: "Azorius Signet", set: "sld", number: "286", uuid: "efa86084-f45f-5a62-91e0-446b2c522275", count: 1, foil: false },
+          { name: "Dimir Signet", set: "sld", number: "287", uuid: "ab000450-357f-5296-883e-6157708a6247", count: 1, foil: false },
+          { name: "Gruul Signet", set: "sld", number: "288", uuid: "cf7f1584-fc48-5088-95f8-6ad0504021e7", count: 1, foil: false },
+          { name: "Rakdos Signet", set: "sld", number: "289", uuid: "6570cd48-0249-54f9-9b05-af48776a3a3c", count: 1, foil: false },
+          { name: "Selesnya Signet", set: "sld", number: "290", uuid: "fb6699a3-0931-5485-8bea-7bd69a35d6f2", count: 1, foil: false }
+        ]
+      },
+      "Dan Frazier is Back: The Allied Signets Foil Edition": {
+        name: "Dan Frazier is Back: The Allied Signets Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Arcane Signet", set: "sld", number: "589", uuid: "21046320-dffb-5487-a481-6ed322d0ac93", count: 1, foil: true },
+          { name: "Azorius Signet", set: "sld", number: "286", uuid: "efa86084-f45f-5a62-91e0-446b2c522275", count: 1, foil: true },
+          { name: "Dimir Signet", set: "sld", number: "287", uuid: "ab000450-357f-5296-883e-6157708a6247", count: 1, foil: true },
+          { name: "Gruul Signet", set: "sld", number: "288", uuid: "cf7f1584-fc48-5088-95f8-6ad0504021e7", count: 1, foil: true },
+          { name: "Rakdos Signet", set: "sld", number: "289", uuid: "6570cd48-0249-54f9-9b05-af48776a3a3c", count: 1, foil: true },
+          { name: "Selesnya Signet", set: "sld", number: "290", uuid: "fb6699a3-0931-5485-8bea-7bd69a35d6f2", count: 1, foil: true }
+        ]
+      },
+      "Dan Frazier is Back: The Enemy Signets": {
+        name: "Dan Frazier is Back: The Enemy Signets",
+        isFoil: false,
+        cards: [
+          { name: "Arcane Signet", set: "sld", number: "589", uuid: "21046320-dffb-5487-a481-6ed322d0ac93", count: 1, foil: false },
+          { name: "Boros Signet", set: "sld", number: "291", uuid: "5c8df2de-5f69-5b7a-8d46-c2fb3c7d18f0", count: 1, foil: false },
+          { name: "Golgari Signet", set: "sld", number: "292", uuid: "b5e48ca3-fb55-5913-8bc5-bd5277672fd6", count: 1, foil: false },
+          { name: "Izzet Signet", set: "sld", number: "293", uuid: "1d4999ee-6141-5384-9897-89ab66c30613", count: 1, foil: false },
+          { name: "Orzhov Signet", set: "sld", number: "294", uuid: "990827a4-d289-508c-95f4-ace9e7c199cb", count: 1, foil: false },
+          { name: "Simic Signet", set: "sld", number: "295", uuid: "9593ce8a-ceca-5903-b694-78f8a3df27cb", count: 1, foil: false }
+        ]
+      },
+      "Dan Frazier is Back: The Enemy Signets Foil Edition": {
+        name: "Dan Frazier is Back: The Enemy Signets Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Arcane Signet", set: "sld", number: "589", uuid: "21046320-dffb-5487-a481-6ed322d0ac93", count: 1, foil: true },
+          { name: "Boros Signet", set: "sld", number: "291", uuid: "5c8df2de-5f69-5b7a-8d46-c2fb3c7d18f0", count: 1, foil: true },
+          { name: "Golgari Signet", set: "sld", number: "292", uuid: "b5e48ca3-fb55-5913-8bc5-bd5277672fd6", count: 1, foil: true },
+          { name: "Izzet Signet", set: "sld", number: "293", uuid: "1d4999ee-6141-5384-9897-89ab66c30613", count: 1, foil: true },
+          { name: "Orzhov Signet", set: "sld", number: "294", uuid: "990827a4-d289-508c-95f4-ace9e7c199cb", count: 1, foil: true },
+          { name: "Simic Signet", set: "sld", number: "295", uuid: "9593ce8a-ceca-5903-b694-78f8a3df27cb", count: 1, foil: true }
+        ]
+      },
+      "Mother's Day 2021": {
+        name: "Mother's Day 2021",
+        isFoil: false,
+        cards: [
+          { name: "Mother of Runes", set: "sld", number: "296", uuid: "ff3ed33a-3cb5-5f12-89c9-7d69b5c07de9", count: 1, foil: false },
+          { name: "Ethersworn Canonist", set: "sld", number: "2102", uuid: "543f9f82-409a-5dce-8394-bdcd2e4d9ddb", count: 1, foil: false },
+          { name: "Cultivate", set: "sld", number: "246", uuid: "48c9c472-8d88-5f46-93ac-07b33985d26f", count: 1, foil: false },
+          { name: "Sol Ring", set: "sld", number: "249", uuid: "34b8fdb8-5d8d-5d67-ba31-de9528757c46", count: 1, foil: false }
+        ]
+      },
+      "Mother's Day 2021 Foil Edition": {
+        name: "Mother's Day 2021 Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Mother of Runes", set: "sld", number: "296", uuid: "ff3ed33a-3cb5-5f12-89c9-7d69b5c07de9", count: 1, foil: true },
+          { name: "Ethersworn Canonist", set: "sld", number: "2102", uuid: "543f9f82-409a-5dce-8394-bdcd2e4d9ddb", count: 1, foil: true },
+          { name: "Cultivate", set: "sld", number: "246", uuid: "48c9c472-8d88-5f46-93ac-07b33985d26f", count: 1, foil: true },
+          { name: "Sol Ring", set: "sld", number: "249", uuid: "34b8fdb8-5d8d-5d67-ba31-de9528757c46", count: 1, foil: true }
+        ]
+      },
+      "Phyrexian Praetors: Compleat Edition": {
+        name: "Phyrexian Praetors: Compleat Edition",
+        isFoil: false,
+        cards: [
+          { name: "Elesh Norn, Grand Cenobite", set: "sld", number: "209", uuid: "4e42db45-2263-575e-a9f7-bd331e81ca05", count: 1, foil: false },
+          { name: "Jin-Gitaxias, Core Augur", set: "sld", number: "210", uuid: "dc360824-ea98-57f1-a332-f2c14e0ee5d2", count: 1, foil: false },
+          { name: "Sheoldred, Whispering One", set: "sld", number: "211", uuid: "5b3b1901-c208-5d90-8831-2575ab911d83", count: 1, foil: false },
+          { name: "Urabrask the Hidden", set: "sld", number: "212", uuid: "f694951f-53c0-5683-bdef-0b37839ef305", count: 1, foil: false },
+          { name: "Vorinclex, Voice of Hunger", set: "sld", number: "213", uuid: "08d693b7-26e7-50c8-a7f7-e4827e99ace3", count: 1, foil: false }
+        ]
+      },
+      "Phyrexian Praetors: Compleat Edition Foil Edition": {
+        name: "Phyrexian Praetors: Compleat Edition Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Elesh Norn, Grand Cenobite", set: "sld", number: "209", uuid: "4e42db45-2263-575e-a9f7-bd331e81ca05", count: 1, foil: true },
+          { name: "Jin-Gitaxias, Core Augur", set: "sld", number: "210", uuid: "dc360824-ea98-57f1-a332-f2c14e0ee5d2", count: 1, foil: true },
+          { name: "Sheoldred, Whispering One", set: "sld", number: "211", uuid: "5b3b1901-c208-5d90-8831-2575ab911d83", count: 1, foil: true },
+          { name: "Urabrask the Hidden", set: "sld", number: "212", uuid: "f694951f-53c0-5683-bdef-0b37839ef305", count: 1, foil: true },
+          { name: "Vorinclex, Voice of Hunger", set: "sld", number: "213", uuid: "08d693b7-26e7-50c8-a7f7-e4827e99ace3", count: 1, foil: true }
+        ]
+      },
+      "Saturday Morning D&D": {
+        name: "Saturday Morning D&D",
+        isFoil: false,
+        cards: [
+          { name: "Inseparable Bond", set: "iko", number: "172", uuid: "72051610-d5ea-4aa2-ba05-728b1ccf281e", count: 1, foil: false },
+          { name: "Primal Might", set: "m21", number: "197", uuid: "2c9ed4cd-260e-4109-a962-44c58ab1b76d", count: 1, foil: false },
+          { name: "Red Elemental Blast", set: "ema", number: "142", uuid: "c2c5054d-b097-4c7b-b2e0-21d7912bba6f", count: 1, foil: false },
+          { name: "Heroic Intervention", set: "sld", number: "1872", uuid: "730bbe54-b81c-5df3-b3ea-9d33e24a91c8", count: 1, foil: false },
+          { name: "Unbreakable Formation", set: "sld", number: "310", uuid: "2909deb9-8389-516a-9cb9-9b0339a29883", count: 1, foil: false },
+          { name: "Whir of Invention", set: "sld", number: "311", uuid: "3ebd4cf4-f0ef-53ab-ab1f-6d1ddb5ad842", count: 1, foil: false }
+        ]
+      },
+      "Saturday Morning D&D Foil Edition": {
+        name: "Saturday Morning D&D Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Inseparable Bond", set: "iko", number: "172", uuid: "72051610-d5ea-4aa2-ba05-728b1ccf281e", count: 1, foil: true },
+          { name: "Primal Might", set: "m21", number: "197", uuid: "2c9ed4cd-260e-4109-a962-44c58ab1b76d", count: 1, foil: true },
+          { name: "Red Elemental Blast", set: "ema", number: "142", uuid: "c2c5054d-b097-4c7b-b2e0-21d7912bba6f", count: 1, foil: true },
+          { name: "Heroic Intervention", set: "sld", number: "1872", uuid: "730bbe54-b81c-5df3-b3ea-9d33e24a91c8", count: 1, foil: true },
+          { name: "Unbreakable Formation", set: "sld", number: "310", uuid: "2909deb9-8389-516a-9cb9-9b0339a29883", count: 1, foil: true },
+          { name: "Whir of Invention", set: "sld", number: "311", uuid: "3ebd4cf4-f0ef-53ab-ab1f-6d1ddb5ad842", count: 1, foil: true }
+        ]
+      },
+      "Special Guest: Fiona Staples": {
+        name: "Special Guest: Fiona Staples",
+        isFoil: false,
+        cards: [
+          { name: "Dryad of the Ilysian Grove", set: "sld", number: "191", uuid: "c6f713d7-3cda-5dba-b2e0-21d7912bba6f", count: 1, foil: false },
+          { name: "Harbinger of the Tides", set: "c17", number: "e3b983ce-1161-42f1-88de-36c45a4598ab", uuid: "e3b983ce-1161-42f1-88de-36c45a4598ab", count: 1, foil: false },
+          { name: "Metallic Mimic", set: "sld", number: "194", uuid: "3ab4b358-19c1-5a6f-bfb6-3ee53a8be282", count: 1, foil: false },
+          { name: "Rhystic Study", set: "sld", number: "478", uuid: "1df90f3c-8ca1-5ffd-ba84-43e73ec44660", count: 1, foil: false },
+          { name: "Soul-Scar Mage", set: "sld", number: "190", uuid: "ad022f20-e0cd-58b1-8cf2-2bd7f82cfcc9", count: 1, foil: false }
+        ]
+      },
+      "Special Guest: Fiona Staples Foil Edition": {
+        name: "Special Guest: Fiona Staples Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Dryad of the Ilysian Grove", set: "sld", number: "191", uuid: "c6f713d7-3cda-5dba-b2e0-21d7912bba6f", count: 1, foil: true },
+          { name: "Harbinger of the Tides", set: "c17", number: "e3b983ce-1161-42f1-88de-36c45a4598ab", uuid: "e3b983ce-1161-42f1-88de-36c45a4598ab", count: 1, foil: true },
+          { name: "Metallic Mimic", set: "sld", number: "194", uuid: "3ab4b358-19c1-5a6f-bfb6-3ee53a8be282", count: 1, foil: true },
+          { name: "Rhystic Study", set: "sld", number: "478", uuid: "1df90f3c-8ca1-5ffd-ba84-43e73ec44660", count: 1, foil: true },
+          { name: "Soul-Scar Mage", set: "sld", number: "190", uuid: "ad022f20-e0cd-58b1-8cf2-2bd7f82cfcc9", count: 1, foil: true }
+        ]
+      },
+      "Special Guest: Jen Bartel": {
+        name: "Special Guest: Jen Bartel",
+        isFoil: false,
+        cards: [
+          { name: "Mesa Enchantress", set: "sld", number: "282", uuid: "0fb11ef2-7d80-54ce-952a-ce84bc0c2438", count: 1, foil: false },
+          { name: "Archaeomancer", set: "sld", number: "283", uuid: "855787fd-bfd5-5337-bc2a-0bac75149fb0", count: 1, foil: false },
+          { name: "Bloom Tender", set: "sld", number: "284", uuid: "57f5196f-8c07-5f2c-9489-15297377bc1e", count: 1, foil: false },
+          { name: "Meteor Golem", set: "sld", number: "285", uuid: "e559acf1-18e6-5db5-873f-26c913df93e0", count: 1, foil: false }
+        ]
+      },
+      "Special Guest: Jen Bartel Foil Edition": {
+        name: "Special Guest: Jen Bartel Foil Edition",
+        isFoil: true,
+        cards: [
+          { name: "Mesa Enchantress", set: "sld", number: "282", uuid: "0fb11ef2-7d80-54ce-952a-ce84bc0c2438", count: 1, foil: true },
+          { name: "Archaeomancer", set: "sld", number: "283", uuid: "855787fd-bfd5-5337-bc2a-0bac75149fb0", count: 1, foil: true },
+          { name: "Bloom Tender", set: "sld", number: "284", uuid: "57f5196f-8c07-5f2c-9489-15297377bc1e", count: 1, foil: true },
+          { name: "Meteor Golem", set: "sld", number: "285", uuid: "e559acf1-18e6-5db5-873f-26c913df93e0", count: 1, foil: true }
+        ]
+      }
+    };
+
+    for (const [key, deck] of Object.entries(fallbackDecks)) {
+      const payload = {
+        deckName: deck.name,
+        setName: "Secret Lair Drop",
+        setCode: "SLD",
+        releaseDate: "2021-06-21",
+        format: "casual",
+        type: "Secret Lair Drop",
+        isCommander: false,
+        isFoil: deck.isFoil,
+        cardCount: deck.cards.length,
+        totalCards: deck.cards.length,
+        cards: deck.cards.map((c) => ({
+          uuid: c.uuid,
+          name: c.name,
+          count: c.count,
+          set: c.set,
+          setCode: c.set.toUpperCase(),
+          number: c.number || "",
+          price: 0,
+          unitPrice: 0,
+          totalPrice: 0,
+          foil: c.foil,
+          isFoil: c.foil
+        })),
+        totalSinglesEv: 0,
+        singlesEv: 0
+      };
+
+      const lowerKey = key.toLowerCase();
+      const strippedKey = lowerKey.replace(/[^a-z0-9]/g, "");
+
+      // 1. Direct key
+      if (!cache[key]) cache[key] = payload;
+      // 2. Lowercase key
+      if (!cache[lowerKey]) cache[lowerKey] = payload;
+      // 3. Stripped key (for key variations)
+      if (!cache[strippedKey]) cache[strippedKey] = payload;
+
+      // 4. Set composite keys
+      const lowerSet = "sld";
+      const cleanTarget = lowerKey;
+      const setCompositeKey = `${cleanTarget}___${lowerSet}`;
+      if (!cache[setCompositeKey]) cache[setCompositeKey] = payload;
+
+      const prefixSetKey = `${lowerSet}_${cleanTarget}`;
+      if (!cache[prefixSetKey]) cache[prefixSetKey] = payload;
+
+      const strippedSetKey = `${lowerSet}_${strippedKey}`;
+      if (!cache[strippedSetKey]) cache[strippedSetKey] = payload;
+    }
   }
 
   /**
@@ -373,11 +662,15 @@ class DataService {
     byName: Record<string, any>;
     totalIndexed: number;
   }> {
+    if (this.singleCardPricesCache) {
+      return this.singleCardPricesCache;
+    }
     try {
       const response = await fetch('/data/single_card_prices.json', { cache: 'no-cache' });
       if (response.ok) {
         const raw = await response.json();
         if (raw && typeof raw === 'object') {
+          this.singleCardPricesCache = raw;
           return raw;
         }
       }

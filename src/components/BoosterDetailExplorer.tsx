@@ -40,6 +40,8 @@ interface BoosterDetailExplorerProps {
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
   onVendorChange: (vendor: Vendor) => void;
+  initialProductId?: string;
+  onClearInitialProductId?: () => void;
 }
 
 const getBoosterPackMarketPrice = (setCode: string, boosterName: string): number => {
@@ -65,6 +67,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   onPriceModeChange,
   vendor,
   onVendorChange,
+  initialProductId,
+  onClearInitialProductId,
 }) => {
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
   
@@ -168,6 +172,21 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [selectedProductId, setSelectedProductId] = useState<string>(
     setCatalogProducts[0]?.id || ''
   );
+
+  useEffect(() => {
+    if (initialProductId) {
+      setSelectedProductId(initialProductId);
+      const matched = [...setCatalogProducts, ...dbProducts].find(
+        (p) => p.id === initialProductId || p.uuid === initialProductId
+      );
+      if (matched && matched.boosterName) {
+        setActiveBoosterName(matched.boosterName);
+      }
+      if (onClearInitialProductId) {
+        onClearInitialProductId();
+      }
+    }
+  }, [initialProductId, setCatalogProducts, dbProducts, onClearInitialProductId]);
 
   const [activeBoosterName, setActiveBoosterName] = useState<string>(
     setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'

@@ -5,12 +5,14 @@ import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
+import { SpecialChaseShowcase } from './components/SpecialChaseShowcase';
 import { AdminPortal } from './components/AdminPortal';
-import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database } from 'lucide-react';
+import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database, Award } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'admin'>('arbitrage');
+  const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'chase' | 'admin'>('arbitrage');
   const [selectedSetCode, setSelectedSetCode] = useState<string>('MH3');
+  const [initialProductId, setInitialProductId] = useState<string>('');
   const [priceMode, setPriceMode] = useState<PriceMode>('direct');
   const [vendor, setVendor] = useState<Vendor>('all');
 
@@ -62,8 +64,17 @@ export default function App() {
   const allBoosterRecords = Object.values(boosterEvMap).flat();
   const currentChaseCards = CHASE_CARDS_BY_SET[selectedSetCode] || CHASE_CARDS_BY_SET['MH3'] || [];
 
-  const handleSelectSetFromArbitrage = (setCode: string) => {
+  const handleSelectSetFromArbitrage = (setCode: string, productUuid?: string) => {
     setSelectedSetCode(resolveToMainSetCode(setCode));
+    if (productUuid) {
+      setInitialProductId(productUuid);
+    }
+    setActiveTab('explorer');
+  };
+
+  const handleSelectProductFromChase = (setCode: string, productId: string) => {
+    setSelectedSetCode(resolveToMainSetCode(setCode));
+    setInitialProductId(productId);
     setActiveTab('explorer');
   };
 
@@ -124,6 +135,18 @@ export default function App() {
                 Booster EV & Chase Cards
               </button>
               <button
+                id="tab-chase-btn"
+                onClick={() => setActiveTab('chase')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'chase'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                Special Chases
+              </button>
+              <button
                 id="tab-admin-btn"
                 onClick={() => setActiveTab('admin')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
@@ -166,6 +189,14 @@ export default function App() {
             onPriceModeChange={setPriceMode}
             vendor={vendor}
             onVendorChange={setVendor}
+            initialProductId={initialProductId}
+            onClearInitialProductId={() => setInitialProductId('')}
+          />
+        )}
+
+        {activeTab === 'chase' && (
+          <SpecialChaseShowcase
+            onSelectProduct={handleSelectProductFromChase}
           />
         )}
 

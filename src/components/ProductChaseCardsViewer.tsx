@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { getChaseCardsForProduct, fetchLiveChaseCardsForSet } from '../services/chaseCardsService';
+import { getChaseCardsForProduct, fetchLiveChaseCardsForSet, getCardProductAvailability } from '../services/chaseCardsService';
+import { dataService } from '../services/dataService';
 import {
   Sparkles,
   Flame,
@@ -13,36 +14,213 @@ import {
   Tag,
   HelpCircle,
   X,
+  Package,
+  Layers,
 } from 'lucide-react';
 
 interface ProductChaseCardsViewerProps {
   product: CatalogPackProduct;
   setCode: string;
   priceMode?: string;
+  singleCardPrices?: any;
   className?: string;
   onSelectCard?: (card: ChaseCard) => void;
+  allProducts?: CatalogPackProduct[];
+  onSelectRelatedProduct?: (prodId: string) => void;
+  preconDecks?: Record<string, any>;
+  deckDetail?: any;
 }
+
+/**
+ * Filter products in this set that can contain the given chase card
+ */
+const getMatchingProductsForCard = (card: ChaseCard, allProducts: CatalogPackProduct[]) => {
+  const isCollectorOnly = card.productType === 'collector' || card.pullOddsDesc?.includes('Collector Exclusive') || card.pullOddsDesc?.includes('Serialized');
+  const isDeckCard = card.productType === 'deck' || card.pullOddsDesc?.includes('Commander') || card.pullOddsDesc?.includes('Deck');
+  const isPromo = card.productType === 'card' || card.pullOddsDesc?.includes('Included Single/Promo');
+
+  const matches: CatalogPackProduct[] = [];
+
+  if (isDeckCard) {
+    allProducts.forEach(p => {
+      const isPDeck = p.packagingType === 'starter_deck' || p.rawCategory === 'deck' || p.category === 'deck' || (p.displayName || '').toLowerCase().includes('deck') || (p.displayName || '').toLowerCase().includes('commander');
+      if (isPDeck) {
+        if (card.deckName) {
+          const dn = card.deckName.toLowerCase().replace(/['"’]/g, '');
+          const pn = (p.displayName || '').toLowerCase().replace(/['"’]/g, '');
+          if (pn.includes(dn) || dn.includes(pn)) {
+            matches.push(p);
+          } else {
+            matches.push(p);
+          }
+        } else {
+          matches.push(p);
+        }
+      }
+    });
+  } else if (isCollectorOnly) {
+    allProducts.forEach(p => {
+      const pn = (p.displayName || '').toLowerCase();
+      if (pn.includes('collector') || (p.boosterName || '').toLowerCase().includes('collector')) {
+        matches.push(p);
+      }
+    });
+  } else if (isPromo) {
+    allProducts.forEach(p => {
+      const pn = (p.displayName || '').toLowerCase();
+      if (pn.includes('bundle') || pn.includes('promo') || pn.includes('gift') || pn.includes('prerelease')) {
+        matches.push(p);
+      }
+    });
+  } else {
+    allProducts.forEach(p => {
+      const pn = (p.displayName || '').toLowerCase();
+      const rawCat = (p.rawCategory || p.category || '').toLowerCase();
+      const isBooster = p.packagingType === 'box' || p.packagingType === 'pack' || rawCat.includes('booster') || pn.includes('booster') || pn.includes('bundle') || pn.includes('gift');
+      if (isBooster) {
+        matches.push(p);
+      }
+    });
+  }
+
+  const seenIds = new Set<string>();
+  return matches.filter(p => {
+    if (seenIds.has(p.id)) return false;
+    seenIds.add(p.id);
+    return true;
+  });
+};
 
 export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = ({
   product,
   setCode,
   priceMode = 'direct',
+  singleCardPrices: propPrices,
   className = '',
   onSelectCard,
+  allProducts = [],
+  onSelectRelatedProduct,
+  preconDecks: propPreconDecks,
+  deckDetail,
 }) => {
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
   const [liveCards, setLiveCards] = useState<ChaseCard[]>([]);
   const [loadingLive, setLoadingLive] = useState<boolean>(false);
+  const [mtgJsonPrices, setMtgJsonPrices] = useState<any>(propPrices || null);
+  const [sealedProducts, setSealedProducts] = useState<any[] | null>(dataService.getSealedProductsSync());
+  const [allPreconDecks, setAllPreconDecks] = useState<Record<string, any> | null>(
+    propPreconDecks || dataService.getPreconDecksSync()
+  );
+
+  // Auto-fetch MTGJSON single prices if not provided in props
+  useEffect(() => {
+    if (!mtgJsonPrices && !propPrices) {
+      dataService.getSingleCardPrices().then((p) => {
+        if (p) setMtgJsonPrices(p);
+      });
+    } else if (propPrices) {
+      setMtgJsonPrices(propPrices);
+    }
+  }, [propPrices]);
+
+  // Keep precon decks in sync when props update
+  useEffect(() => {
+    if (propPreconDecks) {
+      setAllPreconDecks(propPreconDecks);
+    }
+  }, [propPreconDecks]);
+
+  // Ensure sealed products and precon decks are loaded to resolve contained cards
+  useEffect(() => {
+    let isMounted = true;
+    if (!sealedProducts) {
+      dataService.getSealedProducts().then((prods) => {
+        if (isMounted && prods) setSealedProducts(prods);
+      });
+    }
+    if (!allPreconDecks && !propPreconDecks) {
+      dataService.getPreconDecks().then((decks) => {
+        if (isMounted && decks) setAllPreconDecks(decks);
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Determine if this is a fixed preconstructed / non-booster product
+  const isFixedProduct = useMemo(() => {
+    const pName = (product.displayName || '').toLowerCase();
+    const pkg = (product.packagingType || '').toLowerCase();
+    const rawCat = ((product as any).rawCategory || (product as any).category || '').toLowerCase();
+    const rawSub = ((product as any).rawSubtype || (product as any).subtype || '').toLowerCase();
+    const hasFixedContents = Boolean(
+      (product as any).contents?.sealed ||
+      (product as any).rawContents?.sealed ||
+      (product as any).contents?.deck ||
+      (product as any).rawContents?.deck ||
+      (product as any).contents?.card ||
+      (product as any).rawContents?.card
+    );
+    return (
+      product.packsCount === 0 ||
+      pkg === 'starter_deck' ||
+      pkg === 'deck' ||
+      pkg === 'box_set' ||
+      rawCat === 'deck' ||
+      rawCat === 'box_set' ||
+      rawCat === 'secret_lair' ||
+      rawSub.includes('secret_lair') ||
+      pName.includes('secret lair') ||
+      pName.includes('commander deck') ||
+      pName.includes('bundle') ||
+      hasFixedContents
+    );
+  }, [product]);
 
   // Retrieve curated chase cards specifically for this product
   const curatedCards = useMemo(() => {
-    return getChaseCardsForProduct(product, setCode);
-  }, [product, setCode]);
+    // If deckDetail with cards was passed directly (precon deck viewer)
+    if (deckDetail?.cards && Array.isArray(deckDetail.cards) && deckDetail.cards.length > 0) {
+      const isFoil = (product.displayName || '').toLowerCase().includes('foil') || Boolean(deckDetail.isFoil);
+      const mapped: ChaseCard[] = deckDetail.cards.map((c: any, idx: number) => {
+        const pNorm = c.price ?? c.marketPrice ?? 0;
+        const pFoil = isFoil || c.foil ? (c.priceFoil ?? Number((pNorm * 1.4).toFixed(2))) : undefined;
+        return {
+          uuid: c.uuid || `deck-card-${idx}-${c.name}`,
+          name: c.name,
+          scryfallId: c.scryfallId || '',
+          setCode: c.set || setCode || 'SLD',
+          rarity: (c.rarity as any) || 'rare',
+          number: c.number || String(idx + 1),
+          priceNormal: pNorm,
+          priceFoil: pFoil,
+          price: Math.max(pNorm, pFoil || 0),
+          finish: isFoil || c.foil ? 'foil' : 'nonfoil',
+          cardType: c.type || 'Single',
+          productType: 'deck',
+          imageUrl: c.imageUrl,
+        };
+      });
+      return mapped.sort((a, b) => (b.price || 0) - (a.price || 0));
+    }
 
-  // If no curated cards, dynamically query Scryfall API for authentic set cards
+    return getChaseCardsForProduct(
+      product,
+      setCode,
+      undefined,
+      mtgJsonPrices,
+      allPreconDecks || propPreconDecks,
+      sealedProducts || (allProducts.length > 0 ? allProducts : null)
+    );
+  }, [product, setCode, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts, allProducts, deckDetail]);
+
+  // Only query Scryfall API as fallback for booster pack products
   useEffect(() => {
     let isMounted = true;
-    if (curatedCards.length === 0 && setCode) {
+
+    // Do NOT fetch random set chase cards for fixed non-booster products (Secret Lair, Decks, Bundles)
+    if (!isFixedProduct && curatedCards.length === 0 && setCode) {
       setLoadingLive(true);
       fetchLiveChaseCardsForSet(setCode)
         .then((cards) => {
@@ -58,17 +236,24 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
         });
     } else {
       setLiveCards([]);
+      setLoadingLive(false);
     }
     return () => {
       isMounted = false;
     };
-  }, [curatedCards.length, setCode]);
+  }, [curatedCards.length, setCode, isFixedProduct]);
 
-  const chaseCards = curatedCards.length > 0 ? curatedCards : liveCards;
+  const chaseCards = curatedCards.length > 0 ? curatedCards : (isFixedProduct ? [] : liveCards);
 
   // Filter to the top 5 most valuable chase cards for this product
   const topChaseCards = useMemo(() => {
-    const sorted = [...chaseCards].sort((a, b) => (b.price || 0) - (a.price || 0));
+    const getCardValue = (c: ChaseCard) => {
+      if (typeof c.price === 'number' && c.price > 0) return c.price;
+      const pNorm = c.priceNormal ?? 0;
+      const pFoil = c.priceFoil ?? 0;
+      return Math.max(pNorm, pFoil);
+    };
+    const sorted = [...chaseCards].sort((a, b) => getCardValue(b) - getCardValue(a));
     return sorted.slice(0, 5);
   }, [chaseCards]);
 
@@ -92,6 +277,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   const isDeck =
     product.packagingType === 'starter_deck' ||
     (product.displayName || '').toLowerCase().includes('commander deck');
+  const isSecretLair = (product.displayName || '').toLowerCase().includes('secret lair');
 
   return (
     <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5 ${className}`}>
@@ -101,16 +287,26 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-amber-500" />
             <h4 className="text-base font-bold text-slate-900 tracking-tight">
-              Top 5 Most Valuable Chase Cards
+              {isFixedProduct
+                ? 'Top 5 Most Valuable Cards in This Product'
+                : 'Top 5 Most Valuable Chase Cards in Selected Product'}
             </h4>
             <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
-              {isDeck ? 'Deck Key Singles' : isCollector ? 'Collector Top Hits' : 'Top 5 Hits'}
+              {isDeck
+                ? 'Deck Key Singles'
+                : isSecretLair
+                ? 'Secret Lair Hits'
+                : isFixedProduct
+                ? 'Guaranteed Singles'
+                : isCollector
+                ? 'Collector Top Hits'
+                : 'Top 5 Hits'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isDeck
-              ? `Guaranteed highest-value singles included in ${product.displayName}.`
-              : `Top 5 most valuable cards pullable from ${product.displayName} sorted by live market price.`}
+            {isFixedProduct
+              ? `Guaranteed highest-value cards included in ${product.displayName}.`
+              : `Top 5 cards pullable or included in ${product.displayName} with prices queried from MTGJSON.`}
           </p>
         </div>
       </div>
@@ -120,20 +316,25 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
         <div className="text-center py-8 space-y-2">
           <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-slate-500 font-mono">
-            Fetching authentic live market cards from Scryfall API...
+            Fetching card images & set metadata from Scryfall API...
           </p>
         </div>
       ) : topChaseCards.length === 0 ? (
-        <div className="text-center py-8 text-slate-400 text-xs">
-          No chase cards found for this product.
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-center space-y-2">
+          <Package className="w-8 h-8 text-slate-400 mx-auto" />
+          <h5 className="text-sm font-bold text-slate-800">No Cards Available</h5>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Unable to retrieve card values for {product.displayName}.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 pt-1">
           {topChaseCards.map((card, cardIndex) => {
+            const pNormVal = card.priceNormal ?? card.price ?? 0;
             const displayPriceNormal =
               priceMode === 'cheapest_reprint'
-                ? Number((card.priceNormal * 0.74).toFixed(2))
-                : card.priceNormal;
+                ? Number((pNormVal * 0.74).toFixed(2))
+                : pNormVal;
             const displayPriceFoil = card.priceFoil
               ? priceMode === 'cheapest_reprint'
                 ? Number((card.priceFoil * 0.78).toFixed(2))
@@ -146,6 +347,8 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 ? `https://cards.scryfall.io/normal/front/${card.scryfallId.charAt(0)}/${card.scryfallId.charAt(1)}/${card.scryfallId}.jpg`
                 : '');
 
+            const isCardFoil = card.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
+
             return (
               <div
                 key={card.uuid}
@@ -154,7 +357,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
               >
                 <div>
                   {/* Card Art */}
-                  <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2.5 border border-slate-200">
+                  <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2 border border-slate-200">
                     {cardImg ? (
                       <img
                         src={cardImg}
@@ -195,30 +398,45 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                     {card.name}
                   </div>
 
-                  {card.cardType && (
+                  {card.pullOddsDesc ? (
+                    <div className="text-[10px] text-indigo-600 font-semibold line-clamp-1 mt-0.5">
+                      {card.pullOddsDesc.replace('Guaranteed in ', '')}
+                    </div>
+                  ) : card.cardType ? (
                     <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
                       {card.cardType}
                     </div>
-                  )}
-
-                  {card.pullOddsDesc && (
-                    <div className="mt-1.5 text-[9px] font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 line-clamp-1">
-                      {card.pullOddsDesc}
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Price block */}
+                {/* Price block - Strictly MTGJSON vendor prices */}
                 <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-[10px] font-mono text-slate-400">#{card.number}</span>
                   <div className="text-right font-mono">
-                    <div className="text-xs font-black text-emerald-600">
-                      ${displayPriceNormal.toFixed(2)}
-                    </div>
-                    {displayPriceFoil && (
-                      <div className="text-[9px] text-amber-500 font-bold">
-                        Foil: ${displayPriceFoil.toFixed(2)}
-                      </div>
+                    {isCardFoil ? (
+                      <>
+                        <div className="text-xs font-black text-amber-600 flex items-center gap-1 justify-end">
+                          <Tag className="w-2.5 h-2.5 text-amber-500" />
+                          <span>★ ${(displayPriceFoil || displayPriceNormal).toFixed(2)}</span>
+                        </div>
+                        {displayPriceNormal > 0 && displayPriceFoil && displayPriceNormal !== displayPriceFoil && (
+                          <div className="text-[9px] text-slate-400">
+                            Non-foil: ${displayPriceNormal.toFixed(2)}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs font-black text-emerald-600 flex items-center gap-1 justify-end">
+                          <Tag className="w-2.5 h-2.5 text-emerald-500" />
+                          <span>${displayPriceNormal.toFixed(2)}</span>
+                        </div>
+                        {displayPriceFoil && (
+                          <div className="text-[9px] text-amber-500 font-bold">
+                            Foil: ${displayPriceFoil.toFixed(2)}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -293,6 +511,57 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                   </span>
                 </div>
               )}
+              {(() => {
+                const avail = getCardProductAvailability(zoomedCard, product);
+                const matchedProds = getMatchingProductsForCard(zoomedCard, allProducts);
+                return (
+                  <div className="pt-2.5 border-t border-slate-200 space-y-2">
+                    <span className="text-[11px] font-bold text-slate-800 block flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Available in Set Products (Click to view EV):</span>
+                    </span>
+                    {matchedProds.length > 0 ? (
+                      <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pr-1">
+                        {matchedProds.map((p) => {
+                          const isCurrent = p.id === product.id;
+                          return (
+                            <button
+                              key={p.id}
+                              onClick={() => {
+                                if (onSelectRelatedProduct) {
+                                  onSelectRelatedProduct(p.id);
+                                }
+                                setZoomedCard(null);
+                              }}
+                              className={`w-full text-left px-2.5 py-1 rounded-md border text-[10px] font-medium flex items-center justify-between transition cursor-pointer ${
+                                isCurrent
+                                  ? 'bg-emerald-50 text-emerald-950 border-emerald-300 ring-2 ring-emerald-100'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:border-indigo-300'
+                              }`}
+                            >
+                              <span className="truncate pr-2 font-mono font-bold">{p.displayName}</span>
+                              <span className="text-[8px] text-slate-400 font-mono shrink-0">
+                                {isCurrent ? 'Selected' : 'View EV'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {avail.availableProductsList.map((pName, pIdx) => (
+                          <span
+                            key={pIdx}
+                            className="bg-indigo-50 text-indigo-900 border border-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-2xs"
+                          >
+                            {pName}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

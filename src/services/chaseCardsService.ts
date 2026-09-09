@@ -2,6 +2,7 @@ import { ChaseCard, PreconstructedDeckDetail, DeckCardItem } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { dataService } from './dataService';
 import { TWENTY_WAYS_TO_WIN_DECK } from '../data/twentyWaysToWinDeck';
+import { findMatchingPreconDeck } from '../utils/productUtils';
 
 // In-memory cache for dynamically fetched chase cards from Scryfall
 const dynamicChaseCardsCache: Record<string, ChaseCard[]> = {};
@@ -803,91 +804,567 @@ export const PRECON_DECK_DETAILS: Record<string, PreconstructedDeckDetail> = {
 };
 
 /**
+ * Helper to construct a clean source text describing where in the selected product a card is located
+ */
+function getBoosterSourceText(product: CatalogPackProduct): string {
+  const contents = (product as any)?.contents;
+  if (contents?.pack && Array.isArray(contents.pack) && contents.pack.length > 0) {
+    const pack = contents.pack[0];
+    const cnt = pack.count || product.packsCount || 1;
+    const name = pack.name || pack.code || 'Booster Pack';
+    return `In ${cnt}x ${name}`;
+  }
+  if (product.packsCount && product.packsCount > 0) {
+    return `In ${product.packsCount}x ${product.boosterName || 'Booster Pack'}`;
+  }
+  return `In ${product.displayName || 'Booster Pack'}`;
+}
+
+/**
+ * Recursively find all guaranteed card inclusions inside sealed product contents,
+ * such as Secret Lair Drops inside a Secret Lair Bundle, Preconstructed Decks, or direct Promos.
+ */
+function findContainedCards(
+  contentsOrProduct: any,
+  parentName: string,
+  isFoil: boolean,
+  preconDecksParam?: Record<string, any> | null,
+  sealedProductsParam?: any[] | null
+): ChaseCard[] {
+  const cards: ChaseCard[] = [];
+  if (!contentsOrProduct) return cards;
+  const contents = contentsOrProduct.contents || contentsOrProduct.rawContents || contentsOrProduct;
+  if (!contents) return cards;
+
+  // 1. If it contains individual cards directly
+  if (contents.card && Array.isArray(contents.card)) {
+    contents.card.forEach((c: any, idx: number) => {
+      const pNorm = c.price || 0;
+      const pFoil = isFoil || c.foil ? Number((pNorm * 1.4).toFixed(2)) : undefined;
+      cards.push({
+        uuid: c.uuid || `contained-card-${idx}-${c.name}`,
+        name: c.name,
+        scryfallId: c.scryfallId || '',
+        setCode: (c.set || 'SLD').toUpperCase(),
+        rarity: (c.rarity as any) || 'rare',
+        number: c.number || String(idx + 1),
+        priceNormal: pNorm,
+        priceFoil: pFoil,
+        price: Math.max(pNorm, pFoil || 0),
+        finish: isFoil || c.foil ? 'foil' : 'nonfoil',
+        cardType: c.type || 'Guaranteed Single',
+        productType: 'card',
+        pullOddsDesc: `Guaranteed in ${parentName}`,
+      });
+    });
+  }
+
+  // 2. If it contains a precon deck or a Secret Lair Drop (which is listed as a precon deck)
+  if (contents.deck && Array.isArray(contents.deck)) {
+    const preconDecksSync = preconDecksParam || dataService.getPreconDecksSync();
+    contents.deck.forEach((d: any) => {
+      const dName = d.name;
+      if (dName && preconDecksSync) {
+        // Look up deck using findMatchingPreconDeck and key lookups
+        const matchedDeck =
+          findMatchingPreconDeck(preconDecksSync, dName, d.set || 'sld', d.uuid) ||
+          preconDecksSync[dName] ||
+          preconDecksSync[dName.toLowerCase().trim()] ||
+          preconDecksSync[dName.toLowerCase().replace(/[^a-z0-9]/g, '')] ||
+          Object.values(preconDecksSync).find((e: any) => {
+            const en = (e.deckName || e.name || '').toLowerCase().trim();
+            const es = en.replace(/[^a-z0-9]/g, '');
+            const target = dName.toLowerCase().trim();
+            const ts = target.replace(/[^a-z0-9]/g, '');
+            return en === target || es === ts || target.includes(en) || en.includes(target);
+          });
+
+        if (matchedDeck) {
+          const rawCards = matchedDeck.keyCards || matchedDeck.cards;
+          const deckIsFoil = isFoil || (dName || '').toLowerCase().includes('foil') || Boolean(matchedDeck.isFoil);
+          if (Array.isArray(rawCards)) {
+            rawCards.forEach((c: any, idx: number) => {
+              const pNorm = c.price || 0;
+              const pFoil = deckIsFoil || c.foil ? Number((pNorm * 1.5).toFixed(2)) : undefined;
+              cards.push({
+                uuid: c.uuid || `precon-${idx}-${c.name}`,
+                name: c.name,
+                scryfallId: c.scryfallId || '',
+                setCode: (c.set || matchedDeck.setCode || 'SLD').toUpperCase(),
+                rarity: (c.rarity as any) || 'rare',
+                number: c.number || String(idx + 1),
+                priceNormal: pNorm,
+                priceFoil: pFoil,
+                price: Math.max(pNorm, pFoil || 0),
+                finish: deckIsFoil || c.foil ? 'foil' : 'nonfoil',
+                cardType: c.type || 'Single',
+                productType: 'deck',
+                deckName: matchedDeck.deckName || matchedDeck.name || dName,
+                pullOddsDesc: `Guaranteed in ${matchedDeck.deckName || matchedDeck.name || dName}`,
+              });
+            });
+          }
+        }
+      }
+    });
+  }
+
+  // 3. If it contains variable configurations (some Secret Lairs have bonus card slots!)
+  if (contents.variable && Array.isArray(contents.variable)) {
+    contents.variable.forEach((v: any) => {
+      if (v.configs && Array.isArray(v.configs)) {
+        v.configs.forEach((config: any) => {
+          if (config.card && Array.isArray(config.card)) {
+            config.card.forEach((c: any, idx: number) => {
+              const pNorm = c.price || 0;
+              const pFoil = isFoil || c.foil ? Number((pNorm * 1.4).toFixed(2)) : undefined;
+              cards.push({
+                uuid: `var-card-${idx}-${c.name}`,
+                name: c.name,
+                scryfallId: c.scryfallId || '',
+                setCode: (c.set || 'SLD').toUpperCase(),
+                rarity: (c.rarity as any) || 'rare',
+                number: c.number || String(idx + 1),
+                priceNormal: pNorm,
+                priceFoil: pFoil,
+                price: Math.max(pNorm, pFoil || 0),
+                finish: isFoil || c.foil ? 'foil' : 'nonfoil',
+                cardType: c.type || 'Bonus Card Opportunity',
+                productType: 'card',
+                pullOddsDesc: `Chance for Bonus Card in ${parentName}`,
+              });
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // 4. Recursively process nested sealed items (like bundles containing drops)
+  if (contents.sealed && Array.isArray(contents.sealed)) {
+    const sealedProductsSync = sealedProductsParam || dataService.getSealedProductsSync();
+    const preconDecksSync = preconDecksParam || dataService.getPreconDecksSync();
+
+    contents.sealed.forEach((s: any) => {
+      // Find sub product in sealed products
+      const matchedProd = sealedProductsSync
+        ? sealedProductsSync.find(
+            (p) =>
+              (p.id || p.uuid) === s.uuid ||
+              (p.displayName || '').toLowerCase().trim() === (s.name || '').toLowerCase().trim() ||
+              (p.name || '').toLowerCase().trim() === (s.name || '').toLowerCase().trim()
+          )
+        : null;
+
+      if (matchedProd) {
+        const subContents = matchedProd.contents || matchedProd.rawContents;
+        if (subContents) {
+          const subIsFoil =
+            isFoil ||
+            (matchedProd.displayName || matchedProd.name || s.name || '').toLowerCase().includes('foil');
+          const subCards = findContainedCards(
+            subContents,
+            matchedProd.displayName || matchedProd.name || s.name,
+            subIsFoil,
+            preconDecksParam || preconDecksSync,
+            sealedProductsSync
+          );
+          cards.push(...subCards);
+          return;
+        }
+      }
+
+      // Direct fallback: If sub-sealed item isn't in sealedProducts or sealedProducts is still loading,
+      // check if s.name matches a deck directly in preconDecksSync
+      if (preconDecksSync) {
+        const sTarget = (s.name || '').toLowerCase().trim();
+        const sStripped = sTarget.replace(/[^a-z0-9]/g, '');
+        const matchedDeck =
+          findMatchingPreconDeck(preconDecksSync, s.name, s.set || 'sld', s.uuid) ||
+          preconDecksSync[s.name] ||
+          preconDecksSync[sTarget] ||
+          preconDecksSync[sStripped] ||
+          Object.values(preconDecksSync).find((e: any) => {
+            const en = (e.deckName || e.name || '').toLowerCase().trim();
+            const es = en.replace(/[^a-z0-9]/g, '');
+            return (
+              (en && (sTarget.includes(en) || en.includes(sTarget))) ||
+              (es && (sStripped.includes(es) || es.includes(sStripped)))
+            );
+          });
+
+        if (matchedDeck) {
+          const subIsFoil = isFoil || sTarget.includes('foil') || Boolean(matchedDeck.isFoil);
+          const rawCards = matchedDeck.keyCards || matchedDeck.cards;
+          if (Array.isArray(rawCards)) {
+            rawCards.forEach((c: any, idx: number) => {
+              const pNorm = c.price || 0;
+              const pFoil = subIsFoil || c.foil ? Number((pNorm * 1.5).toFixed(2)) : undefined;
+              cards.push({
+                uuid: c.uuid || `drop-${idx}-${c.name}`,
+                name: c.name,
+                scryfallId: c.scryfallId || '',
+                setCode: (c.set || matchedDeck.setCode || 'SLD').toUpperCase(),
+                rarity: (c.rarity as any) || 'rare',
+                number: c.number || String(idx + 1),
+                priceNormal: pNorm,
+                priceFoil: pFoil,
+                price: Math.max(pNorm, pFoil || 0),
+                finish: subIsFoil || c.foil ? 'foil' : 'nonfoil',
+                cardType: c.type || 'Single',
+                productType: 'deck',
+                deckName: matchedDeck.deckName || matchedDeck.name || s.name,
+                pullOddsDesc: `Guaranteed in ${matchedDeck.deckName || matchedDeck.name || s.name}`,
+              });
+            });
+          }
+        }
+      }
+    });
+  }
+
+  return cards;
+}
+
+/**
  * Get Chase Cards Specifically for a Given Product
- * Fixes the issue where chase cards within a product were not visible.
+ * Fixes the issue where chase cards were shown for unrelated products.
  */
 export function getChaseCardsForProduct(
   product: CatalogPackProduct,
   setCode: string,
-  fallbackSetCards?: ChaseCard[]
+  fallbackSetCards?: ChaseCard[],
+  singlePrices?: any,
+  preconDecksParam?: Record<string, any> | null,
+  sealedProductsParam?: any[] | null
 ): ChaseCard[] {
+  if (!product) return [];
+
   const prodName = (product.displayName || '').toLowerCase();
   const cat = (product.packagingType || '').toLowerCase();
   const sub = (product.boosterName || product.rawSubtype || '').toLowerCase();
+  const upperCode = (setCode || product.setCode || '').toUpperCase();
+  const contents = (product as any).contents || (product as any).rawContents;
+  const rawCat = ((product as any).rawCategory || '').toLowerCase();
 
-  // 1. Check for Preconstructed Decks
-  if (
-    cat === 'starter_deck' ||
+  // Detect if product is a Secret Lair Drop or Bundle, or any fixed non-booster sealed item
+  const isSecretLairOrBundle =
+    prodName.includes('secret lair') ||
+    cat === 'box_set' ||
     cat === 'deck' ||
-    prodName.includes('commander deck') ||
-    prodName.includes('eldrazi incursion') ||
-    prodName.includes('tricky terrain') ||
-    prodName.includes('graveyard overdrive') ||
-    prodName.includes('creative energy')
-  ) {
-    if (prodName.includes('eldrazi incursion') || product.id?.includes('eldrazi')) {
-      return CURATED_CHASE_CARDS['DECK-MH3-ELDRAZI'] || [];
-    }
-    if (prodName.includes('tricky terrain') || product.id?.includes('tricky')) {
-      return CURATED_CHASE_CARDS['DECK-MH3-TRICKY'] || [];
-    }
-    if (prodName.includes('graveyard overdrive') || product.id?.includes('graveyard')) {
-      return CURATED_CHASE_CARDS['DECK-MH3-GRAVEYARD'] || [];
-    }
-    if (prodName.includes('creative energy') || product.id?.includes('creative')) {
-      return CURATED_CHASE_CARDS['DECK-MH3-CREATIVE'] || [];
-    }
-
-    // Generic deck lookup: check if PRECON_DECK_DETAILS has this product
-    const preconEntry = Object.values(PRECON_DECK_DETAILS).find(
-      (d) => prodName.includes(d.commander.name.toLowerCase()) || prodName.includes(d.theme.toLowerCase())
+    rawCat === 'box_set' ||
+    rawCat === 'deck' ||
+    rawCat === 'secret_lair' ||
+    sub.includes('secret_lair') ||
+    (product.packsCount === 0 && Boolean(contents?.sealed || contents?.deck || contents?.card));
+  
+  if (isSecretLairOrBundle) {
+    const isFoil = prodName.includes('foil');
+    const containedCards = findContainedCards(
+      contents || product,
+      product.displayName || 'Product',
+      isFoil,
+      preconDecksParam,
+      sealedProductsParam
     );
-    if (preconEntry) {
-      return preconEntry.keyCards.map((c, idx) => ({
-        uuid: `precon-${idx}-${c.name}`,
-        name: c.name,
-        scryfallId: c.scryfallId || '',
-        setCode: preconEntry.setCode,
-        rarity: (c.rarity as any) || 'rare',
-        number: String(idx + 1),
-        priceNormal: c.price,
-        priceFoil: c.foil ? Number((c.price * 1.5).toFixed(2)) : undefined,
-        finish: c.foil ? 'foil' : 'nonfoil',
-        cardType: c.type,
-        productType: 'deck',
-        deckName: preconEntry.deckName,
-        pullOddsDesc: c.isCommander ? 'Guaranteed 1x Face Commander' : 'Guaranteed 1x in Deck',
-      }));
+    if (containedCards.length > 0) {
+      if (singlePrices) {
+        applyMtgJsonPricesToCards(containedCards, singlePrices, upperCode);
+      }
+      
+      // Deduplicate cards so each unique card name with its finish is only shown once
+      const uniqueCards: ChaseCard[] = [];
+      const seenKeys = new Set<string>();
+      containedCards.forEach(c => {
+        const uniqueKey = `${c.name.toLowerCase()}-${c.finish}`;
+        if (!seenKeys.has(uniqueKey)) {
+          seenKeys.add(uniqueKey);
+          uniqueCards.push(c);
+        }
+      });
+      return uniqueCards.sort((a, b) => (b.price || 0) - (a.price || 0));
     }
   }
 
-  // 2. Lookup by set code in curated list or dynamic cache
-  const upperCode = (setCode || '').toUpperCase();
+  const resultCards: ChaseCard[] = [];
+
+  // 1. Check for Guaranteed Included Cards (Promos, Secret Lairs, Included Singles)
+  if (contents?.card && Array.isArray(contents.card) && contents.card.length > 0) {
+    contents.card.forEach((c: any, idx: number) => {
+      const pNorm = c.price || 0;
+      const pFoil = c.foil ? Number((pNorm * 1.4).toFixed(2)) : undefined;
+      resultCards.push({
+        uuid: c.uuid || `promo-${idx}-${c.name}`,
+        name: c.name,
+        scryfallId: c.scryfallId || '',
+        setCode: (c.set || upperCode).toUpperCase(),
+        rarity: (c.rarity as any) || 'rare',
+        number: c.number || String(idx + 1),
+        priceNormal: pNorm,
+        priceFoil: pFoil,
+        price: Math.max(pNorm, pFoil || 0),
+        finish: c.foil ? 'foil' : 'nonfoil',
+        cardType: c.type || 'Guaranteed Included Single / Promo',
+        productType: 'card',
+        pullOddsDesc: 'Guaranteed Included Single/Promo',
+      });
+    });
+  }
+
+  // 2. Check for Preconstructed Decks
+  const isDeckProduct =
+    cat === 'starter_deck' ||
+    cat === 'deck' ||
+    prodName.includes('deck') ||
+    prodName.includes('commander') ||
+    Boolean(contents?.deck && contents.deck.length > 0);
+
+  if (isDeckProduct) {
+    const deckCards: ChaseCard[] = [];
+
+    const cleanProdId = (product.id || '').toLowerCase();
+    const matchedPreconKey = Object.keys(PRECON_DECK_DETAILS).find(
+      (k) =>
+        cleanProdId.includes(k) ||
+        prodName.includes(k) ||
+        PRECON_DECK_DETAILS[k].deckName.toLowerCase().includes(prodName) ||
+        prodName.includes(PRECON_DECK_DETAILS[k].commander.name.toLowerCase())
+    );
+
+    const preconDecksSync = dataService.getPreconDecksSync();
+    let preconEntry: any = null;
+    let deckName = '';
+    let setCodeVal = upperCode || 'SLD';
+
+    if (matchedPreconKey && PRECON_DECK_DETAILS[matchedPreconKey]) {
+      preconEntry = PRECON_DECK_DETAILS[matchedPreconKey];
+      deckName = preconEntry.deckName;
+      setCodeVal = preconEntry.setCode;
+    } else if (preconDecksSync) {
+      const matchedKey = Object.keys(preconDecksSync).find(
+        (k) =>
+          k.toLowerCase() === prodName.toLowerCase() ||
+          preconDecksSync[k].deckName.toLowerCase() === prodName.toLowerCase() ||
+          cleanProdId.includes(k.toLowerCase()) ||
+          k.toLowerCase().includes(cleanProdId)
+      );
+      if (matchedKey) {
+        preconEntry = preconDecksSync[matchedKey];
+        deckName = preconEntry.deckName;
+        setCodeVal = preconEntry.setCode || 'SLD';
+      }
+    }
+
+    if (preconEntry) {
+      const isFoil = prodName.includes('foil') || preconEntry.isFoil;
+      const rawCards = preconEntry.keyCards || preconEntry.cards;
+      if (Array.isArray(rawCards)) {
+        rawCards.forEach((c: any, idx: number) => {
+          const pNorm = c.price || 0;
+          const pFoil = isFoil || c.foil ? Number((pNorm * 1.5).toFixed(2)) : undefined;
+          deckCards.push({
+            uuid: c.uuid || `precon-${deckName}-${idx}-${c.name}`,
+            name: c.name,
+            scryfallId: c.scryfallId || '',
+            setCode: setCodeVal,
+            rarity: (c.rarity as any) || 'rare',
+            number: c.number || String(idx + 1),
+            priceNormal: pNorm,
+            priceFoil: pFoil,
+            price: Math.max(pNorm, pFoil || 0),
+            finish: isFoil || c.foil ? 'foil' : 'nonfoil',
+            cardType: c.type || 'Single',
+            productType: 'deck',
+            deckName: deckName,
+            pullOddsDesc: c.isCommander ? `Guaranteed 1x Face Commander in ${deckName}` : `Guaranteed 1x in ${deckName}`,
+          });
+        });
+      }
+    }
+
+    // A preconstructed deck contains a fixed decklist. We STRICTLY return only the high-value
+    // guaranteed singles included in this deck and NEVER append randomized booster pack cards!
+    if (singlePrices) {
+      applyMtgJsonPricesToCards(deckCards, singlePrices, upperCode);
+    }
+    
+    // Deduplicate cards so each unique card name with its finish is only shown once
+    const uniqueDeckCards: ChaseCard[] = [];
+    const seenKeys = new Set<string>();
+    deckCards.forEach(c => {
+      const uniqueKey = `${c.name.toLowerCase()}-${c.finish}`;
+      if (!seenKeys.has(uniqueKey)) {
+        seenKeys.add(uniqueKey);
+        uniqueDeckCards.push(c);
+      }
+    });
+    return uniqueDeckCards.sort((a, b) => (b.price || 0) - (a.price || 0));
+  }
+
+  // 3. Determine if this product contains or is a Booster Product
+  const hasPacksInContents = Boolean(
+    (contents?.pack && contents.pack.length > 0) ||
+    (contents?.booster && contents.booster.length > 0)
+  );
+  const isBoosterCategory =
+    cat === 'booster_pack' ||
+    cat === 'booster_box' ||
+    cat === 'booster_case' ||
+    cat === 'bundle' ||
+    cat === 'box_set' ||
+    prodName.includes('booster') ||
+    prodName.includes('bundle') ||
+    prodName.includes('prerelease') ||
+    prodName.includes('pack') ||
+    prodName.includes('box');
+
+  if (!hasPacksInContents && !isBoosterCategory) {
+    if (singlePrices) {
+      applyMtgJsonPricesToCards(resultCards, singlePrices, upperCode);
+    }
+    return resultCards.sort((a, b) => (b.price || 0) - (a.price || 0));
+  }
+
+  // 4. Resolve Set Booster Pool
   const setPool =
     CURATED_CHASE_CARDS[upperCode] ||
     dynamicChaseCardsCache[upperCode] ||
     fallbackSetCards ||
     [];
 
-  // 3. Filter / prioritize based on Product Type
-  const isCollector = prodName.includes('collector') || sub.includes('collector');
-
-  if (isCollector) {
-    // For collector products, prioritize Special Guests, serialized, foils, and highest-value cards
-    return [...setPool].sort((a, b) => {
-      const aScore = (a.productType === 'collector' ? 100 : 0) + (a.priceFoil || a.priceNormal);
-      const bScore = (b.productType === 'collector' ? 100 : 0) + (b.priceFoil || b.priceNormal);
-      return bScore - aScore;
-    });
+  if (setPool.length === 0) {
+    if (singlePrices) {
+      applyMtgJsonPricesToCards(resultCards, singlePrices, upperCode);
+    }
+    return resultCards.sort((a, b) => (b.price || 0) - (a.price || 0));
   }
 
-  // For Play / Draft boosters: return standard pool sorted by value
-  return [...setPool].sort((a, b) => b.priceNormal - a.priceNormal);
+  const isCollector =
+    prodName.includes('collector') ||
+    sub.includes('collector') ||
+    Boolean(
+      contents?.pack &&
+        contents.pack.some((p: any) =>
+          (p.code || '').includes('collector') || (p.type || '').includes('collector')
+        )
+    );
+
+  const isPlayOrDraft =
+    prodName.includes('play') ||
+    prodName.includes('draft') ||
+    sub.includes('play') ||
+    sub.includes('draft') ||
+    // Default to Play/Draft booster if not collector and has booster packs
+    (!isCollector && isBoosterCategory);
+
+  let filteredPool = setPool.map((c) => {
+    const pNorm = c.priceNormal ?? c.price ?? 0;
+    const pFoil = c.priceFoil ?? 0;
+    return {
+      ...c,
+      priceNormal: pNorm,
+      priceFoil: pFoil || undefined,
+      price: Math.max(pNorm, pFoil),
+    };
+  });
+
+  if (isCollector) {
+    filteredPool.sort((a, b) => {
+      const aScore = (a.productType === 'collector' ? 100 : 0) + (a.price || 0);
+      const bScore = (b.productType === 'collector' ? 100 : 0) + (b.price || 0);
+      return bScore - aScore;
+    });
+  } else if (isPlayOrDraft) {
+    filteredPool = filteredPool.filter(
+      (c) => c.productType !== 'collector' && !c.pullOddsDesc?.includes('Collector Exclusive')
+    );
+    filteredPool.sort((a, b) => (b.price || 0) - (a.price || 0));
+  } else {
+    filteredPool.sort((a, b) => (b.price || 0) - (a.price || 0));
+  }
+
+  const sourceText = getBoosterSourceText(product);
+  const existingNames = new Set(resultCards.map((r) => r.name.toLowerCase()));
+  for (const c of filteredPool) {
+    if (!existingNames.has(c.name.toLowerCase())) {
+      const odds = c.pullOddsDesc || 'Booster Slot';
+      const fullOdds = odds.includes('In ') ? odds : `${sourceText} (${odds})`;
+      resultCards.push({
+        ...c,
+        pullOddsDesc: fullOdds,
+      });
+      existingNames.add(c.name.toLowerCase());
+    }
+  }
+
+  // Enrich with authentic MTGJSON prices
+  if (singlePrices) {
+    applyMtgJsonPricesToCards(resultCards, singlePrices, upperCode);
+  }
+
+  return resultCards.sort((a, b) => (b.price || 0) - (a.price || 0));
+}
+
+/**
+ * Utility to apply MTGJSON prices strictly to an array of ChaseCards
+ */
+function applyMtgJsonPricesToCards(cards: ChaseCard[], singlePrices: any, setCode: string) {
+  if (!singlePrices) return;
+  const upperCode = (setCode || '').toLowerCase().trim();
+
+  cards.forEach((c) => {
+    const cardKey = (c.name || '').toLowerCase().trim();
+    const uuidKey = c.uuid || c.scryfallId || '';
+    const nameSetKey = `${cardKey}_${upperCode}`;
+
+    const priceRec =
+      singlePrices.byUuid?.[uuidKey] ||
+      singlePrices.byNameSet?.[nameSetKey] ||
+      singlePrices.byName?.[cardKey];
+
+    if (priceRec) {
+      const pNorm =
+        priceRec.tcgplayerPrice ??
+        priceRec.price ??
+        priceRec.prices?.tcgplayer ??
+        priceRec.priceNormal ??
+        0;
+      const pFoil =
+        priceRec.foilTcgplayerPrice ??
+        priceRec.foilPrice ??
+        priceRec.prices?.tcgplayerFoil ??
+        priceRec.priceFoil ??
+        (pNorm > 0 ? Number((pNorm * 1.4).toFixed(2)) : undefined);
+
+      if (typeof pNorm === 'number' && pNorm > 0) {
+        c.priceNormal = pNorm;
+      }
+      if (typeof pFoil === 'number' && pFoil > 0) {
+        c.priceFoil = pFoil;
+      }
+      c.price =
+        c.finish === 'foil'
+          ? (c.priceFoil || c.priceNormal || 0)
+          : (c.priceNormal || c.priceFoil || 0);
+
+      if (priceRec.scryfallId) {
+        c.scryfallId = priceRec.scryfallId;
+      }
+      if (priceRec.imageUrl) {
+        c.imageUrl = priceRec.imageUrl;
+      } else if (c.scryfallId) {
+        c.imageUrl = `https://cards.scryfall.io/normal/front/${c.scryfallId[0]}/${c.scryfallId[1]}/${c.scryfallId}.jpg`;
+      }
+    } else if (c.scryfallId && !c.imageUrl) {
+      c.imageUrl = `https://cards.scryfall.io/normal/front/${c.scryfallId[0]}/${c.scryfallId[1]}/${c.scryfallId}.jpg`;
+    }
+  });
 }
 
 /**
  * Fetch Live Chase Cards from Scryfall API for ANY Set
  * Results are cached in memory so subsequent inspections are instantaneous.
+ * PRICE DETAILS ARE QUERIED STRICTLY FROM MTGJSON DATA, NEVER FROM SCRYFALL.
  */
 export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseCard[]> {
   const upperCode = (setCode || '').toUpperCase().trim();
@@ -898,16 +1375,30 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
     return dynamicChaseCardsCache[upperCode];
   }
 
-  // If we already have curated cards, populate cache and return
+  // Load authentic MTGJSON vendor pricing feed
+  const singlePrices = await dataService.getSingleCardPrices();
+
+  // If we already have curated cards, populate cache and return with MTGJSON prices
   if (CURATED_CHASE_CARDS[upperCode]) {
-    dynamicChaseCardsCache[upperCode] = CURATED_CHASE_CARDS[upperCode];
-    return CURATED_CHASE_CARDS[upperCode];
+    const curatedWithPrice = CURATED_CHASE_CARDS[upperCode].map((c) => {
+      const pNorm = c.priceNormal ?? c.price ?? 0;
+      const pFoil = c.priceFoil ?? 0;
+      return {
+        ...c,
+        priceNormal: pNorm,
+        priceFoil: pFoil || undefined,
+        price: Math.max(pNorm, pFoil),
+      };
+    });
+    applyMtgJsonPricesToCards(curatedWithPrice, singlePrices, upperCode);
+    dynamicChaseCardsCache[upperCode] = curatedWithPrice;
+    return curatedWithPrice;
   }
 
   try {
     // Scryfall is queried strictly for card metadata, collector numbers, and high-res artwork
-    const url = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}&order=rarity&dir=desc`;
-    const res = await fetch(url, {
+    const url = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}+is:booster&order=rarity&dir=desc`;
+    let res = await fetch(url, {
       headers: {
         'User-Agent': 'MTG-EV-Studio/1.0',
         Accept: 'application/json',
@@ -915,7 +1406,15 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
     });
 
     if (!res.ok) {
-      return [];
+      // Fallback query without is:booster filter
+      const fallbackUrl = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}&order=rarity&dir=desc`;
+      res = await fetch(fallbackUrl, {
+        headers: {
+          'User-Agent': 'MTG-EV-Studio/1.0',
+          Accept: 'application/json',
+        },
+      });
+      if (!res.ok) return [];
     }
 
     const data = await res.json();
@@ -923,17 +1422,18 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
       return [];
     }
 
-    // Load authentic MTGJSON vendor pricing feed
-    const singlePrices = await dataService.getSingleCardPrices();
-
-    const cards: ChaseCard[] = data.data.slice(0, 15).map((card: any) => {
-      // Pricing is sourced strictly from MTGJSON vendor records, never from Scryfall
+    const cards: ChaseCard[] = data.data.slice(0, 25).map((card: any) => {
       const cardKey = (card.name || '').toLowerCase().trim();
-      const priceRec = singlePrices?.byUuid?.[card.id] || singlePrices?.byName?.[cardKey];
-      const priceNorm = priceRec?.prices?.tcgplayer ?? priceRec?.price ?? 0.0;
-      const priceFoil = priceRec?.prices?.tcgplayerFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
+      const priceRec =
+        singlePrices?.byUuid?.[card.id] ||
+        singlePrices?.byNameSet?.[`${cardKey}_${upperCode.toLowerCase()}`] ||
+        singlePrices?.byName?.[cardKey];
 
-      // Scryfall used strictly for card artwork and navigation
+      // PRICING DETAILS ARE STRICTLY QUERIED FROM MTGJSON, NOT SCRYFALL
+      const priceNorm = priceRec?.prices?.tcgplayer ?? priceRec?.priceNormal ?? priceRec?.price ?? 0;
+      const priceFoil = priceRec?.prices?.tcgplayerFoil ?? priceRec?.priceFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
+      const cardPrice = Math.max(priceNorm || 0, priceFoil || 0);
+
       const img =
         card.image_uris?.normal ||
         card.card_faces?.[0]?.image_uris?.normal ||
@@ -948,6 +1448,7 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
         number: card.collector_number || '',
         priceNormal: priceNorm,
         priceFoil: priceFoil,
+        price: cardPrice,
         finish: card.finishes?.includes('foil') ? 'foil' : 'nonfoil',
         imageUrl: img,
         cardType: card.type_line,
@@ -956,10 +1457,53 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
       };
     });
 
+    cards.sort((a, b) => (b.price || 0) - (a.price || 0));
+
     dynamicChaseCardsCache[upperCode] = cards;
     return cards;
   } catch (err) {
     console.warn(`Could not fetch chase card metadata for set ${upperCode}:`, err);
     return [];
   }
+}
+
+/**
+ * Determine which product categories in the set contain a given chase card
+ */
+export function getCardProductAvailability(card: ChaseCard, currentProduct?: CatalogPackProduct): {
+  collectorBooster: boolean;
+  playBooster: boolean;
+  bundle: boolean;
+  preconDeck: boolean;
+  availableProductsList: string[];
+} {
+  const isCollectorOnly = card.productType === 'collector' || card.pullOddsDesc?.includes('Collector Exclusive') || card.pullOddsDesc?.includes('Serialized');
+  const isDeckCard = card.productType === 'deck' || card.pullOddsDesc?.includes('Commander') || card.pullOddsDesc?.includes('Deck');
+  const isPromo = card.productType === 'card' || card.pullOddsDesc?.includes('Included Single/Promo');
+
+  const availableProductsList: string[] = [];
+
+  let collectorBooster = true;
+  let playBooster = !isCollectorOnly && !isDeckCard;
+  let bundle = !isCollectorOnly && !isDeckCard;
+  let preconDeck = isDeckCard;
+
+  if (isDeckCard) {
+    availableProductsList.push(card.deckName ? `${card.deckName} Deck` : 'Preconstructed Deck');
+    collectorBooster = false;
+  } else if (isPromo) {
+    availableProductsList.push('Guaranteed Included Promo');
+  } else {
+    if (collectorBooster) availableProductsList.push('Collector Booster Box / Pack');
+    if (playBooster) availableProductsList.push('Play Booster Box / Pack');
+    if (bundle) availableProductsList.push('Bundle / Gift Edition');
+  }
+
+  return {
+    collectorBooster,
+    playBooster,
+    bundle,
+    preconDeck,
+    availableProductsList,
+  };
 }

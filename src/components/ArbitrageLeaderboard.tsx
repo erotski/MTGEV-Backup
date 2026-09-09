@@ -6,7 +6,7 @@ import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { calculateEvScore, getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
-import { getCanonicalProductMetrics } from '../utils/productUtils';
+import { getCanonicalProductMetrics, findMatchingPreconDeck } from '../utils/productUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -31,7 +31,7 @@ import {
 
 interface ArbitrageLeaderboardProps {
   records: BoxArbitrageRecord[];
-  onSelectSet: (setCode: string) => void;
+  onSelectSet: (setCode: string, productUuid?: string) => void;
   priceMode: PriceMode;
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
@@ -113,9 +113,23 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         sum += contents.card.reduce((cAcc: number, c: any) => cAcc + (c.count || 1), 0);
       }
       if (contents.deck) {
-        const cat = (box.category || '').toLowerCase();
-        const isCommander = cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander');
-        sum += contents.deck.length * (isCommander ? 100 : 60);
+        if (typeof box.cardCount === 'number' && box.cardCount > 0) {
+          sum += box.cardCount;
+        } else {
+          contents.deck.forEach((dk: any) => {
+            const matchedDeck = preconDecks ? findMatchingPreconDeck(preconDecks, dk.name, dk.set || (box as any).setCode, (box as any).id || (box as any).uuid) : undefined;
+            const isCmd = Boolean(
+              matchedDeck?.isCommander ||
+              matchedDeck?.format === 'commander' ||
+              Boolean(matchedDeck?.commander && matchedDeck.commander.name && matchedDeck.commander.name.toLowerCase().trim() !== 'face commander') ||
+              (box.category || '').toLowerCase() === 'commander_deck' ||
+              (box.boxName || '').toLowerCase().includes('commander') ||
+              (dk.name || '').toLowerCase().includes('commander')
+            );
+            const dCount = matchedDeck?.totalCards || matchedDeck?.cardCount || (matchedDeck?.cards ? matchedDeck.cards.reduce((s: number, c: any) => s + (c.count || 1), 0) : 0) || (isCmd ? 100 : 60);
+            sum += dCount;
+          });
+        }
       }
       if (contents.sealed) {
         contents.sealed.forEach((s: any) => {
@@ -463,7 +477,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
               <button
                 id="view-pick-set-btn"
-                onClick={() => onSelectSet(pickOfTheDay.setCode)}
+                onClick={() => onSelectSet(pickOfTheDay.setCode, pickOfTheDay.productUuid || pickOfTheDay.id)}
                 className="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl text-xs sm:text-sm transition shadow-lg flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 Inspect Set <ChevronRight className="w-4 h-4" />
@@ -589,7 +603,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     </strong>
                   </span>
                   <button
-                    onClick={() => onSelectSet(item.setCode)}
+                    onClick={() => onSelectSet(item.setCode, item.productUuid || item.id)}
                     className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-0.5 cursor-pointer"
                   >
                     Details <ChevronRight className="w-3.5 h-3.5" />
@@ -820,7 +834,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
               onChange={(e) => onVendorChange(e.target.value as Vendor)}
               className="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-xs cursor-pointer"
             >
-              <option value="all">All vendors ( cheapest )</option>
+              <option value="all_cheapest">All vendors ( cheapest )</option>
               <option value="all_average">All vendors ( average )</option>
               <option value="tcgplayer">TCGplayer</option>
               <option value="cardmarket">Cardmarket</option>
@@ -1006,7 +1020,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     <td className="py-3.5 px-4 text-center">
                       <button
                         id={`btn-explore-set-${box.setCode}`}
-                        onClick={() => onSelectSet(box.setCode)}
+                        onClick={() => onSelectSet(box.setCode, box.productUuid || box.id)}
                         className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg transition cursor-pointer"
                       >
                         Explore Set

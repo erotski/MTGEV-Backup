@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { PreconstructedDeckDetail } from '../types';
+import { PreconstructedDeckDetail, BoosterEVRecord } from '../types';
+import { dataService } from '../services/dataService';
 import { BoosterSlotViewer } from './BoosterSlotViewer';
 import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
@@ -31,6 +32,11 @@ interface ProductBreakdownModalProps {
   preconDecks?: Record<string, PreconstructedDeckDetail>;
   deckDetail?: PreconstructedDeckDetail;
   onNavigateToSet?: (setCode: string, boosterName?: string) => void;
+  arbitrageMap?: Record<string, any>;
+  productMap?: Map<string, any> | Record<string, any>;
+  boosterEvMap?: Record<string, BoosterEVRecord[]>;
+  singleCardPrices?: any;
+  reprintMultiplier?: number;
 }
 
 export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
@@ -42,12 +48,136 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
   preconDecks,
   deckDetail,
   onNavigateToSet,
+  arbitrageMap,
+  productMap,
+  boosterEvMap,
+  singleCardPrices,
+  reprintMultiplier = 1.0,
 }) => {
   if (!isOpen || !product) return null;
 
   const [activeTab, setActiveTab] = useState<'slots_content' | 'chase_cards' | 'hierarchy'>('slots_content');
 
-    const isDeck =
+  // Internal state to ensure complete data availability even if props are omitted
+  const [internalSingleCardPrices, setInternalSingleCardPrices] = useState<any>(null);
+  const [internalArbitrageMap, setInternalArbitrageMap] = useState<Record<string, any> | null>(null);
+  const [internalProductMap, setInternalProductMap] = useState<Map<string, any> | null>(null);
+  const [internalBoosterEvMap, setInternalBoosterEvMap] = useState<Record<string, BoosterEVRecord[]> | null>(null);
+  const [internalPreconDecks, setInternalPreconDecks] = useState<Record<string, PreconstructedDeckDetail> | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const needsSingle = !singleCardPrices || Object.keys(singleCardPrices?.byUuid || {}).length === 0;
+    const needsArb = !arbitrageMap || Object.keys(arbitrageMap).length === 0;
+    const needsProd = !productMap || (productMap instanceof Map ? productMap.size === 0 : Object.keys(productMap).length === 0);
+    const needsBooster = !boosterEvMap || Object.keys(boosterEvMap).length === 0;
+    const needsPrecon = !preconDecks || Object.keys(preconDecks).length === 0;
+
+    if (needsSingle || needsArb || needsProd || needsBooster || needsPrecon) {
+      Promise.all([
+        needsSingle ? dataService.getSingleCardPrices() : Promise.resolve(null),
+        needsArb ? dataService.getArbitrageRecords() : Promise.resolve(null),
+        needsProd ? dataService.getSealedProducts() : Promise.resolve(null),
+        needsBooster ? dataService.getBoosterEVs() : Promise.resolve(null),
+        needsPrecon ? dataService.getPreconDecks() : Promise.resolve(null),
+      ]).then(([single, arbList, prods, boosters, precons]) => {
+        if (!isMounted) return;
+        if (single) setInternalSingleCardPrices(single);
+        if (Array.isArray(arbList)) {
+          const aMap: Record<string, any> = {};
+          arbList.forEach((a) => {
+            if (a.productUuid) aMap[a.productUuid] = a;
+            if (a.id) aMap[a.id] = a;
+          });
+          setInternalArbitrageMap(aMap);
+        }
+        if (Array.isArray(prods)) {
+          const pMap = new Map<string, any>();
+          prods.forEach((p) => {
+            if (p.uuid) pMap.set(p.uuid, p);
+            if (p.id) pMap.set(p.id, p);
+          });
+          setInternalProductMap(pMap);
+        }
+        if (boosters) setInternalBoosterEvMap(boosters);
+        if (precons) setInternalPreconDecks(precons);
+      }).catch(() => {});
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [singleCardPrices, arbitrageMap, productMap, boosterEvMap, preconDecks]);
+
+  const effectiveSingleCardPrices = useMemo(() => {
+    if (singleCardPrices && (Object.keys(singleCardPrices?.byUuid || {}).length > 0 || Object.keys(singleCardPrices?.byName || {}).length > 0)) {
+      return singleCardPrices;
+    }
+    return internalSingleCardPrices || dataService.getSingleCardPricesSync() || { byUuid: {}, byName: {}, byNameSet: {} };
+  }, [singleCardPrices, internalSingleCardPrices]);
+
+  const effectiveArbitrageMap = useMemo(() => {
+    if (arbitrageMap && Object.keys(arbitrageMap).length > 0) {
+      return arbitrageMap;
+    }
+    return internalArbitrageMap || {};
+  }, [arbitrageMap, internalArbitrageMap]);
+
+  const effectiveProductMap = useMemo(() => {
+    if (productMap && (productMap instanceof Map ? productMap.size > 0 : Object.keys(productMap).length > 0)) {
+      return productMap instanceof Map ? productMap : new Map(Object.entries(productMap));
+    }
+    return internalProductMap || new Map();
+  }, [productMap, internalProductMap]);
+
+  const effectiveBoosterEvMap = useMemo(() => {
+    if (boosterEvMap && Object.keys(boosterEvMap).length > 0) {
+      return boosterEvMap;
+    }
+    return internalBoosterEvMap || dataService.getBoosterEvsSync() || {};
+  }, [boosterEvMap, internalBoosterEvMap]);
+
+  const effectivePreconDecks = useMemo(() => {
+    if (preconDecks && Object.keys(preconDecks).length > 0) {
+      return preconDecks;
+    }
+    return internalPreconDecks || dataService.getPreconDecksSync() || {};
+  }, [preconDecks, internalPreconDecks]);
+
+  // Enrich product with real non-zero marketPrice and estimatedEv if missing
+  const effectiveProduct = useMemo(() => {
+    if (!product) return null;
+    const pId = product.id || (product as any).uuid || '';
+    const arb = effectiveArbitrageMap[pId] || Object.values(effectiveArbitrageMap).find((a: any) =>
+      (a.productUuid && a.productUuid === pId) ||
+      ((a.boxName || a.displayName || '').toLowerCase().trim() === (product.displayName || '').toLowerCase().trim())
+    );
+    const mapped = pId
+      ? effectiveProductMap instanceof Map
+        ? effectiveProductMap.get(pId)
+        : (effectiveProductMap as any)?.[pId]
+      : null;
+
+    let resMarket = product.marketPrice;
+    if (!resMarket || resMarket <= 0) {
+      resMarket = arb?.marketPrice || mapped?.marketPrice || (product as any).price || 0;
+    }
+
+    let resEv = product.estimatedEv;
+    if (!resEv || resEv <= 0) {
+      resEv = arb?.totalEvAvg || mapped?.estimatedEv || 0;
+    }
+
+    return {
+      ...product,
+      marketPrice: resMarket,
+      estimatedEv: resEv,
+    };
+  }, [product, effectiveArbitrageMap, effectiveProductMap]);
+
+  const displayProduct = effectiveProduct || product;
+
+  const isDeck =
     product.packagingType === 'starter_deck' ||
     product.rawCategory === 'multiple_decks' ||
     product.rawCategory === 'deck' ||
@@ -65,16 +195,35 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
       (product.cardCount === 1 ||
         Boolean(product.rawContents?.card && product.rawContents.card.length > 0 && !product.rawContents?.pack && !product.rawContents?.sealed)));
 
-  const profit = Number((product.estimatedEv - product.marketPrice).toFixed(2));
-  const roiPct = product.marketPrice > 0 ? Number(((profit / product.marketPrice) * 100).toFixed(1)) : 0;
-  const productEvScore = typeof (product as any).evScore === 'number'
-    ? (product as any).evScore
+  const isBundle = !isSingleCard && !isDeck && Boolean(
+    product.rawCategory === 'bundle' ||
+    product.rawCategory === 'box_set' ||
+    product.rawCategory === 'secret_lair' ||
+    product.subtype === 'secret_lair' ||
+    product.packagingType === 'bundle' ||
+    product.packagingType === 'box_set' ||
+    (product.packsCount === 0 && Boolean(product.rawContents?.sealed || product.rawContents?.deck || product.rawContents?.variable || product.rawContents?.card)) ||
+    (product.rawContents?.sealed && product.rawContents.sealed.length > 0 && (!product.variations || product.variations.length === 0))
+  );
+
+  const isBoosterProduct = !isSingleCard && !isDeck && !isBundle && Boolean(
+    (product.packsCount && product.packsCount > 0) ||
+    product.packagingType === 'booster_pack' ||
+    product.packagingType === 'booster_box' ||
+    product.packagingType === 'case' ||
+    (product.variations && product.variations.length > 0)
+  );
+
+  const profit = Number((displayProduct.estimatedEv - displayProduct.marketPrice).toFixed(2));
+  const roiPct = displayProduct.marketPrice > 0 ? Number(((profit / displayProduct.marketPrice) * 100).toFixed(1)) : 0;
+  const productEvScore = typeof (displayProduct as any).evScore === 'number'
+    ? (displayProduct as any).evScore
     : calculateEvScore(
-        product.marketPrice,
-        product.estimatedEv,
-        (product as any).evMin ?? product.estimatedEv * 0.25,
-        (product as any).evMid90 ?? product.estimatedEv,
-        (product as any).evMax ?? product.estimatedEv * 3.5,
+        displayProduct.marketPrice,
+        displayProduct.estimatedEv,
+        (displayProduct as any).evMin ?? displayProduct.estimatedEv * 0.25,
+        (displayProduct as any).evMid90 ?? displayProduct.estimatedEv,
+        (displayProduct as any).evMax ?? displayProduct.estimatedEv * 3.5,
         isDeck
       );
 
@@ -209,7 +358,9 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
             {isSingleCard ? (
               <Sparkles className="w-4 h-4 text-amber-500" />
             ) : isDeck ? (
-              <Layers3 className="w-4 h-4" />
+              <Layers3 className="w-4 h-4 text-purple-600" />
+            ) : isBundle || !isBoosterProduct ? (
+              <Archive className="w-4 h-4 text-indigo-600" />
             ) : (
               <Sliders className="w-4 h-4" />
             )}
@@ -217,27 +368,27 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
               {isSingleCard
                 ? 'Single Card Content & Multi-Seller Pricing'
                 : isDeck
-                ? 'Deck Card Content (100-Card Breakdown & EV)'
-                : 'Slot Information & Options (0, 1, 2...)'}
+                ? 'Deck Card Content & Singles EV Breakdown'
+                : isBundle || !isBoosterProduct
+                ? 'Contained Products & Sealed Hierarchy'
+                : 'Slot Information & Options'}
             </span>
           </button>
 
-          {/* Chase Cards are only displayed for booster products with randomized slots, never for fixed precon decks or singles */}
-          {!isDeck && !isSingleCard && (
-            <button
-              onClick={() => setActiveTab('chase_cards')}
-              className={`py-3 px-3.5 font-bold text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
-                activeTab === 'chase_cards'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Flame className="w-4 h-4 text-amber-500" />
-              <span>Chase Cards in this Product</span>
-            </button>
-          )}
+          {/* Chase Cards Tab for ALL products */}
+          <button
+            onClick={() => setActiveTab('chase_cards')}
+            className={`py-3 px-3.5 font-bold text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
+              activeTab === 'chase_cards'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-amber-500" />
+            <span>Top 5 Chase Cards</span>
+          </button>
 
-          {product.rawContents && (
+          {!isBundle && isBoosterProduct && product.rawContents && (
             <button
               onClick={() => setActiveTab('hierarchy')}
               className={`py-3 px-3.5 font-bold text-xs flex items-center gap-2 border-b-2 transition cursor-pointer ${
@@ -254,56 +405,130 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
 
         {/* Modal Scrollable Body */}
         <div className="p-5 overflow-y-auto flex-1 space-y-6">
-          {/* Tab 1: Slot Collation Information OR Preconstructed Deck Contents OR Single Card Viewer */}
-          {(activeTab === 'slots_content' || (activeTab === 'chase_cards' && (isDeck || isSingleCard))) && (
+          {/* Tab 1: Slot Collation OR Preconstructed Deck Contents OR Bundle Hierarchy OR Single Card Viewer */}
+          {activeTab === 'slots_content' && (
             <div>
               {isSingleCard ? (
                 <SingleCardBreakdownViewer
-                  product={product}
+                  product={displayProduct}
                   priceMode={priceMode}
                   vendor={vendor}
                 />
               ) : isDeck ? (
                 <PreconstructedDeckViewer
-                  productId={product.id}
-                  productName={product.displayName}
-                  setCode={product.setCode}
-                  marketPrice={product.marketPrice}
-                  estimatedEv={product.estimatedEv}
-                  preconDecks={preconDecks}
-                  deckDetail={deckDetail || (product as any)?.deckDetail}
+                  productId={displayProduct.id}
+                  productName={displayProduct.displayName}
+                  setCode={displayProduct.setCode}
+                  marketPrice={displayProduct.marketPrice}
+                  estimatedEv={displayProduct.estimatedEv}
+                  preconDecks={effectivePreconDecks}
+                  deckDetail={deckDetail || (displayProduct as any)?.deckDetail}
                 />
+              ) : isBundle || !isBoosterProduct ? (
+                <div className="space-y-4">
+                  <ProductBreakdownTable
+                    product={displayProduct}
+                    vendor={vendor as any}
+                    priceMode={priceMode as any}
+                    hideModalLaunchButton={true}
+                    preconDecks={effectivePreconDecks}
+                    arbitrageMap={effectiveArbitrageMap}
+                    productMap={effectiveProductMap}
+                    boosterEvMap={effectiveBoosterEvMap}
+                    singleCardPrices={effectiveSingleCardPrices}
+                    reprintMultiplier={reprintMultiplier}
+                    title="Product & Prize breakdown"
+                    defaultCollapsed={false}
+                    collapsible={false}
+                  />
+
+                  {displayProduct.rawContents && (
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <Package className="w-4 h-4 text-indigo-600" />
+                        <span>MTGJSON Factory Sealed Contents Specification</span>
+                      </div>
+
+                      {displayProduct.rawContents.note && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                          <span className="font-bold">Collation Logic Note: </span>
+                          <span>{displayProduct.rawContents.note}</span>
+                        </div>
+                      )}
+
+                      {/* Contained Cards & Promotional Singles */}
+                      {displayProduct.rawContents.card && displayProduct.rawContents.card.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Contained Promotional Cards / Singles ({displayProduct.rawContents.card.length}):</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {displayProduct.rawContents.card.map((c: any, idx: number) => {
+                              if (!c) return null;
+                              return (
+                                <div
+                                  key={idx}
+                                  className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs flex items-center justify-between"
+                                >
+                                  <div className="min-w-0 pr-2">
+                                    <div className="font-semibold text-slate-800 truncate">{c.name}</div>
+                                    <div className="text-[10px] text-slate-500 font-mono">
+                                      Set: {(c.set || displayProduct.setCode).toUpperCase()} {c.number ? `#${c.number}` : ''} {c.foil ? '• Foil' : ''}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <BoosterSlotViewer
-                  setCode={product.setCode}
-                  boosterName={product.boosterName}
-                  variations={product.variations || []}
-                  packsCount={product.packsCount}
-                  packagingType={product.packagingType}
-                  productName={product.displayName}
+                  setCode={displayProduct.setCode}
+                  boosterName={displayProduct.boosterName}
+                  variations={displayProduct.variations || []}
+                  packsCount={displayProduct.packsCount}
+                  packagingType={displayProduct.packagingType}
+                  productName={displayProduct.displayName}
                 />
               )}
             </div>
           )}
 
-          {/* Tab 2: Chase Cards Within This Product (Booster products only) */}
-          {activeTab === 'chase_cards' && !isDeck && !isSingleCard && (
+          {/* Tab 2: Chase Cards Within This Product (Available for all products) */}
+          {activeTab === 'chase_cards' && (
             <ProductChaseCardsViewer
-              product={product}
-              setCode={product.setCode}
+              product={displayProduct}
+              setCode={displayProduct.setCode}
               priceMode={priceMode}
+              preconDecks={effectivePreconDecks}
+              deckDetail={deckDetail || (displayProduct as any)?.deckDetail}
+              singleCardPrices={effectiveSingleCardPrices}
             />
           )}
 
-          {/* Tab 3: Factory Sealed Hierarchy & Contained Drops */}
-          {activeTab === 'hierarchy' && product.rawContents && (
+          {/* Tab 3: Factory Sealed Hierarchy & Contained Drops (Booster products only) */}
+          {activeTab === 'hierarchy' && !isBundle && isBoosterProduct && displayProduct.rawContents && (
             <div className="space-y-4">
               {/* Authoritative Sub-Item Price & EV Reconciliation Table */}
               <ProductBreakdownTable
-                product={product}
+                product={displayProduct}
                 vendor={vendor as any}
                 priceMode={priceMode as any}
                 hideModalLaunchButton={true}
+                preconDecks={effectivePreconDecks}
+                arbitrageMap={effectiveArbitrageMap}
+                productMap={effectiveProductMap}
+                boosterEvMap={effectiveBoosterEvMap}
+                singleCardPrices={effectiveSingleCardPrices}
+                reprintMultiplier={reprintMultiplier}
+                title="Product & Prize breakdown"
+                defaultCollapsed={false}
+                collapsible={false}
               />
 
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">

@@ -102,6 +102,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     return Math.ceil(Math.max(maxGodPack * 1.05, p90Value * 2, sealedPrice * 1.25, 10));
   }, [isPreconstructed, fixedDeckEv, activeBooster, scale, p90Value, sealedPrice]);
 
+  const [chartMode, setChartMode] = useState<'buckets' | 'continuous'>('buckets');
   // Sliders state: X-Axis Start/End Percentile and Y-Axis Max Ceiling
   const [xMinPercent, setXMinPercent] = useState<number>(1);
   const [xMaxPercent, setXMaxPercent] = useState<number>(100);
@@ -286,6 +287,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       (d) => d.percentileNum >= xMinPercent && d.percentileNum <= xMaxPercent
     );
   }, [allCurveData, xMinPercent, xMaxPercent]);
+
+  // Compute raw discrete 1% buckets as requested by the user
+  const bucketCurveData = useMemo(() => {
+    return filteredCurveData.map((d) => ({
+      ...d,
+      percentile: `${d.percentileNum}%`, // Label each as its own 1% bucket
+    }));
+  }, [filteredCurveData]);
 
   // Dynamic X-Axis ticks based on current range
   const xTicks = useMemo(() => {
@@ -587,6 +596,19 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         {/* Feature Switches & Breakeven Banner */}
         <div className="flex flex-wrap items-center gap-3">
           <button
+            id="toggle-chart-mode-btn"
+            onClick={() => setChartMode(chartMode === 'buckets' ? 'continuous' : 'buckets')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 cursor-pointer ${
+              chartMode === 'buckets'
+                ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs font-bold'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>{chartMode === 'buckets' ? 'Discrete Raw 1% Buckets' : 'Continuous 100-Point Curve'}</span>
+          </button>
+
+          <button
             onClick={() => setShowAverages(!showAverages)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 cursor-pointer ${
               showAverages
@@ -628,11 +650,11 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       {/* Main Interactive Chart Canvas */}
       <div className="w-full h-[440px] pt-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={filteredCurveData} margin={{ top: 25, right: 35, left: 15, bottom: 25 }}>
+          <LineChart data={chartMode === 'buckets' ? bucketCurveData : filteredCurveData} margin={{ top: 25, right: 35, left: 15, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
               dataKey="percentile"
-              ticks={xTicks}
+              ticks={chartMode === 'buckets' ? undefined : xTicks}
               interval={0}
               tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
               label={{
@@ -695,66 +717,66 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             {/* Vendor Solid Price Curves */}
             {visibleVendors.all && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="all"
                 stroke="#2563eb"
                 strokeWidth={2.4}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="All vendors ( cheapest )"
               />
             )}
             {visibleVendors.all_average && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="all_average"
                 stroke="#6366f1"
                 strokeWidth={2.2}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="All vendors ( average )"
               />
             )}
             {visibleVendors.tcgplayer && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="tcgplayer"
                 stroke="#16a34a"
                 strokeWidth={2.6}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="TCGplayer"
               />
             )}
             {visibleVendors.cardmarket && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="cardmarket"
                 stroke="#eab308"
                 strokeWidth={2}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Cardmarket"
               />
             )}
             {visibleVendors.cardkingdom && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="cardkingdom"
                 stroke="#ea580c"
                 strokeWidth={2}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Card Kingdom"
               />
             )}
             {visibleVendors.manapool && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type={chartMode === 'buckets' ? 'step' : (isPreconstructed ? 'linear' : 'monotone')}
                 dataKey="manapool"
                 stroke="#be123c"
                 strokeWidth={2}
-                dot={false}
+                dot={chartMode === 'buckets' ? { r: 3, strokeWidth: 1 } : false}
                 activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                 name="Manapool"
               />

@@ -217,17 +217,26 @@ def main():
         cmdr_names = [cm.get("name") for cm in commanders]
         theme_desc = f"{set_code} Commander deck led by {', '.join(cmdr_names)}" if cmdr_names else f"{set_code} preconstructed deck"
 
+        is_cmd = bool(commanders or "commander" in raw_name.lower() or "commander" in (deck_data.get("type") or "").lower())
         deck_entry = {
             "deckName": raw_name,
+            "name": raw_name,
             "setCode": set_code,
+            "set": set_code.lower(),
             "theme": theme_desc,
+            "format": "commander" if is_cmd else (deck_data.get("type") or "casual").lower(),
+            "cardCount": sum(c["count"] for c in processed_cards),
             "totalCards": sum(c["count"] for c in processed_cards),
             "singlesEv": total_ev,
+            "totalSinglesEv": total_ev,
             "estimatedEv": total_ev,
             "topChases": sorted_chases,
+            "keyCards": sorted_chases,
+            "cards": processed_cards,
             "typesSummary": types_summary,
             "cardsByType": cards_by_type,
             "sealedProductUuids": sealed_uuids,
+            "isCommander": is_cmd,
         }
 
         # Index under multiple lookup keys for robust matching

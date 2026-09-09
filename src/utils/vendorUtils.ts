@@ -9,7 +9,7 @@ export interface VendorOption {
 
 export const VENDOR_OPTIONS: VendorOption[] = [
   {
-    value: 'all',
+    value: 'all_cheapest',
     label: 'All vendors ( cheapest )',
     shortLabel: 'All (Cheapest)',
     description: 'Cheapest variation based on all vendors out there (lowest individual card/booster costs)',
@@ -47,15 +47,15 @@ export const VENDOR_OPTIONS: VendorOption[] = [
 ];
 
 export function normalizeVendor(vendor?: string | null): Vendor {
-  if (!vendor) return 'all';
+  if (!vendor) return 'all_cheapest';
   const v = vendor.toLowerCase().trim();
-  if (v === 'all_cheapest' || v === 'all') return 'all';
+  if (v === 'all_cheapest' || v === 'all') return 'all_cheapest';
   if (v === 'all_average' || v === 'average' || v === 'all_avg') return 'all_average';
   if (v === 'tcgplayer' || v === 'tcg') return 'tcgplayer';
   if (v === 'cardmarket' || v === 'mkm') return 'cardmarket';
   if (v === 'cardkingdom' || v === 'ck') return 'cardkingdom';
   if (v === 'manapool' || v === 'mp') return 'manapool';
-  return 'all';
+  return 'all_cheapest';
 }
 
 export function getVendorLabel(vendor: Vendor | string): string {
@@ -83,7 +83,8 @@ export function resolveCardPrice(
   const prices = card.prices || {};
   const v = normalizeVendor(vendor);
 
-  if (v === 'all') {
+  if (v === 'all_cheapest') {
+    if (prices.all_cheapest !== undefined && prices.all_cheapest > 0) return prices.all_cheapest;
     if (prices.all !== undefined && prices.all > 0) return prices.all;
     const vals = [prices.tcgplayer, prices.cardmarket, prices.cardkingdom, prices.manapool].filter(
       (p): p is number => typeof p === 'number' && p > 0
