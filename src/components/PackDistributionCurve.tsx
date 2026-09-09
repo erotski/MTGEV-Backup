@@ -38,6 +38,8 @@ interface PackDistributionCurveProps {
   vendor?: string;
   isPreconstructed?: boolean;
   preconSinglesEv?: number;
+  fixedBaseEv?: number;
+  variableEv?: number;
   cardCount?: number;
 }
 
@@ -51,10 +53,13 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   vendor = 'all',
   isPreconstructed = false,
   preconSinglesEv,
+  fixedBaseEv = 0,
+  variableEv,
   cardCount,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
   const scale = multiplier > 0 ? multiplier : 1;
+  const isMixedProduct = Boolean(fixedBaseEv > 0 && !isPreconstructed && (variableEv ? variableEv > 0 : scale > 0));
 
   // State for user-editable pack/deck sealed price
   const packMarketPrice = defaultPackSealedPrice;
@@ -63,15 +68,16 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   // Sync sealed price when active booster, default price, priceMode or vendor changes
   useEffect(() => {
     setSealedPrice(packMarketPrice);
-  }, [packMarketPrice, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, preconSinglesEv]);
+  }, [packMarketPrice, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, preconSinglesEv, fixedBaseEv]);
 
   // Key percentile benchmarks for the active product (scaled by product multiplier or preconstructed fixed EV)
-  const fixedDeckEv = preconSinglesEv ?? activeBooster?.evAverage ?? 9.34;
-  const rawMin = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin || 0.85) * scale).toFixed(2));
-  const rawP5 = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMin5 || 1.53) * scale).toFixed(2));
-  const rawMid = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMid90 || 7.94) * scale).toFixed(2));
-  const rawP95 = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax5 || 42.37) * scale).toFixed(2));
-  const rawMax = isPreconstructed ? fixedDeckEv : Number(((activeBooster?.evMax || 182.50) * scale).toFixed(2));
+  const fixedDeckEv = preconSinglesEv ?? fixedBaseEv ?? activeBooster?.evAverage ?? 9.34;
+  const baseOffset = isMixedProduct ? fixedBaseEv : 0;
+  const rawMin = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMin || 0.85) * scale).toFixed(2));
+  const rawP5 = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMin5 || 1.53) * scale).toFixed(2));
+  const rawMid = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMid90 || 7.94) * scale).toFixed(2));
+  const rawP95 = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMax5 || 42.37) * scale).toFixed(2));
+  const rawMax = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMax || 182.50) * scale).toFixed(2));
 
   // Mathematically guaranteed ordered quantile anchors: Q(0) <= Q(0.05) <= Q(0.50) <= Q(0.95) <= Q(1.00)
   const q0 = Math.max(0, rawMin);
@@ -80,7 +86,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const rawMedian = (activeBooster?.evMid90 ? activeBooster.evMid90 * 0.88 : (activeBooster?.evAverage || 9.34) * 0.82) * scale;
   const q50 = isPreconstructed
     ? fixedDeckEv
-    : Math.max(q5 + 0.01, Math.min(Math.max(q5 + 0.05, rawP95 - 0.05), rawMedian));
+    : Math.max(q5 + 0.01, Math.min(Math.max(q5 + 0.05, rawP95 - 0.05), baseOffset + rawMedian));
   const q95 = isPreconstructed ? fixedDeckEv : Math.max(q50 + 0.05, rawP95);
   const q100 = isPreconstructed ? fixedDeckEv : Math.max(q95 + 0.05, rawMax);
 
@@ -97,10 +103,10 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       return Math.ceil(Math.max(fixedDeckEv * 1.35, sealedPrice * 1.35, 10));
     }
     const maxGodPack = (activeBooster?.evMax && activeBooster.evMax > 0)
-      ? activeBooster.evMax * scale
-      : (activeBooster?.quantiles?.[99] || p90Value * 2) * scale;
+      ? baseOffset + activeBooster.evMax * scale
+      : (activeBooster?.quantiles?.[99] || p90Value * 2) * scale + baseOffset;
     return Math.ceil(Math.max(maxGodPack * 1.05, p90Value * 2, sealedPrice * 1.25, 10));
-  }, [isPreconstructed, fixedDeckEv, activeBooster, scale, p90Value, sealedPrice]);
+  }, [isPreconstructed, fixedDeckEv, activeBooster, scale, p90Value, sealedPrice, baseOffset]);
 
   const [chartMode, setChartMode] = useState<'buckets' | 'continuous'>('buckets');
   // Sliders state: X-Axis Start/End Percentile and Y-Axis Max Ceiling
@@ -197,13 +203,13 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
           if (rec?.quantiles && rec.quantiles.length >= 100) {
             const rawVal = rec.quantiles[qIdx];
-            return Number((rawVal * modeMult * scale).toFixed(2));
+            return Number((baseOffset + rawVal * modeMult * scale).toFixed(2));
           }
           if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
             const rawVal = activeBooster.quantiles[qIdx];
-            return Number((rawVal * fallbackRatio * modeMult * scale).toFixed(2));
+            return Number((baseOffset + rawVal * fallbackRatio * modeMult * scale).toFixed(2));
           }
-          return 0;
+          return baseOffset;
         };
 
         const tcgVal = getVal('tcgplayer', 1.0);
@@ -279,7 +285,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     });
 
     return points;
-  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, priceMode, q0, q5, q50, q95, q100]);
+  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, priceMode, q0, q5, q50, q95, q100, baseOffset]);
 
   // Filtered curve data for X-Axis Slider Range
   const filteredCurveData = useMemo(() => {
@@ -325,9 +331,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const getAvg = (v: string, fallbackMult: number) => {
       const rec = vendorRecords[v];
       if (rec && rec.evAverage > 0) {
-        return Number((rec.evAverage * scale).toFixed(2));
+        return Number((baseOffset + rec.evAverage * scale).toFixed(2));
       }
-      return Number(((activeBooster?.evAverage || 9.34) * fallbackMult * scale).toFixed(2));
+      return Number((baseOffset + (activeBooster?.evAverage || 9.34) * fallbackMult * scale).toFixed(2));
     };
     const tcgAvg = getAvg('tcgplayer', 1.0);
     const ckAvg = getAvg('cardkingdom', 1.15);
@@ -347,7 +353,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       cardkingdom: ckAvg,
       manapool: mpAvg,
     };
-  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale]);
+  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, baseOffset]);
 
   const vendorKey = useMemo(() => {
     if (vendor && ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
@@ -508,6 +514,36 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               <div className="text-[10px] text-slate-500 font-bold uppercase">Singles vs Sealed</div>
               <div className={`font-mono font-black text-sm ${scaledAverages.tcgplayer >= sealedPrice ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {scaledAverages.tcgplayer >= sealedPrice ? '+' : ''}${(scaledAverages.tcgplayer - sealedPrice).toFixed(2)} ({((scaledAverages.tcgplayer - sealedPrice) / sealedPrice * 100).toFixed(1)}%)
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mixed Collation Banner (Solid Base Value + Variable Booster Upside) */}
+      {isMixedProduct && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-indigo-950 flex items-center gap-2">
+                <span>Mixed Product Collation (Solid Base + Variable Boosters)</span>
+                <span className="bg-indigo-200 text-indigo-900 px-1.5 py-0.5 rounded text-[10px] font-mono font-black">
+                  Solid Floor + Pack Upside
+                </span>
+              </div>
+              <p className="text-indigo-700 text-[11px] mt-0.5">
+                Guaranteed Preconstructed Base Value of <strong className="font-mono text-indigo-950">${fixedBaseEv.toFixed(2)}</strong> plus variable randomized booster packs (+<strong className="font-mono text-indigo-950">${scaledAverages.tcgplayer > fixedBaseEv ? (scaledAverages.tcgplayer - fixedBaseEv).toFixed(2) : (activeBooster?.evAverage * scale).toFixed(2)}</strong> avg).
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-indigo-200 shadow-2xs">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500 font-bold uppercase">Combined Expected EV</div>
+              <div className="font-mono font-black text-sm text-indigo-700">
+                ${scaledAverages.tcgplayer.toFixed(2)}
               </div>
             </div>
           </div>

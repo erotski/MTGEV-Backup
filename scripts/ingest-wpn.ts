@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
+import sharp from 'sharp';
 
 interface DetectedAsset {
   originalPath: string;
@@ -33,10 +34,12 @@ const KNOWN_SETS: Record<string, string> = {
   stx: 'Strixhaven: School of Mages',
   khm: 'Kaldheim',
   znr: 'Zendikar Rising',
+  hob: 'The Hobbit',
 };
 
 const INCOMING_DIR = path.resolve(process.cwd(), 'incoming_zips');
 const TARGET_PRODUCTS_DIR = path.resolve(process.cwd(), 'public', 'products');
+const MAX_DIMENSION = 800; // Max width/height in pixels for crisp web displays
 
 function ensureDirectories() {
   if (!fs.existsSync(INCOMING_DIR)) {
@@ -86,8 +89,9 @@ function detectSetCode(filename: string, zipEntries: string[], forcedCode?: stri
   return match ? match[0] : 'mtg';
 }
 
-function classifyPackagingType(entryPath: string): { type: string; confidence: number } | null {
+function classifyPackagingType(entryPath: string): { type: string; confidence: number; isAngle01: boolean } | null {
   const p = entryPath.toLowerCase();
+  const baseName = path.basename(p);
   const ext = path.extname(p);
 
   // Must be an image
@@ -95,7 +99,7 @@ function classifyPackagingType(entryPath: string): { type: string; confidence: n
     return null;
   }
 
-  // Ignore tiny web banners, social tiles, logos, headers, thumbnails, and icons
+  // Ignore tiny web banners, social tiles, logos, headers, thumbnails, dielines, and posters
   if (
     p.includes('social') ||
     p.includes('facebook') ||
@@ -105,29 +109,73 @@ function classifyPackagingType(entryPath: string): { type: string; confidence: n
     p.includes('logo') ||
     p.includes('symbol') ||
     p.includes('poster') ||
-    p.includes('flyer')
+    p.includes('flyer') ||
+    p.includes('dieline') ||
+    p.includes('diemap') ||
+    p.includes('flat')
   ) {
     return null;
   }
 
+  // Check for angle 01 vs alternative angles (02, 03, etc.)
+  const isAngle01 =
+    baseName.startsWith('01_') ||
+    baseName.startsWith('01-') ||
+    baseName.startsWith('01.') ||
+    baseName.includes('_01_') ||
+    baseName.includes('_01.') ||
+    baseName.includes('-01-') ||
+    baseName.includes('-01.') ||
+    baseName.includes('angle01') ||
+    baseName.includes('angle_1') ||
+    baseName.includes('pos01') ||
+    baseName.includes('pos_1');
+
+  const isOtherAngle =
+    baseName.startsWith('02_') ||
+    baseName.startsWith('03_') ||
+    baseName.startsWith('04_') ||
+    baseName.startsWith('02-') ||
+    baseName.startsWith('03-') ||
+    baseName.includes('_02_') ||
+    baseName.includes('_03_') ||
+    baseName.includes('_04_') ||
+    baseName.includes('angle02') ||
+    baseName.includes('angle03');
+
+  // Angle weighting: heavily favor 01 angle renders
+  let angleBonus = 0;
+  if (isAngle01) angleBonus = 60;
+  else if (isOtherAngle) angleBonus = -80;
+
   // Prefer transparent 3D PNG renders
   const isPng = ext === '.png';
-  const bonus = isPng ? 20 : 0;
+  const pngBonus = isPng ? 20 : 0;
+  const totalBonus = angleBonus + pngBonus;
 
-  // 1. Bundle Box
+  // 1. Collector Display Box
+  if (
+    (p.includes('collector') && (p.includes('box') || p.includes('display'))) ||
+    p.includes('collector_box') ||
+    p.includes('collector_display')
+  ) {
+    return { type: 'collector', confidence: 100 + totalBonus, isAngle01 };
+  }
+
+  // 2. Bundle Box / Gift Bundle
   if (p.includes('bundle') || p.includes('gift_edition') || p.includes('fatpack')) {
     if (p.includes('3d') || p.includes('render') || p.includes('box')) {
-      return { type: 'bundle', confidence: 90 + bonus };
+      return { type: 'bundle', confidence: 90 + totalBonus, isAngle01 };
     }
-    return { type: 'bundle', confidence: 70 + bonus };
+    return { type: 'bundle', confidence: 70 + totalBonus, isAngle01 };
   }
 
-  // 2. Prerelease Pack
-  if (p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack')) {
-    return { type: 'prerelease', confidence: 85 + bonus };
+  // 3. Prerelease Pack
+  if (p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack') || p.includes('prpack')) {
+    return { type: 'prerelease', confidence: 85 + totalBonus, isAngle01 };
   }
 
-  // 3. Booster Box / Play Box / Display
+  // 4. Booster Box / Play Box / Display
   if (
     (p.includes('play') && p.includes('box')) ||
     (p.includes('booster') && p.includes('box')) ||
@@ -136,10 +184,10 @@ function classifyPackagingType(entryPath: string): { type: string; confidence: n
     p.includes('box_3d') ||
     p.includes('display_3d')
   ) {
-    return { type: 'box', confidence: 95 + bonus };
+    return { type: 'box', confidence: 95 + totalBonus, isAngle01 };
   }
 
-  // 4. Single Booster Pack
+  // 5. Single Booster Pack
   if (
     (p.includes('booster') && p.includes('pack')) ||
     (p.includes('play') && p.includes('pack')) ||
@@ -147,26 +195,79 @@ function classifyPackagingType(entryPath: string): { type: string; confidence: n
     p.includes('pack_3d') ||
     p.includes('foil_pack')
   ) {
-    return { type: 'pack', confidence: 80 + bonus };
+    return { type: 'pack', confidence: 80 + totalBonus, isAngle01 };
   }
 
-  // 5. Sealed Case
+  // 6. Commander Deck / Precon Deck
+  if (p.includes('commander') || p.includes('deck') || p.includes('precon')) {
+    return { type: 'deck', confidence: 75 + totalBonus, isAngle01 };
+  }
+
+  // 7. Sealed Case
   if (p.includes('case') || p.includes('master_case') || p.includes('shipping_box')) {
-    return { type: 'case', confidence: 75 + bonus };
+    return { type: 'case', confidence: 70 + totalBonus, isAngle01 };
   }
 
   // Generic box or pack fallback
   if (p.includes('display') || p.includes('box')) {
-    return { type: 'box', confidence: 60 + bonus };
+    return { type: 'box', confidence: 60 + totalBonus, isAngle01 };
   }
   if (p.includes('pack')) {
-    return { type: 'pack', confidence: 55 + bonus };
+    return { type: 'pack', confidence: 55 + totalBonus, isAngle01 };
   }
 
   return null;
 }
 
-export function processZipFile(zipFilePath: string, explicitSetCode?: string) {
+async function optimizeAndSaveImage(
+  inputBuffer: Buffer,
+  destinationPath: string
+): Promise<{ originalSize: number; optimizedSize: number; width: number; height: number }> {
+  const originalSize = inputBuffer.length;
+
+  const image = sharp(inputBuffer);
+  const metadata = await image.metadata();
+
+  // Resize bounding box to MAX_DIMENSION (preserving aspect ratio and transparent alpha channel)
+  const resized = image.resize({
+    width: metadata.width && metadata.width > MAX_DIMENSION ? MAX_DIMENSION : undefined,
+    height: metadata.height && metadata.height > MAX_DIMENSION ? MAX_DIMENSION : undefined,
+    fit: 'inside',
+    withoutEnlargement: true,
+  });
+
+  // Export as high-quality optimized PNG with quantized palette for tiny file size (~50-90 KB)
+  const outputPng = await resized
+    .png({
+      compressionLevel: 9,
+      quality: 85,
+      effort: 7,
+      palette: true,
+    })
+    .toBuffer();
+
+  fs.writeFileSync(destinationPath, outputPng);
+
+  // Also write modern WebP counterpart for ultra-fast browser loading
+  const webpDestination = destinationPath.replace(/\.png$/i, '.webp');
+  const outputWebp = await resized.webp({ quality: 85, effort: 6 }).toBuffer();
+  fs.writeFileSync(webpDestination, outputWebp);
+
+  return {
+    originalSize,
+    optimizedSize: outputPng.length,
+    width: metadata.width || 0,
+    height: metadata.height || 0,
+  };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+export async function processZipFile(zipFilePath: string, explicitSetCode?: string) {
   const filename = path.basename(zipFilePath);
   console.log(`\n📦 Processing archive: \x1b[36m${filename}\x1b[0m`);
 
@@ -185,8 +286,8 @@ export function processZipFile(zipFilePath: string, explicitSetCode?: string) {
 
   console.log(`🏷️  Detected Set: \x1b[32m${setName} (${setCode.toUpperCase()})\x1b[0m`);
 
-  // Group candidate files by packaging type
-  const bestCandidatesByType: Record<string, { entry: AdmZip.IZipEntry; confidence: number }> = {};
+  // Group candidate files by packaging type, filtering and prioritizing "01" angle renders
+  const bestCandidatesByType: Record<string, { entry: AdmZip.IZipEntry; confidence: number; isAngle01: boolean }> = {};
 
   for (const entry of entries) {
     if (entry.isDirectory) continue;
@@ -199,6 +300,7 @@ export function processZipFile(zipFilePath: string, explicitSetCode?: string) {
       bestCandidatesByType[classification.type] = {
         entry,
         confidence: classification.confidence,
+        isAngle01: classification.isAngle01,
       };
     }
   }
@@ -210,29 +312,37 @@ export function processZipFile(zipFilePath: string, explicitSetCode?: string) {
     return;
   }
 
-  console.log(`✨ Found ${detectedTypes.length} packaging product render(s):`);
+  console.log(`✨ Found ${detectedTypes.length} packaging product render(s) (preferring angle 01):`);
 
   for (const type of detectedTypes) {
     const candidate = bestCandidatesByType[type];
-    const ext = path.extname(candidate.entry.entryName) || '.png';
-    const targetFilename = `${setCode}-${type}${ext}`;
+    const targetFilename = `${setCode}-${type}.png`;
     const destinationPath = path.join(TARGET_PRODUCTS_DIR, targetFilename);
 
     try {
-      const buffer = candidate.entry.getData();
-      fs.writeFileSync(destinationPath, buffer);
-      console.log(`   ✅ Saved \x1b[32m${targetFilename}\x1b[0m  (from "${path.basename(candidate.entry.entryName)}")`);
+      const rawBuffer = candidate.entry.getData();
+      const stats = await optimizeAndSaveImage(rawBuffer, destinationPath);
+
+      const ratio = (((stats.originalSize - stats.optimizedSize) / stats.originalSize) * 100).toFixed(1);
+      const angleTag = candidate.isAngle01 ? '\x1b[35m[Angle 01]\x1b[0m ' : '';
+
+      console.log(
+        `   ✅ ${angleTag}Saved \x1b[32m${targetFilename}\x1b[0m + \x1b[34m${targetFilename.replace('.png', '.webp')}\x1b[0m ` +
+        `(${formatBytes(stats.originalSize)} ➔ \x1b[32m${formatBytes(stats.optimizedSize)}\x1b[0m, -${ratio}%)`
+      );
     } catch (err) {
-      console.error(`   ❌ Failed to extract ${targetFilename}:`, err);
+      console.error(`   ❌ Failed to optimize and extract ${targetFilename}:`, err);
     }
   }
 }
 
-export function runIngestion(forcedSetCode?: string) {
+export async function runIngestion(forcedSetCode?: string) {
   ensureDirectories();
 
   console.log(`\n========================================================`);
-  console.log(`🧙 WPN Marketing Assets Ingestion Utility`);
+  console.log(`🧙 WPN Marketing Assets Optimizer & Ingestor`);
+  console.log(`   • Filters for Angle 01 Renders`);
+  console.log(`   • Scales down 4000px / 5MB originals to ~60KB web assets`);
   console.log(`========================================================`);
   console.log(`📁 Ingestion Folder: ${INCOMING_DIR}`);
   console.log(`🖼️  Destination:    ${TARGET_PRODUCTS_DIR}\n`);
@@ -243,23 +353,23 @@ export function runIngestion(forcedSetCode?: string) {
   if (zipFiles.length === 0) {
     console.log(`ℹ️  No .zip files found in \x1b[33m/incoming_zips/\x1b[0m`);
     console.log(`\n📋 HOW TO USE:`);
-    console.log(` 1. Download DMA .zip kits from https://wpn.wizards.com/en/marketing-materials`);
-    console.log(` 2. Place or save the downloaded .zip file(s) into the \x1b[33m/incoming_zips/\x1b[0m folder.`);
-    console.log(` 3. Run: \x1b[32mnpm run ingest-wpn\x1b[0m\n`);
+    console.log(` 1. Download WPN DMA / Product Shots .zip kit (e.g. HOB, MH3, BLB).`);
+    console.log(` 2. Drop the .zip file into \x1b[33m/incoming_zips/\x1b[0m.`);
+    console.log(` 3. Run: \x1b[32mnpm run ingest-wpn\x1b[0m (or \x1b[32mnpm run ingest-wpn -- hob\x1b[0m)\n`);
     return;
   }
 
-  console.log(`🔍 Found ${zipFiles.length} archive(s) ready for ingestion...`);
+  console.log(`🔍 Found ${zipFiles.length} archive(s) ready for optimization...`);
   for (const zipFile of zipFiles) {
     const fullPath = path.join(INCOMING_DIR, zipFile);
-    processZipFile(fullPath, forcedSetCode);
+    await processZipFile(fullPath, forcedSetCode);
   }
 
-  console.log(`\n🎉 Ingestion complete! Check \x1b[32m/public/products/\x1b[0m for your images.\n`);
+  console.log(`\n🎉 Optimization & Ingestion complete! Check \x1b[32m/public/products/\x1b[0m for your images.\n`);
 }
 
 // CLI Execution
 const args = process.argv.slice(2);
-const explicitSetCode = args[0]; // e.g. "npm run ingest-wpn -- mh3"
+const explicitSetCode = args[0]; // e.g. "npm run ingest-wpn -- hob"
 
 runIngestion(explicitSetCode);

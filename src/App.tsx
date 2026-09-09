@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { CHASE_CARDS_BY_SET, INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
-import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord } from './types';
+import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, EvBasis } from './types';
 import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
 import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
 import { SpecialChaseShowcase } from './components/SpecialChaseShowcase';
 import { AdminPortal } from './components/AdminPortal';
+import { GlobalControlFooter } from './components/GlobalControlFooter';
 import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database, Award } from 'lucide-react';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
   const [initialProductId, setInitialProductId] = useState<string>('');
   const [priceMode, setPriceMode] = useState<PriceMode>('direct');
   const [vendor, setVendor] = useState<Vendor>('all');
+  const [evBasis, setEvBasis] = useState<EvBasis>('avg');
 
   // Dynamic state loaded from pipeline JSON files
   const [availableSets, setAvailableSets] = useState<SetOption[]>(INITIAL_SETS);
@@ -174,6 +176,8 @@ export default function App() {
             onPriceModeChange={setPriceMode}
             vendor={vendor}
             onVendorChange={setVendor}
+            evBasis={evBasis}
+            onEvBasisChange={setEvBasis}
             boosterEvMap={boosterEvMap}
           />
         )}
@@ -189,6 +193,8 @@ export default function App() {
             onPriceModeChange={setPriceMode}
             vendor={vendor}
             onVendorChange={setVendor}
+            evBasis={evBasis}
+            onEvBasisChange={setEvBasis}
             initialProductId={initialProductId}
             onClearInitialProductId={() => setInitialProductId('')}
           />
@@ -211,8 +217,18 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 mt-auto">
+      {/* Persistent Global Valuation Control Footer */}
+      <GlobalControlFooter
+        evBasis={evBasis}
+        onEvBasisChange={setEvBasis}
+        priceMode={priceMode}
+        onPriceModeChange={setPriceMode}
+        vendor={vendor}
+        onVendorChange={setVendor}
+      />
+
+      {/* Static Footer */}
+      <footer className="bg-slate-950 border-t border-slate-800 py-4 text-center text-xs text-slate-400">
         <p>
           MTG Booster EV & Products Overview — Powered by Scryfall Image & Symbol CDN, TCGplayer Direct APIs, MTGJSON sheets, and Monte Carlo simulations.
         </p>

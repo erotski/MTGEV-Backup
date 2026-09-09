@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord } from '../types';
+import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
@@ -37,6 +37,8 @@ interface ArbitrageLeaderboardProps {
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
   onVendorChange: (vendor: Vendor) => void;
+  evBasis?: EvBasis;
+  onEvBasisChange?: (basis: EvBasis) => void;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
 }
 
@@ -47,11 +49,15 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   onPriceModeChange,
   vendor,
   onVendorChange,
+  evBasis: propEvBasis,
+  onEvBasisChange,
   boosterEvMap,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
-  const [evBasis, setEvBasis] = useState<'min' | 'mid90' | 'avg' | 'max'>('avg');
+  const [internalEvBasis, setInternalEvBasis] = useState<EvBasis>('avg');
+  const evBasis = propEvBasis ?? internalEvBasis;
+  const setEvBasis = onEvBasisChange ?? setInternalEvBasis;
   const [sortBy, setSortBy] = useState<'roi' | 'profit' | 'boxPrice' | 'boxEv' | 'evScore' | 'packs' | 'cards'>('roi');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
@@ -792,110 +798,25 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         id="arbitrage-table-card"
         className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
       >
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
           <div>
             <h3 className="text-sm font-black text-slate-900">Products Overview</h3>
             <p className="text-xs text-slate-500">
-              Showing {filteredRecords.length} sealed items
+              Showing {filteredRecords.length} sealed items • Page {currentPage} of {totalPages || 1}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* EV Calculation Basis Selector */}
-            <div className="flex items-center bg-white p-1 rounded-xl text-xs font-bold border border-slate-200 shadow-xs">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 hidden sm:inline">Calc Basis:</span>
-              <button
-                id="ev-basis-min-btn"
-                onClick={() => setEvBasis('min')}
-                title="Calculate Profit/Loss and ROI based on Minimum EV Floor (Worst-case simulated collation return)"
-                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
-                  evBasis === 'min'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>Min EV (Floor)</span>
-                {evBasis === 'min' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-              </button>
-              <button
-                id="ev-basis-mid90-btn"
-                onClick={() => setEvBasis('mid90')}
-                title="Calculate Profit/Loss and ROI based on Mid 90% EV (Trimmed 5-95th percentile, excluding extreme 5% outliers)"
-                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
-                  evBasis === 'mid90'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>Mid 90% EV</span>
-                {evBasis === 'mid90' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-              </button>
-              <button
-                id="ev-basis-avg-btn"
-                onClick={() => setEvBasis('avg')}
-                title="Calculate Profit/Loss and ROI based on Average EV (Mathematical Mean of all simulated packs)"
-                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
-                  evBasis === 'avg'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>Average EV (Mean)</span>
-                {evBasis === 'avg' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-              </button>
-              <button
-                id="ev-basis-max-btn"
-                onClick={() => setEvBasis('max')}
-                title="Calculate Profit/Loss and ROI based on Maximum EV Ceiling (Best-case simulated jackpot ceiling)"
-                className={`px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
-                  evBasis === 'max'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>Max EV (Ceiling)</span>
-                {evBasis === 'max' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-              </button>
-            </div>
-
-            {/* Price Mode Selector */}
-            <div className="flex items-center bg-white p-1 rounded-xl text-xs font-bold border border-slate-200 shadow-xs">
-              <button
-                id="mode-direct-btn"
-                onClick={() => onPriceModeChange('direct')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  priceMode === 'direct' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Direct Set Price
-              </button>
-              <button
-                id="mode-reprints-btn"
-                onClick={() => onPriceModeChange('cheapest_reprint')}
-                className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                  priceMode === 'cheapest_reprint'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Cheapest Reprint (-18%)
-              </button>
-            </div>
-
-            {/* Vendor Selector */}
-            <select
-              id="vendor-select-dropdown"
-              value={vendor}
-              onChange={(e) => onVendorChange(e.target.value as Vendor)}
-              className="text-xs font-bold bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-xs cursor-pointer"
-            >
-              <option value="all_cheapest">All vendors ( cheapest )</option>
-              <option value="all_average">All vendors ( average )</option>
-              <option value="tcgplayer">TCGplayer</option>
-              <option value="cardmarket">Cardmarket</option>
-              <option value="cardkingdom">Card Kingdom</option>
-              <option value="manapool">Manapool</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Basis: <strong className="text-slate-900">{evBasis === 'min' ? 'Floor (Min)' : evBasis === 'mid90' ? 'Mid 90%' : evBasis === 'max' ? 'Ceiling (Max)' : 'Average (Mean)'}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
+              Pricing: <strong className="text-slate-900">{priceMode === 'direct' ? 'Direct Set' : 'Cheapest Reprint (-18%)'}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
+              Vendor: <strong className="text-slate-900 capitalize">{vendor.replace(/_/g, ' ')}</strong>
+            </span>
           </div>
         </div>
 

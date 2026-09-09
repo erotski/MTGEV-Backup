@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail } from '../types';
+import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
 import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
@@ -40,6 +40,8 @@ interface BoosterDetailExplorerProps {
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
   onVendorChange: (vendor: Vendor) => void;
+  evBasis?: EvBasis;
+  onEvBasisChange?: (basis: EvBasis) => void;
   initialProductId?: string;
   onClearInitialProductId?: () => void;
 }
@@ -67,6 +69,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   onPriceModeChange,
   vendor,
   onVendorChange,
+  evBasis = 'avg',
+  onEvBasisChange,
   initialProductId,
   onClearInitialProductId,
 }) => {
@@ -382,9 +386,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Compute recursive product audit (packs, singles, nested sealed, precon decks)
   const productAudit = useMemo(() => {
-    if (!activeRawProduct) return null;
+    if (!activeRawProduct && !activeProduct) return null;
     return resolveRecursiveProductAudit(
-      activeRawProduct,
+      activeRawProduct || activeProduct,
       productMap,
       arbitrageRecords,
       boosterEvMap,
@@ -394,21 +398,49 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       priceMode,
       1
     );
-  }, [activeRawProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
+  }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
 
-  const isPreconProduct = useMemo(() => {
+  // Derive authoritative canonical metrics
+  const canonicalMetrics = useMemo(() => {
+    if (!activeRawProduct && !activeProduct) return null;
+    return getCanonicalProductMetrics(
+      activeRawProduct || activeProduct,
+      productMap,
+      arbitrageRecords,
+      boosterEvMap,
+      preconDecks,
+      singleCardPrices,
+      vendor,
+      priceMode,
+      evBasis
+    );
+  }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
+
+  const productFixedBaseEv = canonicalMetrics?.fixedBaseEv ?? (productAudit?.totalFixedEv || 0);
+  const productVariableEv = canonicalMetrics?.variableEv ?? (productAudit?.totalVariableEv || 0);
+
+  const isPurePreconProduct = useMemo(() => {
     if (!activeProduct) return false;
     const cat = (activeProduct.rawCategory || '').toLowerCase();
     const packaging = activeProduct.packagingType;
+    const isDeckCat = packaging === 'starter_deck' || cat === 'deck' || cat === 'commander_deck' || cat === 'multiple_decks' || cat === 'deck_box';
     return (
-      packaging === 'starter_deck' ||
-      cat === 'deck' ||
-      cat === 'commander_deck' ||
-      cat === 'multiple_decks' ||
-      cat === 'deck_box' ||
-      Boolean(productAudit && productAudit.totalDecks > 0 && productAudit.totalPacks === 0)
+      (isDeckCat || (productAudit && productAudit.totalDecks > 0)) &&
+      (productAudit?.totalPacks === 0 || !productAudit) &&
+      (productAudit?.variableItems?.length === 0 || !productAudit) &&
+      productVariableEv === 0
     );
-  }, [activeProduct, productAudit]);
+  }, [activeProduct, productAudit, productVariableEv]);
+
+  const isMixedProduct = useMemo(() => {
+    return Boolean(
+      productFixedBaseEv > 0 &&
+      !isPurePreconProduct &&
+      ((productAudit?.totalPacks || 0) > 0 || (productAudit?.variableItems?.length || 0) > 0 || productVariableEv > 0)
+    );
+  }, [productFixedBaseEv, isPurePreconProduct, productAudit, productVariableEv]);
+
+  const isPreconProduct = isPurePreconProduct;
 
   const isBoxSetProduct = useMemo(() => {
     if (!activeProduct) return false;
@@ -429,22 +461,22 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       ? productAudit.totalCards
       : activeProduct?.cardCount || (isPreconProduct ? 100 : undefined);
 
-  const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : packMarketPrice;
+  const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : (canonicalMetrics?.marketPrice || packMarketPrice);
 
-  // Calculate dynamic product EV from pack EV and pack count (or authoritative audit)
-  const bundleBonusVal = activeProduct?.packagingType === 'bundle' ? 3.50 : 0;
-  const productEstimatedEv =
+  // Calculate dynamic product EV from canonical metrics (or fallback)
+  const productEstimatedEv = canonicalMetrics?.estimatedEv ?? (
     productAudit && productAudit.totalEv > 0
       ? productAudit.totalEv
       : isPreconProduct && activeProduct
       ? Number(activeProduct.estimatedEv.toFixed(2))
-      : Number(((activeBooster.evAverage * productPacksCount) + (bundleBonusVal * reprintMultiplier * vendorEvMultiplier)).toFixed(2));
+      : Number((activeBooster.evAverage * productPacksCount).toFixed(2))
+  );
 
-  const productMid90Ev = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2));
-  const productMin5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2));
-  const productMax5 = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2));
-  const productMin = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2));
-  const productMax = isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2));
+  const productMid90Ev = canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2)));
+  const productMin5 = canonicalMetrics?.min5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2)));
+  const productMax5 = canonicalMetrics?.max5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2)));
+  const productMin = canonicalMetrics?.minEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2)));
+  const productMax = canonicalMetrics?.maxEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2)));
 
   // EV score number (0 - 100): Probability of opening value >= sealed market price
   const productEvScore = useMemo(() => {
@@ -930,7 +962,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             >
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {isPreconProduct ? 'Dud Floor (0% Risk)' : 'Bottom 5% Floor'}
+                  {isPreconProduct ? 'Dud Floor (0% Risk)' : isMixedProduct ? 'Bottom 5% Floor (Base + Packs)' : 'Bottom 5% Floor'}
                 </span>
                 <AlertCircle className="w-4 h-4 text-rose-500" />
               </div>
@@ -938,9 +970,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 ${productMin5.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{isPreconProduct ? 'No dud risk (fixed list)' : 'Worst 5% dud distribution'}</span>
+                <span>
+                  {isPreconProduct
+                    ? 'No dud risk (fixed list)'
+                    : isMixedProduct
+                    ? `Guaranteed base $${productFixedBaseEv.toFixed(2)} + min pack`
+                    : 'Worst 5% dud distribution'}
+                </span>
                 {isPreconProduct ? (
                   <span className="font-mono font-semibold text-slate-700">Guaranteed</span>
+                ) : isMixedProduct ? (
+                  <span className="font-mono font-semibold text-slate-700">
+                    Solid Base Floor
+                  </span>
                 ) : (
                   productPacksCount > 1 && (
                     <span className="font-mono font-semibold text-rose-700">
@@ -958,7 +1000,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             >
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {isPreconProduct ? 'Median Singles Value' : 'Mid 90% EV'}
+                  {isPreconProduct ? 'Median Singles Value' : isMixedProduct ? 'Mid 90% EV (Base + Median)' : 'Mid 90% EV'}
                 </span>
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
               </div>
@@ -966,9 +1008,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 ${productMid90Ev.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{isPreconProduct ? 'Constant across all copies' : '5% trimmed mean'}</span>
+                <span>
+                  {isPreconProduct
+                    ? 'Constant across all copies'
+                    : isMixedProduct
+                    ? `Base $${productFixedBaseEv.toFixed(2)} + median packs`
+                    : '5% trimmed mean'}
+                </span>
                 {isPreconProduct ? (
                   <span className="font-mono font-semibold text-emerald-700">0% Variance</span>
+                ) : isMixedProduct ? (
+                  <span className="font-mono font-semibold text-emerald-700">
+                    Expected Normal
+                  </span>
                 ) : (
                   productPacksCount > 1 && (
                     <span className="font-mono font-semibold text-emerald-700">
@@ -979,7 +1031,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               </p>
             </div>
 
-            {/* Card 3: Average Pack EV / Precon Total */}
+            {/* Card 3: Average Pack EV / Precon Total / Mixed Product Total */}
             <div
               id="card-stat-ev"
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition"
@@ -988,6 +1040,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {isPreconProduct
                     ? 'Precon Singles Total'
+                    : isMixedProduct
+                    ? 'Total Mixed Product EV'
                     : productPacksCount > 1
                     ? `${cleanProductName(activeProduct?.displayName || 'Product')} EV`
                     : 'Average Pack EV'}
@@ -1003,6 +1057,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     ? activeProduct?.cardCount && activeProduct.cardCount > 0
                       ? `${activeProduct.cardCount} Fixed Cards`
                       : 'Fixed Decklist'
+                    : isMixedProduct
+                    ? `$${productFixedBaseEv.toFixed(2)} Base + $${productVariableEv.toFixed(2)} Packs`
                     : isBoxSetProduct
                     ? activeProduct?.cardCount && activeProduct.cardCount > 0
                       ? `${activeProduct.cardCount} Curated Cards`
@@ -1014,6 +1070,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 {isPreconProduct ? (
                   <span className="font-mono font-semibold text-emerald-700">
                     100% Fixed Collation
+                  </span>
+                ) : isMixedProduct ? (
+                  <span className="font-mono font-semibold text-indigo-700">
+                    Mixed Collation
                   </span>
                 ) : (
                   productPacksCount > 1 && (
@@ -1032,7 +1092,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             >
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {isPreconProduct ? 'Singles Value Ceiling' : 'Top 5% Ceiling'}
+                  {isPreconProduct ? 'Singles Value Ceiling' : isMixedProduct ? 'Top 5% Ceiling (Base + God Pack)' : 'Top 5% Ceiling'}
                 </span>
                 <BarChart3 className="w-4 h-4 text-indigo-500" />
               </div>
@@ -1040,9 +1100,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 ${productMax5.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{isPreconProduct ? 'Equal to fixed collation' : 'God packs & chase hits'}</span>
+                <span>
+                  {isPreconProduct
+                    ? 'Equal to fixed collation'
+                    : isMixedProduct
+                    ? `Base $${productFixedBaseEv.toFixed(2)} + top 5% hits`
+                    : 'God packs & chase hits'}
+                </span>
                 {isPreconProduct ? (
                   <span className="font-mono font-semibold text-slate-700">Fixed List</span>
+                ) : isMixedProduct ? (
+                  <span className="font-mono font-semibold text-indigo-700">
+                    Chase Upside
+                  </span>
                 ) : (
                   productPacksCount > 1 && (
                     <span className="font-mono font-semibold text-indigo-700">
@@ -1066,6 +1136,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               vendor={vendor}
               isPreconstructed={isPreconProduct}
               preconSinglesEv={productEstimatedEv}
+              fixedBaseEv={productFixedBaseEv}
+              variableEv={productVariableEv}
               cardCount={productTotalCards}
             />
           )}

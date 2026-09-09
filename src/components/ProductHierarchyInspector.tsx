@@ -2002,36 +2002,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Pricing Vendor</label>
-                <select
-                  id="admin-hierarchy-vendor-select"
-                  value={vendor}
-                  onChange={(e) => onVendorChange(e.target.value as Vendor)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-800 focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All vendors ( cheapest )</option>
-                  <option value="all_average">All vendors ( average )</option>
-                  <option value="tcgplayer">TCGplayer</option>
-                  <option value="cardmarket">Cardmarket</option>
-                  <option value="cardkingdom">Card Kingdom</option>
-                  <option value="manapool">Manapool</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Price Mode</label>
-                <select
-                  id="admin-hierarchy-price-mode-select"
-                  value={priceMode}
-                  onChange={(e) => onPriceModeChange(e.target.value as PriceMode)}
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 text-slate-800 focus:outline-none cursor-pointer"
-                >
-                  <option value="direct">Direct Print</option>
-                  <option value="cheapest_reprint">Cheapest Reprint</option>
-                </select>
-              </div>
             </div>
 
             {/* Filter Mode Quick Badges */}
@@ -2178,30 +2148,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                   </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
-                    {/* Price Mode Pill Toggle */}
-                    <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-                      <button
-                        type="button"
-                        id="admin-hierarchy-mode-direct-pill"
-                        onClick={() => onPriceModeChange('direct')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          priceMode === 'direct' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Direct Print
-                      </button>
-                      <button
-                        type="button"
-                        id="admin-hierarchy-mode-reprint-pill"
-                        onClick={() => onPriceModeChange('cheapest_reprint')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          priceMode === 'cheapest_reprint' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        Cheapest Reprint
-                      </button>
-                    </div>
-
                     {/* View Mode Toggle */}
                     <div className="flex items-center bg-slate-100 p-1 rounded-xl">
                       <button

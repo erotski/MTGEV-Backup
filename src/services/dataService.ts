@@ -97,17 +97,26 @@ export interface DataFetchStatus {
 class DataService {
   private setsCache: SetOption[] | null = null;
   private arbitrageCache: BoxArbitrageRecord[] | null = null;
+  private arbitragePromise: Promise<BoxArbitrageRecord[]> | null = null;
   private boosterEvCache: Record<string, BoosterEVRecord[]> | null = null;
+  private boosterEvPromise: Promise<Record<string, BoosterEVRecord[]>> | null = null;
   private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
   private preconDecksCache: Record<string, any> | null = null;
   private preconDecksPromise: Promise<Record<string, any>> | null = null;
   private sealedProductsCache: any[] | null = null;
+  private sealedProductsPromise: Promise<any[]> | null = null;
   private singleCardPricesCache: {
     byUuid: Record<string, any>;
     byNameSet: Record<string, any>;
     byName: Record<string, any>;
     totalIndexed: number;
   } | null = null;
+  private singleCardPricesPromise: Promise<{
+    byUuid: Record<string, any>;
+    byNameSet: Record<string, any>;
+    byName: Record<string, any>;
+    totalIndexed: number;
+  }> | null = null;
   private isLoadedFromPipeline = false;
 
   public getSingleCardPricesSync(): {
@@ -237,52 +246,60 @@ class DataService {
     if (this.arbitrageCache && this.arbitrageCache.length > 0) {
       return this.arbitrageCache;
     }
-
-    try {
-      const response = await fetch('/data/arbitrage_leaderboard.json', { cache: 'no-cache' });
-      if (response.ok) {
-        const raw = await response.json();
-        if (Array.isArray(raw) && raw.length > 0) {
-          const sealedResponse = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
-          const sealedProducts = sealedResponse.ok ? await sealedResponse.json() : [];
-          const cardCountByUuid = new Map<string, number>();
-          const productsWithoutExactEv = new Set<string>();
-          if (Array.isArray(sealedProducts)) {
-            for (const product of sealedProducts) {
-              const uuid = product.id || product.uuid;
-              const rawCount = product.cardCount;
-              const cardCount = rawCount !== null && rawCount !== undefined ? Number(rawCount) : NaN;
-              if (uuid && Number.isFinite(cardCount) && cardCount > 0) {
-                cardCountByUuid.set(uuid, cardCount);
-              }
-              const packCodes = Array.isArray(product.contents?.pack)
-                ? product.contents.pack.map((pack: any) => String(pack.code || '').toLowerCase()).filter(Boolean)
-                : [];
-              const record = raw.find((item: BoxArbitrageRecord) => item.productUuid === uuid);
-              if (uuid && packCodes.some((code: string) => code.includes('sample')) && record?.boosterName !== 'collector-sample') {
-                productsWithoutExactEv.add(uuid);
-              }
-            }
-          }
-
-          this.arbitrageCache = raw.filter((record: BoxArbitrageRecord) => !productsWithoutExactEv.has(record.productUuid)).map((record: BoxArbitrageRecord) => {
-            const authoritativeCardCount = cardCountByUuid.get(record.productUuid);
-            const resolvedCardCount = authoritativeCardCount !== undefined && authoritativeCardCount > 0
-              ? authoritativeCardCount
-              : (typeof record.cardCount === 'number' && record.cardCount > 0 ? record.cardCount : undefined);
-            return resolvedCardCount !== undefined
-              ? { ...record, cardCount: resolvedCardCount }
-              : record;
-          });
-          return this.arbitrageCache;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not fetch /data/arbitrage_leaderboard.json:', e);
+    if (this.arbitragePromise) {
+      return this.arbitragePromise;
     }
 
-    this.arbitrageCache = [];
-    return [];
+    this.arbitragePromise = (async () => {
+      try {
+        const response = await fetch('/data/arbitrage_leaderboard.json', { cache: 'no-cache' });
+        if (response.ok) {
+          const raw = await response.json();
+          if (Array.isArray(raw) && raw.length > 0) {
+            const sealedProducts = await this.getSealedProducts();
+            const cardCountByUuid = new Map<string, number>();
+            const productsWithoutExactEv = new Set<string>();
+            if (Array.isArray(sealedProducts)) {
+              for (const product of sealedProducts) {
+                const uuid = product.id || product.uuid;
+                const rawCount = product.cardCount;
+                const cardCount = rawCount !== null && rawCount !== undefined ? Number(rawCount) : NaN;
+                if (uuid && Number.isFinite(cardCount) && cardCount > 0) {
+                  cardCountByUuid.set(uuid, cardCount);
+                }
+                const packCodes = Array.isArray(product.contents?.pack)
+                  ? product.contents.pack.map((pack: any) => String(pack.code || '').toLowerCase()).filter(Boolean)
+                  : [];
+                const record = raw.find((item: BoxArbitrageRecord) => item.productUuid === uuid);
+                if (uuid && packCodes.some((code: string) => code.includes('sample')) && record?.boosterName !== 'collector-sample') {
+                  productsWithoutExactEv.add(uuid);
+                }
+              }
+            }
+
+            this.arbitrageCache = raw.filter((record: BoxArbitrageRecord) => !productsWithoutExactEv.has(record.productUuid)).map((record: BoxArbitrageRecord) => {
+              const authoritativeCardCount = cardCountByUuid.get(record.productUuid);
+              const resolvedCardCount = authoritativeCardCount !== undefined && authoritativeCardCount > 0
+                ? authoritativeCardCount
+                : (typeof record.cardCount === 'number' && record.cardCount > 0 ? record.cardCount : undefined);
+              return resolvedCardCount !== undefined
+                ? { ...record, cardCount: resolvedCardCount }
+                : record;
+            });
+            return this.arbitrageCache;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch /data/arbitrage_leaderboard.json:', e);
+      } finally {
+        this.arbitragePromise = null;
+      }
+
+      this.arbitrageCache = [];
+      return [];
+    })();
+
+    return this.arbitragePromise;
   }
 
   /**
@@ -292,50 +309,59 @@ class DataService {
     if (this.boosterEvCache && Object.keys(this.boosterEvCache).length > 0) {
       return this.boosterEvCache;
     }
-
-    try {
-      const response = await fetch('/data/booster_ev.json', { cache: 'no-cache' });
-      if (response.ok) {
-        const rawEv = await response.json();
-        if (Array.isArray(rawEv) && rawEv.length > 0) {
-          const grouped: Record<string, BoosterEVRecord[]> = {};
-          rawEv.forEach((item: any) => {
-            const setCode = item.setCode || item.set_code;
-            if (!grouped[setCode]) grouped[setCode] = [];
-            grouped[setCode].push({
-              id: item.id || 0,
-              setCode: setCode,
-              setName: item.setName || setCode,
-              boosterName: item.boosterName || item.booster_name,
-              fullBoosterName: `${item.boosterName} Booster`,
-              priceMode: item.priceMode || item.price_mode || 'direct',
-              vendor: item.vendor || 'all',
-              evAverage: Number(item.evAverage || item.ev_average || 0),
-              evMid90: Number(item.evMid90 || item.ev_mid90 || 0),
-              evMin: Number(item.evMin || item.ev_min || 0),
-              evMax: Number(item.evMax || item.ev_max || 0),
-              evMin5: Number(item.evMin5 || item.ev_min5 || 0),
-              evMax5: Number(item.evMax5 || item.ev_max5 || 0),
-              quantiles: Array.isArray(item.quantiles) && item.quantiles.length > 0 ? item.quantiles.map(Number) : undefined,
-              completeBoosterPct: Number(item.completeBoosterPct || item.complete_booster_pct || 100),
-              exactMatchPct: Number(item.exactMatchPct || item.exact_match_pct || 100),
-              differentFinishPct: Number(item.differentFinishPct || item.different_finish_pct || 0),
-              differentVendorPct: Number(item.differentVendorPct || item.different_vendor_pct || 0),
-              failedBoosters: Number(item.failedBoosters || item.failed_boosters || 0),
-              simulatedPacks: Number(item.simulatedPacks || item.simulated_packs || 5000),
-              updatedAt: item.updatedAt || item.updated_at || new Date().toISOString(),
-            });
-          });
-          this.boosterEvCache = grouped;
-          return this.boosterEvCache;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not fetch /data/booster_ev.json:', e);
+    if (this.boosterEvPromise) {
+      return this.boosterEvPromise;
     }
 
-    this.boosterEvCache = {};
-    return {};
+    this.boosterEvPromise = (async () => {
+      try {
+        const response = await fetch('/data/booster_ev.json', { cache: 'no-cache' });
+        if (response.ok) {
+          const rawEv = await response.json();
+          if (Array.isArray(rawEv) && rawEv.length > 0) {
+            const grouped: Record<string, BoosterEVRecord[]> = {};
+            rawEv.forEach((item: any) => {
+              const setCode = item.setCode || item.set_code;
+              if (!grouped[setCode]) grouped[setCode] = [];
+              grouped[setCode].push({
+                id: item.id || 0,
+                setCode: setCode,
+                setName: item.setName || setCode,
+                boosterName: item.boosterName || item.booster_name,
+                fullBoosterName: `${item.boosterName} Booster`,
+                priceMode: item.priceMode || item.price_mode || 'direct',
+                vendor: item.vendor || 'all',
+                evAverage: Number(item.evAverage || item.ev_average || 0),
+                evMid90: Number(item.evMid90 || item.ev_mid90 || 0),
+                evMin: Number(item.evMin || item.ev_min || 0),
+                evMax: Number(item.evMax || item.ev_max || 0),
+                evMin5: Number(item.evMin5 || item.ev_min5 || 0),
+                evMax5: Number(item.evMax5 || item.ev_max5 || 0),
+                quantiles: Array.isArray(item.quantiles) && item.quantiles.length > 0 ? item.quantiles.map(Number) : undefined,
+                completeBoosterPct: Number(item.completeBoosterPct || item.complete_booster_pct || 100),
+                exactMatchPct: Number(item.exactMatchPct || item.exact_match_pct || 100),
+                differentFinishPct: Number(item.differentFinishPct || item.different_finish_pct || 0),
+                differentVendorPct: Number(item.differentVendorPct || item.different_vendor_pct || 0),
+                failedBoosters: Number(item.failedBoosters || item.failed_boosters || 0),
+                simulatedPacks: Number(item.simulatedPacks || item.simulated_packs || 5000),
+                updatedAt: item.updatedAt || item.updated_at || new Date().toISOString(),
+              });
+            });
+            this.boosterEvCache = grouped;
+            return this.boosterEvCache;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch /data/booster_ev.json:', e);
+      } finally {
+        this.boosterEvPromise = null;
+      }
+
+      this.boosterEvCache = {};
+      return {};
+    })();
+
+    return this.boosterEvPromise;
   }
 
   /**
@@ -418,19 +444,29 @@ class DataService {
     if (this.sealedProductsCache && this.sealedProductsCache.length > 0) {
       return this.sealedProductsCache;
     }
-    try {
-      const response = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
-      if (response.ok) {
-        const raw = await response.json();
-        if (Array.isArray(raw)) {
-          this.sealedProductsCache = raw;
-          return raw;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not fetch /data/sealed_products.json:', e);
+    if (this.sealedProductsPromise) {
+      return this.sealedProductsPromise;
     }
-    return [];
+
+    this.sealedProductsPromise = (async () => {
+      try {
+        const response = await fetch('/data/sealed_products.json', { cache: 'no-cache' });
+        if (response.ok) {
+          const raw = await response.json();
+          if (Array.isArray(raw)) {
+            this.sealedProductsCache = raw;
+            return raw;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch /data/sealed_products.json:', e);
+      } finally {
+        this.sealedProductsPromise = null;
+      }
+      return [];
+    })();
+
+    return this.sealedProductsPromise;
   }
 
   public getSealedProductsSync(): any[] | null {
@@ -701,19 +737,29 @@ class DataService {
     if (this.singleCardPricesCache) {
       return this.singleCardPricesCache;
     }
-    try {
-      const response = await fetch('/data/single_card_prices.json', { cache: 'no-cache' });
-      if (response.ok) {
-        const raw = await response.json();
-        if (raw && typeof raw === 'object') {
-          this.singleCardPricesCache = raw;
-          return raw;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not fetch /data/single_card_prices.json:', e);
+    if (this.singleCardPricesPromise) {
+      return this.singleCardPricesPromise;
     }
-    return { byUuid: {}, byNameSet: {}, byName: {}, totalIndexed: 0 };
+
+    this.singleCardPricesPromise = (async () => {
+      try {
+        const response = await fetch('/data/single_card_prices.json', { cache: 'no-cache' });
+        if (response.ok) {
+          const raw = await response.json();
+          if (raw && typeof raw === 'object') {
+            this.singleCardPricesCache = raw;
+            return raw;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch /data/single_card_prices.json:', e);
+      } finally {
+        this.singleCardPricesPromise = null;
+      }
+      return { byUuid: {}, byNameSet: {}, byName: {}, totalIndexed: 0 };
+    })();
+
+    return this.singleCardPricesPromise;
   }
 
   /**

@@ -2,7 +2,7 @@
  * Utility functions for recursive product breakdown, card counts, pack counts,
  * and EV resolution across MTGJSON sealed products.
  */
-import { BoosterEVRecord, PriceMode, Vendor } from '../types';
+import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { findBoosterEv, normalizeVendor, resolveCardPrice } from './vendorUtils';
 
 export interface ChildItemResolution {
@@ -25,9 +25,13 @@ export interface RecursiveProductBreakdownResult {
   totalPacks: number;
   totalDecks: number;
   totalSealedUnits: number;
+  totalFixedEv: number;
+  totalVariableEv: number;
   totalEv: number;
   totalMinEv: number;
+  totalMin5Ev: number;
   totalMid90Ev: number;
+  totalMax5Ev: number;
   totalMaxEv: number;
   items: ChildItemResolution[];
   packItems: Array<{
@@ -40,6 +44,8 @@ export interface RecursiveProductBreakdownResult {
     unitEv: number;
     unitMid90: number;
     unitMin: number;
+    unitMin5?: number;
+    unitMax5?: number;
     unitMax: number;
     subtotalEv: number;
   }>;
@@ -211,12 +217,16 @@ export function resolveBoosterPackEv(
   let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
   let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
   let unitEvMin = matchedBooster ? matchedBooster.evMin : 0;
+  let unitEvMin5 = matchedBooster && matchedBooster.evMin5 ? matchedBooster.evMin5 : (unitEvMin > 0 ? Number((unitEvMin * 1.5).toFixed(2)) : Number((unitEvAvg * 0.2).toFixed(2)));
+  let unitEvMax5 = matchedBooster && matchedBooster.evMax5 ? matchedBooster.evMax5 : (unitEvMid90 > 0 ? Number((unitEvMid90 * 2.5).toFixed(2)) : Number((unitEvAvg * 3.5).toFixed(2)));
   let unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
 
   if (matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint' && priceMode === 'cheapest_reprint') {
     unitEvAvg = Number((unitEvAvg * reprintMultiplier).toFixed(2));
     unitEvMid90 = Number((unitEvMid90 * reprintMultiplier).toFixed(2));
     unitEvMin = Number((unitEvMin * reprintMultiplier).toFixed(2));
+    unitEvMin5 = Number((unitEvMin5 * reprintMultiplier).toFixed(2));
+    unitEvMax5 = Number((unitEvMax5 * reprintMultiplier).toFixed(2));
     unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
   }
 
@@ -226,6 +236,8 @@ export function resolveBoosterPackEv(
     unitEvAvg,
     unitEvMid90,
     unitEvMin,
+    unitEvMin5,
+    unitEvMax5,
     unitEvMax,
   };
 }
@@ -588,9 +600,13 @@ export function resolveRecursiveProductAudit(
   let totalPacks = 0;
   let totalDecks = 0;
   let totalSealedUnits = 0;
+  let totalFixedEv = 0;
+  let totalVariableEv = 0;
   let totalEv = 0;
   let totalMinEv = 0;
+  let totalMin5Ev = 0;
   let totalMid90Ev = 0;
+  let totalMax5Ev = 0;
   let totalMaxEv = 0;
 
   const prodContents = product?.contents || product?.rawContents;
@@ -603,9 +619,13 @@ export function resolveRecursiveProductAudit(
       totalPacks: 0,
       totalDecks: 0,
       totalSealedUnits: 0,
+      totalFixedEv: 0,
+      totalVariableEv: 0,
       totalEv: 0,
       totalMinEv: 0,
+      totalMin5Ev: 0,
       totalMid90Ev: 0,
+      totalMax5Ev: 0,
       totalMaxEv: 0,
       items: [],
       packItems: [],
@@ -625,9 +645,13 @@ export function resolveRecursiveProductAudit(
         totalPacks: 0,
         totalDecks: 0,
         totalSealedUnits: 0,
+        totalFixedEv: 0,
+        totalVariableEv: 0,
         totalEv: 0,
         totalMinEv: 0,
+        totalMin5Ev: 0,
         totalMid90Ev: 0,
+        totalMax5Ev: 0,
         totalMaxEv: 0,
         items: [],
         packItems: [],
@@ -652,9 +676,12 @@ export function resolveRecursiveProductAudit(
 
       totalCards += packCardsTotal;
       totalPacks += count;
+      totalVariableEv += subtotalEv;
       totalEv += subtotalEv;
       totalMinEv += Number((count * res.unitEvMin).toFixed(2));
+      totalMin5Ev += Number((count * res.unitEvMin5).toFixed(2));
       totalMid90Ev += Number((count * res.unitEvMid90).toFixed(2));
+      totalMax5Ev += Number((count * res.unitEvMax5).toFixed(2));
       totalMaxEv += Number((count * res.unitEvMax).toFixed(2));
 
       const pEntry = {
@@ -667,6 +694,8 @@ export function resolveRecursiveProductAudit(
         unitEv: res.unitEvAvg,
         unitMid90: res.unitEvMid90,
         unitMin: res.unitEvMin,
+        unitMin5: res.unitEvMin5,
+        unitMax5: res.unitEvMax5,
         unitMax: res.unitEvMax,
         subtotalEv,
       };
@@ -687,21 +716,21 @@ export function resolveRecursiveProductAudit(
     });
   }
 
-  // 2. STANDALONE CARDS & PROMOS
+  // 2. STANDALONE CARDS & PROMOS (Fixed deterministic inclusion)
   if (prodContents.card && Array.isArray(prodContents.card)) {
     prodContents.card.forEach((cd: any) => {
       const count = (cd.count || 1) * multiplier;
       const res = resolveSingleCardEv(cd, parentSet, product, singleCardPrices, vendor, priceMode, reprintMultiplier);
       const subtotalEv = Number((count * res.ev).toFixed(2));
-      const cardMinEv = Number((subtotalEv * 0.80).toFixed(2));
-      const cardMid90Ev = Number((subtotalEv * 0.95).toFixed(2));
-      const cardMaxEv = Number((subtotalEv * 1.25).toFixed(2));
 
       totalCards += count;
+      totalFixedEv += subtotalEv;
       totalEv += subtotalEv;
-      totalMinEv += cardMinEv;
-      totalMid90Ev += cardMid90Ev;
-      totalMaxEv += cardMaxEv;
+      totalMinEv += subtotalEv;
+      totalMin5Ev += subtotalEv;
+      totalMid90Ev += subtotalEv;
+      totalMax5Ev += subtotalEv;
+      totalMaxEv += subtotalEv;
 
       cardItems.push({
         name: res.name,
@@ -867,16 +896,16 @@ export function resolveRecursiveProductAudit(
       }
 
       const subtotalSinglesEv = Number((count * singlesEv).toFixed(2));
-      const deckMinEv = Number((subtotalSinglesEv * 0.80).toFixed(2));
-      const deckMid90Ev = Number((subtotalSinglesEv * 0.95).toFixed(2));
-      const deckMaxEv = Number((subtotalSinglesEv * 1.25).toFixed(2));
 
       totalCards += deckCardsTotal;
       totalDecks += count;
+      totalFixedEv += subtotalSinglesEv;
       totalEv += subtotalSinglesEv;
-      totalMinEv += deckMinEv;
-      totalMid90Ev += deckMid90Ev;
-      totalMaxEv += deckMaxEv;
+      totalMinEv += subtotalSinglesEv;
+      totalMin5Ev += subtotalSinglesEv;
+      totalMid90Ev += subtotalSinglesEv;
+      totalMax5Ev += subtotalSinglesEv;
+      totalMaxEv += subtotalSinglesEv;
 
       deckItems.push({
         name: dk.name,
@@ -967,10 +996,14 @@ export function resolveRecursiveProductAudit(
         totalCards += childAudit.totalCards;
         totalPacks += childAudit.totalPacks;
         totalDecks += childAudit.totalDecks;
+        totalFixedEv += childAudit.totalFixedEv;
+        totalVariableEv += childAudit.totalVariableEv;
 
         let unitEv = 0;
         let unitMin = 0;
+        let unitMin5 = 0;
         let unitMid90 = 0;
+        let unitMax5 = 0;
         let unitMax = 0;
 
         if (childAudit.totalEv > 0) {
@@ -978,48 +1011,68 @@ export function resolveRecursiveProductAudit(
           unitMin = childAudit.totalMinEv > 0
             ? Number((childAudit.totalMinEv / count).toFixed(2))
             : Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = childAudit.totalMin5Ev > 0
+            ? Number((childAudit.totalMin5Ev / count).toFixed(2))
+            : Number((unitEv * 0.85).toFixed(2));
           unitMid90 = childAudit.totalMid90Ev > 0
             ? Number((childAudit.totalMid90Ev / count).toFixed(2))
             : Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = childAudit.totalMax5Ev > 0
+            ? Number((childAudit.totalMax5Ev / count).toFixed(2))
+            : Number((unitEv * 1.15).toFixed(2));
           unitMax = childAudit.totalMaxEv > 0
             ? Number((childAudit.totalMaxEv / count).toFixed(2))
             : Number((unitEv * 1.25).toFixed(2));
         } else if (childArb && childArb.totalEvAvg > 0) {
           unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
           unitMin = Number(((childArb.unitEvMin || childArb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
+          unitMin5 = Number(((childArb.unitEvMin5 || childArb.totalEvAvg * 0.25) * reprintMultiplier).toFixed(2));
           unitMid90 = Number(((childArb.unitEvMid90 || childArb.totalEvAvg * 0.85) * reprintMultiplier).toFixed(2));
+          unitMax5 = Number(((childArb.unitEvMax5 || childArb.totalEvAvg * 3.5) * reprintMultiplier).toFixed(2));
           unitMax = Number(((childArb.unitEvMax || childArb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
         } else if (childArb && childArb.marketPrice > 0) {
           unitEv = Number(childArb.marketPrice.toFixed(2));
           unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = Number((unitEv * 0.85).toFixed(2));
           unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = Number((unitEv * 1.15).toFixed(2));
           unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.marketPrice > 0) {
           unitEv = Number(childProd.marketPrice.toFixed(2));
           unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = Number((unitEv * 0.85).toFixed(2));
           unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = Number((unitEv * 1.15).toFixed(2));
           unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.estimatedEv > 0) {
           unitEv = Number(childProd.estimatedEv.toFixed(2));
           unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = Number((unitEv * 0.85).toFixed(2));
           unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = Number((unitEv * 1.15).toFixed(2));
           unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.price > 0) {
           unitEv = Number(childProd.price.toFixed(2));
           unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = Number((unitEv * 0.85).toFixed(2));
           unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = Number((unitEv * 1.15).toFixed(2));
           unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (sub.price > 0) {
           unitEv = Number(sub.price.toFixed(2));
           unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMin5 = Number((unitEv * 0.85).toFixed(2));
           unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax5 = Number((unitEv * 1.15).toFixed(2));
           unitMax = Number((unitEv * 1.25).toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
         totalEv += subtotalEv;
         totalMinEv += Number((count * unitMin).toFixed(2));
+        totalMin5Ev += Number((count * unitMin5).toFixed(2));
         totalMid90Ev += Number((count * unitMid90).toFixed(2));
+        totalMax5Ev += Number((count * unitMax5).toFixed(2));
         totalMaxEv += Number((count * unitMax).toFixed(2));
 
         sealedItems.push({
@@ -1073,9 +1126,12 @@ export function resolveRecursiveProductAudit(
           unitEv = Number(sub.estimatedEv.toFixed(2));
         }
         const subtotalEv = Number((count * unitEv).toFixed(2));
+        totalFixedEv += subtotalEv;
         totalEv += subtotalEv;
         totalMinEv += Number((subtotalEv * 0.80).toFixed(2));
+        totalMin5Ev += Number((subtotalEv * 0.85).toFixed(2));
         totalMid90Ev += Number((subtotalEv * 0.95).toFixed(2));
+        totalMax5Ev += Number((subtotalEv * 1.15).toFixed(2));
         totalMaxEv += Number((subtotalEv * 1.25).toFixed(2));
 
         sealedItems.push({
@@ -1200,9 +1256,12 @@ export function resolveRecursiveProductAudit(
         ? Math.max(...parsedConfigs.map((c: any) => c.configEv))
         : 0;
 
+      totalVariableEv += slotEv;
       totalEv += slotEv;
       totalMinEv += Number((minConfigEv * multiplier).toFixed(2));
+      totalMin5Ev += Number((minConfigEv * multiplier).toFixed(2));
       totalMid90Ev += Number((slotEv * multiplier).toFixed(2));
+      totalMax5Ev += Number((maxConfigEv * multiplier).toFixed(2));
       totalMaxEv += Number((maxConfigEv * multiplier).toFixed(2));
 
       variableItems.push({
@@ -1283,10 +1342,28 @@ export function resolveRecursiveProductAudit(
         );
     if (arb && arb.totalEvAvg > 0) {
       totalEv = Number((arb.totalEvAvg * reprintMultiplier * multiplier).toFixed(2));
+      totalMinEv = Number(((arb.totalEvMin || arb.totalEvAvg * 0.15) * reprintMultiplier * multiplier).toFixed(2));
+      totalMin5Ev = Number(((arb.totalEvMin5 || arb.totalEvAvg * 0.25) * reprintMultiplier * multiplier).toFixed(2));
+      totalMid90Ev = Number(((arb.totalEvMid90 || arb.totalEvAvg * 0.85) * reprintMultiplier * multiplier).toFixed(2));
+      totalMax5Ev = Number(((arb.totalEvMax5 || arb.totalEvAvg * 3.5) * reprintMultiplier * multiplier).toFixed(2));
+      totalMaxEv = Number(((arb.totalEvMax || arb.totalEvAvg * 4.5) * reprintMultiplier * multiplier).toFixed(2));
+      totalVariableEv = totalEv;
     } else if (product.estimatedEv > 0) {
       totalEv = Number((product.estimatedEv * multiplier).toFixed(2));
+      totalFixedEv = totalEv;
+      totalMinEv = totalEv;
+      totalMin5Ev = totalEv;
+      totalMid90Ev = totalEv;
+      totalMax5Ev = totalEv;
+      totalMaxEv = totalEv;
     } else if (product.marketPrice > 0) {
       totalEv = Number((product.marketPrice * multiplier).toFixed(2));
+      totalFixedEv = totalEv;
+      totalMinEv = totalEv;
+      totalMin5Ev = totalEv;
+      totalMid90Ev = totalEv;
+      totalMax5Ev = totalEv;
+      totalMaxEv = totalEv;
     }
   }
 
@@ -1295,9 +1372,13 @@ export function resolveRecursiveProductAudit(
     totalPacks,
     totalDecks,
     totalSealedUnits,
+    totalFixedEv: Number(totalFixedEv.toFixed(2)),
+    totalVariableEv: Number(totalVariableEv.toFixed(2)),
     totalEv: Number(totalEv.toFixed(2)),
     totalMinEv: Number(totalMinEv.toFixed(2)),
+    totalMin5Ev: Number(totalMin5Ev.toFixed(2)),
     totalMid90Ev: Number(totalMid90Ev.toFixed(2)),
+    totalMax5Ev: Number(totalMax5Ev.toFixed(2)),
     totalMaxEv: Number(totalMaxEv.toFixed(2)),
     items,
     packItems,
@@ -1312,8 +1393,12 @@ export function resolveRecursiveProductAudit(
 export interface CanonicalProductMetrics {
   marketPrice: number;
   estimatedEv: number;
+  fixedBaseEv: number;
+  variableEv: number;
   minEv: number;
+  min5Ev: number;
   mid90Ev: number;
+  max5Ev: number;
   maxEv: number;
   effectiveEv: number;
   cardCount: number;
@@ -1337,7 +1422,7 @@ export function getCanonicalProductMetrics(
   singleCardPrices: any = { byUuid: {}, byName: {}, byNameSet: {} },
   vendor: Vendor | string = 'all',
   priceMode: PriceMode = 'direct',
-  evBasis: 'min' | 'mid90' | 'avg' | 'max' = 'avg'
+  evBasis: EvBasis | string = 'avg'
 ): CanonicalProductMetrics {
   const pId = product?.id || product?.uuid || product?.productUuid || '';
   const arb = arbitrageMap[pId];
@@ -1358,8 +1443,12 @@ export function getCanonicalProductMetrics(
   );
 
   let estimatedEv = audit.totalEv;
+  let fixedBaseEv = audit.totalFixedEv;
+  let variableEv = audit.totalVariableEv;
   let minEv = audit.totalMinEv;
+  let min5Ev = audit.totalMin5Ev;
   let mid90Ev = audit.totalMid90Ev;
+  let max5Ev = audit.totalMax5Ev;
   let maxEv = audit.totalMaxEv;
   let packsCount = audit.totalPacks;
   let cardCount = audit.totalCards;
@@ -1369,8 +1458,11 @@ export function getCanonicalProductMetrics(
     if (arb && arb.totalEvAvg > 0) {
       estimatedEv = Number((arb.totalEvAvg * reprintMultiplier).toFixed(2));
       minEv = Number(((arb.totalEvMin || arb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
+      min5Ev = Number(((arb.totalEvMin5 || arb.totalEvAvg * 0.25) * reprintMultiplier).toFixed(2));
       mid90Ev = Number(((arb.totalEvMid90 || arb.totalEvAvg * 0.85) * reprintMultiplier).toFixed(2));
+      max5Ev = Number(((arb.totalEvMax5 || arb.totalEvAvg * 3.5) * reprintMultiplier).toFixed(2));
       maxEv = Number(((arb.totalEvMax || arb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
+      variableEv = estimatedEv;
       if (packsCount === 0 && arb.packCount > 0) packsCount = arb.packCount;
       if (cardCount === 0 && arb.cardCount > 0) cardCount = arb.cardCount;
     } else {
@@ -1382,26 +1474,42 @@ export function getCanonicalProductMetrics(
         const pCnt = product?.packsCount || product?.packCount || 1;
         estimatedEv = Number((matched.evAverage * pCnt * reprintMultiplier).toFixed(2));
         minEv = Number((matched.evMin * pCnt * reprintMultiplier).toFixed(2));
+        min5Ev = matched.evMin5 ? Number((matched.evMin5 * pCnt * reprintMultiplier).toFixed(2)) : Number((minEv * 1.5).toFixed(2));
         mid90Ev = Number((matched.evMid90 * pCnt * reprintMultiplier).toFixed(2));
+        max5Ev = matched.evMax5 ? Number((matched.evMax5 * pCnt * reprintMultiplier).toFixed(2)) : Number((mid90Ev * 2.5).toFixed(2));
         maxEv = Number((matched.evMax * pCnt * reprintMultiplier).toFixed(2));
+        variableEv = estimatedEv;
         if (packsCount === 0) packsCount = pCnt;
       }
     }
   }
 
   // Consistency checks for mixed products & fixed inclusions:
-  // If product has positive estimatedEv, the liquidation bottom floor (minEv)
-  // should never be unrealistically depressed (e.g. $0.90 for a $1,100 bundle)
-  if (estimatedEv > 0) {
-    if (minEv <= 0 || (audit.totalPacks === 0 && minEv < estimatedEv * 0.4)) {
-      minEv = Number((estimatedEv * 0.80).toFixed(2));
-    }
-    if (mid90Ev <= 0 || mid90Ev < minEv) {
-      mid90Ev = Number((estimatedEv * 0.95).toFixed(2));
-    }
-    if (maxEv <= 0 || maxEv < estimatedEv) {
-      maxEv = Number((estimatedEv * 1.25).toFixed(2));
-    }
+  // If product has fixed inclusions (e.g. precon deck), the floor can never fall below the fixed deck EV!
+  if (fixedBaseEv > 0) {
+    minEv = Math.max(minEv, fixedBaseEv);
+    min5Ev = Math.max(min5Ev, fixedBaseEv);
+    mid90Ev = Math.max(mid90Ev, fixedBaseEv);
+    estimatedEv = Math.max(estimatedEv, fixedBaseEv);
+    max5Ev = Math.max(max5Ev, fixedBaseEv);
+    maxEv = Math.max(maxEv, fixedBaseEv);
+  }
+
+  // If product is purely fixed/preconstructed (0 packs and 0 variable lottery slots)
+  if (audit.totalPacks === 0 && audit.variableItems.length === 0 && fixedBaseEv > 0) {
+    minEv = fixedBaseEv;
+    min5Ev = fixedBaseEv;
+    mid90Ev = fixedBaseEv;
+    estimatedEv = fixedBaseEv;
+    max5Ev = fixedBaseEv;
+    maxEv = fixedBaseEv;
+  } else if (estimatedEv > 0) {
+    // Normal bounds
+    if (minEv <= 0) minEv = Number((estimatedEv * 0.80).toFixed(2));
+    if (min5Ev <= 0 || min5Ev < minEv) min5Ev = Number(((minEv + estimatedEv) / 2).toFixed(2));
+    if (mid90Ev <= 0 || mid90Ev < min5Ev) mid90Ev = Number((estimatedEv * 0.95).toFixed(2));
+    if (max5Ev <= 0 || max5Ev < estimatedEv) max5Ev = Number((estimatedEv * 1.15).toFixed(2));
+    if (maxEv <= 0 || maxEv < max5Ev) maxEv = Number((estimatedEv * 1.25).toFixed(2));
   }
 
   // Fallback cardCount
@@ -1448,8 +1556,12 @@ export function getCanonicalProductMetrics(
   return {
     marketPrice,
     estimatedEv,
+    fixedBaseEv,
+    variableEv,
     minEv,
+    min5Ev,
     mid90Ev,
+    max5Ev,
     maxEv,
     effectiveEv,
     cardCount,

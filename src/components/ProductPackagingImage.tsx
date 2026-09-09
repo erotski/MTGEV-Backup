@@ -40,14 +40,50 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const cleanType = (packagingType || 'pack').toLowerCase().trim();
   const isCollector = (displayName || '').toLowerCase().includes('collector');
 
-  // Generate candidate list of remote image to test if provided
+  // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
     const urls: string[] = [];
-    if (imageUrl && imageUrl.trim().length > 0 && !imageUrl.startsWith('/products/')) {
+    if (imageUrl && imageUrl.trim().length > 0) {
       urls.push(imageUrl.trim());
     }
-    return urls;
-  }, [imageUrl]);
+
+    if (cleanCode) {
+      if (isCollector) {
+        urls.push(`/products/${cleanCode}-collector.png`);
+        urls.push(`/products/${cleanCode}-collector.webp`);
+        urls.push(`/products/${cleanCode}-collector_box.png`);
+      }
+
+      // Standard type files
+      urls.push(`/products/${cleanCode}-${cleanType}.png`);
+      urls.push(`/products/${cleanCode}-${cleanType}.webp`);
+      urls.push(`/products/${cleanCode}-${cleanType}.jpg`);
+
+      // Common packaging aliases
+      if (cleanType === 'box') {
+        urls.push(`/products/${cleanCode}-box.png`);
+        urls.push(`/products/${cleanCode}-display.png`);
+        urls.push(`/products/${cleanCode}-booster_box.png`);
+      } else if (cleanType === 'pack') {
+        urls.push(`/products/${cleanCode}-pack.png`);
+        urls.push(`/products/${cleanCode}-booster.png`);
+      } else if (cleanType === 'bundle') {
+        urls.push(`/products/${cleanCode}-bundle.png`);
+        urls.push(`/products/${cleanCode}-fatpack.png`);
+      } else if (cleanType === 'prerelease' || cleanType === 'limited_aid_tool') {
+        urls.push(`/products/${cleanCode}-prerelease.png`);
+        urls.push(`/products/${cleanCode}-pr.png`);
+      } else if (cleanType === 'case' || cleanType === 'bundle_case') {
+        urls.push(`/products/${cleanCode}-case.png`);
+      } else if (cleanType === 'starter_deck') {
+        urls.push(`/products/${cleanCode}-deck.png`);
+        urls.push(`/products/${cleanCode}-commander.png`);
+      }
+    }
+
+    // Deduplicate while preserving priority order
+    return Array.from(new Set(urls));
+  }, [imageUrl, cleanCode, cleanType, isCollector]);
 
   // Reset image candidate testing when props change
   useEffect(() => {
