@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { getChaseCardsForProduct, fetchLiveChaseCardsForSet, getCardProductAvailability } from '../services/chaseCardsService';
+import {
+  getChaseCardsForProduct,
+  fetchLiveChaseCardsForSet,
+  getCardProductAvailability,
+  getCardImageUrl,
+  preloadChaseCardsForProducts,
+} from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   Sparkles,
@@ -243,6 +249,19 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     };
   }, [curatedCards.length, setCode, isFixedProduct]);
 
+  // Preload and cache top 5 chase cards for all products in the database
+  useEffect(() => {
+    if (allProducts && allProducts.length > 0) {
+      preloadChaseCardsForProducts(
+        allProducts,
+        setCode,
+        mtgJsonPrices,
+        allPreconDecks || propPreconDecks,
+        sealedProducts || allProducts
+      );
+    }
+  }, [allProducts, setCode, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts]);
+
   const chaseCards = curatedCards.length > 0 ? curatedCards : (isFixedProduct ? [] : liveCards);
 
   // Filter to the top 5 most valuable chase cards for this product
@@ -341,23 +360,19 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 : card.priceFoil
               : undefined;
 
-            const cardImg =
-              card.imageUrl ||
-              (card.scryfallId
-                ? `https://cards.scryfall.io/normal/front/${card.scryfallId.charAt(0)}/${card.scryfallId.charAt(1)}/${card.scryfallId}.jpg`
-                : '');
-
-            const isCardFoil = card.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
+            const cardImg = getCardImageUrl(card, 'normal');
+            const isEtched = card.finish === 'etched';
+            const isCardFoil = isEtched || card.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
 
             return (
               <div
-                key={card.uuid}
+                key={card.uuid || `${card.name}-${card.number}-${cardIndex}`}
                 onClick={() => setZoomedCard(card)}
                 className="group bg-slate-50 hover:bg-white rounded-xl p-2.5 border border-slate-200 hover:border-indigo-400 hover:shadow-md transition flex flex-col justify-between cursor-pointer relative"
               >
                 <div>
                   {/* Card Art */}
-                  <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2 border border-slate-200">
+                  <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2 border border-slate-200 shadow-2xs">
                     {cardImg ? (
                       <img
                         src={cardImg}
@@ -366,8 +381,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         onError={(e) => {
-                          if (card.scryfallId) {
-                            (e.target as HTMLImageElement).src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
+                          const target = e.target as HTMLImageElement;
+                          if (card.scryfallId && !target.src.includes('api.scryfall.com')) {
+                            target.src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
+                          } else if (card.number) {
+                            target.src = `https://api.scryfall.com/cards/${(card.setCode || setCode || 'sld').toLowerCase()}/${card.number}?format=image&version=normal`;
                           }
                         }}
                       />
@@ -378,9 +396,40 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                       </div>
                     )}
 
+                    {/* Rainbow Flat Surface Holographic Foil Sheen */}
+                    {isCardFoil && (
+                      <div
+                        className={`absolute inset-0 pointer-events-none rounded-lg transition-opacity duration-300 overflow-hidden ${
+                          isEtched
+                            ? 'opacity-85 group-hover:opacity-100 ring-1 ring-inset ring-purple-300/50'
+                            : 'opacity-75 group-hover:opacity-95 ring-1 ring-inset ring-amber-300/40'
+                        }`}
+                        style={{
+                          mixBlendMode: 'color-dodge',
+                          backgroundImage: isEtched
+                            ? 'radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.45) 0%, rgba(180,220,255,0.25) 45%, rgba(230,170,255,0.3) 75%, rgba(255,255,255,0.15) 100%)'
+                            : 'linear-gradient(135deg, rgba(255,0,80,0.16) 0%, rgba(255,180,0,0.22) 25%, rgba(0,255,140,0.18) 50%, rgba(0,180,255,0.22) 75%, rgba(180,0,255,0.18) 100%)',
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                      </div>
+                    )}
+
+                    {/* Finish Badge (Star / Sparkly Star) */}
+                    {isEtched ? (
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wider border backdrop-blur-md bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 text-white border-white/40 shadow-xs flex items-center gap-0.5 z-10">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-200" />
+                        <span>Etched</span>
+                      </span>
+                    ) : isCardFoil ? (
+                      <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wider border backdrop-blur-md bg-gradient-to-r from-amber-400 to-yellow-300 text-amber-950 border-amber-300 shadow-xs flex items-center gap-0.5 z-10">
+                        <span>★ Foil</span>
+                      </span>
+                    ) : null}
+
                     {/* Rarity badge */}
                     <span
-                      className={`absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider border backdrop-blur-md ${getRarityBadge(
+                      className={`absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider border backdrop-blur-md z-10 ${getRarityBadge(
                         card.rarity
                       )}`}
                     >
@@ -388,7 +437,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                     </span>
 
                     {/* Zoom preview icon hint */}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white z-20">
                       <ZoomIn className="w-5 h-5 drop-shadow" />
                     </div>
                   </div>
@@ -411,13 +460,18 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
                 {/* Price block - Strictly MTGJSON vendor prices */}
                 <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400">#{card.number}</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    #{card.number}
+                    {card.setCode && card.setCode.toLowerCase() !== setCode.toLowerCase() && (
+                      <span className="ml-1 text-[8px] uppercase text-indigo-500 font-bold">{card.setCode}</span>
+                    )}
+                  </span>
                   <div className="text-right font-mono">
                     {isCardFoil ? (
                       <>
                         <div className="text-xs font-black text-amber-600 flex items-center gap-1 justify-end">
                           <Tag className="w-2.5 h-2.5 text-amber-500" />
-                          <span>★ ${(displayPriceFoil || displayPriceNormal).toFixed(2)}</span>
+                          <span>{isEtched ? '✧★ ' : '★ '}${(displayPriceFoil || displayPriceNormal).toFixed(2)}</span>
                         </div>
                         {displayPriceNormal > 0 && displayPriceFoil && displayPriceNormal !== displayPriceFoil && (
                           <div className="text-[9px] text-slate-400">
@@ -467,26 +521,78 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
               {zoomedCard.name}
             </div>
 
-            <div className="aspect-[5/7] w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-lg">
-              <img
-                src={
-                  zoomedCard.imageUrl ||
-                  (zoomedCard.scryfallId
-                    ? `https://cards.scryfall.io/large/front/${zoomedCard.scryfallId.charAt(0)}/${zoomedCard.scryfallId.charAt(1)}/${zoomedCard.scryfallId}.jpg`
-                    : '')
-                }
-                alt={zoomedCard.name}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            </div>
+            {(() => {
+              const isEtchedZoom = zoomedCard.finish === 'etched';
+              const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
+              const zoomImg = getCardImageUrl(zoomedCard, 'large');
+
+              return (
+                <div className="aspect-[5/7] w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-lg relative">
+                  <img
+                    src={zoomImg}
+                    alt={zoomedCard.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (zoomedCard.scryfallId && !target.src.includes('api.scryfall.com')) {
+                        target.src = `https://api.scryfall.com/cards/${zoomedCard.scryfallId}?format=image&version=large`;
+                      } else if (zoomedCard.number) {
+                        target.src = `https://api.scryfall.com/cards/${(zoomedCard.setCode || setCode || 'sld').toLowerCase()}/${zoomedCard.number}?format=image&version=large`;
+                      }
+                    }}
+                  />
+
+                  {/* Rainbow Holographic Foil Sheen */}
+                  {isFoilZoom && (
+                    <div
+                      className={`absolute inset-0 pointer-events-none rounded-xl ${
+                        isEtchedZoom
+                          ? 'opacity-85 ring-2 ring-inset ring-purple-300/60'
+                          : 'opacity-75 ring-2 ring-inset ring-amber-300/50'
+                      }`}
+                      style={{
+                        mixBlendMode: 'color-dodge',
+                        backgroundImage: isEtchedZoom
+                          ? 'radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.45) 0%, rgba(180,220,255,0.25) 45%, rgba(230,170,255,0.3) 75%, rgba(255,255,255,0.15) 100%)'
+                          : 'linear-gradient(135deg, rgba(255,0,80,0.16) 0%, rgba(255,180,0,0.22) 25%, rgba(0,255,140,0.18) 50%, rgba(0,180,255,0.22) 75%, rgba(180,0,255,0.18) 100%)',
+                      }}
+                    />
+                  )}
+
+                  {/* Finish Badge Overlay */}
+                  {isEtchedZoom ? (
+                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 text-white border-white/40 shadow-sm flex items-center gap-1 z-10">
+                      <Sparkles className="w-3 h-3 text-amber-200" />
+                      <span>Etched Foil</span>
+                    </span>
+                  ) : isFoilZoom ? (
+                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md bg-gradient-to-r from-amber-400 to-yellow-300 text-amber-950 border-amber-300 shadow-sm flex items-center gap-1 z-10">
+                      <span>★ Traditional Foil</span>
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })()}
 
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Rarity & Number:</span>
                 <span className="font-mono font-bold uppercase text-slate-800">
-                  {zoomedCard.rarity} #{zoomedCard.number}
+                  {zoomedCard.rarity} #{zoomedCard.number} {zoomedCard.setCode && `(${zoomedCard.setCode.toUpperCase()})`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Finish:</span>
+                <span className="font-medium">
+                  {zoomedCard.finish === 'etched' ? (
+                    <span className="text-purple-700 font-bold">✧★✧ Etched Foil</span>
+                  ) : zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil') ? (
+                    <span className="text-amber-600 font-bold">★ Traditional Foil</span>
+                  ) : (
+                    <span className="text-slate-600">Non-foil</span>
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-between">

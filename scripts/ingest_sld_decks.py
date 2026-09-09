@@ -261,6 +261,26 @@ def main():
         precon_decks[deck_name.lower()] = deck_payload
         precon_decks[f"{deck_name.lower()}___sld"] = deck_payload
         precon_decks[f"{deck_name.lower()}_sld"] = deck_payload
+
+        # Normalized variations for drop names
+        d_lower = deck_name.lower().replace(":", "").replace("-", " ").replace("'", "").replace("&", "and")
+        clean_d = " ".join(d_lower.split())
+        precon_decks[clean_d] = deck_payload
+        precon_decks[f"secret lair drop {clean_d}"] = deck_payload
+        precon_decks[f"secret lair {clean_d}"] = deck_payload
+
+        foil_variant = clean_d.replace(" foil edition", " foil")
+        if foil_variant != clean_d:
+            precon_decks[foil_variant] = deck_payload
+            precon_decks[f"secret lair drop {foil_variant}"] = deck_payload
+            precon_decks[f"secret lair {foil_variant}"] = deck_payload
+
+        nonfoil_variant = clean_d.replace(" non foil edition", " non foil").replace(" non foil", "")
+        if nonfoil_variant != clean_d:
+            precon_decks[nonfoil_variant] = deck_payload
+            precon_decks[f"secret lair drop {nonfoil_variant}"] = deck_payload
+            precon_decks[f"secret lair {nonfoil_variant}"] = deck_payload
+
         added_decks += 1
 
     print(f"✔ Successfully added/updated {added_decks} SLD decks in precon_decks.json!")

@@ -379,8 +379,15 @@ export function findMatchingPreconDeck(
     if (preconDecks[upperSetKey]) return preconDecks[upperSetKey];
   }
 
-  // 3. Normalize "Collector's Edition", "Collectors Edition", "Commander Deck", etc.
+  // 3. Normalize "Collector's Edition", "Secret Lair", "Superdrop", "Commander Deck", etc.
   const strippedTarget = cleanTarget
+    .replace(/\bsecret\s+lair\s+drop\s+series:?\b/gi, '')
+    .replace(/\bsecret\s+lair\s+drop:?\b/gi, '')
+    .replace(/\bsecret\s+lair\s+bundle:?\b/gi, '')
+    .replace(/\bsecret\s+lair:?\b/gi, '')
+    .replace(/\b(spring|summer|fall|winter|autumn)\s+superdrop(\s+\d{4})?:?\b/gi, '')
+    .replace(/\bsuperdrop(\s+\d{4})?:?\b/gi, '')
+    .replace(/\bbundle:?\b/gi, '')
     .replace(/\bcollector'?s\s+edition\b/gi, '')
     .replace(/\bcollectors\s+edition\b/gi, '')
     .replace(/\bcollector'?s\b/gi, '')
@@ -394,7 +401,14 @@ export function findMatchingPreconDeck(
   if (strippedTarget && strippedTarget !== cleanTarget && lowerSet) {
     const strippedDirectKey = `${strippedTarget}___${lowerSet}`;
     if (preconDecks[strippedDirectKey]) return preconDecks[strippedDirectKey];
+    const strippedPrefixKey = `${lowerSet}_${strippedTarget}`;
+    if (preconDecks[strippedPrefixKey]) return preconDecks[strippedPrefixKey];
+    if (preconDecks[strippedTarget]) return preconDecks[strippedTarget];
   }
+
+  const toAlpha = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanTargetAlpha = toAlpha(cleanTarget);
+  const strippedTargetAlpha = strippedTarget ? toAlpha(strippedTarget) : '';
 
   // 4. Exact set matches within preconDecks dictionary
   if (lowerSet) {
@@ -407,26 +421,39 @@ export function findMatchingPreconDeck(
         const dName = (d.deckName || d.name || '').toLowerCase().trim();
         if (dName === cleanTarget) return d;
         if (strippedTarget && dName === strippedTarget) return d;
+        const dNameAlpha = toAlpha(dName);
+        if (dNameAlpha && (dNameAlpha === cleanTargetAlpha || dNameAlpha === strippedTargetAlpha)) return d;
         if (dName && (cleanTarget.includes(dName) || (strippedTarget && strippedTarget.includes(dName)))) {
+          return d;
+        }
+        if (strippedTargetAlpha.length >= 6 && dNameAlpha && (cleanTargetAlpha.includes(dNameAlpha) || strippedTargetAlpha.includes(dNameAlpha) || dNameAlpha.includes(strippedTargetAlpha))) {
           return d;
         }
       }
     }
   }
 
-  // 5. If no set was provided (or no match within set), only allow exact match on targetName
-  if (!lowerSet) {
-    if (preconDecks[cleanTarget]) return preconDecks[cleanTarget];
-    if (preconDecks[targetName]) return preconDecks[targetName];
-    if (strippedTarget && preconDecks[strippedTarget]) return preconDecks[strippedTarget];
+  // 5. If no set was provided (or no match within set), allow exact and fuzzy match across all decks
+  if (preconDecks[cleanTarget]) return preconDecks[cleanTarget];
+  if (preconDecks[targetName]) return preconDecks[targetName];
+  if (strippedTarget && preconDecks[strippedTarget]) return preconDecks[strippedTarget];
 
-    for (const d of Object.values(preconDecks)) {
-      const dName = (d.deckName || d.name || '').toLowerCase().trim();
-      if (dName === cleanTarget) return d;
-      if (strippedTarget && dName === strippedTarget) return d;
-      if (cleanTarget.length >= 8 && dName && (dName.includes(cleanTarget) || cleanTarget.includes(dName))) {
-        return d;
-      }
+  for (const [key, d] of Object.entries(preconDecks)) {
+    const dName = (d.deckName || d.name || '').toLowerCase().trim();
+    if (dName === cleanTarget) return d;
+    if (strippedTarget && dName === strippedTarget) return d;
+    const dNameAlpha = toAlpha(dName);
+    if (dNameAlpha && (dNameAlpha === cleanTargetAlpha || (strippedTargetAlpha && dNameAlpha === strippedTargetAlpha))) {
+      return d;
+    }
+    if (cleanTarget.length >= 8 && dName && (dName.includes(cleanTarget) || cleanTarget.includes(dName))) {
+      return d;
+    }
+    if (strippedTarget && strippedTarget.length >= 6 && dName && (dName.includes(strippedTarget) || strippedTarget.includes(dName))) {
+      return d;
+    }
+    if (strippedTargetAlpha.length >= 8 && dNameAlpha && (strippedTargetAlpha.includes(dNameAlpha) || dNameAlpha.includes(strippedTargetAlpha))) {
+      return d;
     }
   }
 
@@ -605,9 +632,15 @@ export function resolveRecursiveProductAudit(
       const count = (cd.count || 1) * multiplier;
       const res = resolveSingleCardEv(cd, parentSet, product, singleCardPrices, vendor, priceMode, reprintMultiplier);
       const subtotalEv = Number((count * res.ev).toFixed(2));
+      const cardMinEv = Number((subtotalEv * 0.80).toFixed(2));
+      const cardMid90Ev = Number((subtotalEv * 0.95).toFixed(2));
+      const cardMaxEv = Number((subtotalEv * 1.25).toFixed(2));
 
       totalCards += count;
       totalEv += subtotalEv;
+      totalMinEv += cardMinEv;
+      totalMid90Ev += cardMid90Ev;
+      totalMaxEv += cardMaxEv;
 
       cardItems.push({
         name: res.name,
@@ -773,9 +806,16 @@ export function resolveRecursiveProductAudit(
       }
 
       const subtotalSinglesEv = Number((count * singlesEv).toFixed(2));
+      const deckMinEv = Number((subtotalSinglesEv * 0.80).toFixed(2));
+      const deckMid90Ev = Number((subtotalSinglesEv * 0.95).toFixed(2));
+      const deckMaxEv = Number((subtotalSinglesEv * 1.25).toFixed(2));
+
       totalCards += deckCardsTotal;
       totalDecks += count;
       totalEv += subtotalSinglesEv;
+      totalMinEv += deckMinEv;
+      totalMid90Ev += deckMid90Ev;
+      totalMaxEv += deckMaxEv;
 
       deckItems.push({
         name: dk.name,
@@ -874,9 +914,15 @@ export function resolveRecursiveProductAudit(
 
         if (childAudit.totalEv > 0) {
           unitEv = Number((childAudit.totalEv / count).toFixed(2));
-          unitMin = Number((childAudit.totalMinEv / count).toFixed(2));
-          unitMid90 = Number((childAudit.totalMid90Ev / count).toFixed(2));
-          unitMax = Number((childAudit.totalMaxEv / count).toFixed(2));
+          unitMin = childAudit.totalMinEv > 0
+            ? Number((childAudit.totalMinEv / count).toFixed(2))
+            : Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = childAudit.totalMid90Ev > 0
+            ? Number((childAudit.totalMid90Ev / count).toFixed(2))
+            : Number((unitEv * 0.95).toFixed(2));
+          unitMax = childAudit.totalMaxEv > 0
+            ? Number((childAudit.totalMaxEv / count).toFixed(2))
+            : Number((unitEv * 1.25).toFixed(2));
         } else if (childArb && childArb.totalEvAvg > 0) {
           unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
           unitMin = Number(((childArb.unitEvMin || childArb.totalEvAvg * 0.15) * reprintMultiplier).toFixed(2));
@@ -884,14 +930,29 @@ export function resolveRecursiveProductAudit(
           unitMax = Number(((childArb.unitEvMax || childArb.totalEvAvg * 4.5) * reprintMultiplier).toFixed(2));
         } else if (childArb && childArb.marketPrice > 0) {
           unitEv = Number(childArb.marketPrice.toFixed(2));
+          unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.marketPrice > 0) {
           unitEv = Number(childProd.marketPrice.toFixed(2));
+          unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.estimatedEv > 0) {
           unitEv = Number(childProd.estimatedEv.toFixed(2));
+          unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (childProd.price > 0) {
           unitEv = Number(childProd.price.toFixed(2));
+          unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax = Number((unitEv * 1.25).toFixed(2));
         } else if (sub.price > 0) {
           unitEv = Number(sub.price.toFixed(2));
+          unitMin = Number((unitEv * 0.80).toFixed(2));
+          unitMid90 = Number((unitEv * 0.95).toFixed(2));
+          unitMax = Number((unitEv * 1.25).toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
@@ -952,6 +1013,9 @@ export function resolveRecursiveProductAudit(
         }
         const subtotalEv = Number((count * unitEv).toFixed(2));
         totalEv += subtotalEv;
+        totalMinEv += Number((subtotalEv * 0.80).toFixed(2));
+        totalMid90Ev += Number((subtotalEv * 0.95).toFixed(2));
+        totalMaxEv += Number((subtotalEv * 1.25).toFixed(2));
 
         sealedItems.push({
           name: sub.name,
@@ -1068,7 +1132,17 @@ export function resolveRecursiveProductAudit(
       });
 
       const slotEv = Number(parsedConfigs.reduce((acc: number, c: any) => acc + c.weightedEv, 0).toFixed(2));
+      const minConfigEv = parsedConfigs.length > 0
+        ? Math.min(...parsedConfigs.map((c: any) => c.configEv))
+        : 0;
+      const maxConfigEv = parsedConfigs.length > 0
+        ? Math.max(...parsedConfigs.map((c: any) => c.configEv))
+        : 0;
+
       totalEv += slotEv;
+      totalMinEv += Number((minConfigEv * multiplier).toFixed(2));
+      totalMid90Ev += Number((slotEv * multiplier).toFixed(2));
+      totalMaxEv += Number((maxConfigEv * multiplier).toFixed(2));
 
       variableItems.push({
         slotIndex: sIdx + 1,
@@ -1251,6 +1325,21 @@ export function getCanonicalProductMetrics(
         maxEv = Number((matched.evMax * pCnt * reprintMultiplier).toFixed(2));
         if (packsCount === 0) packsCount = pCnt;
       }
+    }
+  }
+
+  // Consistency checks for mixed products & fixed inclusions:
+  // If product has positive estimatedEv, the liquidation bottom floor (minEv)
+  // should never be unrealistically depressed (e.g. $0.90 for a $1,100 bundle)
+  if (estimatedEv > 0) {
+    if (minEv <= 0 || (audit.totalPacks === 0 && minEv < estimatedEv * 0.4)) {
+      minEv = Number((estimatedEv * 0.80).toFixed(2));
+    }
+    if (mid90Ev <= 0 || mid90Ev < minEv) {
+      mid90Ev = Number((estimatedEv * 0.95).toFixed(2));
+    }
+    if (maxEv <= 0 || maxEv < estimatedEv) {
+      maxEv = Number((estimatedEv * 1.25).toFixed(2));
     }
   }
 

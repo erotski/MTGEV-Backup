@@ -904,10 +904,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                           count: multiplier,
                         });
                       }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-amber-400/20 text-slate-200 hover:text-amber-300 border border-slate-600 hover:border-amber-400/40 transition text-xs font-semibold cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-300 text-xs font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                       title={`Inspect ${item.displayName || item.name} contents & collation`}
                     >
-                      <Search className="w-3.5 h-3.5 text-amber-400" />
+                      <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" />
                       <span>Inspect</span>
                     </button>
                   )}
@@ -1008,10 +1008,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       <button
                         type="button"
                         onClick={() => handleInspectSealed(sub)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-blue-400/20 text-slate-200 hover:text-blue-300 border border-slate-600 hover:border-blue-400/40 transition text-xs font-semibold cursor-pointer shadow-xs"
+                        className="inline-flex items-center gap-1.5 text-slate-400 hover:text-blue-300 text-xs font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                         title={`Inspect ${sub.name}`}
                       >
-                        <Search className="w-3.5 h-3.5 text-blue-400" />
+                        <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                         <span>Inspect</span>
                       </button>
                     </div>
@@ -1064,10 +1064,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                   unitEv: res.unitEvAvg,
                                 })
                               }
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-amber-400/20 text-slate-200 hover:text-amber-300 border border-slate-600 hover:border-amber-400/40 transition text-xs font-semibold cursor-pointer shadow-xs"
+                              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-300 text-xs font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                               title="Inspect booster slots, odds, & card collation"
                             >
-                              <Search className="w-3.5 h-3.5 text-amber-400" />
+                              <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" />
                               <span>Inspect</span>
                             </button>
                             <span className="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-lg font-mono font-black text-xs self-start sm:self-auto">
@@ -1174,10 +1174,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                 unitEv: res.ev,
                               })
                             }
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-400/20 text-slate-200 hover:text-emerald-300 border border-slate-600 hover:border-emerald-400/40 transition text-xs font-semibold cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-1.5 text-slate-400 hover:text-emerald-300 text-xs font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                             title="Inspect card pricing & breakdown"
                           >
-                            <Search className="w-3.5 h-3.5 text-emerald-400" />
+                            <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                             <span>Inspect</span>
                           </button>
                           <div className="flex flex-col">
@@ -1624,15 +1624,15 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                 <table className="w-full text-xs font-mono">
                   <thead>
                     <tr className="text-slate-400 border-b border-slate-800 text-[10px] uppercase">
-                      <th className="text-left pb-2 font-bold">Sub-Item Component</th>
-                      <th className="text-left pb-2 font-bold">Classification & Resolution</th>
-                      <th className="text-center pb-2 font-bold">Qty</th>
-                      <th className="text-right pb-2 font-bold text-amber-300">Cards SubTotal</th>
-                      <th className="text-right pb-2 font-bold text-slate-300">Unit Cards</th>
-                      <th className="text-right pb-2 font-bold text-slate-300">Unit EV</th>
-                      <th className="text-right pb-2 font-bold text-amber-400">Contents EV Subtotal</th>
-                      <th className="text-right pb-2 font-bold text-indigo-300">EV Share</th>
-                      <th className="text-center pb-2 font-bold text-amber-400">Inspect</th>
+                      <th className="text-left pb-2.5 pr-4 font-bold">Sub-Item Component</th>
+                      <th className="text-left pb-2.5 px-4 font-bold">Classification & Resolution</th>
+                      <th className="text-center pb-2.5 px-3 font-bold">Qty</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-slate-300">Unit Cards</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-amber-300">Cards SubTotal</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-slate-300">Unit EV</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-amber-400">Contents EV Subtotal</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-indigo-300">EV Share</th>
+                      <th className="text-center pb-2.5 pl-4 font-bold text-amber-400">Inspect</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -1643,22 +1643,22 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       const unitCards = p.cardsPerPack || 15;
                       return (
                         <tr key={`audit-pack-${idx}`} className="hover:bg-slate-800/40">
-                          <td className="py-2.5 text-slate-200 font-medium">
+                          <td className="py-2.5 pr-4 text-slate-200 font-medium">
                             <span className="text-amber-400 mr-1.5">📦</span>
                             {p.packName}
                           </td>
-                          <td className="py-2.5 text-slate-400 text-[11px]">
+                          <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                             <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px]">
                               Booster Pack • {p.set}
                             </span>
                           </td>
-                          <td className="py-2.5 text-center font-bold text-indigo-300">×{p.count}</td>
-                          <td className="py-2.5 text-right font-semibold text-slate-200">{packCards}</td>
-                          <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
-                          <td className="py-2.5 text-right text-slate-300">${p.unitEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-amber-400">${p.subtotalEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
-                          <td className="py-2.5 text-center">
+                          <td className="py-2.5 px-3 text-center font-bold text-indigo-300">×{p.count}</td>
+                          <td className="py-2.5 px-4 text-right font-medium text-slate-300">{unitCards}</td>
+                          <td className="py-2.5 px-4 text-right font-semibold text-slate-200">{packCards}</td>
+                          <td className="py-2.5 px-4 text-right text-slate-300">${p.unitEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-amber-400">${p.subtotalEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-indigo-300">{evShare}%</td>
+                          <td className="py-2.5 pl-4 text-center">
                             <button
                               type="button"
                               onClick={() =>
@@ -1671,10 +1671,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                   cardsPerPack: p.cardsPerPack,
                                 })
                               }
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-400/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-400/40 text-[11px] font-semibold transition cursor-pointer shadow-xs"
+                              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-300 text-[11px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                               title={`Inspect ${p.packName} collation & odds`}
                             >
-                              <Search className="w-3.5 h-3.5 text-amber-400" />
+                              <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" />
                               <span>Inspect</span>
                             </button>
                           </td>
@@ -1687,7 +1687,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       const evShare = totalEv > 0 ? ((c.subtotalEv / totalEv) * 100).toFixed(1) : '0.0';
                       return (
                         <tr key={`audit-card-${idx}`} className="hover:bg-slate-800/40">
-                          <td className="py-2.5 text-slate-200 font-medium">
+                          <td className="py-2.5 pr-4 text-slate-200 font-medium">
                             <span className="text-emerald-400 mr-1.5">✨</span>
                             {c.name}
                             {c.foil ? (
@@ -1700,23 +1700,23 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 text-slate-400 text-[11px]">
+                          <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                             Singles / Promo • {c.set} {c.number ? `#${c.number}` : ''}
                           </td>
-                          <td className="py-2.5 text-center font-bold text-indigo-300">×{c.count}</td>
-                          <td className="py-2.5 text-right font-semibold text-slate-200">{c.count}</td>
-                          <td className="py-2.5 text-right font-medium text-slate-300">1</td>
-                          <td className="py-2.5 text-right text-slate-300">${c.unitEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-amber-400">${c.subtotalEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
-                          <td className="py-2.5 text-center">
+                          <td className="py-2.5 px-3 text-center font-bold text-indigo-300">×{c.count}</td>
+                          <td className="py-2.5 px-4 text-right font-medium text-slate-300">1</td>
+                          <td className="py-2.5 px-4 text-right font-semibold text-slate-200">{c.count}</td>
+                          <td className="py-2.5 px-4 text-right text-slate-300">${c.unitEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-amber-400">${c.subtotalEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-indigo-300">{evShare}%</td>
+                          <td className="py-2.5 pl-4 text-center">
                             <button
                               type="button"
                               onClick={() => handleInspectCard(c)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-emerald-400/20 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-400/40 text-[11px] font-semibold transition cursor-pointer shadow-xs"
+                              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-emerald-300 text-[11px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                               title={`Inspect ${c.name} pricing & breakdown`}
                             >
-                              <Search className="w-3.5 h-3.5 text-emerald-400" />
+                              <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                               <span>Inspect</span>
                             </button>
                           </td>
@@ -1745,7 +1745,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       return (
                         <React.Fragment key={`audit-sealed-${idx}`}>
                           <tr className={`hover:bg-slate-800/40 transition-colors ${isRowExpanded ? 'bg-slate-800/60' : ''}`}>
-                            <td className="py-2.5 text-slate-200 font-medium">
+                            <td className="py-2.5 pr-4 text-slate-200 font-medium">
                               <div className="flex items-center gap-1.5">
                                 {hasChildBreakdown && (
                                   <button
@@ -1773,23 +1773,23 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                 )}
                               </div>
                             </td>
-                            <td className="py-2.5 text-slate-400 text-[11px]">
+                            <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                               Sealed Unit • {s.set}
                             </td>
-                            <td className="py-2.5 text-center font-bold text-indigo-300">×{s.count}</td>
-                            <td className="py-2.5 text-right font-semibold text-slate-200">{sealedCards}</td>
-                            <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
-                            <td className="py-2.5 text-right text-slate-300">${s.unitEv.toFixed(2)}</td>
-                            <td className="py-2.5 text-right font-bold text-amber-400">${s.subtotalEv.toFixed(2)}</td>
-                            <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
-                            <td className="py-2.5 text-center">
+                            <td className="py-2.5 px-3 text-center font-bold text-indigo-300">×{s.count}</td>
+                            <td className="py-2.5 px-4 text-right font-medium text-slate-300">{unitCards}</td>
+                            <td className="py-2.5 px-4 text-right font-semibold text-slate-200">{sealedCards}</td>
+                            <td className="py-2.5 px-4 text-right text-slate-300">${s.unitEv.toFixed(2)}</td>
+                            <td className="py-2.5 px-4 text-right font-bold text-amber-400">${s.subtotalEv.toFixed(2)}</td>
+                            <td className="py-2.5 px-4 text-right font-bold text-indigo-300">{evShare}%</td>
+                            <td className="py-2.5 pl-4 text-center">
                               <button
                                 type="button"
                                 onClick={() => handleInspectSealed(s)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-blue-400/20 text-slate-300 hover:text-blue-300 border border-slate-700 hover:border-blue-400/40 text-[11px] font-semibold transition cursor-pointer shadow-xs"
+                                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-blue-300 text-[11px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                 title={`Inspect ${s.name}`}
                               >
-                                <Search className="w-3.5 h-3.5 text-blue-400" />
+                                <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                                 <span>Inspect</span>
                               </button>
                             </td>
@@ -1850,10 +1850,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                                 <button
                                                   type="button"
                                                   onClick={() => handleInspectPack({ packName: cp.packName, code: cp.code, set: cp.set, count: cp.count, unitEv: cp.unitEv, cardsPerPack: cp.cardsPerPack })}
-                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-amber-400/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-400/40 text-[10px] font-semibold transition cursor-pointer shadow-xs"
+                                                  className="inline-flex items-center gap-1 text-slate-400 hover:text-amber-300 text-[10px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                                   title={`Inspect ${cp.packName}`}
                                                 >
-                                                  <Search className="w-3 h-3 text-amber-400" />
+                                                  <Search className="w-3 h-3 text-slate-500 group-hover:text-amber-400 transition-colors" />
                                                   <span>Inspect</span>
                                                 </button>
                                               </td>
@@ -1881,10 +1881,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                                 <button
                                                   type="button"
                                                   onClick={() => handleInspectCard(cc)}
-                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-400/20 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-400/40 text-[10px] font-semibold transition cursor-pointer shadow-xs"
+                                                  className="inline-flex items-center gap-1 text-slate-400 hover:text-emerald-300 text-[10px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                                   title={`Inspect ${cc.name}`}
                                                 >
-                                                  <Search className="w-3 h-3 text-emerald-400" />
+                                                  <Search className="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                                                   <span>Inspect</span>
                                                 </button>
                                               </td>
@@ -1911,10 +1911,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                                 <button
                                                   type="button"
                                                   onClick={() => handleInspectDeck(cd)}
-                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-purple-400/20 text-slate-300 hover:text-purple-300 border border-slate-700 hover:border-purple-400/40 text-[10px] font-semibold transition cursor-pointer shadow-xs"
+                                                  className="inline-flex items-center gap-1 text-slate-400 hover:text-purple-300 text-[10px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                                   title={`Inspect ${cd.name}`}
                                                 >
-                                                  <Search className="w-3 h-3 text-purple-400" />
+                                                  <Search className="w-3 h-3 text-slate-500 group-hover:text-purple-400 transition-colors" />
                                                   <span>Inspect</span>
                                                 </button>
                                               </td>
@@ -1941,10 +1941,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                                 <button
                                                   type="button"
                                                   onClick={() => handleInspectSealed(cs)}
-                                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-blue-400/20 text-slate-300 hover:text-blue-300 border border-slate-700 hover:border-blue-400/40 text-[10px] font-semibold transition cursor-pointer shadow-xs"
+                                                  className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-300 text-[10px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                                   title={`Inspect ${cs.name}`}
                                                 >
-                                                  <Search className="w-3 h-3 text-blue-400" />
+                                                  <Search className="w-3 h-3 text-slate-500 group-hover:text-blue-400 transition-colors" />
                                                   <span>Inspect</span>
                                                 </button>
                                               </td>
@@ -1978,7 +1978,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       return (
                         <React.Fragment key={`audit-deck-${idx}`}>
                           <tr className={`hover:bg-slate-800/40 transition-colors ${isRowExpanded ? 'bg-slate-800/60' : ''}`}>
-                            <td className="py-2.5 text-slate-200 font-medium">
+                            <td className="py-2.5 pr-4 text-slate-200 font-medium">
                               <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
@@ -2008,23 +2008,23 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                 )}
                               </div>
                             </td>
-                            <td className="py-2.5 text-slate-400 text-[11px]">
+                            <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                               Precon Deck
                             </td>
-                            <td className="py-2.5 text-center font-bold text-indigo-300">×{d.count}</td>
-                            <td className="py-2.5 text-right font-semibold text-slate-200">{deckTotalCards}</td>
-                            <td className="py-2.5 text-right font-medium text-slate-300">{unitCards}</td>
-                            <td className="py-2.5 text-right text-slate-300">${d.unitSinglesEv.toFixed(2)}</td>
-                            <td className="py-2.5 text-right font-bold text-amber-400">${d.subtotalSinglesEv.toFixed(2)}</td>
-                            <td className="py-2.5 text-right font-bold text-indigo-300">{evShare}%</td>
-                            <td className="py-2.5 text-center">
+                            <td className="py-2.5 px-3 text-center font-bold text-indigo-300">×{d.count}</td>
+                            <td className="py-2.5 px-4 text-right font-medium text-slate-300">{unitCards}</td>
+                            <td className="py-2.5 px-4 text-right font-semibold text-slate-200">{deckTotalCards}</td>
+                            <td className="py-2.5 px-4 text-right text-slate-300">${d.unitSinglesEv.toFixed(2)}</td>
+                            <td className="py-2.5 px-4 text-right font-bold text-amber-400">${d.subtotalSinglesEv.toFixed(2)}</td>
+                            <td className="py-2.5 px-4 text-right font-bold text-indigo-300">{evShare}%</td>
+                            <td className="py-2.5 pl-4 text-center">
                               <button
                                 type="button"
                                 onClick={() => handleInspectDeck(d)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-400/20 text-slate-300 hover:text-purple-300 border border-slate-700 hover:border-purple-400/40 text-[11px] font-semibold transition cursor-pointer shadow-xs"
+                                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-purple-300 text-[11px] font-medium transition cursor-pointer group underline-offset-4 hover:underline"
                                 title={`Inspect ${d.name} decklist`}
                               >
-                                <Search className="w-3.5 h-3.5 text-purple-400" />
+                                <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-purple-400 transition-colors" />
                                 <span>Inspect</span>
                               </button>
                             </td>
@@ -2104,22 +2104,22 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       const variableCards = v.configs[0]?.items?.reduce((s, it) => s + (it.count || 1), 0) || 1;
                       return (
                         <tr key={`audit-var-${idx}`} className="hover:bg-slate-800/40">
-                          <td className="py-2.5 text-slate-200 font-medium">
+                          <td className="py-2.5 pr-4 text-slate-200 font-medium">
                             <span className="text-amber-400 mr-1.5">🎲</span>
                             Bonus Slot #{v.slotIndex || idx + 1} ({v.configs.length} configs)
                           </td>
-                          <td className="py-2.5 text-slate-400 text-[11px]">
+                          <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                             Probabilistic Bonus Slot
                           </td>
-                          <td className="py-2.5 text-center font-bold text-indigo-300">×1</td>
-                          <td className="py-2.5 text-right font-semibold text-slate-200">{variableCards}</td>
-                          <td className="py-2.5 text-right font-medium text-slate-300">{variableCards}</td>
-                          <td className="py-2.5 text-right text-slate-300">${v.slotEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-amber-400">${v.slotEv.toFixed(2)}</td>
-                          <td className="py-2.5 text-right font-bold text-indigo-300">
+                          <td className="py-2.5 px-3 text-center font-bold text-indigo-300">×1</td>
+                          <td className="py-2.5 px-4 text-right font-medium text-slate-300">{variableCards}</td>
+                          <td className="py-2.5 px-4 text-right font-semibold text-slate-200">{variableCards}</td>
+                          <td className="py-2.5 px-4 text-right text-slate-300">${v.slotEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-amber-400">${v.slotEv.toFixed(2)}</td>
+                          <td className="py-2.5 px-4 text-right font-bold text-indigo-300">
                             {totalEv > 0 ? ((v.slotEv / totalEv) * 100).toFixed(1) : '0.0'}%
                           </td>
-                          <td className="py-2.5 text-center text-slate-500 text-[11px] font-mono">—</td>
+                          <td className="py-2.5 pl-4 text-center text-slate-500 text-[11px] font-mono">—</td>
                         </tr>
                       );
                     })}
@@ -2127,44 +2127,44 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                     {/* Accessories / Other Items (EV: $0.00) */}
                     {audit.otherItems.map((o, idx) => (
                       <tr key={`audit-other-${idx}`} className="hover:bg-slate-800/40 opacity-75">
-                        <td className="py-2.5 text-slate-300">
+                        <td className="py-2.5 pr-4 text-slate-300">
                           <span className="text-slate-500 mr-1.5">🏷️</span>
                           {o.name}
                         </td>
-                        <td className="py-2.5 text-slate-400 text-[11px]">{o.category} (Physical Item)</td>
-                        <td className="py-2.5 text-center font-bold text-slate-400">×{o.count}</td>
-                        <td className="py-2.5 text-right text-slate-500 font-mono">0</td>
-                        <td className="py-2.5 text-right text-slate-500 font-mono">0</td>
-                        <td className="py-2.5 text-right text-slate-500">$0.00</td>
-                        <td className="py-2.5 text-right text-slate-500 font-mono">$0.00</td>
-                        <td className="py-2.5 text-right text-slate-500 font-mono">0.0%</td>
-                        <td className="py-2.5 text-center text-slate-500 text-[11px] font-mono">—</td>
+                        <td className="py-2.5 px-4 text-slate-400 text-[11px]">{o.category} (Physical Item)</td>
+                        <td className="py-2.5 px-3 text-center font-bold text-slate-400">×{o.count}</td>
+                        <td className="py-2.5 px-4 text-right text-slate-500 font-mono">0</td>
+                        <td className="py-2.5 px-4 text-right text-slate-500 font-mono">0</td>
+                        <td className="py-2.5 px-4 text-right text-slate-500">$0.00</td>
+                        <td className="py-2.5 px-4 text-right text-slate-500 font-mono">$0.00</td>
+                        <td className="py-2.5 px-4 text-right text-slate-500 font-mono">0.0%</td>
+                        <td className="py-2.5 pl-4 text-center text-slate-500 text-[11px] font-mono">—</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="border-t-2 border-slate-700 bg-slate-800/40">
                     <tr className="text-slate-100 font-bold">
-                      <td className="py-3 text-slate-100 uppercase tracking-wider text-[11px] font-bold">
+                      <td className="py-3 pr-4 text-slate-100 uppercase tracking-wider text-[11px] font-bold">
                         Total / Aggregated
                       </td>
-                      <td className="py-3 text-slate-400 text-[11px] font-normal">
+                      <td className="py-3 px-4 text-slate-400 text-[11px] font-normal">
                         {audit.packItems.length + audit.cardItems.length + audit.sealedItems.length + audit.deckItems.length + audit.variableItems.length} components
                       </td>
-                      <td className="py-3 text-center text-indigo-300 font-mono font-bold">
+                      <td className="py-3 px-3 text-center text-indigo-300 font-mono font-bold">
                         ×{totalQty}
                       </td>
-                      <td className="py-3 text-right font-mono font-black text-amber-300 text-sm">
+                      <td className="py-3 px-4 text-right text-slate-500 font-mono font-normal">—</td>
+                      <td className="py-3 px-4 text-right font-mono font-black text-amber-300 text-sm">
                         {calculatedTotalCards} cards
                       </td>
-                      <td className="py-3 text-right text-slate-500 font-mono font-normal">—</td>
-                      <td className="py-3 text-right text-slate-500 font-mono font-normal">—</td>
-                      <td className="py-3 text-right font-mono font-black text-amber-400 text-sm">
+                      <td className="py-3 px-4 text-right text-slate-500 font-mono font-normal">—</td>
+                      <td className="py-3 px-4 text-right font-mono font-black text-amber-400 text-sm">
                         ${displayedTotalEv.toFixed(2)}
                       </td>
-                      <td className="py-3 text-right font-mono font-bold text-indigo-300">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-indigo-300">
                         100.0%
                       </td>
-                      <td className="py-3 text-center text-slate-500 font-mono font-normal">—</td>
+                      <td className="py-3 pl-4 text-center text-slate-500 font-mono font-normal">—</td>
                     </tr>
                   </tfoot>
                 </table>
