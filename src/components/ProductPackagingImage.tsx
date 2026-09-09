@@ -241,65 +241,77 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   const activeSrc = candidateUrls[candidateIndex];
 
-  // Discover and probe other booster front art variations (e.g. Pack Art 01, 02, 03)
+  // Discover and probe other booster/box art variations (e.g. Pack Art or Box Angles 01_01, 01_02, 02_01)
   useEffect(() => {
     if (!hasImageLoaded || !activeSrc) return;
 
     let isMounted = true;
     const isPack = packagingType === 'pack' || cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack');
+    const isBox = packagingType === 'box' || cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box') || cleanName.includes('display');
 
     if (isPack) {
-      // For booster packs, probe distinct front art variations (01, 02, 03, 04, 05)
-      // Each slot number (1..5) gets at most ONE canonical image URL.
-      const slotMap: Record<number, string> = {};
-
-      // If activeSrc already has an art index like _01, _02, record it for that slot
-      const activeMatch = activeSrc.match(/_0?([1-5])\.(png|webp|jpg)$/i);
-      if (activeMatch) {
-        slotMap[parseInt(activeMatch[1], 10)] = activeSrc;
-      } else {
-        slotMap[1] = activeSrc;
-      }
-
+      const slotMap: Record<string, string> = { '1_1': activeSrc };
       const updateVariations = () => {
         if (!isMounted) return;
-        const sortedSlots = Object.keys(slotMap)
-          .map(Number)
-          .sort((a, b) => a - b);
-        const uniqueUrls = sortedSlots.map((slot) => slotMap[slot]);
+        const uniqueUrls = Object.values(slotMap);
         setFoundVariations(uniqueUrls.length > 0 ? uniqueUrls : [activeSrc]);
       };
-
       updateVariations();
 
-      // Probe slots 1 to 5
-      for (let i = 1; i <= 5; i++) {
-        const padNum = i.toString().padStart(2, '0');
-        const candidatePaths = isCollector
-          ? [
-              `/products/${cleanCode}-collector_pack_${padNum}.png`,
-              `/products/${cleanCode}-collector_${padNum}.png`,
-              `/products/${cleanCode}-mtg${cleanCode}_en_clctr_bstr_${padNum}.png`,
-            ]
-          : [
-              `/products/${cleanCode}-pack_${padNum}.png`,
-              `/products/${cleanCode}-play_pack_${padNum}.png`,
-              `/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_${padNum}.png`,
-            ];
-
-        // Probe candidates for this slot
-        candidatePaths.forEach((pathUrl) => {
-          const img = new Image();
-          img.src = pathUrl;
-          img.onload = () => {
-            if (!isMounted) return;
-            // Only assign if slot is not yet filled or if filled with raw alias
-            if (!slotMap[i] || slotMap[i] === activeSrc) {
-              slotMap[i] = pathUrl;
+      for (let i = 1; i <= 3; i++) {
+        for (let j = 1; j <= 3; j++) {
+          const candidatePaths = isCollector
+            ? [
+                `/products/${cleanCode}/MTG${cleanCode.toUpperCase()}_EN_Clctr_Bstr_0${i}_0${j}.png`,
+                `/products/${cleanCode}-mtg${cleanCode}_en_clctr_bstr_0${i}_0${j}.png`,
+                `/products/${cleanCode}-collector_pack_0${i}.png`,
+              ]
+            : [
+                `/products/${cleanCode}/MTG${cleanCode.toUpperCase()}_EN_Play_Bstr_0${i}_0${j}.png`,
+                `/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_0${i}_0${j}.png`,
+                `/products/${cleanCode}-play_pack_0${i}.png`,
+              ];
+          candidatePaths.forEach((pathUrl) => {
+            const img = new Image();
+            img.src = pathUrl;
+            img.onload = () => {
+              if (!isMounted) return;
+              slotMap[`${i}_${j}`] = pathUrl;
               updateVariations();
-            }
-          };
-        });
+            };
+          });
+        }
+      }
+    } else if (isBox) {
+      const slotMap: Record<string, string> = { '1_1': activeSrc };
+      const updateVariations = () => {
+        if (!isMounted) return;
+        const uniqueUrls = Object.values(slotMap);
+        setFoundVariations(uniqueUrls.length > 0 ? uniqueUrls : [activeSrc]);
+      };
+      updateVariations();
+
+      for (let pIdx = 1; pIdx <= 3; pIdx++) {
+        for (let vIdx = 1; vIdx <= 3; vIdx++) {
+          const candidatePaths = isCollector
+            ? [
+                `/products/${cleanCode}/MTG${cleanCode.toUpperCase()}_EN_DspBx_Clctr_0${pIdx}_0${vIdx}.png`,
+                `/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_0${pIdx}_0${vIdx}.png`,
+              ]
+            : [
+                `/products/${cleanCode}/MTG${cleanCode.toUpperCase()}_EN_Play_DspBx_0${pIdx}_0${vIdx}.png`,
+                `/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_0${pIdx}_0${vIdx}.png`,
+              ];
+          candidatePaths.forEach((pathUrl) => {
+            const img = new Image();
+            img.src = pathUrl;
+            img.onload = () => {
+              if (!isMounted) return;
+              slotMap[`${pIdx}_${vIdx}`] = pathUrl;
+              updateVariations();
+            };
+          });
+        }
       }
     } else if (isScene || cleanName.includes('scene')) {
       // Scene boxes have multiple distinct scene kits (01, 02, etc.)
@@ -329,7 +341,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         });
       }
     } else {
-      // For display boxes, bundles, prerelease packs, draft night: single front render, no duplicate angle cycling
       setFoundVariations([activeSrc]);
     }
 
@@ -624,15 +635,11 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
       <>
         <div
           onClick={(e) => {
-            if (allowZoom) {
-              setIsZoomed(true);
-            } else if (hasMultipleVariations) {
-              handleNextVariation(e);
-            }
+            e.stopPropagation();
+            setIsZoomed(true);
           }}
-          className={`relative rounded-xl overflow-hidden shadow-md bg-slate-950 border border-slate-800 flex items-center justify-center select-none group ${
-            allowZoom || hasMultipleVariations ? 'cursor-pointer hover:border-amber-500/50 transition' : ''
-          } ${sizeClasses[size]} ${className}`}
+          title="Click to inspect picture and browse art variations"
+          className={`relative rounded-xl overflow-hidden shadow-md bg-slate-950 border border-slate-800 flex items-center justify-center select-none group cursor-pointer hover:border-amber-500/50 transition ${sizeClasses[size]} ${className}`}
         >
           <img
             key={currentDisplaySrc}
