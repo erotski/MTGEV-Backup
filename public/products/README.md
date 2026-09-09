@@ -26,4 +26,17 @@ Supported Formats: `.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`
 3. Download the **"Digital Marketing Assets (DMA)"** or **"Product Shots"** zip file.
 4. Extract the transparent 3D box/pack PNGs into this `/public/products/` folder and name them according to the convention above.
 
+### Automated Ingestion & Optimization Tools:
+
+You can automate the extraction and downscaling (from 5MB+ print renders down to ~60KB web assets):
+
+1. **Native Node.js Tool**:
+   - Drop your downloaded WPN `.zip` file into `/incoming_zips/`
+   - Run: `npm run ingest-wpn` (or `node scripts/ingest-wpn.js hob`)
+   - It automatically filters for **Angle 01** renders and resizes them.
+
+2. **Standalone Python Tool**:
+   - Run: `python scripts/process_wpn_assets.py incoming_zips/HOB.zip --set hob`
+   - (Requires `pip install Pillow`)
+
 If no local image is found, the app automatically falls back to the stylized 3D card with official Scryfall vector set emblems.
