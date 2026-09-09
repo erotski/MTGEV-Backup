@@ -1,6 +1,22 @@
 import fs from 'fs';
 import path from 'path';
-import AdmZip from 'adm-zip';
+import { execSync } from 'child_process';
+
+// Dynamically load adm-zip with auto-install fallback
+let AdmZip = null;
+try {
+  const admZipModule = await import('adm-zip');
+  AdmZip = admZipModule.default || admZipModule;
+} catch (e) {
+  console.log('\x1b[33m📦 Installing required packaging helpers (adm-zip, sharp)...\x1b[0m');
+  try {
+    execSync('npm install adm-zip sharp --no-audit --no-fund', { stdio: 'inherit' });
+    const admZipModule = await import('adm-zip');
+    AdmZip = admZipModule.default || admZipModule;
+  } catch (installErr) {
+    console.error('\x1b[31m❌ Could not load or install adm-zip. Please run: npm install\x1b[0m');
+  }
+}
 
 // Dynamically load sharp if available (for image resizing & optimization)
 let sharp = null;
@@ -380,6 +396,15 @@ export async function runIngestion(forcedSetCode) {
   for (const zipFile of zipFiles) {
     const fullPath = path.join(INCOMING_DIR, zipFile);
     await processZipFile(fullPath, forcedSetCode);
+
+    if (shouldClean) {
+      try {
+        fs.unlinkSync(fullPath);
+        console.log(`   🗑️  Cleaned up original archive: ${zipFile}`);
+      } catch (err) {
+        console.warn(`   ⚠️ Could not delete ${zipFile}:`, err.message);
+      }
+    }
   }
 
   console.log(`\n🎉 Optimization & Ingestion complete! Check \x1b[32m/public/products/\x1b[0m for your images.\n`);
@@ -387,6 +412,7 @@ export async function runIngestion(forcedSetCode) {
 
 // CLI Execution
 const args = process.argv.slice(2);
-const explicitSetCode = args[0]; // e.g. "node scripts/ingest-wpn.js hob"
+const shouldClean = args.includes('--clean') || args.includes('-c') || args.includes('--delete');
+const explicitSetCode = args.find((a) => !a.startsWith('-')); // e.g. "node scripts/ingest-wpn.js hob --clean"
 
 runIngestion(explicitSetCode);

@@ -313,6 +313,7 @@ def main():
     parser.add_argument("source", nargs="?", help="Path to ZIP archive or extracted folder")
     parser.add_argument("--set", "-s", dest="set_code", help="Explicit MTG set code (e.g. 'hob', 'mh3')")
     parser.add_argument("--out", "-o", dest="out_dir", default=str(DEFAULT_OUTPUT_DIR), help="Output destination folder")
+    parser.add_argument("--clean", "-c", dest="clean", action="store_true", help="Delete source zip archive after successful optimization")
 
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
@@ -322,15 +323,21 @@ def main():
         zips = list(incoming_dir.glob("*.zip"))
         if not zips:
             print(f"ℹ️  No source specified and no .zip files in {incoming_dir}")
-            print("\nUsage:\n  python scripts/process_wpn_assets.py /path/to/my_set.zip --set hob")
+            print("\nUsage:\n  python scripts/process_wpn_assets.py /path/to/my_set.zip --set hob --clean")
             return
         for z in zips:
             process_zip(z, out_dir, args.set_code)
+            if args.clean:
+                z.unlink(missing_ok=True)
+                print(f"   🗑️  Cleaned up: {z.name}")
         return
 
     src_path = Path(args.source)
     if src_path.is_file() and src_path.suffix.lower() == ".zip":
         process_zip(src_path, out_dir, args.set_code)
+        if args.clean:
+            src_path.unlink(missing_ok=True)
+            print(f"   🗑️  Cleaned up: {src_path.name}")
     elif src_path.is_dir():
         process_folder(src_path, out_dir, args.set_code)
     else:

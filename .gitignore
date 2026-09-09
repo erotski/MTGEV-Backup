@@ -9,3 +9,6 @@ coverage/
 __pycache__/
 *.pyc
 *.db
+incoming_zips/*.zip
+*.zip
+
