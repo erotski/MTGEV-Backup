@@ -205,7 +205,7 @@ def is_image_file(path_str: str) -> bool:
     return not any(k in p for k in ignore_keywords)
 
 
-def resize_and_save(img_bytes: bytes, out_png_path: Path) -> tuple[int, int]:
+def resize_and_save(img_bytes: bytes, out_png_path: Path, write_webp: bool = False) -> tuple[int, int]:
     """Resizes and compresses transparent image to max 800px."""
     orig_size = len(img_bytes)
 
@@ -227,9 +227,10 @@ def resize_and_save(img_bytes: bytes, out_png_path: Path) -> tuple[int, int]:
         quantized = img.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
         quantized.save(out_png_path, format="PNG", optimize=True)
 
-        # Also save WebP version for maximum speed
-        webp_path = out_png_path.with_suffix(".webp")
-        img.save(webp_path, format="WEBP", quality=85, method=6)
+        # Also save WebP version only if explicitly requested
+        if write_webp:
+            webp_path = out_png_path.with_suffix(".webp")
+            img.save(webp_path, format="WEBP", quality=85, method=6)
 
     opt_size = os.path.getsize(out_png_path)
     return orig_size, opt_size
@@ -243,7 +244,7 @@ def format_bytes(num_bytes: int) -> str:
     return f"{num_bytes / (1024 * 1024):.2f} MB"
 
 
-def process_zip(zip_path: Path, output_dir: Path, explicit_set: str = None):
+def process_zip(zip_path: Path, output_dir: Path, explicit_set: str = None, write_webp: bool = False):
     print(f"\n📦 Inspecting archive: \033[36m{zip_path.name}\033[0m")
     set_code = detect_set_code(zip_path.name, explicit_set)
     set_name = KNOWN_SETS.get(set_code, set_code.upper())
@@ -262,46 +263,70 @@ def process_zip(zip_path: Path, output_dir: Path, explicit_set: str = None):
             is_01 = is_angle_01(info.filename)
             is_other = is_other_angle(info.filename)
 
-            score = 100 if is_01 else (10 if is_other else 50)
+            # Match variation / angle number
+            num_match = re.search(r"(\d{1,2})", os.path.basename(info.filename))
+            var_num = num_match.group(1).zfill(2) if num_match else ("01" if is_01 else None)
 
-            if group_key not in product_groups or score > product_groups[group_key]["score"]:
+            score = 100 if is_01 else (20 if is_other else 50)
+
+            if group_key not in product_groups:
                 product_groups[group_key] = {
-                    "filename": info.filename,
-                    "score": score,
-                    "is_01": is_01,
-                    "bytes": z.read(info.filename),
+                    "primary_filename": info.filename,
+                    "primary_is_01": is_01,
+                    "best_score": score,
+                    "variations": [],
                 }
+
+            product_groups[group_key]["variations"].append({
+                "filename": info.filename,
+                "var_num": var_num,
+                "bytes": z.read(info.filename),
+            })
+
+            if score > product_groups[group_key]["best_score"]:
+                product_groups[group_key]["primary_filename"] = info.filename
+                product_groups[group_key]["primary_is_01"] = is_01
+                product_groups[group_key]["best_score"] = score
 
         if not product_groups:
             print("⚠️  No product packaging renders found in this archive.")
             return
 
-        print(f"✨ Found \033[32m{len(product_groups)}\033[0m distinct product(s) in kit (preferring angle 01):")
+        print(f"✨ Found \033[32m{len(product_groups)}\033[0m distinct product(s) in kit:")
 
         for group_key, item in product_groups.items():
-            target_filenames = determine_target_filenames(set_code, item["filename"])
+            target_filenames = determine_target_filenames(set_code, item["primary_filename"])
             if not target_filenames:
                 continue
 
             primary_target = target_filenames[0]
             dest_path = output_dir / primary_target
 
-            orig_size, opt_size = resize_and_save(item["bytes"], dest_path)
+            # Find bytes for primary
+            primary_bytes = next(v["bytes"] for v in item["variations"] if v["filename"] == item["primary_filename"])
+            orig_size, opt_size = resize_and_save(primary_bytes, dest_path, write_webp)
             ratio = ((orig_size - opt_size) / orig_size) * 100
-            angle_tag = "\033[35m[01]\033[0m " if item["is_01"] else "    "
-            alias_tag = f" \033[90m(+{len(target_filenames) - 1} aliases)\033[0m" if len(target_filenames) > 1 else ""
 
             # Copy to aliases
             for alias in target_filenames[1:]:
                 alias_path = output_dir / alias
                 shutil.copy2(dest_path, alias_path)
-                webp_src = dest_path.with_suffix(".webp")
-                webp_dest = alias_path.with_suffix(".webp")
-                if webp_src.exists():
-                    shutil.copy2(webp_src, webp_dest)
+
+            # Extract distinct variation angles
+            distinct_vars = [v for v in item["variations"] if v["var_num"]]
+            if len(distinct_vars) > 1:
+                for v in distinct_vars:
+                    var_target = re.sub(r"\.png$", f"_{v['var_num']}.png", primary_target, flags=re.IGNORECASE)
+                    var_dest = output_dir / var_target
+                    if not var_dest.exists():
+                        resize_and_save(v["bytes"], var_dest, write_webp)
+
+            angle_tag = "\033[35m[01]\033[0m " if item["primary_is_01"] else "    "
+            alias_tag = f" \033[90m(+{len(target_filenames) - 1} aliases)\033[0m" if len(target_filenames) > 1 else ""
+            var_tag = f" \033[36m({len(distinct_vars)} angles)\033[0m" if len(distinct_vars) > 1 else ""
 
             print(
-                f"   ✅ {angle_tag}\033[32m{primary_target}\033[0m{alias_tag} "
+                f"   ✅ {angle_tag}\033[32m{primary_target}\033[0m{alias_tag}{var_tag} "
                 f"({format_bytes(orig_size)} ➔ \033[32m{format_bytes(opt_size)}\033[0m, -{ratio:.1f}%)"
             )
 
@@ -377,6 +402,7 @@ def main():
     parser.add_argument("--set", "-s", dest="set_code", help="Explicit MTG set code (e.g. 'hob', 'mh3')")
     parser.add_argument("--out", "-o", dest="out_dir", default=str(DEFAULT_OUTPUT_DIR), help="Output destination folder")
     parser.add_argument("--clean", "-c", dest="clean", action="store_true", help="Delete source zip archive after successful optimization")
+    parser.add_argument("--webp", "-w", dest="webp", action="store_true", help="Also generate WebP copies alongside PNG")
 
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
@@ -389,7 +415,7 @@ def main():
             print("\nUsage:\n  python scripts/process_wpn_assets.py /path/to/my_set.zip --set hob --clean")
             return
         for z in zips:
-            process_zip(z, out_dir, args.set_code)
+            process_zip(z, out_dir, args.set_code, write_webp=args.webp)
             if args.clean:
                 z.unlink(missing_ok=True)
                 print(f"   🗑️  Cleaned up: {z.name}")
@@ -397,7 +423,7 @@ def main():
 
     src_path = Path(args.source)
     if src_path.is_file() and src_path.suffix.lower() == ".zip":
-        process_zip(src_path, out_dir, args.set_code)
+        process_zip(src_path, out_dir, args.set_code, write_webp=args.webp)
         if args.clean:
             src_path.unlink(missing_ok=True)
             print(f"   🗑️  Cleaned up: {src_path.name}")

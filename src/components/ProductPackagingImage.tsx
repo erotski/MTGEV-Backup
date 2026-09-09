@@ -4,7 +4,7 @@ import { SetSymbolIcon } from './SetSymbolIcon';
 import { BoosterFoilPackMockup, cleanPureSetName } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
 import { BoosterDisplayBoxMockup } from './BoosterDisplayBoxMockup';
-import { Package, Box as BoxIcon, Archive, Gift, Layers3, Sparkles, Image as ImageIcon, ZoomIn, X, Crown } from 'lucide-react';
+import { Package, Box as BoxIcon, Archive, Gift, Layers3, Sparkles, Image as ImageIcon, ZoomIn, X, Crown, ChevronLeft, ChevronRight, Layers, RotateCw } from 'lucide-react';
 
 interface ProductPackagingImageProps {
   setCode: string;
@@ -35,6 +35,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const [hasImageLoaded, setHasImageLoaded] = useState<boolean>(false);
   const [allCandidatesFailed, setAllCandidatesFailed] = useState<boolean>(false);
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
+  const [activeVariationIdx, setActiveVariationIdx] = useState<number>(0);
+  const [foundVariations, setFoundVariations] = useState<string[]>([]);
 
   const cleanCode = (setCode || '').toLowerCase().trim();
   const cleanType = (packagingType || 'pack').toLowerCase().trim();
@@ -141,6 +143,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     setCandidateIndex(0);
     setHasImageLoaded(false);
     setAllCandidatesFailed(candidateUrls.length === 0);
+    setFoundVariations([]);
+    setActiveVariationIdx(0);
   }, [candidateUrls]);
 
   const handleImageError = () => {
@@ -153,6 +157,90 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   const handleImageSuccess = () => {
     setHasImageLoaded(true);
+  };
+
+  const activeSrc = candidateUrls[candidateIndex];
+
+  // Discover and probe other angle & art variations for this product
+  useEffect(() => {
+    if (!hasImageLoaded || !activeSrc) return;
+
+    let isMounted = true;
+    setFoundVariations([activeSrc]);
+
+    const basePathWithoutExt = activeSrc.replace(/\.(png|webp|jpg|jpeg)$/i, '');
+    const variationCandidates: string[] = [];
+
+    // Check _01 through _06 variations
+    for (let i = 1; i <= 6; i++) {
+      const padNum = i.toString().padStart(2, '0');
+      const varPath = `${basePathWithoutExt}_${padNum}.png`;
+      if (varPath !== activeSrc) {
+        variationCandidates.push(varPath);
+      }
+    }
+
+    // Check play_pack variations if it's a pack
+    if (cleanType === 'pack' && !basePathWithoutExt.includes('play_pack')) {
+      for (let i = 1; i <= 5; i++) {
+        const padNum = i.toString().padStart(2, '0');
+        const varPath = `/products/${cleanCode}-play_pack_${padNum}.png`;
+        if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
+          variationCandidates.push(varPath);
+        }
+      }
+    }
+
+    // Probe candidates gently in the background
+    variationCandidates.forEach((candidateUrl) => {
+      const img = new Image();
+      img.src = candidateUrl;
+      img.onload = () => {
+        if (!isMounted) return;
+        setFoundVariations((prev) => {
+          if (prev.includes(candidateUrl)) return prev;
+          return [...prev, candidateUrl];
+        });
+      };
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasImageLoaded, activeSrc, cleanType, cleanCode]);
+
+  // Keyboard navigation for zoomed gallery
+  useEffect(() => {
+    if (!isZoomed) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsZoomed(false);
+      } else if (e.key === 'ArrowRight' && foundVariations.length > 1) {
+        setActiveVariationIdx((prev) => (prev + 1) % foundVariations.length);
+      } else if (e.key === 'ArrowLeft' && foundVariations.length > 1) {
+        setActiveVariationIdx((prev) => (prev - 1 + foundVariations.length) % foundVariations.length);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomed, foundVariations.length]);
+
+  const currentDisplaySrc = foundVariations[activeVariationIdx] || activeSrc;
+
+  const handleNextVariation = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (foundVariations.length > 1) {
+      setActiveVariationIdx((prev) => (prev + 1) % foundVariations.length);
+    }
+  };
+
+  const handlePrevVariation = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (foundVariations.length > 1) {
+      setActiveVariationIdx((prev) => (prev - 1 + foundVariations.length) % foundVariations.length);
+    }
   };
 
   // Dynamic packaging styles and themes for procedural fallback
@@ -393,20 +481,27 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     hero: 'w-48 h-64 text-sm',
   };
 
-  const activeSrc = candidateUrls[candidateIndex];
+  const hasMultipleVariations = foundVariations.length > 1;
 
   // 1. If a local or remote product photo is available and hasn't failed all candidates
   if (!allCandidatesFailed && activeSrc) {
     return (
       <>
         <div
-          onClick={() => allowZoom && setIsZoomed(true)}
-          className={`relative rounded-xl overflow-hidden shadow-md bg-slate-950 border border-slate-800 flex items-center justify-center group ${
-            allowZoom ? 'cursor-pointer hover:border-amber-500/50 transition' : ''
+          onClick={(e) => {
+            if (allowZoom) {
+              setIsZoomed(true);
+            } else if (hasMultipleVariations) {
+              handleNextVariation(e);
+            }
+          }}
+          className={`relative rounded-xl overflow-hidden shadow-md bg-slate-950 border border-slate-800 flex items-center justify-center select-none group ${
+            allowZoom || hasMultipleVariations ? 'cursor-pointer hover:border-amber-500/50 transition' : ''
           } ${sizeClasses[size]} ${className}`}
         >
           <img
-            src={activeSrc}
+            key={currentDisplaySrc}
+            src={currentDisplaySrc}
             alt={displayName}
             onLoad={handleImageSuccess}
             onError={handleImageError}
@@ -426,32 +521,64 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           )}
 
           {/* Set Symbol Stamp Badge */}
-          <div className="absolute bottom-1 right-1 bg-slate-950/80 backdrop-blur-sm p-1 rounded border border-slate-700 shadow-sm flex items-center gap-1">
+          <div className="absolute bottom-1 right-1 bg-slate-950/80 backdrop-blur-sm p-1 rounded border border-slate-700 shadow-sm flex items-center gap-1 z-10 pointer-events-none">
             <SetSymbolIcon setCode={setCode} size="xs" />
           </div>
 
+          {/* Multiple Variation Indicator Badge (e.g. 1/4) */}
+          {hasMultipleVariations && hasImageLoaded && (
+            <div className="absolute top-1 left-1 bg-slate-950/85 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-semibold font-mono text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-0.5 z-10 pointer-events-none">
+              <Layers className="w-2.5 h-2.5" />
+              <span>
+                {activeVariationIdx + 1}/{foundVariations.length}
+              </span>
+            </div>
+          )}
+
+          {/* Quick Hover Navigation Chevrons when multiple variations exist */}
+          {hasMultipleVariations && hasImageLoaded && size !== 'xs' && (
+            <>
+              <button
+                onClick={handlePrevVariation}
+                title="Previous art variation"
+                className="absolute left-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-lg z-20"
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </button>
+              <button
+                onClick={handleNextVariation}
+                title="Next art variation"
+                className="absolute right-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-lg z-20"
+              >
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </>
+          )}
+
+          {/* Zoom Overlay (if allowZoom enabled) */}
           {allowZoom && hasImageLoaded && (
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white pointer-events-none">
               <ZoomIn className="w-5 h-5 drop-shadow" />
             </div>
           )}
         </div>
 
-        {/* Modal Lightbox for Packaging Close-Up Inspection */}
+        {/* Modal Lightbox for Packaging Close-Up Inspection & Multi-Variation Gallery */}
         {isZoomed && (
           <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
             onClick={() => setIsZoomed(false)}
           >
             <div
-              className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 text-white shadow-2xl relative space-y-4"
+              className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-5 text-white shadow-2xl relative space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <SetSymbolIcon setCode={setCode} size="sm" />
                   <div>
-                    <h3 className="text-base font-bold text-slate-100">{displayName}</h3>
+                    <h3 className="text-base font-bold text-slate-100 leading-tight">{displayName}</h3>
                     <p className="text-xs text-slate-400 font-mono">
                       {setName} ({setCode.toUpperCase()}) • {theme.label}
                     </p>
@@ -459,23 +586,88 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 </div>
                 <button
                   onClick={() => setIsZoomed(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="w-full h-80 bg-slate-950 rounded-xl p-4 flex items-center justify-center border border-slate-800">
+              {/* Main Visual Display Stage with Previous/Next Arrows */}
+              <div className="relative w-full h-80 bg-slate-950 rounded-xl p-4 flex items-center justify-center border border-slate-800 overflow-hidden group">
                 <img
-                  src={activeSrc}
+                  key={currentDisplaySrc}
+                  src={currentDisplaySrc}
                   alt={displayName}
-                  className="max-h-full max-w-full object-contain drop-shadow-2xl"
+                  className="max-h-full max-w-full object-contain drop-shadow-2xl transition-transform duration-200"
                 />
+
+                {/* Left & Right navigation buttons */}
+                {hasMultipleVariations && (
+                  <>
+                    <button
+                      onClick={handlePrevVariation}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl"
+                      title="Previous variation (Left arrow key)"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleNextVariation}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl"
+                      title="Next variation (Right arrow key)"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Variation Counter Tag */}
+                {hasMultipleVariations && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-amber-300 border border-amber-500/40 shadow-lg flex items-center gap-1.5">
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Variation {activeVariationIdx + 1} of {foundVariations.length}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
-                <span className="font-mono text-amber-400">File: {activeSrc}</span>
-                <span className="font-semibold text-slate-300">WPN Marketing Asset</span>
+              {/* Variation Thumbnails Strip */}
+              {hasMultipleVariations && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Pack Art & Angle Variations ({foundVariations.length})
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {foundVariations.map((varUrl, idx) => {
+                      const isCurrent = idx === activeVariationIdx;
+                      return (
+                        <button
+                          key={varUrl}
+                          onClick={() => setActiveVariationIdx(idx)}
+                          className={`relative w-14 h-16 rounded-lg p-1 bg-slate-950 border transition-all flex items-center justify-center shrink-0 ${
+                            isCurrent
+                              ? 'border-amber-400 ring-2 ring-amber-400/30 scale-105 shadow-md'
+                              : 'border-slate-800 hover:border-slate-600 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img
+                            src={varUrl}
+                            alt={`Variation ${idx + 1}`}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                          <span className="absolute bottom-0.5 right-1 text-[8px] font-mono font-bold text-amber-300">
+                            #{idx + 1}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer File Info */}
+              <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                <span className="font-mono text-amber-400 truncate max-w-xs">{currentDisplaySrc}</span>
+                <span className="font-semibold text-slate-300 shrink-0">WPN Marketing Asset</span>
               </div>
             </div>
           </div>

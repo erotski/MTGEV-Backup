@@ -253,7 +253,7 @@ function checkIsOtherAngle(filename) {
   );
 }
 
-async function optimizeAndSaveImage(inputBuffer, destinationPath) {
+async function optimizeAndSaveImage(inputBuffer, destinationPath, writeWebp = false) {
   const originalSize = inputBuffer.length;
 
   if (sharp) {
@@ -280,10 +280,12 @@ async function optimizeAndSaveImage(inputBuffer, destinationPath) {
 
     fs.writeFileSync(destinationPath, outputPng);
 
-    // Also write modern WebP counterpart for ultra-fast browser loading
-    const webpDestination = destinationPath.replace(/\.png$/i, '.webp');
-    const outputWebp = await resized.webp({ quality: 85, effort: 6 }).toBuffer();
-    fs.writeFileSync(webpDestination, outputWebp);
+    // Modern WebP counterpart only if explicitly requested (--webp)
+    if (writeWebp) {
+      const webpDestination = destinationPath.replace(/\.png$/i, '.webp');
+      const outputWebp = await resized.webp({ quality: 85, effort: 6 }).toBuffer();
+      fs.writeFileSync(webpDestination, outputWebp);
+    }
 
     return {
       originalSize,
@@ -311,7 +313,7 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export async function processZipFile(zipFilePath, explicitSetCode) {
+export async function processZipFile(zipFilePath, explicitSetCode, writeWebp = false) {
   const filename = path.basename(zipFilePath);
   console.log(`\n📦 Processing archive: \x1b[36m${filename}\x1b[0m`);
 
@@ -330,7 +332,7 @@ export async function processZipFile(zipFilePath, explicitSetCode) {
 
   console.log(`🏷️  Detected Set: \x1b[32m${setName} (${setCode.toUpperCase()})\x1b[0m`);
 
-  // Group candidates by distinct product base name, prioritizing angle 01
+  // Group all candidate files by distinct product base name, collecting all angles/variations
   const productGroups = {};
 
   for (const entry of entries) {
@@ -341,17 +343,35 @@ export async function processZipFile(zipFilePath, explicitSetCode) {
     const isAngle01 = checkIsAngle01(entry.entryName);
     const isOther = checkIsOtherAngle(entry.entryName);
 
+    // Extract angle/variation number if present (e.g. 01, 02, 03, 04)
+    const angleMatch = path.basename(entry.entryName).match(/(\d{1,2})/);
+    const variationNum = angleMatch ? angleMatch[1].padStart(2, '0') : (isAngle01 ? '01' : null);
+
     let score = 50;
     if (isAngle01) score = 100;
-    else if (isOther) score = 10;
+    else if (isOther) score = 20;
 
-    if (!productGroups[groupKey] || score > productGroups[groupKey].score) {
+    if (!productGroups[groupKey]) {
       productGroups[groupKey] = {
-        entry,
-        isAngle01,
-        score,
+        primaryEntry: entry,
+        primaryIsAngle01: isAngle01,
+        bestScore: score,
         groupKey,
+        variations: [],
       };
+    }
+
+    productGroups[groupKey].variations.push({
+      entry,
+      variationNum,
+      isAngle01,
+      score,
+    });
+
+    if (score > productGroups[groupKey].bestScore) {
+      productGroups[groupKey].primaryEntry = entry;
+      productGroups[groupKey].primaryIsAngle01 = isAngle01;
+      productGroups[groupKey].bestScore = score;
     }
   }
 
@@ -362,47 +382,60 @@ export async function processZipFile(zipFilePath, explicitSetCode) {
     return;
   }
 
-  console.log(`✨ Found \x1b[32m${groupKeys.length}\x1b[0m distinct product(s) in kit (preferring angle 01):`);
+  console.log(`✨ Found \x1b[32m${groupKeys.length}\x1b[0m distinct product(s) in kit:`);
 
   let processedCount = 0;
 
   for (const groupKey of groupKeys) {
-    const item = productGroups[groupKey];
-    const targetFilenames = determineTargetFilenames(setCode, item.entry.entryName);
+    const group = productGroups[groupKey];
+    const targetFilenames = determineTargetFilenames(setCode, group.primaryEntry.entryName);
 
     if (targetFilenames.length === 0) continue;
 
     try {
-      const rawBuffer = item.entry.getData();
+      // 1. Process and save the primary render (preferring Angle 01)
+      const primaryRawBuffer = group.primaryEntry.getData();
       const primaryTarget = targetFilenames[0];
       const destinationPath = path.join(TARGET_PRODUCTS_DIR, primaryTarget);
 
-      const stats = await optimizeAndSaveImage(rawBuffer, destinationPath);
+      const stats = await optimizeAndSaveImage(primaryRawBuffer, destinationPath, writeWebp);
       processedCount++;
 
-      // Copy to alias target filenames if any
+      // Copy primary to aliases if any
       for (let i = 1; i < targetFilenames.length; i++) {
         const aliasFilename = targetFilenames[i];
         const aliasPath = path.join(TARGET_PRODUCTS_DIR, aliasFilename);
         fs.copyFileSync(destinationPath, aliasPath);
-        const webpSrc = destinationPath.replace(/\.png$/i, '.webp');
-        const webpDest = aliasPath.replace(/\.png$/i, '.webp');
-        if (fs.existsSync(webpSrc)) {
-          fs.copyFileSync(webpSrc, webpDest);
+      }
+
+      // 2. Also process distinct variation angles (01, 02, 03, 04...) if multiple exist
+      const distinctVariations = group.variations
+        .filter((v) => v.variationNum)
+        .sort((a, b) => (a.variationNum || '').localeCompare(b.variationNum || ''));
+
+      if (distinctVariations.length > 1) {
+        for (const v of distinctVariations) {
+          const varTarget = primaryTarget.replace(/\.png$/i, `_${v.variationNum}.png`);
+          const varDestPath = path.join(TARGET_PRODUCTS_DIR, varTarget);
+          if (!fs.existsSync(varDestPath)) {
+            const varBuffer = v.entry.getData();
+            await optimizeAndSaveImage(varBuffer, varDestPath, writeWebp);
+          }
         }
       }
 
-      const angleTag = item.isAngle01 ? '\x1b[35m[01]\x1b[0m ' : '    ';
+      const angleTag = group.primaryIsAngle01 ? '\x1b[35m[01]\x1b[0m ' : '    ';
       const aliasTag = targetFilenames.length > 1 ? ` \x1b[90m(+${targetFilenames.length - 1} aliases)\x1b[0m` : '';
+      const varTag = distinctVariations.length > 1 ? ` \x1b[36m(${distinctVariations.length} angles)\x1b[0m` : '';
 
       if (stats.hasSharp) {
         const ratio = (((stats.originalSize - stats.optimizedSize) / stats.originalSize) * 100).toFixed(1);
         console.log(
-          `   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag} ` +
+          `   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag}${varTag} ` +
           `(${formatBytes(stats.originalSize)} ➔ \x1b[32m${formatBytes(stats.optimizedSize)}\x1b[0m, -${ratio}%)`
         );
       } else {
-        console.log(`   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag} (${formatBytes(stats.originalSize)})`);
+        console.log(`   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag}${varTag} (${formatBytes(stats.originalSize)})`);
       }
     } catch (err) {
       console.error(`   ❌ Failed to process ${groupKey}:`, err.message);
@@ -417,8 +450,8 @@ export async function runIngestion(forcedSetCode) {
 
   console.log(`\n========================================================`);
   console.log(`🧙 WPN Marketing Assets Optimizer & Ingestor`);
-  console.log(`   • Filters for Angle 01 Renders`);
-  console.log(`   • Scales down 4000px / 5MB originals to ~60KB web assets`);
+  console.log(`   • Saves clean optimized PNGs (~60KB)`);
+  console.log(`   • Captures Angle 01 + all angle variations for interactive 3D scrolling`);
   console.log(`========================================================`);
   console.log(`📁 Ingestion Folder: ${INCOMING_DIR}`);
   console.log(`🖼️  Destination:    ${TARGET_PRODUCTS_DIR}\n`);
@@ -438,7 +471,7 @@ export async function runIngestion(forcedSetCode) {
   console.log(`🔍 Found ${zipFiles.length} archive(s) ready for optimization...`);
   for (const zipFile of zipFiles) {
     const fullPath = path.join(INCOMING_DIR, zipFile);
-    await processZipFile(fullPath, forcedSetCode);
+    await processZipFile(fullPath, forcedSetCode, shouldWriteWebp);
 
     if (shouldClean) {
       try {
@@ -456,6 +489,7 @@ export async function runIngestion(forcedSetCode) {
 // CLI Execution
 const args = process.argv.slice(2);
 const shouldClean = args.includes('--clean') || args.includes('-c') || args.includes('--delete');
+const shouldWriteWebp = args.includes('--webp');
 const explicitSetCode = args.find((a) => !a.startsWith('-')); // e.g. "node scripts/ingest-wpn.js hob --clean"
 
 runIngestion(explicitSetCode);
