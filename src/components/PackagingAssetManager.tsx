@@ -73,18 +73,24 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
             if (lowerName.includes('booster pack') || lowerName.includes('pack')) packagingType = 'pack';
             else if (lowerName.includes('bundle')) packagingType = 'bundle';
             else if (lowerName.includes('booster box') || lowerName.includes('display')) packagingType = 'box';
-            else if (lowerName.includes('collector') || lowerName.includes('collector booster')) packagingType = 'booster';
+            else if (lowerName.includes('collector') || lowerName.includes('collector booster')) packagingType = 'pack';
 
             return {
               id: id || `${setCode}-${name}`,
               setCode,
               setName: setCode,
-              displayName: name,
+              releaseDate: '2024-01-01',
+              block: 'Standard',
               packagingType,
+              boosterName: 'play',
+              displayName: name,
+              marketPrice: p.marketPrice || p.price || 0,
+              estimatedEv: 0,
+              packsCount: 1,
               imageUrl: p.imageUrl || p.image_url,
               cardCount: p.cardCount,
-              marketPrice: p.marketPrice || p.price,
-            };
+              specialFeatures: [],
+            } as CatalogPackProduct;
           });
 
           const existingIds = new Set(ECOMMERCE_CATALOG_PACKS.map(p => p.id));

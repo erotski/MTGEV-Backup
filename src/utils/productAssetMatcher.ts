@@ -1,4 +1,4 @@
-import { CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
+import { CatalogPackProduct, ProductPackagingType, ECOMMERCE_CATALOG_PACKS } from '../ecommerceBoosterData';
 
 export interface ImageSlot {
   url: string;
@@ -16,21 +16,15 @@ export interface ProductAssetMapping {
   updatedAt?: string;
 }
 
-// Known WPN / MTG asset naming tokens and their heuristic product types
+// Known WPN / MTG asset naming tokens and their heuristic product types based on user translation key:
+// Bstr = booster, Clctr = collector, Smpl = sample, Bx = box, Dsp = Display (box of boosters),
+// Cmndr = commander, Bndl = Bundle, Prrls = Prerelease, StrtrKt = Starter Kit, HldyCmndr = Holiday/Collector Edition Commander
 export const MATCHING_RULES = [
   {
-    pattern: /(play_bstr|play_booster_pack|play_pack|bstr_0|bstr(?!\w*dsp))/i,
-    targetType: 'pack' as ProductPackagingType,
-    isCollector: false,
-    label: 'Play Booster Pack',
-    description: 'Matches "play_bstr", "bstr", "play_pack"',
-  },
-  {
-    pattern: /(play_dspbx|play_booster_box|play_box|dspbx(?!.*clctr)|dsp_bx)/i,
-    targetType: 'box' as ProductPackagingType,
-    isCollector: false,
-    label: 'Play Booster Box',
-    description: 'Matches "play_dspbx", "play_box", "dspbx"',
+    pattern: /(smpl_bstr|sample_pack|sample)/i,
+    targetType: 'sample_pack' as ProductPackagingType,
+    label: 'Sample Booster Pack',
+    description: 'Matches "smpl_bstr", "sample"',
   },
   {
     pattern: /(clctr_bstr|collector_booster_pack|collector_pack|clctr.*pack)/i,
@@ -40,11 +34,25 @@ export const MATCHING_RULES = [
     description: 'Matches "clctr_bstr", "collector_pack"',
   },
   {
+    pattern: /(play_bstr|play_booster_pack|play_pack|bstr_0|bstr(?!\w*dsp))/i,
+    targetType: 'pack' as ProductPackagingType,
+    isCollector: false,
+    label: 'Play Booster Pack',
+    description: 'Matches "bstr", "play_bstr", "play_pack"',
+  },
+  {
     pattern: /(dspbx_clctr|clctr_dspbx|collector_booster_box|collector_box|clctr.*box)/i,
     targetType: 'box' as ProductPackagingType,
     isCollector: true,
     label: 'Collector Booster Box',
-    description: 'Matches "dspbx_clctr", "clctr_dspbx", "collector_box"',
+    description: 'Matches "dspbx_clctr", "collector_box"',
+  },
+  {
+    pattern: /(play_dspbx|play_booster_box|play_box|dspbx|dsp_bx|bx)/i,
+    targetType: 'box' as ProductPackagingType,
+    isCollector: false,
+    label: 'Booster Display Box',
+    description: 'Matches "dspbx", "dsp", "box", "bx"',
   },
   {
     pattern: /(gftbndl|gift_bundle|gift_bndl|gift_edition)/i,
@@ -80,16 +88,23 @@ export const MATCHING_RULES = [
     description: 'Matches "scene_otrbx", "scene"',
   },
   {
+    pattern: /(hldycmndr|collector_cmdr|holiday_commander)/i,
+    targetType: 'starter_deck' as ProductPackagingType,
+    isCollector: true,
+    label: 'Collector Edition Commander Deck',
+    description: 'Matches "hldycmndr"',
+  },
+  {
     pattern: /(cmdr_deck|commander_deck|cmdr|precon|deck_)/i,
     targetType: 'starter_deck' as ProductPackagingType,
     label: 'Commander Deck',
-    description: 'Matches "cmdr_deck", "commander", "deck"',
+    description: 'Matches "cmdr", "commander", "deck"',
   },
   {
-    pattern: /(starter|beginner|strt_kit)/i,
+    pattern: /(starter|beginner|strt_kit|strtrkt)/i,
     targetType: 'starter_deck' as ProductPackagingType,
     label: 'Starter Kit',
-    description: 'Matches "starter", "strt_kit"',
+    description: 'Matches "strtrkt", "starter"',
   },
   {
     pattern: /(case|booster_case)/i,
@@ -152,6 +167,26 @@ export const KNOWN_SYSTEM_ASSET_FILES: string[] = [
   'hob-mtghob_en_drftnght_otrbx_01.png',
   'hob-mtghob_en_scene_otrbx_01.png',
   'hob-mtghob_en_scene_otrbx_02.png',
+  // Final Fantasy & other set WPN asset filenames
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_01_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_01_02.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_01_03.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_02_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_03_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_04_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Cmndr_All.png',
+  'products/fin/MTGFIN_EN_OtrBx_HldyCmndr_01_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Prrls_01_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Scene_01_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Scene_02_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Scene_03_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_Scene_04_01.png',
+  'products/fin/MTGFIN_EN_OtrBx_StrtrKt_01_01.png',
+  'products/fin/MTGFIN_Prrls_Spndwn_BLK.png',
+  'products/fin/MTGFIN_Prrls_Spndwn_BLU.png',
+  'products/fin/MTGFIN_Prrls_Spndwn_GRN.png',
+  'products/fin/MTGFIN_Prrls_Spndwn_RED.png',
+  'products/fin/MTGFIN_Prrls_Spndwn_YLW.png',
 ];
 
 export interface GuessMatchResult {
@@ -195,11 +230,10 @@ export function guessScoreForProduct(
     score += 35;
     reasons.push(`Matches set [${product.setCode.toUpperCase()}]`);
   } else {
-    // Check if set is universal or mismatch
-    const otherSetCodes = ['mh3', 'woe', 'blb', 'dsk', 'fdn', 'otj', 'lci', 'mkm', 'ltr', 'hob'].filter((c) => c !== setCode);
-    const matchesOtherSet = otherSetCodes.some((c) => baseName.startsWith(`${c}-`) || baseName.includes(`mtg${c}_`));
+    // Check if set is universal or mismatch with other known set codes
+    const otherSetCodes = ['mh3', 'woe', 'blb', 'dsk', 'fdn', 'otj', 'lci', 'mkm', 'ltr', 'hob', 'fin', 'fic', 'acr'].filter((c) => c !== setCode);
+    const matchesOtherSet = otherSetCodes.some((c) => baseName.startsWith(`${c}-`) || baseName.includes(`mtg${c}_`) || baseName.includes(`_${c}_`));
     if (matchesOtherSet) {
-      // Belongs to a different set!
       return {
         filename: baseName,
         url: filename.startsWith('/') ? filename : `/products/${baseName}`,
@@ -210,45 +244,55 @@ export function guessScoreForProduct(
     }
   }
 
-  // 2. Specific product keywords matching
+  // 2. Extract product index (e.g. _01_, _02_, _03_, _04_) and variation index
+  const isAllVariant = /_all\./i.test(baseName);
+  const matchTwoNums = baseName.match(/_0?([1-9])_0?([1-9])\.(png|webp|jpg)$/i);
+  let fileProductIndex = matchTwoNums ? parseInt(matchTwoNums[1], 10) : null;
+  let variationIndex = matchTwoNums ? parseInt(matchTwoNums[2], 10) : 1;
+
+  if (!matchTwoNums) {
+    const singleNum = baseName.match(/_0?([1-9])\.(png|webp|jpg)$/i);
+    variationIndex = singleNum ? parseInt(singleNum[1], 10) : 1;
+  }
+
+  // 3. Match against product type features
   const isCollectorProduct = displayName.includes('collector');
   const isGiftProduct = displayName.includes('gift');
   const isSceneProduct = displayName.includes('scene');
   const isPrereleaseProduct = displayName.includes('prerelease') || packagingType === 'prerelease';
   const isDraftNightProduct = displayName.includes('draft night') || displayName.includes('draft_night');
-  const isBundleProduct = displayName.includes('bundle') || packagingType === 'bundle';
+  const isBundleProduct = (displayName.includes('bundle') || packagingType === 'bundle') && !isGiftProduct && !isSceneProduct;
   const isBoxProduct = displayName.includes('box') || displayName.includes('display') || packagingType === 'box';
-  const isPackProduct = displayName.includes('pack') || displayName.includes('booster') || packagingType === 'pack';
+  const isPackProduct = (displayName.includes('pack') || displayName.includes('booster')) && !isCollectorProduct;
+  const isStarterProduct = packagingType === 'starter_deck' || displayName.includes('commander') || displayName.includes('starter');
 
-  // File flags
-  const fileIsCollector = baseName.includes('clctr') || baseName.includes('collector');
+  const fileIsCollector = baseName.includes('clctr') || baseName.includes('collector') || baseName.includes('hldycmndr');
   const fileIsGift = baseName.includes('gftbndl') || (baseName.includes('gift') && baseName.includes('bundle'));
   const fileIsScene = baseName.includes('scene');
-  const fileIsDraftNight = baseName.includes('drftnght') || baseName.includes('draft_night');
   const fileIsPrerelease = baseName.includes('prrls') || baseName.includes('prerelease');
-  const fileIsBundle = (baseName.includes('bndl') || baseName.includes('bundle')) && !fileIsGift;
-  const fileIsBox = baseName.includes('dspbx') || baseName.includes('box') || baseName.includes('display');
-  const fileIsPack = baseName.includes('bstr') || baseName.includes('pack') || baseName.includes('booster');
+  const fileIsBundle = baseName.includes('bndl') || baseName.includes('bundle');
+  const fileIsBox = baseName.includes('dspbx') || baseName.includes('box') || baseName.includes('display') || baseName.includes('_bx');
+  const fileIsPack = baseName.includes('bstr') || baseName.includes('pack');
+  const fileIsCommander = baseName.includes('cmndr') || baseName.includes('commander');
+  const fileIsStarter = baseName.includes('strtrkt') || baseName.includes('starter');
 
-  // Strict collector check
+  // Collector check
   if (isCollectorProduct) {
     if (fileIsCollector) {
       score += 30;
-      reasons.push('Collector product match');
+      reasons.push('Collector tier match');
     } else {
-      score -= 25; // Wrong tier
+      score -= 25;
     }
-  } else {
-    if (fileIsCollector) {
-      score -= 30; // Standard product should not match collector file
-    }
+  } else if (fileIsCollector && !isStarterProduct) {
+    score -= 30;
   }
 
   // Gift check
   if (isGiftProduct) {
     if (fileIsGift) {
       score += 40;
-      reasons.push('Gift Bundle keyword match ("gftbndl")');
+      reasons.push('Gift Bundle match ("gftbndl")');
     }
   } else if (fileIsGift) {
     score -= 30;
@@ -258,69 +302,82 @@ export function guessScoreForProduct(
   if (isSceneProduct) {
     if (fileIsScene) {
       score += 40;
-      reasons.push('Scene box keyword match');
-      // Sub-scene name matching if applicable
-      const sceneTitleSlug = displayName.replace(/[^a-z0-9]+/g, '_');
-      if (baseName.includes('crack_the_plates') && displayName.includes('crack')) {
-        score += 25;
-        reasons.push('Exact Scene Kit title match ("Crack the Plates")');
-      } else if (baseName.includes('treasures_of_smaug') && displayName.includes('smaug')) {
-        score += 25;
-        reasons.push('Exact Scene Kit title match ("Treasures of Smaug")');
-      }
+      reasons.push('Scene Box match');
     }
   } else if (fileIsScene) {
     score -= 30;
   }
 
-  // Prerelease vs Draft Night check
-  if (isDraftNightProduct) {
-    if (fileIsDraftNight) {
-      score += 45;
-      reasons.push('Draft Night keyword match ("drftnght")');
-    }
-  } else if (isPrereleaseProduct) {
+  // Prerelease check
+  if (isPrereleaseProduct) {
     if (fileIsPrerelease) {
       score += 40;
-      reasons.push('Prerelease kit keyword match ("prrls")');
+      reasons.push('Prerelease Pack match ("prrls")');
     }
+  } else if (fileIsPrerelease) {
+    score -= 25;
+  }
+
+  // Commander / Starter check
+  if (isStarterProduct) {
+    if (fileIsCommander || fileIsStarter) {
+      score += 40;
+      reasons.push('Commander/Starter Deck match ("cmndr")');
+    }
+  } else if (fileIsCommander) {
+    score -= 30;
   }
 
   // Box vs Pack vs Bundle check
   if (isBoxProduct && !isPackProduct) {
     if (fileIsBox && !fileIsPack) {
-      score += 30;
-      reasons.push('Display Box match ("dspbx" / "box")');
-    } else if (fileIsPack) {
-      score -= 20;
+      score += 35;
+      reasons.push('Display Box match ("dspbx"/"box")');
     }
   } else if (isPackProduct && !isBoxProduct) {
     if (fileIsPack && !fileIsBox) {
-      score += 30;
-      reasons.push('Booster Pack match ("bstr" / "pack")');
-    } else if (fileIsBox) {
-      score -= 20;
+      score += 35;
+      reasons.push('Booster Pack match ("bstr"/"pack")');
     }
-  } else if (isBundleProduct && !isGiftProduct && !isSceneProduct) {
-    if (fileIsBundle) {
-      score += 30;
-      reasons.push('Bundle match ("bndl" / "bundle")');
+  } else if (isBundleProduct) {
+    if (fileIsBundle && !fileIsGift) {
+      score += 35;
+      reasons.push('Bundle match ("bndl")');
     }
   }
 
-  // 3. Exact slug match bonus
+  // 4. Index-based disambiguation for ambiguous multi-product families (e.g. Commander decks 01-04, Scene boxes 01-04)
+  if (isAllVariant) {
+    if (displayName.includes('set of') || displayName.includes('case')) {
+      score += 60;
+      reasons.push('Set of 4 / Master Case variant match ("_All")');
+    }
+  } else if (fileProductIndex !== null && (isStarterProduct || isSceneProduct)) {
+    // Find all sibling products of the same category in the set
+    const setProducts = ECOMMERCE_CATALOG_PACKS.filter(
+      (p) => p.setCode.toUpperCase() === product.setCode.toUpperCase() && p.packagingType === product.packagingType && !p.id.includes('set-of') && !p.id.includes('case')
+    ).sort((a, b) => a.id.localeCompare(b.id));
+
+    const productRank = setProducts.findIndex((p) => p.id === product.id) + 1;
+    if (productRank > 0) {
+      if (fileProductIndex === productRank) {
+        score += 70;
+        reasons.push(`Exact WPN product index match (#${productRank})`);
+      } else {
+        score -= 50; // Belongs to a different numbered deck/box in the set
+      }
+    }
+  }
+
+  // 5. Exact slug match bonus
   const fullSlug = `${setCode}-${displayName.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`;
   if (baseName.replace(/\.(png|webp|jpg)$/i, '') === fullSlug) {
     score += 50;
     reasons.push('Exact canonical product slug match');
   }
 
-  // 4. Extract variation index (e.g. 01, 02, 03)
-  const varMatch = baseName.match(/_0?([0-9]{1,2})\.(png|webp|jpg)$/i);
-  const variationIndex = varMatch ? parseInt(varMatch[1], 10) : 1;
-
-  // Bonus for primary cover (01)
-  if (variationIndex === 1 || !varMatch) {
+  // Variation 1 primary bonus
+  if (variationIndex === 1) {
     score += 5;
   }
 
@@ -349,7 +406,7 @@ export function guessAssetSlotsForProduct(
 ): GuessMatchResult[] {
   const scored = availableFiles
     .map((file) => guessScoreForProduct(file, product))
-    .filter((res) => res.score >= 20);
+    .filter((res) => res.score >= 15);
 
   // Group by unique URL
   const seenUrls = new Set<string>();
@@ -461,3 +518,4 @@ export function getProductEffectiveAssetSlots(
     guesses: [],
   };
 }
+
