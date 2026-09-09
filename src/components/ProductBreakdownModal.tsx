@@ -256,9 +256,6 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 uppercase">
                   {product.setCode}
                 </span>
-                <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 uppercase">
-                  {product.packagingType.replace(/_/g, ' ')}
-                </span>
                 {product.packsCount > 0 ? (
                   <span className="font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
                     {product.packsCount} {product.packsCount === 1 ? 'Pack' : 'Packs'}

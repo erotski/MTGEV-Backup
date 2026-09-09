@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Search,
   ArrowUpDown,
-  Gift,
   ExternalLink,
   Package,
   CheckCircle2,
@@ -21,7 +20,6 @@ import {
   Layers,
   Sparkle,
   Flame,
-  Info,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -486,11 +484,10 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
         </div>
       </div>
 
-      {/* Commander Spotlight & Strategy Overview */}
-      <div className={`px-6 ${hasCommanderCard ? 'grid grid-cols-1 lg:grid-cols-12 gap-5' : 'block'}`}>
-        {/* Commander Card Art Frame - rendered only if the commander card exists */}
-        {hasCommanderCard && commanderCard && (
-          <div className="lg:col-span-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
+      {/* Commander Spotlight - rendered only if the commander card exists */}
+      {hasCommanderCard && commanderCard && (
+        <div className="px-6">
+          <div className="max-w-md bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-indigo-900/60 flex flex-col justify-between shadow-md">
             <div>
               <div className="flex items-center justify-between gap-2 mb-2.5">
                 <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded flex items-center gap-1">
@@ -544,106 +541,8 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
               <span className="text-emerald-400 font-bold">100% Guaranteed</span>
             </div>
           </div>
-        )}
-
-        {/* Deck Strategy, Inclusions & Card Type Matrix */}
-        <div className={`${hasCommanderCard ? 'lg:col-span-8' : 'w-full'} space-y-4`}>
-          {/* Deck Strategy */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-            <div className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Info className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Deck Theme & Archetype Strategy</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed font-medium">
-              {deckDetail.theme || 'Engineered out of the box with ready-to-play mana base, ramp, removal, card advantage, and win-conditions.'}
-            </p>
-          </div>
-
-          {/* Quick Rarity & Type Summaries */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {deckDetail.raritySummary ? (
-              Object.entries(deckDetail.raritySummary).map(([r, data]) => (
-                <div key={r} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                  <span className="text-[10px] font-mono font-bold uppercase block text-slate-500">
-                    {r} ({data.count})
-                  </span>
-                  <span className="text-sm font-black text-slate-900 font-mono">
-                    ${data.ev.toFixed(2)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Mythic Rares</span>
-                  <span className="text-sm font-black text-amber-700 font-mono">Guaranteed</span>
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Rares</span>
-                  <span className="text-sm font-black text-slate-900 font-mono">30+ Cards</span>
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Uncommons</span>
-                  <span className="text-sm font-black text-slate-900 font-mono">25+ Cards</span>
-                </div>
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                  <span className="text-[10px] font-mono text-slate-500 uppercase block">Commons / Lands</span>
-                  <span className="text-sm font-black text-slate-900 font-mono">Complete</span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Guaranteed Extra Accessories */}
-          <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200 space-y-2 text-xs text-indigo-950">
-            <div className="font-bold flex items-center gap-1.5 text-indigo-900">
-              <Gift className="w-4 h-4 text-indigo-600" />
-              <span>Included Factory Sealed Accessories & Physical Extras:</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-indigo-900/90 pt-1">
-              {hasCommanderCard ? (
-                <>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x 2-Card Collector Booster Sample Pack</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>10x Double-Sided Token Cards</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x Deck Box + 1x Life Tracker Wheel</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x Foil-Etched Display Commander</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x Ready-to-Play Factory Deck ({totalCardsInDeck || 60} Cards)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Double-Sided Token Cards / Game Counters</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x Storage Deck Box / Packaging</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 p-2 rounded-lg border border-indigo-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>1x Strategy Guide / Rules Reference</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
         </div>
-      </div>
+      )}
 
       {/* Interactive Controls Bar: Group By, View Mode, Search, Filters, Vendor */}
       <div className="px-6 pt-3 space-y-4">
