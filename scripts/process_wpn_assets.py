@@ -132,37 +132,39 @@ def determine_target_filenames(set_code: str, raw_filename: str) -> list[str]:
 
     filenames = []
 
+    is_collector = "collector" in p or "clctr" in p
+    is_display_box = "box" in p or "display" in p or "dspbx" in p or "dsp_bx" in p
+    is_booster_pack = "pack" in p or "bstr" in p or "bstrpk" in p
+    is_gift_bundle = "gftbndl" in p or ("gift" in p and ("bundle" in p or "edition" in p))
+    is_standard_bundle = "bndl" in p or "bundle" in p or "fatpack" in p
+    is_prerelease = "prrls" in p or "prerls" in p or "prerelease" in p or "pre-release" in p or "pr_pack" in p or "prpack" in p
+    is_draft_night = "drftnght" in p or "draft_night" in p or "draft_set" in p
+
     # 1. Collector Display Box
-    if "collector" in p and ("box" in p or "display" in p):
-        filenames.extend([f"{set_code}-collector.png", f"{set_code}-collector_box.png"])
-    elif "collector" in p and "pack" in p:
-        filenames.append(f"{set_code}-collector_pack.png")
-    elif "collector" in p and "case" in p:
+    if is_collector and is_display_box:
+        filenames.extend([f"{set_code}-collector.png", f"{set_code}-collector_box.png", f"{set_code}-collector_booster_box.png"])
+    elif is_collector and is_booster_pack:
+        filenames.extend([f"{set_code}-collector_pack.png", f"{set_code}-collector_booster_pack.png"])
+    elif is_collector and "case" in p:
         filenames.append(f"{set_code}-collector_case.png")
-    elif "gift" in p and ("bundle" in p or "edition" in p):
+    elif is_gift_bundle:
         filenames.extend([f"{set_code}-gift_bundle.png", f"{set_code}-gift.png"])
-    elif "bundle" in p or "fatpack" in p:
+    elif is_standard_bundle:
         filenames.append(f"{set_code}-bundle.png")
-    elif "prerelease" in p or "pre-release" in p or "pr_pack" in p or "prpack" in p:
+    elif is_prerelease:
         filenames.append(f"{set_code}-prerelease.png")
-    elif "jumpstart" in p and ("box" in p or "display" in p):
+    elif is_draft_night:
+        filenames.append(f"{set_code}-draft_night.png")
+    elif "jumpstart" in p and is_display_box:
         filenames.extend([f"{set_code}-jumpstart_box.png", f"{set_code}-jumpstart.png"])
-    elif "jumpstart" in p and "pack" in p:
+    elif "jumpstart" in p and is_booster_pack:
         filenames.append(f"{set_code}-jumpstart_pack.png")
     elif "starter" in p or "beginner" in p:
         filenames.extend([f"{set_code}-starter_kit.png", f"{set_code}-starter.png"])
-    elif "play" in p and ("box" in p or "display" in p):
-        filenames.extend([f"{set_code}-box.png", f"{set_code}-play_box.png"])
-    elif "draft" in p and ("box" in p or "display" in p):
-        filenames.append(f"{set_code}-draft_box.png")
-        if f"{set_code}-box.png" not in filenames:
-            filenames.append(f"{set_code}-box.png")
-    elif "set" in p and ("box" in p or "display" in p) and "box_set" not in p:
-        filenames.append(f"{set_code}-set_box.png")
-        if f"{set_code}-box.png" not in filenames:
-            filenames.append(f"{set_code}-box.png")
-    elif ("play" in p or "draft" in p or "booster" in p) and "pack" in p:
-        filenames.extend([f"{set_code}-pack.png", f"{set_code}-play_pack.png"])
+    elif ("play" in p or is_display_box) and not is_collector:
+        filenames.extend([f"{set_code}-box.png", f"{set_code}-play_box.png", f"{set_code}-play_booster_box.png"])
+    elif ("play" in p or is_booster_pack) and not is_collector:
+        filenames.extend([f"{set_code}-pack.png", f"{set_code}-play_pack.png", f"{set_code}-play_booster_pack.png"])
     elif "commander" in p or "deck" in p or "precon" in p:
         deck_slug = re.sub(r"^(commander_deck_|commander_|deck_)", "", clean, flags=re.IGNORECASE)
         filenames.extend([f"{set_code}-commander_{deck_slug}.png", f"{set_code}-deck_{deck_slug}.png"])
@@ -171,10 +173,6 @@ def determine_target_filenames(set_code: str, raw_filename: str) -> list[str]:
         filenames.append(f"{set_code}-scene_{scene_slug}.png")
     elif "case" in p:
         filenames.append(f"{set_code}-case.png")
-    elif "box" in p or "display" in p:
-        filenames.append(f"{set_code}-box.png")
-    elif "pack" in p:
-        filenames.append(f"{set_code}-pack.png")
 
     generic_slug = re.sub(f"^{set_code}_", "", clean, flags=re.IGNORECASE)
     generic_slug = re.sub(f"_{set_code}$", "", generic_slug, flags=re.IGNORECASE)

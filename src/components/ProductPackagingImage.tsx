@@ -41,11 +41,13 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const cleanCode = (setCode || '').toLowerCase().trim();
   const cleanType = (packagingType || 'pack').toLowerCase().trim();
   const cleanName = (displayName || '').toLowerCase().trim();
-  const isCollector = cleanName.includes('collector');
+  const isCollector = cleanName.includes('collector') || cleanType.includes('collector');
   const isGift = cleanName.includes('gift');
   const isJumpstart = cleanName.includes('jumpstart');
   const isStarter = cleanName.includes('starter') || cleanName.includes('beginner');
   const isPrerelease = cleanName.includes('prerelease') || cleanName.includes('pre-release');
+  const isDraftNight = cleanName.includes('draft night') || cleanName.includes('draft_night') || cleanName.includes('draft_set');
+  const isScene = cleanName.includes('scene');
 
   // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
@@ -55,7 +57,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     }
 
     if (cleanCode) {
-      // 1. Slugified display name candidates (e.g. /products/hob-riders_of_rohan.png)
+      // 1. Slugified display name candidates (e.g. /products/hob-the_hobbit_collector_booster_box.png)
       const nameSlug = cleanName
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
@@ -63,27 +65,80 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
       if (nameSlug) {
         urls.push(`/products/${cleanCode}-${nameSlug}.png`);
         urls.push(`/products/${cleanCode}-${nameSlug}.webp`);
+
+        // Strip leading set prefixes or set codes (e.g. "the_hobbit_collector_booster_box" -> "collector_booster_box")
         const strippedSlug = nameSlug
-          .replace(/^(commander_deck_|commander_|deck_|scene_box_|scene_)/, '');
+          .replace(/^(the_[a-z0-9_]+?_|magic_[a-z0-9_]+?_|commander_deck_|commander_|deck_|scene_box_|scene_)/, '')
+          .replace(new RegExp(`^(${cleanCode}_)`, 'i'), '');
+
         if (strippedSlug && strippedSlug !== nameSlug) {
+          urls.push(`/products/${cleanCode}-${strippedSlug}.png`);
+          urls.push(`/products/${cleanCode}-${strippedSlug}.webp`);
           urls.push(`/products/${cleanCode}-commander_${strippedSlug}.png`);
           urls.push(`/products/${cleanCode}-deck_${strippedSlug}.png`);
-          urls.push(`/products/${cleanCode}-${strippedSlug}.png`);
+          urls.push(`/products/${cleanCode}-scene_${strippedSlug}.png`);
         }
       }
 
-      // 2. Specialty product types
+      // 2. WPN Official Marketing Asset Naming Conventions
+      if (isCollector && (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box'))) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_01.png`);
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_02.png`);
+        urls.push(`/products/${cleanCode}-collector_booster_box.png`);
+        urls.push(`/products/${cleanCode}-collector_box.png`);
+        urls.push(`/products/${cleanCode}-collector.png`);
+      } else if (!isCollector && (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box') || cleanName.includes('display'))) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_01.png`);
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_02.png`);
+        urls.push(`/products/${cleanCode}-play_booster_box.png`);
+        urls.push(`/products/${cleanCode}-play_box.png`);
+        urls.push(`/products/${cleanCode}-box.png`);
+      }
+
+      if (isCollector && (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack'))) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_clctr_bstr_01.png`);
+        urls.push(`/products/${cleanCode}-collector_booster_pack.png`);
+        urls.push(`/products/${cleanCode}-collector_pack.png`);
+      } else if (!isCollector && (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack'))) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_01.png`);
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_02.png`);
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_03.png`);
+        urls.push(`/products/${cleanCode}-play_booster_pack.png`);
+        urls.push(`/products/${cleanCode}-play_pack.png`);
+        urls.push(`/products/${cleanCode}-pack.png`);
+      }
+
       if (isGift) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_gftbndl_otrbx_01.png`);
         urls.push(`/products/${cleanCode}-gift_bundle.png`);
         urls.push(`/products/${cleanCode}-gift.png`);
+      } else if (cleanType === 'bundle' || cleanName.includes('bundle')) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_bndl_otrbx_01.png`);
+        urls.push(`/products/${cleanCode}-bundle.png`);
       }
 
-      if (isCollector) {
-        if (cleanType === 'pack' || cleanName.includes('pack')) {
-          urls.push(`/products/${cleanCode}-collector_pack.png`);
+      if (isPrerelease || cleanType === 'limited_aid_case' || cleanType === 'limited_aid_tool') {
+        if (isDraftNight) {
+          urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_drftnght_otrbx_01.png`);
+          urls.push(`/products/${cleanCode}-draft_night.png`);
+        } else {
+          urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_prrls_otrbx_01.png`);
+          urls.push(`/products/${cleanCode}-prerelease.png`);
         }
+      }
+
+      if (isScene) {
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_01.png`);
+        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_02.png`);
+        urls.push(`/products/${cleanCode}-scene_01.png`);
+        urls.push(`/products/${cleanCode}-scene_02.png`);
+      }
+
+      // 3. Specialty product types
+      if (isCollector) {
         urls.push(`/products/${cleanCode}-collector.png`);
         urls.push(`/products/${cleanCode}-collector_box.png`);
+        urls.push(`/products/${cleanCode}-collector_pack.png`);
         urls.push(`/products/${cleanCode}-collector.webp`);
       }
 
@@ -105,18 +160,18 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         urls.push(`/products/${cleanCode}-pr.png`);
       }
 
-      // 3. Standard type files
+      // 4. Standard type files
       urls.push(`/products/${cleanCode}-${cleanType}.png`);
       urls.push(`/products/${cleanCode}-${cleanType}.webp`);
       urls.push(`/products/${cleanCode}-${cleanType}.jpg`);
 
-      // 4. Common packaging aliases
-      if (cleanType === 'box') {
+      // 5. Common packaging aliases
+      if (cleanType === 'box' || cleanType === 'booster_box') {
         urls.push(`/products/${cleanCode}-box.png`);
         urls.push(`/products/${cleanCode}-play_box.png`);
         urls.push(`/products/${cleanCode}-display.png`);
         urls.push(`/products/${cleanCode}-booster_box.png`);
-      } else if (cleanType === 'pack') {
+      } else if (cleanType === 'pack' || cleanType === 'booster_pack') {
         urls.push(`/products/${cleanCode}-pack.png`);
         urls.push(`/products/${cleanCode}-play_pack.png`);
         urls.push(`/products/${cleanCode}-booster.png`);
@@ -126,9 +181,9 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
       } else if (cleanType === 'prerelease' || cleanType === 'limited_aid_tool') {
         urls.push(`/products/${cleanCode}-prerelease.png`);
         urls.push(`/products/${cleanCode}-pr.png`);
-      } else if (cleanType === 'case' || cleanType === 'bundle_case') {
+      } else if (cleanType === 'case' || cleanType === 'bundle_case' || cleanType === 'booster_case' || cleanType === 'limited_aid_case') {
         urls.push(`/products/${cleanCode}-case.png`);
-      } else if (cleanType === 'starter_deck') {
+      } else if (cleanType === 'starter_deck' || cleanType === 'deck') {
         urls.push(`/products/${cleanCode}-deck.png`);
         urls.push(`/products/${cleanCode}-commander.png`);
       }
@@ -136,7 +191,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
     // Deduplicate while preserving priority order
     return Array.from(new Set(urls));
-  }, [imageUrl, cleanCode, cleanType, cleanName, isCollector, isGift, isJumpstart, isStarter, isPrerelease]);
+  }, [imageUrl, cleanCode, cleanType, cleanName, isCollector, isGift, isJumpstart, isStarter, isPrerelease, isDraftNight, isScene]);
 
   // Reset image candidate testing when props change
   useEffect(() => {
@@ -171,23 +226,75 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     const basePathWithoutExt = activeSrc.replace(/\.(png|webp|jpg|jpeg)$/i, '');
     const variationCandidates: string[] = [];
 
-    // Check _01 through _06 variations
+    // 1. If base path already has a _01 / _02 suffix (e.g. mtghob_en_play_bstr_01), strip it to probe sibling numbers
+    const strippedSuffixBase = basePathWithoutExt.replace(/_\d{2}$/, '');
+    if (strippedSuffixBase !== basePathWithoutExt) {
+      for (let i = 1; i <= 6; i++) {
+        const padNum = i.toString().padStart(2, '0');
+        const varPath = `${strippedSuffixBase}_${padNum}.png`;
+        if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
+          variationCandidates.push(varPath);
+        }
+      }
+    }
+
+    // 2. Check _01 through _06 variations from current base
     for (let i = 1; i <= 6; i++) {
       const padNum = i.toString().padStart(2, '0');
       const varPath = `${basePathWithoutExt}_${padNum}.png`;
-      if (varPath !== activeSrc) {
+      if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
         variationCandidates.push(varPath);
       }
     }
 
-    // Check play_pack variations if it's a pack
-    if (cleanType === 'pack' && !basePathWithoutExt.includes('play_pack')) {
+    // 3. Set-level standard pack art variations (e.g. hob-pack_01.png, hob-pack_02.png, hob-pack_03.png)
+    if (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack')) {
       for (let i = 1; i <= 5; i++) {
         const padNum = i.toString().padStart(2, '0');
-        const varPath = `/products/${cleanCode}-play_pack_${padNum}.png`;
-        if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
-          variationCandidates.push(varPath);
-        }
+        const paths = [
+          `/products/${cleanCode}-pack_${padNum}.png`,
+          `/products/${cleanCode}-play_pack_${padNum}.png`,
+          `/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_${padNum}.png`,
+        ];
+        paths.forEach((p) => {
+          if (p !== activeSrc && !variationCandidates.includes(p)) {
+            variationCandidates.push(p);
+          }
+        });
+      }
+    }
+
+    // 4. Set-level standard box angle variations (e.g. hob-box_01.png, hob-box_02.png)
+    if (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box')) {
+      for (let i = 1; i <= 4; i++) {
+        const padNum = i.toString().padStart(2, '0');
+        const paths = [
+          `/products/${cleanCode}-box_${padNum}.png`,
+          `/products/${cleanCode}-collector_${padNum}.png`,
+          `/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_${padNum}.png`,
+          `/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_${padNum}.png`,
+        ];
+        paths.forEach((p) => {
+          if (p !== activeSrc && !variationCandidates.includes(p)) {
+            variationCandidates.push(p);
+          }
+        });
+      }
+    }
+
+    // 5. Scene box variations (e.g. hob-scene_01.png, hob-scene_02.png)
+    if (isScene || cleanName.includes('scene')) {
+      for (let i = 1; i <= 4; i++) {
+        const padNum = i.toString().padStart(2, '0');
+        const paths = [
+          `/products/${cleanCode}-scene_${padNum}.png`,
+          `/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_${padNum}.png`,
+        ];
+        paths.forEach((p) => {
+          if (p !== activeSrc && !variationCandidates.includes(p)) {
+            variationCandidates.push(p);
+          }
+        });
       }
     }
 
@@ -207,7 +314,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [hasImageLoaded, activeSrc, cleanType, cleanCode]);
+  }, [hasImageLoaded, activeSrc, cleanType, cleanCode, isScene, cleanName]);
 
   // Keyboard navigation for zoomed gallery
   useEffect(() => {

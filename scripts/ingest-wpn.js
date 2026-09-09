@@ -128,43 +128,50 @@ function determineTargetFilenames(setCode, rawFilename) {
 
   const filenames = [];
 
+  const isCollector = p.includes('collector') || p.includes('clctr');
+  const isDisplayBox = p.includes('box') || p.includes('display') || p.includes('dspbx') || p.includes('dsp_bx');
+  const isBoosterPack = p.includes('pack') || p.includes('bstr') || p.includes('bstrpk');
+  const isGiftBundle = p.includes('gftbndl') || (p.includes('gift') && (p.includes('bundle') || p.includes('edition')));
+  const isStandardBundle = p.includes('bndl') || p.includes('bundle') || p.includes('fatpack');
+  const isPrerelease = p.includes('prrls') || p.includes('prerls') || p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack') || p.includes('prpack');
+  const isDraftNight = p.includes('drftnght') || p.includes('draft_night') || p.includes('draft_set');
+
   // Match specific product types
-  if (p.includes('collector') && (p.includes('box') || p.includes('display'))) {
+  if (isCollector && isDisplayBox) {
     filenames.push(`${setCode}-collector.png`);
     filenames.push(`${setCode}-collector_box.png`);
-  } else if (p.includes('collector') && p.includes('pack')) {
+    filenames.push(`${setCode}-collector_booster_box.png`);
+  } else if (isCollector && isBoosterPack) {
     filenames.push(`${setCode}-collector_pack.png`);
-  } else if (p.includes('collector') && p.includes('case')) {
+    filenames.push(`${setCode}-collector_booster_pack.png`);
+  } else if (isCollector && p.includes('case')) {
     filenames.push(`${setCode}-collector_case.png`);
-  } else if (p.includes('gift') && (p.includes('bundle') || p.includes('edition'))) {
+  } else if (isGiftBundle) {
     filenames.push(`${setCode}-gift_bundle.png`);
     filenames.push(`${setCode}-gift.png`);
-  } else if (p.includes('bundle') || p.includes('fatpack')) {
+  } else if (isStandardBundle) {
     filenames.push(`${setCode}-bundle.png`);
-  } else if (p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack') || p.includes('prpack')) {
+  } else if (isPrerelease) {
     filenames.push(`${setCode}-prerelease.png`);
-  } else if (p.includes('jumpstart') && (p.includes('box') || p.includes('display'))) {
+  } else if (isDraftNight) {
+    filenames.push(`${setCode}-draft_night.png`);
+  } else if (p.includes('jumpstart') && isDisplayBox) {
     filenames.push(`${setCode}-jumpstart_box.png`);
     filenames.push(`${setCode}-jumpstart.png`);
-  } else if (p.includes('jumpstart') && p.includes('pack')) {
+  } else if (p.includes('jumpstart') && isBoosterPack) {
     filenames.push(`${setCode}-jumpstart_pack.png`);
   } else if (p.includes('starter') || p.includes('beginner')) {
     filenames.push(`${setCode}-starter_kit.png`);
     filenames.push(`${setCode}-starter.png`);
-  } else if (p.includes('play') && (p.includes('box') || p.includes('display'))) {
+  } else if ((p.includes('play') || isDisplayBox) && !isCollector) {
     filenames.push(`${setCode}-box.png`);
     filenames.push(`${setCode}-play_box.png`);
-  } else if (p.includes('draft') && (p.includes('box') || p.includes('display'))) {
-    filenames.push(`${setCode}-draft_box.png`);
-    if (!filenames.includes(`${setCode}-box.png`)) filenames.push(`${setCode}-box.png`);
-  } else if (p.includes('set') && (p.includes('box') || p.includes('display')) && !p.includes('box_set')) {
-    filenames.push(`${setCode}-set_box.png`);
-    if (!filenames.includes(`${setCode}-box.png`)) filenames.push(`${setCode}-box.png`);
-  } else if ((p.includes('play') || p.includes('draft') || p.includes('booster')) && p.includes('pack')) {
+    filenames.push(`${setCode}-play_booster_box.png`);
+  } else if ((p.includes('play') || isBoosterPack) && !isCollector) {
     filenames.push(`${setCode}-pack.png`);
     filenames.push(`${setCode}-play_pack.png`);
+    filenames.push(`${setCode}-play_booster_pack.png`);
   } else if (p.includes('commander') || p.includes('deck') || p.includes('precon')) {
-    // Generate slug from deck name, e.g. hob-commander_riders_of_rohan.png
     const deckSlug = clean.replace(/^(commander_deck_|commander_|deck_)/i, '');
     filenames.push(`${setCode}-commander_${deckSlug}.png`);
     filenames.push(`${setCode}-deck_${deckSlug}.png`);
@@ -173,10 +180,6 @@ function determineTargetFilenames(setCode, rawFilename) {
     filenames.push(`${setCode}-scene_${sceneSlug}.png`);
   } else if (p.includes('case')) {
     filenames.push(`${setCode}-case.png`);
-  } else if (p.includes('box') || p.includes('display')) {
-    filenames.push(`${setCode}-box.png`);
-  } else if (p.includes('pack')) {
-    filenames.push(`${setCode}-pack.png`);
   }
 
   // Always include a cleaned descriptive filename based on the asset itself
