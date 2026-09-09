@@ -224,7 +224,8 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
         (displayProduct as any).evMin ?? displayProduct.estimatedEv * 0.25,
         (displayProduct as any).evMid90 ?? displayProduct.estimatedEv,
         (displayProduct as any).evMax ?? displayProduct.estimatedEv * 3.5,
-        isDeck
+        isDeck,
+        (displayProduct as any).quantiles
       );
 
   return (
@@ -241,6 +242,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
           <div className="flex items-start gap-3.5">
             <div className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
               <ProductPackagingImage
+                productId={product.id}
                 setCode={product.setCode}
                 setName={product.setName}
                 packagingType={product.packagingType}
@@ -309,15 +311,17 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
               </span>
             </div>
 
-            <div
-              className={`rounded-xl px-3 py-1.5 font-mono text-right border ${getEvScoreBadgeClass(productEvScore)}`}
-              title={`EV Score: ${productEvScore}/100. Probability of opening singles value >= sealed price.`}
-            >
-              <span className="text-[10px] block opacity-75">EV Score</span>
-              <span className="text-sm font-black">
-                {productEvScore}/100
-              </span>
-            </div>
+            {productEvScore != null && (
+              <div
+                className={`rounded-xl px-3 py-1.5 font-mono text-right border ${getEvScoreBadgeClass(productEvScore)}`}
+                title={`EV Score: ${productEvScore}/100. Probability of opening singles value >= sealed price.`}
+              >
+                <span className="text-[10px] block opacity-75">EV Score</span>
+                <span className="text-sm font-black">
+                  {productEvScore}/100
+                </span>
+              </div>
+            )}
 
             {onNavigateToSet && (
               <button

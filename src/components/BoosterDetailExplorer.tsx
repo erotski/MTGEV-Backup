@@ -400,6 +400,26 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     );
   }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
 
+  // Recursively flatten pack items from nested sealed products
+  const flatPackItems = useMemo(() => {
+    if (!productAudit) return [];
+    const flatten = (audit: any): any[] => {
+      let items = [...(audit.packItems || [])];
+      if (audit.sealedItems) {
+        audit.sealedItems.forEach((s: any) => {
+          if (s.childBreakdown) {
+            const childItems = flatten(s.childBreakdown);
+            // DO NOT multiply by s.count again!
+            // resolveRecursiveProductAudit already applies the multiplier to childBreakdown items.
+            items.push(...childItems);
+          }
+        });
+      }
+      return items;
+    };
+    return flatten(productAudit);
+  }, [productAudit]);
+
   // Derive authoritative canonical metrics
   const canonicalMetrics = useMemo(() => {
     if (!activeRawProduct && !activeProduct) return null;
@@ -1130,6 +1150,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               productTitle={activeProduct?.displayName || `${currentSet?.name || selectedSetCode} ${activeBooster.fullBoosterName || activeBooster.boosterName}`}
               activeBooster={activeBooster}
               allSetBoosters={rawSetBoosters}
+              boosterEvMap={boosterEvMap}
               defaultPackSealedPrice={productMarketPrice}
               multiplier={productPacksCount}
               priceMode={priceMode}
@@ -1139,6 +1160,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               fixedBaseEv={productFixedBaseEv}
               variableEv={productVariableEv}
               cardCount={productTotalCards}
+              packItems={flatPackItems}
             />
           )}
 

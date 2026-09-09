@@ -4,6 +4,7 @@
  */
 import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { findBoosterEv, normalizeVendor, resolveCardPrice } from './vendorUtils';
+import { simulateCompositeQuantiles } from './evScore';
 
 export interface ChildItemResolution {
   type: 'pack' | 'card' | 'deck' | 'sealed' | 'variable' | 'other';
@@ -33,6 +34,7 @@ export interface RecursiveProductBreakdownResult {
   totalMid90Ev: number;
   totalMax5Ev: number;
   totalMaxEv: number;
+  quantiles?: number[];
   items: ChildItemResolution[];
   packItems: Array<{
     packName: string;
@@ -48,6 +50,7 @@ export interface RecursiveProductBreakdownResult {
     unitMax5?: number;
     unitMax: number;
     subtotalEv: number;
+    quantiles?: number[];
   }>;
   cardItems: Array<{
     name: string;
@@ -220,6 +223,8 @@ export function resolveBoosterPackEv(
   let unitEvMin5 = matchedBooster && matchedBooster.evMin5 ? matchedBooster.evMin5 : (unitEvMin > 0 ? Number((unitEvMin * 1.5).toFixed(2)) : Number((unitEvAvg * 0.2).toFixed(2)));
   let unitEvMax5 = matchedBooster && matchedBooster.evMax5 ? matchedBooster.evMax5 : (unitEvMid90 > 0 ? Number((unitEvMid90 * 2.5).toFixed(2)) : Number((unitEvAvg * 3.5).toFixed(2)));
   let unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
+  
+  let quantiles: number[] | undefined = matchedBooster?.quantiles;
 
   if (matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint' && priceMode === 'cheapest_reprint') {
     unitEvAvg = Number((unitEvAvg * reprintMultiplier).toFixed(2));
@@ -228,6 +233,9 @@ export function resolveBoosterPackEv(
     unitEvMin5 = Number((unitEvMin5 * reprintMultiplier).toFixed(2));
     unitEvMax5 = Number((unitEvMax5 * reprintMultiplier).toFixed(2));
     unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
+    if (quantiles) {
+      quantiles = quantiles.map(q => Number((q * reprintMultiplier).toFixed(2)));
+    }
   }
 
   return {
@@ -239,6 +247,7 @@ export function resolveBoosterPackEv(
     unitEvMin5,
     unitEvMax5,
     unitEvMax,
+    quantiles,
   };
 }
 
@@ -1100,61 +1109,113 @@ export function resolveRecursiveProductAudit(
       } else {
         // Unmapped sealed subitem (e.g. unknown UUID)
         const sName = (sub.name || '').toLowerCase();
-        let estimatedCards = 15;
-        if (sName.includes('sample')) estimatedCards = 2;
-        else if (sName.includes('booster box')) estimatedCards = 36 * 15;
-        else if (sName.includes('case')) estimatedCards = 6 * 36 * 15;
-        else if (sName.includes('secret lair drop') || sName.includes('secret lair')) estimatedCards = 5;
-        else if (sName.includes('commander')) estimatedCards = 100;
-        else if (sName.includes('jumpstart')) estimatedCards = 20;
-        else if (sName.includes('starter') || sName.includes('half-deck')) estimatedCards = 30;
-        else if (sName.includes('deck')) estimatedCards = 60;
+        
+        // CHECK IF IT'S A BOOSTER PACK
+        const bCodeMatch = sName.match(/(play|collector|draft|set|theme|vip|box-topper|promo)/i);
+        if ((sName.includes('booster') || sName.includes('pack')) && bCodeMatch && !sName.includes('box') && !sName.includes('case')) {
+          const matchedCode = sub.code || bCodeMatch[1].toLowerCase();
+          const res = resolveBoosterPackEv({ code: matchedCode }, sub.set || parentSet, boosterEvMap, vendor, priceMode, reprintMultiplier);
+          const cardsPerPack = getCardsPerPack(res.boosterCode, product.category, product.subtype);
+          const packCardsTotal = count * cardsPerPack;
+          const subtotalEv = Number((count * res.unitEvAvg).toFixed(2));
 
-        const subCardsTotal = count * estimatedCards;
-        totalCards += subCardsTotal;
+          totalCards += packCardsTotal;
+          totalPacks += count;
+          totalVariableEv += subtotalEv;
+          totalEv += subtotalEv;
+          totalMinEv += Number((count * res.unitEvMin).toFixed(2));
+          totalMin5Ev += Number((count * res.unitEvMin5).toFixed(2));
+          totalMid90Ev += Number((count * res.unitEvMid90).toFixed(2));
+          totalMax5Ev += Number((count * res.unitEvMax5).toFixed(2));
+          totalMaxEv += Number((count * res.unitEvMax).toFixed(2));
 
-        let unitEv = 0;
-        if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
-        } else if (childArb && childArb.marketPrice > 0) {
-          unitEv = Number(childArb.marketPrice.toFixed(2));
-        } else if (sub.price > 0) {
-          unitEv = Number(sub.price.toFixed(2));
-        } else if (sub.marketPrice > 0) {
-          unitEv = Number(sub.marketPrice.toFixed(2));
-        } else if (sub.estimatedEv > 0) {
-          unitEv = Number(sub.estimatedEv.toFixed(2));
+          const pEntry = {
+            packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
+            code: res.boosterCode,
+            set: res.setCode,
+            count,
+            cardsPerPack,
+            totalCards: packCardsTotal,
+            unitEv: res.unitEvAvg,
+            unitMid90: res.unitEvMid90,
+            unitMin: res.unitEvMin,
+            unitMin5: res.unitEvMin5,
+            unitMax5: res.unitEvMax5,
+            unitMax: res.unitEvMax,
+            subtotalEv,
+            quantiles: res.quantiles,
+          };
+          packItems.push(pEntry);
+          items.push({
+            type: 'pack',
+            name: pEntry.packName,
+            count,
+            cardsPerUnit: cardsPerPack,
+            totalCards: packCardsTotal,
+            unitEv: res.unitEvAvg,
+            subtotalEv,
+            set: res.setCode,
+            code: res.boosterCode,
+            raw: sub,
+          });
+        } else {
+          let estimatedCards = 15;
+          if (sName.includes('sample')) estimatedCards = 2;
+          else if (sName.includes('booster box')) estimatedCards = 36 * 15;
+          else if (sName.includes('case')) estimatedCards = 6 * 36 * 15;
+          else if (sName.includes('secret lair drop') || sName.includes('secret lair')) estimatedCards = 5;
+          else if (sName.includes('commander')) estimatedCards = 100;
+          else if (sName.includes('jumpstart')) estimatedCards = 20;
+          else if (sName.includes('starter') || sName.includes('half-deck')) estimatedCards = 30;
+          else if (sName.includes('deck')) estimatedCards = 60;
+  
+          const subCardsTotal = count * estimatedCards;
+          totalCards += subCardsTotal;
+  
+          let unitEv = 0;
+          if (childArb && childArb.totalEvAvg > 0) {
+            unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
+          } else if (childArb && childArb.marketPrice > 0) {
+            unitEv = Number(childArb.marketPrice.toFixed(2));
+          } else if (sub.price > 0) {
+            unitEv = Number(sub.price.toFixed(2));
+          } else if (sub.marketPrice > 0) {
+            unitEv = Number(sub.marketPrice.toFixed(2));
+          } else if (sub.estimatedEv > 0) {
+            unitEv = Number(sub.estimatedEv.toFixed(2));
+          }
+  
+          const subtotalEv = Number((count * unitEv).toFixed(2));
+          totalFixedEv += subtotalEv;
+          totalEv += subtotalEv;
+          totalMinEv += Number((subtotalEv * 0.80).toFixed(2));
+          totalMin5Ev += Number((subtotalEv * 0.85).toFixed(2));
+          totalMid90Ev += Number((subtotalEv * 0.95).toFixed(2));
+          totalMax5Ev += Number((subtotalEv * 1.15).toFixed(2));
+          totalMaxEv += Number((subtotalEv * 1.25).toFixed(2));
+  
+          sealedItems.push({
+            name: sub.name,
+            count,
+            set: (sub.set || parentSet).toUpperCase(),
+            uuid: sub.uuid,
+            totalCards: subCardsTotal,
+            unitEv,
+            subtotalEv,
+          });
+  
+          items.push({
+            type: 'sealed',
+            name: sub.name,
+            count,
+            cardsPerUnit: estimatedCards,
+            totalCards: subCardsTotal,
+            unitEv,
+            subtotalEv,
+            set: (sub.set || parentSet).toUpperCase(),
+            raw: sub,
+          });
         }
-        const subtotalEv = Number((count * unitEv).toFixed(2));
-        totalFixedEv += subtotalEv;
-        totalEv += subtotalEv;
-        totalMinEv += Number((subtotalEv * 0.80).toFixed(2));
-        totalMin5Ev += Number((subtotalEv * 0.85).toFixed(2));
-        totalMid90Ev += Number((subtotalEv * 0.95).toFixed(2));
-        totalMax5Ev += Number((subtotalEv * 1.15).toFixed(2));
-        totalMaxEv += Number((subtotalEv * 1.25).toFixed(2));
-
-        sealedItems.push({
-          name: sub.name,
-          count,
-          set: (sub.set || parentSet).toUpperCase(),
-          uuid: sub.uuid,
-          totalCards: subCardsTotal,
-          unitEv,
-          subtotalEv,
-        });
-
-        items.push({
-          type: 'sealed',
-          name: sub.name,
-          count,
-          cardsPerUnit: estimatedCards,
-          totalCards: subCardsTotal,
-          unitEv,
-          subtotalEv,
-          set: (sub.set || parentSet).toUpperCase(),
-          raw: sub,
-        });
       }
     });
   }
@@ -1367,6 +1428,34 @@ export function resolveRecursiveProductAudit(
     }
   }
 
+  // Gather all items for composite simulation (flattening nested childBreakdowns)
+  const simulationItems: Array<{ count: number; quantiles?: number[]; evAverage?: number }> = [];
+  
+  // Direct pack items
+  for (const p of packItems) {
+    simulationItems.push({ count: p.count, quantiles: p.quantiles, evAverage: p.unitEv });
+  }
+  
+  // Precon decks and fixed items (no variance)
+  for (const d of deckItems) {
+    simulationItems.push({ count: d.count, evAverage: d.unitEv });
+  }
+  for (const c of cardItems) {
+    simulationItems.push({ count: c.count, evAverage: c.unitEv });
+  }
+
+  // Recursively add nested sealed items' quantiles
+  for (const s of sealedItems) {
+    if (s.childBreakdown?.quantiles) {
+      // If the child breakdown has already simulated composite quantiles, we can just treat it as a single unit with those quantiles
+      simulationItems.push({ count: s.count, quantiles: s.childBreakdown.quantiles, evAverage: s.unitEv });
+    } else {
+      simulationItems.push({ count: s.count, evAverage: s.unitEv });
+    }
+  }
+  
+  let quantiles = simulateCompositeQuantiles(simulationItems, 5000);
+
   return {
     totalCards,
     totalPacks,
@@ -1380,6 +1469,7 @@ export function resolveRecursiveProductAudit(
     totalMid90Ev: Number(totalMid90Ev.toFixed(2)),
     totalMax5Ev: Number(totalMax5Ev.toFixed(2)),
     totalMaxEv: Number(totalMaxEv.toFixed(2)),
+    quantiles,
     items,
     packItems,
     cardItems,

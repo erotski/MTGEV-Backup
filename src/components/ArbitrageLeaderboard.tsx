@@ -470,6 +470,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
             <div className="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto">
               <div className="shrink-0 p-2 bg-slate-950/80 rounded-2xl border border-slate-800 shadow-inner flex items-center justify-center">
                 <ProductPackagingImage
+                  productId={pickOfTheDay.productUuid || pickOfTheDay.id || `${pickOfTheDay.setCode}-${pickOfTheDay.boxName}`}
                   setCode={pickOfTheDay.setCode}
                   setName={pickOfTheDay.setName}
                   packagingType={mapCategoryToPackagingType(pickOfTheDay.category)}
@@ -509,16 +510,20 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                     Expected Value ({pickOfTheDay.packCount > 0 ? `${pickOfTheDay.packCount} Packs` : 'Full Deck'}):{' '}
                     <span className="font-extrabold text-emerald-400">${(pickOfTheDay.effectiveEv ?? pickOfTheDay.totalEvAvg).toFixed(2)}</span>
                   </span>
-                  <span>•</span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span>EV Score:</span>
-                    <span
-                      title={`EV Score: ${pickOfTheDay.evScore ?? 0}/100. Estimated probability of singles value exceeding sealed cost.`}
-                      className={`font-mono font-black text-xs px-2 py-0.5 rounded-full border ${getEvScoreDarkBadgeClass(pickOfTheDay.evScore ?? 0)}`}
-                    >
-                      {pickOfTheDay.evScore ?? 0}/100
-                    </span>
-                  </span>
+                  {pickOfTheDay.evScore != null && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span>EV Score:</span>
+                        <span
+                          title={`EV Score: ${pickOfTheDay.evScore}/100. Estimated probability of singles value exceeding sealed cost.`}
+                          className={`font-mono font-black text-xs px-2 py-0.5 rounded-full border ${getEvScoreDarkBadgeClass(pickOfTheDay.evScore)}`}
+                        >
+                          {pickOfTheDay.evScore}/100
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -641,17 +646,19 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                           ${(item.effectiveEv ?? item.totalEvAvg).toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span>EV Score:</span>
-                        <span
-                          title={`EV Score: ${item.evScore ?? 0}/100. Chance of singles value exceeding sealed cost.`}
-                          className={`font-mono font-bold text-[10px] px-1.5 py-0.5 rounded border ${getEvScoreBadgeClass(
-                            item.evScore ?? 0
-                          )}`}
-                        >
-                          {item.evScore ?? 0}/100
-                        </span>
-                      </div>
+                      {item.evScore != null && (
+                        <div className="flex justify-between items-center">
+                          <span>EV Score:</span>
+                          <span
+                            title={`EV Score: ${item.evScore}/100. Chance of singles value exceeding sealed cost.`}
+                            className={`font-mono font-bold text-[10px] px-1.5 py-0.5 rounded border ${getEvScoreBadgeClass(
+                              item.evScore
+                            )}`}
+                          >
+                            {item.evScore}/100
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -984,14 +991,18 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                       </span>
                     </td>
                     <td className="py-3.5 px-3 text-center">
-                      <span
-                        title={`EV Score: ${box.evScore ?? 0}/100. Probability of opening singles value >= sealed price.`}
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold font-mono border ${getEvScoreBadgeClass(
-                          box.evScore ?? 0
-                        )}`}
-                      >
-                        {box.evScore ?? 0}/100
-                      </span>
+                      {box.evScore != null ? (
+                        <span
+                          title={`EV Score: ${box.evScore}/100. Probability of opening singles value >= sealed price.`}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold font-mono border ${getEvScoreBadgeClass(
+                            box.evScore
+                          )}`}
+                        >
+                          {box.evScore}/100
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-mono text-xs">—</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <button

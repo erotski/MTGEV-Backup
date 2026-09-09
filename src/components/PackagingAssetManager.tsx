@@ -564,6 +564,7 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
                     {/* Compact Live Thumbnail Preview */}
                     <div className="w-14 h-18 bg-slate-900 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border border-slate-300 shadow-xs relative">
                       <ProductPackagingImage
+                        productId={product.id}
                         setCode={product.setCode}
                         setName={product.setName}
                         packagingType={product.packagingType}
@@ -847,6 +848,7 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
 
             <div className="bg-slate-950 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[320px] border border-slate-800">
               <ProductPackagingImage
+                productId={previewProduct.id}
                 setCode={previewProduct.setCode}
                 setName={previewProduct.setName}
                 packagingType={previewProduct.packagingType}

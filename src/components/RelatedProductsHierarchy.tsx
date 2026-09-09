@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor } from '../types';
 import { dataService } from '../services/dataService';
-import { resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
+import { resolveCardPrice, normalizeVendor, findBoosterEv } from '../utils/vendorUtils';
 import { getCanonicalProductMetrics } from '../utils/productUtils';
+import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
 import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
 import {
   CatalogPackProduct,
@@ -253,6 +254,36 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 badgeText = 'Fixed Deck';
               }
 
+              const matchedBooster = findBoosterEv(boosterMap, sCode, determinedBoosterName, priceMode, vendor);
+              let quantiles = matchedBooster?.quantiles;
+
+              if (metrics.auditResult?.packItems && metrics.auditResult.packItems.length > 0) {
+                const composite = new Array(100).fill(metrics.auditResult.totalFixedEv || 0);
+                let valid = false;
+                metrics.auditResult.packItems.forEach((pi) => {
+                  const c = pi.count || 1;
+                  const itemBooster = findBoosterEv(boosterMap, pi.set || sCode, pi.code || pi.packName || '', priceMode, vendor);
+                  const modeMult = (priceMode === 'cheapest_reprint' && itemBooster && itemBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+                  if (itemBooster?.quantiles && itemBooster.quantiles.length >= 100) {
+                    valid = true;
+                    for (let i = 0; i < 100; i++) {
+                      composite[i] += c * itemBooster.quantiles[i] * modeMult;
+                    }
+                  } else {
+                    const avg = pi.unitEv || itemBooster?.evAverage || 0;
+                    for (let i = 0; i < 100; i++) {
+                      composite[i] += c * avg * modeMult;
+                    }
+                  }
+                });
+                if (valid) {
+                  quantiles = composite.map((v) => Number(v.toFixed(2)));
+                }
+              } else if (quantiles && pCount > 1) {
+                const modeMult = (priceMode === 'cheapest_reprint' && matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+                quantiles = quantiles.map((q) => Number((q * pCount * modeMult).toFixed(2)));
+              }
+
               return {
                 id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
                 rawCategory: category,
@@ -266,6 +297,10 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 displayName: pName,
                 marketPrice: mPrice,
                 estimatedEv: ev,
+                estimatedEvMin: metrics.min5Ev || metrics.minEv,
+                estimatedEvMid90: metrics.mid90Ev,
+                estimatedEvMax: metrics.max5Ev || metrics.maxEv,
+                quantiles: quantiles,
                 cardCount: determinedCardCount,
                 packsCount: pCount,
                 badge: badgeText,
@@ -659,24 +694,24 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     switch (prod.packagingType) {
       case 'case':
         if (isCollector) {
-          return { label: 'Collector Case (6x)', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
+          return { label: 'Collector Case', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
         }
-        return { label: 'Sealed Case (6 Boxes)', icon: Archive, bg: 'bg-rose-50 text-rose-700 border-rose-200' };
+        return { label: 'Sealed Case', icon: Archive, bg: 'bg-rose-50 text-rose-700 border-rose-200' };
       case 'bundle_case':
         if (isGift) {
-          return { label: 'Gift Bundle Case (6x)', icon: Sparkles, bg: 'bg-amber-50 text-amber-900 border-amber-300' };
+          return { label: 'Gift Bundle Case', icon: Sparkles, bg: 'bg-amber-50 text-amber-900 border-amber-300' };
         }
-        return { label: 'Bundle Case (6x)', icon: Archive, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
+        return { label: 'Bundle Case', icon: Archive, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
       case 'box':
         if (isCollector) {
-          return { label: 'Collector Box (12x)', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
+          return { label: 'Collector Box', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
         }
-        return { label: 'Booster Box (36x)', icon: BoxIcon, bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+        return { label: 'Booster Box', icon: BoxIcon, bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
       case 'bundle':
         if (isGift) {
-          return { label: 'Gift Bundle (10x)', icon: Sparkles, bg: 'bg-amber-50 text-amber-800 border-amber-300' };
+          return { label: 'Gift Bundle', icon: Sparkles, bg: 'bg-amber-50 text-amber-800 border-amber-300' };
         }
-        return { label: 'Bundle Box (9x)', icon: Gift, bg: 'bg-purple-50 text-purple-700 border-purple-200' };
+        return { label: 'Bundle Box', icon: Gift, bg: 'bg-purple-50 text-purple-700 border-purple-200' };
       case 'box_set': {
         const isSecretBundle = prod.rawSubtype === 'secret_lair_bundle' || name.includes('bundle');
         if (isSecretBundle) {
@@ -689,34 +724,35 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         const isSingle = !name.includes('set of') && !name.includes('4 decks') && !name.includes('(4x)');
         if (isCommander) {
           return isSingle
-            ? { label: 'Commander Deck (100x)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' }
-            : { label: 'Commander Set (4 Decks)', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' };
+            ? { label: 'Commander Deck', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' }
+            : { label: 'Commander Set', icon: Layers3, bg: 'bg-amber-50 text-amber-800 border-amber-200' };
         }
         return isSingle
           ? { label: 'Precon Deck', icon: Layers3, bg: 'bg-violet-50 text-violet-800 border-violet-200' }
           : { label: 'Deck Collection', icon: Layers3, bg: 'bg-violet-50 text-violet-800 border-violet-200' };
       }
       case 'sample_pack':
-        return { label: 'Sample Pack (2 Cards)', icon: Sparkles, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
+        return { label: 'Sample Pack', icon: Sparkles, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
       case 'limited_aid_tool':
       case 'prerelease':
-        return { label: 'Prerelease Kit (6x)', icon: Shield, bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        return { label: 'Prerelease Kit', icon: Shield, bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
       case 'kit':
         return { label: 'Specialty Kit', icon: Wrench, bg: 'bg-teal-50 text-teal-800 border-teal-200' };
       default:
         if (isBlister) {
-          return { label: '3-Pack Blister (3x)', icon: Package, bg: 'bg-blue-50 text-blue-700 border-blue-200' };
+          return { label: '3-Pack Blister', icon: Package, bg: 'bg-blue-50 text-blue-700 border-blue-200' };
         }
         if (isCollector) {
-          return { label: 'Collector Pack (1x)', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
+          return { label: 'Collector Pack', icon: Crown, bg: 'bg-purple-50 text-purple-800 border-purple-300' };
         }
-        return { label: 'Single Pack (1x)', icon: Package, bg: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: 'Single Pack', icon: Package, bg: 'bg-slate-100 text-slate-700 border-slate-200' };
     }
   };
 
   // Category filtering & View Mode (Flat Grid and List)
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [gridCardStyle, setGridCardStyle] = useState<'split' | 'top_media' | 'compact'>('top_media');
 
   // Strictly database-driven category groupings (No fragile title-string matching!)
   const productSubtypeGroups = useMemo(() => {
@@ -913,8 +949,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     return filteredProducts.slice(0, COLLAPSED_LIMIT);
   }, [filteredProducts, isListCollapsed]);
 
-  const [isAssetGuideOpen, setIsAssetGuideOpen] = useState(false);
-
   if (isLoadingDbProducts) {
     return (
       <div id="related-products-hierarchy-section" className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
@@ -952,24 +986,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             Inspect nested contents, accessories, and packaging arbitrage discounts.
           </p>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <button
-            onClick={() => setIsAssetGuideOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition cursor-pointer self-start sm:self-auto shadow-2xs"
-          >
-            <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
-            <span>Stock Assets & Logos</span>
-          </button>
-        </div>
       </div>
-
-      {/* Stock Imagery Asset Directory Modal */}
-      <PackagingStockAssetGuide
-        isOpen={isAssetGuideOpen}
-        onClose={() => setIsAssetGuideOpen(false)}
-        currentSetCode={setCode}
-      />
 
       {/* 1. Packaging Tiers Interactive Section with Dedicated Left Picture Panel */}
       <div className="space-y-4">
@@ -979,34 +996,69 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             1. Select Packaging Tier to Inspect Containment ({filteredProducts.length} of {setProducts.length} Products)
           </div>
 
-          {/* View Mode Toggle: Flat Grid vs List */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold self-start sm:self-auto">
-            <button
-              id="hierarchy-view-grid-btn"
-              onClick={() => setViewMode('grid')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                viewMode === 'grid'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-              title="Flat grid view"
-            >
-              <BoxIcon className="w-3.5 h-3.5" />
-              <span>Flat Grid</span>
-            </button>
-            <button
-              id="hierarchy-view-list-btn"
-              onClick={() => setViewMode('list')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
-                viewMode === 'list'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-              title="Table list view with financial metrics"
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>List View</span>
-            </button>
+          {/* View Mode & Card Style Selector */}
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            {viewMode === 'grid' && (
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold">
+                <span className="text-[10px] text-slate-400 uppercase font-mono px-2 hidden lg:inline">Style:</span>
+                <button
+                  onClick={() => setGridCardStyle('split')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    gridCardStyle === 'split' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Option 1: Side-by-Side Split layout"
+                >
+                  Option 1: Split
+                </button>
+                <button
+                  onClick={() => setGridCardStyle('top_media')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    gridCardStyle === 'top_media' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Option 2: Top Image Stage layout"
+                >
+                  Option 2: Top Media
+                </button>
+                <button
+                  onClick={() => setGridCardStyle('compact')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    gridCardStyle === 'compact' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Option 3: Compact Showcase layout"
+                >
+                  Option 3: Compact
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold">
+              <button
+                id="hierarchy-view-grid-btn"
+                onClick={() => setViewMode('grid')}
+                className={`px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Flat grid view"
+              >
+                <BoxIcon className="w-3.5 h-3.5" />
+                <span>Flat Grid</span>
+              </button>
+              <button
+                id="hierarchy-view-list-btn"
+                onClick={() => setViewMode('list')}
+                className={`px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                  viewMode === 'list'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Table list view with financial metrics"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>List View</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1077,30 +1129,20 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         <div className="flex flex-col md:flex-row items-start gap-4">
           {/* Dedicated Sticky Left Div for Product Picture (hidden in List view) */}
           {viewMode !== 'list' && (
-            <div className="w-full md:w-60 shrink-0 bg-slate-50/90 rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center md:sticky md:top-4 self-start">
+            <div className="w-full md:w-60 shrink-0 bg-slate-50/90 rounded-2xl p-2 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center md:sticky md:top-4 self-start overflow-hidden">
               {activeProduct && (
-                <div className="w-full space-y-3">
+                <div className="w-full flex items-center justify-center p-0">
                   <ProductPackagingImage
+                    productId={activeProduct.id}
                     setCode={setCode}
                     setName={setName}
                     packagingType={activeProduct.packagingType}
                     displayName={cleanProductName(activeProduct.displayName)}
                     cardCount={activeProduct.cardCount}
-                    size="md"
+                    size="full"
+                    className="w-full h-64 max-h-[300px] object-contain"
                     allowZoom={true}
                   />
-                  <div className="pt-2 border-t border-slate-200/80 text-left space-y-1">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Selected Product
-                    </div>
-                    <div className="text-xs font-bold text-slate-900 leading-snug">
-                      {cleanProductName(activeProduct.displayName)}
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] font-mono pt-1 text-slate-600">
-                      <span>Market: <strong className="text-slate-900">${activeProduct.marketPrice.toFixed(2)}</strong></span>
-                      <span>EV: <strong className="text-emerald-600">${activeProduct.estimatedEv.toFixed(2)}</strong></span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -1115,71 +1157,220 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   const isSelected = activeProduct?.id === prod.id;
                   const badge = getPackagingBadge(prod);
                   const BadgeIcon = badge.icon;
+                  const evScore = (prod as any).evScore ?? calculateEvScore(
+                    prod.marketPrice,
+                    prod.estimatedEv,
+                    prod.estimatedEvMin,
+                    prod.estimatedEvMid90,
+                    prod.estimatedEvMax,
+                    false,
+                    (prod as any).quantiles,
+                    prod.packsCount
+                  );
+                  const profit = prod.marketPrice > 0 ? prod.estimatedEv - prod.marketPrice : 0;
                   const evRoi = prod.marketPrice > 0 ? Number((((prod.estimatedEv - prod.marketPrice) / prod.marketPrice) * 100).toFixed(1)) : 0;
+                  const formattedName = cleanProductName(prod.displayName);
 
+                  if (gridCardStyle === 'top_media') {
+                    // OPTION 2: TOP MEDIA STAGE (30% bigger image + floating product type badge on top + numeric EV Score (0-100) above Market price, EV Price, Expected Profit & ROI% below)
+                    return (
+                      <button
+                        key={prod.id}
+                        id={`btn-product-tier-${prod.id}`}
+                        onClick={() => handleSelectProduct(prod.id, prod.boosterName)}
+                        className={`rounded-2xl border text-left transition relative flex flex-col justify-between overflow-hidden cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-50/90 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20'
+                            : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs'
+                        }`}
+                      >
+                        {/* Top Media Stage */}
+                        <div className="w-full bg-slate-50/90 p-3 border-b border-slate-100 flex items-center justify-between gap-3 relative shrink-0 min-h-[175px]">
+                          {/* Left: ~30% Bigger Picture (w-36 h-36) with Floating Badge overlaid directly on top */}
+                          <div className="relative w-36 h-36 shrink-0 flex items-center justify-start">
+                            <ProductPackagingImage
+                              productId={prod.id}
+                              setCode={setCode}
+                              setName={setName}
+                              packagingType={prod.packagingType}
+                              displayName={formattedName}
+                              cardCount={prod.cardCount}
+                              size="full"
+                              className="w-full h-full object-contain drop-shadow-xs"
+                            />
+                            {/* Floating Product Type Badge directly on top of picture */}
+                            <span className={`absolute top-0 left-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold border flex items-center gap-1 shadow-xs backdrop-blur-md z-10 ${badge.bg}`}>
+                              <BadgeIcon className="w-2.5 h-2.5" />
+                              <span>{badge.label}</span>
+                            </span>
+                          </div>
+
+                          {/* Right: Cards count + EV Score (0-100) + Market Price + EV Price + Expected Profit + ROI% */}
+                          <div className="flex flex-col items-end justify-between self-stretch text-right font-mono py-0.5 shrink-0 min-w-[90px]">
+                            <span className="text-[9px] font-bold text-slate-500 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs mb-auto">
+                              {prod.cardCount ? `${prod.cardCount} Cards` : `${prod.packsCount} Packs`}
+                            </span>
+
+                            <div className="space-y-1 mt-auto">
+                              {evScore != null && (
+                                <div>
+                                  <div className="text-[8px] text-slate-500 uppercase font-sans tracking-wide font-bold">EV Score</div>
+                                  <div className={`text-xs font-black ${getEvScoreColorClass(evScore)}`}>
+                                    {evScore}
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-[8px] text-slate-400 uppercase font-sans tracking-wide">Market Price</div>
+                                <div className="text-xs font-black text-slate-900">
+                                  {prod.marketPrice > 0 ? `$${prod.marketPrice.toFixed(2)}` : 'Unlisted'}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-[8px] text-emerald-600 uppercase font-sans tracking-wide">EV Price</div>
+                                <div className="text-xs font-black text-emerald-600">
+                                  ${prod.estimatedEv.toFixed(2)}
+                                </div>
+                              </div>
+                              {prod.marketPrice > 0 && (
+                                <>
+                                  <div>
+                                    <div className="text-[8px] text-slate-400 uppercase font-sans tracking-wide">Expected Profit</div>
+                                    <div className={`text-xs font-black ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                      {profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[8px] text-slate-500 uppercase font-sans tracking-wide font-bold">ROI %</div>
+                                    <div className="text-xs font-black text-slate-950">
+                                      {evRoi >= 0 ? `+${evRoi}%` : `${evRoi}%`}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom Info Body */}
+                        <div className="p-3 flex-1 flex items-center bg-white min-h-[48px]">
+                          <div className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight" title={formattedName}>
+                            {formattedName}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+
+                  if (gridCardStyle === 'compact') {
+                    // OPTION 3: COMPACT SHOWCASE
+                    return (
+                      <button
+                        key={prod.id}
+                        id={`btn-product-tier-${prod.id}`}
+                        onClick={() => handleSelectProduct(prod.id, prod.boosterName)}
+                        className={`p-3 rounded-2xl border text-left transition relative flex flex-col justify-between gap-2.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-50/90 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20'
+                            : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs'
+                        }`}
+                      >
+                        {/* Header: Badge & Cards */}
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${badge.bg}`}>
+                            <BadgeIcon className="w-2.5 h-2.5" />
+                            <span>{badge.label}</span>
+                          </span>
+                          <span className="text-[9px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                            {prod.cardCount ? `${prod.cardCount} Cards` : `${prod.packsCount} Packs`}
+                          </span>
+                        </div>
+
+                        {/* Middle: Picture + Title */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-20 shrink-0 bg-slate-50 rounded-xl p-1 border border-slate-200 flex items-center justify-center">
+                            <ProductPackagingImage
+                              productId={prod.id}
+                              setCode={setCode}
+                              setName={setName}
+                              packagingType={prod.packagingType}
+                              displayName={formattedName}
+                              cardCount={prod.cardCount}
+                              size="xs"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight" title={formattedName}>
+                              {formattedName}
+                            </div>
+                            <div className="text-[10px] font-mono flex items-center gap-2">
+                              <span className="text-slate-900 font-bold">${prod.marketPrice > 0 ? prod.marketPrice.toFixed(2) : 'N/A'}</span>
+                              <span className="text-emerald-600 font-bold">EV ${prod.estimatedEv.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+
+                  // OPTION 1 (DEFAULT): SIDE-BY-SIDE SPLIT CARD (Product picture max 40-50% width, uniform fixed frame)
                   return (
                     <button
                       key={prod.id}
                       id={`btn-product-tier-${prod.id}`}
                       onClick={() => handleSelectProduct(prod.id, prod.boosterName)}
-                      className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between gap-2.5 cursor-pointer ${
+                      className={`p-3 rounded-2xl border text-left transition relative flex items-center gap-3 cursor-pointer ${
                         isSelected
-                          ? 'bg-indigo-50/80 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20'
-                          : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 hover:bg-slate-100/60'
+                          ? 'bg-indigo-50/90 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20'
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs'
                       }`}
                     >
-                      {/* Top: Badges & Packs Count */}
-                      <div className="w-full space-y-1.5">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 shrink-0 ${badge.bg}`}>
-                            <BadgeIcon className="w-2.5 h-2.5" />
-                            {badge.label}
-                          </span>
-                          {prod.packsCount > 1 && (
-                            <span className="text-[9px] font-mono font-bold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
-                              {prod.packsCount} Packs
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight min-h-[2rem]" title={cleanProductName(prod.displayName)}>
-                          {cleanProductName(prod.displayName)}
-                        </div>
-
-                        <div className="text-[10px] text-slate-500 font-medium">
-                          {prod.cardCount
-                            ? `${prod.cardCount} Cards Total`
-                            : prod.packsCount > 1
-                            ? `${prod.packsCount} Packs Total`
-                            : 'Sealed Item'}
-                        </div>
+                      {/* Left: Product Picture (Max 40% box width, uniform fixed size) */}
+                      <div className="w-20 h-24 shrink-0 bg-slate-50/90 rounded-xl p-1 border border-slate-200 flex items-center justify-center overflow-hidden">
+                        <ProductPackagingImage
+                          productId={prod.id}
+                          setCode={setCode}
+                          setName={setName}
+                          packagingType={prod.packagingType}
+                          displayName={formattedName}
+                          cardCount={prod.cardCount}
+                          size="sm"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
 
-                      {/* Bottom: Price & EV Information */}
-                      <div className="w-full pt-2 border-t border-slate-200/80 font-mono flex items-end justify-between">
-                        <div>
-                          <div className="text-xs font-black text-slate-900">
-                            {prod.marketPrice > 0 ? `$${prod.marketPrice.toFixed(2)}` : 'Unlisted'}
+                      {/* Right: Info */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch space-y-1">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 shrink-0 ${badge.bg}`}>
+                              <BadgeIcon className="w-2.5 h-2.5" />
+                              <span>{badge.label}</span>
+                            </span>
+                            <span className="text-[9px] font-mono font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded border border-slate-200 shrink-0">
+                              {prod.cardCount ? `${prod.cardCount} Cds` : `${prod.packsCount} Pks`}
+                            </span>
                           </div>
-                          {prod.packsCount > 1 && prod.marketPrice > 0 && (
-                            <div className="text-[9px] text-slate-400">
-                              (${(prod.marketPrice / prod.packsCount).toFixed(2)}/pk)
-                            </div>
-                          )}
+
+                          <div className="font-bold text-xs text-slate-900 line-clamp-2 leading-tight" title={formattedName}>
+                            {formattedName}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-[10px] font-bold text-emerald-600">
-                            EV ${prod.estimatedEv.toFixed(2)}
+
+                        <div className="pt-1.5 border-t border-slate-100 font-mono flex items-end justify-between">
+                          <div>
+                            <div className="text-[8px] text-slate-400 uppercase font-sans">Market</div>
+                            <div className="text-xs font-black text-slate-900">
+                              {prod.marketPrice > 0 ? `$${prod.marketPrice.toFixed(2)}` : 'N/A'}
+                            </div>
                           </div>
-                          {prod.marketPrice > 0 ? (
-                            <div className={`text-[9px] font-bold ${evRoi >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                              {evRoi >= 0 ? `+${evRoi}%` : `${evRoi}%`} ROI
+                          <div className="text-right">
+                            <div className="text-[8px] text-emerald-600 uppercase font-sans">EV</div>
+                            <div className="text-xs font-black text-emerald-600">
+                              ${prod.estimatedEv.toFixed(2)}
                             </div>
-                          ) : (
-                            <div className="text-[9px] font-medium text-slate-400">
-                              No Market Price
-                            </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </button>

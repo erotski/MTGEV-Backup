@@ -5,7 +5,7 @@ export interface CollectorBoosterBoxMockupProps {
   setCode: string;
   setName?: string;
   packCount?: number;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero' | 'full';
   className?: string;
   themeColor?: 'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate';
   artUrl?: string;

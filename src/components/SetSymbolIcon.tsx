@@ -7,6 +7,7 @@ interface SetSymbolIconProps {
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   alt?: string;
+  invert?: boolean;
 }
 
 export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
@@ -15,6 +16,7 @@ export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
   className = '',
   size = 'sm',
   alt,
+  invert = false,
 }) => {
   const [hasError, setHasError] = useState(false);
   const cleanCode = (setCode || '').trim().toLowerCase();
@@ -53,7 +55,7 @@ export const SetSymbolIcon: React.FC<SetSymbolIconProps> = ({
       src={scryfallSvgUrl}
       alt={alt || `${setCode} set symbol`}
       onError={() => setHasError(true)}
-      className={`inline-block object-contain filter drop-shadow-sm ${sizeClasses[size]} ${className}`}
+      className={`inline-block object-contain filter drop-shadow-sm ${invert ? 'brightness-0 invert' : ''} ${sizeClasses[size]} ${className}`}
       loading="lazy"
       referrerPolicy="no-referrer"
     />

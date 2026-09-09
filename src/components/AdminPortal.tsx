@@ -1450,6 +1450,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       {/* 1. Preview Graphic */}
                       <td className="py-3 px-4 w-20">
                         <ProductPackagingImage
+                          productId={product.id}
                           setCode={product.setCode}
                           packagingType={product.packagingType}
                           imageUrl={customUrl || product.imageUrl}

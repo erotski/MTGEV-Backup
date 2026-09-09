@@ -252,7 +252,7 @@ export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [
     estimatedEv: 336.24,
     cardCount: 504,
     packsCount: 36,
-    badge: 'Play Booster Display (36x)',
+    badge: 'Play Booster Display',
     specialFeatures: ['36 Factory Sealed Play Booster Packs', '504 MTG Cards Total', 'Draft Ready (12 Extra Packs)', 'Average 7.2 SPG Packs / Box'],
     identifiers: {
       tcgplayerProductId: '541164',
@@ -493,7 +493,7 @@ export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [
     estimatedEv: 475.56,
     cardCount: 180,
     packsCount: 12,
-    badge: 'Collector Display (12x)',
+    badge: 'Collector Display',
     specialFeatures: ['12 Factory Sealed Collector Boosters', '60+ Rares/Mythics Guaranteed', 'Highest Foil Density MTG Display', 'Exclusive Ripple & Surge Foils'],
     identifiers: {
       tcgplayerProductId: '541179',
@@ -1032,7 +1032,7 @@ export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [
     estimatedEv: 62.50,
     cardCount: 85,
     packsCount: 6,
-    badge: 'Prerelease Pack (6x)',
+    badge: 'Prerelease Pack',
     specialFeatures: [
       '6x MH3 Play Booster Packs',
       '1x Year-Stamped Traditional Foil Rare/Mythic Promo Card',

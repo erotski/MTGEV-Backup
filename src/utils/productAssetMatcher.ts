@@ -271,6 +271,9 @@ export function loadSavedAssetMappings(): Record<string, ProductAssetMapping> {
 export function saveAssetMappings(mappings: Record<string, ProductAssetMapping>): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(mappings));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('asset-mappings-updated'));
+    }
   } catch (e) {
     console.error('Failed to save product asset mappings:', e);
   }

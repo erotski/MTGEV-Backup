@@ -27,11 +27,21 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
+import { findBoosterEv, normalizeVendor } from '../utils/vendorUtils';
+import { simulateCompositeQuantiles } from '../utils/evScore';
+
+export interface CompositePackItem {
+  packName?: string;
+  code?: string;
+  set?: string;
+  count: number;
+}
 
 interface PackDistributionCurveProps {
   productTitle: string;
   activeBooster: BoosterEVRecord;
   allSetBoosters?: BoosterEVRecord[];
+  boosterEvMap?: Record<string, BoosterEVRecord[]>;
   defaultPackSealedPrice?: number;
   multiplier?: number;
   priceMode?: 'direct' | 'cheapest_reprint';
@@ -41,12 +51,14 @@ interface PackDistributionCurveProps {
   fixedBaseEv?: number;
   variableEv?: number;
   cardCount?: number;
+  packItems?: CompositePackItem[];
 }
 
 export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   productTitle,
   activeBooster,
   allSetBoosters,
+  boosterEvMap,
   defaultPackSealedPrice = 7.99,
   multiplier = 1,
   priceMode = 'direct',
@@ -56,10 +68,27 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   fixedBaseEv = 0,
   variableEv,
   cardCount,
+  packItems,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
   const scale = multiplier > 0 ? multiplier : 1;
   const isMixedProduct = Boolean(fixedBaseEv > 0 && !isPreconstructed && (variableEv ? variableEv > 0 : scale > 0));
+
+  // Build effective list of pack items (handles single booster vs composite bundles/boxes)
+  const effectivePackItems = useMemo(() => {
+    if (packItems && packItems.length > 0) {
+      return packItems;
+    }
+    if (activeBooster) {
+      return [{
+        code: activeBooster.boosterName,
+        set: activeBooster.setCode,
+        count: scale,
+        packName: activeBooster.fullBoosterName || activeBooster.boosterName,
+      }];
+    }
+    return [];
+  }, [packItems, activeBooster, scale]);
 
   // State for user-editable pack/deck sealed price
   const packMarketPrice = defaultPackSealedPrice;
@@ -70,54 +99,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     setSealedPrice(packMarketPrice);
   }, [packMarketPrice, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, preconSinglesEv, fixedBaseEv]);
 
-  // Key percentile benchmarks for the active product (scaled by product multiplier or preconstructed fixed EV)
+  // Key percentile benchmarks for the active product
   const fixedDeckEv = preconSinglesEv ?? fixedBaseEv ?? activeBooster?.evAverage ?? 9.34;
   const baseOffset = isMixedProduct ? fixedBaseEv : 0;
-  const rawMin = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMin || 0.85) * scale).toFixed(2));
-  const rawP5 = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMin5 || 1.53) * scale).toFixed(2));
-  const rawMid = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMid90 || 7.94) * scale).toFixed(2));
-  const rawP95 = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMax5 || 42.37) * scale).toFixed(2));
-  const rawMax = isPreconstructed ? fixedDeckEv : Number((baseOffset + (activeBooster?.evMax || 182.50) * scale).toFixed(2));
-
-  // Mathematically guaranteed ordered quantile anchors: Q(0) <= Q(0.05) <= Q(0.50) <= Q(0.95) <= Q(1.00)
-  const q0 = Math.max(0, rawMin);
-  const q5 = Math.max(q0, rawP5);
-  // Median (50th percentile) is typically 80-90% of trimmed mean evMid90 in right-skewed pack EV distributions
-  const rawMedian = (activeBooster?.evMid90 ? activeBooster.evMid90 * 0.88 : (activeBooster?.evAverage || 9.34) * 0.82) * scale;
-  const q50 = isPreconstructed
-    ? fixedDeckEv
-    : Math.max(q5 + 0.01, Math.min(Math.max(q5 + 0.05, rawP95 - 0.05), baseOffset + rawMedian));
-  const q95 = isPreconstructed ? fixedDeckEv : Math.max(q50 + 0.05, rawP95);
-  const q100 = isPreconstructed ? fixedDeckEv : Math.max(q95 + 0.05, rawMax);
-
-  // Precise 90th percentile value calculation (strictly bounded between median and 95th percentile)
-  const p90Value = useMemo(() => {
-    if (isPreconstructed) return fixedDeckEv;
-    const subT = (0.90 - 0.50) / 0.45;
-    return Number((q50 + Math.pow(subT, 1.25) * (q95 - q50)).toFixed(2));
-  }, [isPreconstructed, fixedDeckEv, q50, q95]);
-
-  // Default optimal Y-axis ceiling (scales to accommodate top 100% god packs)
-  const defaultYCeiling = useMemo(() => {
-    if (isPreconstructed) {
-      return Math.ceil(Math.max(fixedDeckEv * 1.35, sealedPrice * 1.35, 10));
-    }
-    const maxGodPack = (activeBooster?.evMax && activeBooster.evMax > 0)
-      ? baseOffset + activeBooster.evMax * scale
-      : (activeBooster?.quantiles?.[99] || p90Value * 2) * scale + baseOffset;
-    return Math.ceil(Math.max(maxGodPack * 1.05, p90Value * 2, sealedPrice * 1.25, 10));
-  }, [isPreconstructed, fixedDeckEv, activeBooster, scale, p90Value, sealedPrice, baseOffset]);
 
   const [chartMode, setChartMode] = useState<'buckets' | 'continuous'>('buckets');
-  // Sliders state: X-Axis Start/End Percentile and Y-Axis Max Ceiling
+  // Sliders state: X-Axis Start/End Percentile
   const [xMinPercent, setXMinPercent] = useState<number>(1);
   const [xMaxPercent, setXMaxPercent] = useState<number>(100);
-  const [yCeiling, setYCeiling] = useState<number>(defaultYCeiling);
-
-  // Update default Y ceiling when changing booster, multiplier, priceMode or vendor
-  useEffect(() => {
-    setYCeiling(defaultYCeiling);
-  }, [defaultYCeiling, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, fixedDeckEv]);
 
   const [visibleVendors, setVisibleVendors] = useState({
     all: true,
@@ -179,6 +168,91 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         (v) => vendorRecords[v]?.quantiles && vendorRecords[v]!.quantiles!.length >= 100
       );
 
+    // Map to hold simulated 100-bucket quantiles per vendor
+    const vendorSimulations: Record<string, number[]> = {};
+    const vendorsToSim = ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
+
+    if (!isPreconstructed) {
+      vendorsToSim.forEach((v) => {
+        const fallbackRatios: Record<string, number> = {
+          tcgplayer: 1.0,
+          cardkingdom: 1.15,
+          cardmarket: 0.88,
+          manapool: 0.98,
+          all: 0.94,
+          all_average: 1.0
+        };
+        const fallbackRatio = fallbackRatios[v] || 1.0;
+
+        let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
+        
+        if (effectivePackItems.length > 0) {
+          effectivePackItems.forEach((item) => {
+            const count = item.count || 1;
+            const setCode = item.set || activeBooster?.setCode || '';
+            const code = item.code || item.packName || activeBooster?.boosterName || '';
+            let rec: BoosterEVRecord | undefined;
+            if (boosterEvMap) {
+              rec = findBoosterEv(boosterEvMap, setCode, code, priceMode as any, v as any);
+            } else if (allSetBoosters && allSetBoosters.length > 0) {
+              rec = allSetBoosters.find(b => 
+                (b.boosterName || '').toLowerCase() === code.toLowerCase() &&
+                (b.priceMode || 'direct') === priceMode &&
+                normalizeVendor(b.vendor) === normalizeVendor(v)
+              );
+            }
+            if (!rec && (activeBooster?.boosterName || '').toLowerCase() === (code || '').toLowerCase()) {
+              rec = vendorRecords[v] || activeBooster;
+            }
+
+            const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+            
+            let itemQuantiles = rec?.quantiles;
+            if (!itemQuantiles || itemQuantiles.length < 100) {
+              if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
+                itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
+              }
+            }
+
+            let itemAvg = rec?.evAverage;
+            if (itemAvg == null && activeBooster) {
+              itemAvg = activeBooster.evAverage * fallbackRatio;
+            }
+
+            if (itemQuantiles && modeMult !== 1.0) {
+              itemQuantiles = itemQuantiles.map(q => q * modeMult);
+            }
+            if (itemAvg != null && modeMult !== 1.0) {
+              itemAvg *= modeMult;
+            }
+
+            simItems.push({ count, quantiles: itemQuantiles, evAverage: itemAvg });
+          });
+        } else {
+          // Single booster fallback (when packItems is empty)
+          const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
+          const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+          let itemQuantiles = rec?.quantiles;
+          if (!itemQuantiles || itemQuantiles.length < 100) {
+             if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
+                itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
+             }
+          }
+          if (itemQuantiles && modeMult !== 1.0) {
+             itemQuantiles = itemQuantiles.map(q => q * modeMult);
+          }
+          simItems.push({ count: scale, quantiles: itemQuantiles, evAverage: (rec?.evAverage || activeBooster?.evAverage || 0) * modeMult });
+        }
+
+        // Add baseOffset as a constant offset (count: 1)
+        if (baseOffset > 0) {
+          simItems.push({ count: 1, evAverage: baseOffset });
+        }
+
+        vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
+      });
+    }
+
     for (let p = 1; p <= 100; p += 1) {
       if (isPreconstructed) {
         points.push({
@@ -195,33 +269,21 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       }
 
       if (hasSimulatedQuantiles) {
-        // Sample index in the 100-bucket array (0 to 99)
         const qIdx = p - 1;
-
-        const getVal = (v: string, fallbackRatio: number) => {
-          const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
-          const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-          if (rec?.quantiles && rec.quantiles.length >= 100) {
-            const rawVal = rec.quantiles[qIdx];
-            return Number((baseOffset + rawVal * modeMult * scale).toFixed(2));
-          }
-          if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-            const rawVal = activeBooster.quantiles[qIdx];
-            return Number((baseOffset + rawVal * fallbackRatio * modeMult * scale).toFixed(2));
+        const getSimVal = (v: string) => {
+          const simData = vendorSimulations[v];
+          if (simData && simData.length >= 100) {
+             return Number(simData[qIdx].toFixed(2));
           }
           return baseOffset;
         };
 
-        const tcgVal = getVal('tcgplayer', 1.0);
-        const ckVal = getVal('cardkingdom', 1.15);
-        const cmVal = getVal('cardmarket', 0.88);
-        const mpVal = getVal('manapool', 0.98);
-        const allVal = (vendorRecords['all']?.quantiles?.length || vendorRecords['all_cheapest']?.quantiles?.length)
-          ? getVal('all', 0.94)
-          : Math.min(tcgVal, ckVal, cmVal, mpVal);
-        const allAvgVal = vendorRecords['all_average']?.quantiles?.length
-          ? getVal('all_average', 1.0)
-          : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+        const tcgVal = getSimVal('tcgplayer');
+        const ckVal = getSimVal('cardkingdom');
+        const cmVal = getSimVal('cardmarket');
+        const mpVal = getSimVal('manapool');
+        const allVal = vendorSimulations['all']?.length >= 100 ? getSimVal('all') : Math.min(tcgVal, ckVal, cmVal, mpVal);
+        const allAvgVal = vendorSimulations['all_average']?.length >= 100 ? getSimVal('all_average') : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
 
         points.push({
           percentile: `${p}%`,
@@ -237,6 +299,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         // Fallback to mathematical quantile anchors if legacy data without quantiles
         const t = p / 100;
         let baseVal: number;
+        
+        // Ensure q0, q5, q50, q95, q100 exist here for fallback calculation
+        const q0 = activeBooster ? activeBooster.evMin : 0;
+        const q5 = activeBooster?.evMin5 || q0 * 1.5;
+        const q50 = activeBooster?.evMid90 || activeBooster?.evAverage || 0;
+        const q95 = activeBooster?.evMax5 || q50 * 2.5;
+        const q100 = activeBooster?.evMax || q50 * 3.5;
+
         if (t <= 0.05) {
           const subT = t / 0.05;
           baseVal = q0 + subT * (q5 - q0);
@@ -250,11 +320,12 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           const subT = (t - 0.95) / 0.05;
           baseVal = q95 + Math.pow(subT, 2.4) * (q100 - q95);
         }
-
-        const tcgVal = Number(baseVal.toFixed(2));
-        const ckVal = Number((baseVal * 1.08).toFixed(2));
-        const cmVal = Number((baseVal * 0.92).toFixed(2));
-        const mpVal = Number((baseVal * 0.96).toFixed(2));
+        const scaledBase = baseOffset + (baseVal * scale);
+        
+        const tcgVal = Number(scaledBase.toFixed(2));
+        const ckVal = Number((scaledBase * 1.08).toFixed(2));
+        const cmVal = Number((scaledBase * 0.92).toFixed(2));
+        const mpVal = Number((scaledBase * 0.96).toFixed(2));
         const allCheapestVal = Math.min(tcgVal, ckVal, cmVal, mpVal);
         const allAvgVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
 
@@ -285,7 +356,48 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     });
 
     return points;
-  }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, priceMode, q0, q5, q50, q95, q100, baseOffset]);
+  }, [
+    isPreconstructed,
+    fixedDeckEv,
+    activeBooster,
+    vendorRecords,
+    scale,
+    priceMode,
+    baseOffset,
+    effectivePackItems,
+    allSetBoosters,
+    boosterEvMap
+  ]);
+
+  const currentVendorKey = useMemo(() => {
+    if (vendor === 'all_cheapest') return 'all';
+    if (['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
+      return vendor;
+    }
+    return 'all';
+  }, [vendor]);
+
+  const q0 = isPreconstructed ? fixedDeckEv : Number(allCurveData[0]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const q5 = isPreconstructed ? fixedDeckEv : Number(allCurveData[4]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const q50 = isPreconstructed ? fixedDeckEv : Number(allCurveData[49]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const p90Value = isPreconstructed ? fixedDeckEv : Number(allCurveData[89]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const q95 = isPreconstructed ? fixedDeckEv : Number(allCurveData[94]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const q100 = isPreconstructed ? fixedDeckEv : Number(allCurveData[99]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+
+  // Default optimal Y-axis ceiling
+  const defaultYCeiling = useMemo(() => {
+    if (isPreconstructed) {
+      return Math.ceil(Math.max(fixedDeckEv * 1.35, sealedPrice * 1.35, 10));
+    }
+    return Math.ceil(Math.max(q100 * 1.08, sealedPrice * 1.25, 10));
+  }, [isPreconstructed, fixedDeckEv, q100, sealedPrice]);
+
+  const [yCeiling, setYCeiling] = useState<number>(defaultYCeiling);
+
+  // Update default Y ceiling when changing booster, multiplier, priceMode or vendor
+  useEffect(() => {
+    setYCeiling(defaultYCeiling);
+  }, [defaultYCeiling, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, fixedDeckEv]);
 
   // Filtered curve data for X-Axis Slider Range
   const filteredCurveData = useMemo(() => {

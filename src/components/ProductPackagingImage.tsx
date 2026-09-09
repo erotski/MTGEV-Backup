@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ProductPackagingType } from '../ecommerceBoosterData';
-import { loadSavedAssetMappings } from '../utils/productAssetMatcher';
+import { loadSavedAssetMappings, getProductEffectiveAssetSlots } from '../utils/productAssetMatcher';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { BoosterFoilPackMockup, cleanPureSetName } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
@@ -9,19 +9,21 @@ import { BoosterDisplayBoxMockup } from './BoosterDisplayBoxMockup';
 import { Package, Box as BoxIcon, Archive, Gift, Layers3, Sparkles, Image as ImageIcon, ZoomIn, X, Crown, ChevronLeft, ChevronRight, Layers, RotateCw } from 'lucide-react';
 
 interface ProductPackagingImageProps {
+  productId?: string;
   setCode: string;
   setName: string;
   packagingType: ProductPackagingType;
   imageUrl?: string;
   displayName: string;
   cardCount?: number;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero' | 'full';
   className?: string;
   themeColor?: 'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate';
   allowZoom?: boolean;
 }
 
 export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
+  productId,
   setCode,
   setName,
   packagingType,
@@ -51,172 +53,52 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const isDraftNight = cleanName.includes('draft night') || cleanName.includes('draft_night') || cleanName.includes('draft_set');
   const isScene = cleanName.includes('scene');
 
+  const [mappingsVersion, setMappingsVersion] = useState<number>(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setMappingsVersion((v) => v + 1);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('asset-mappings-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('asset-mappings-updated', handleUpdate);
+    };
+  }, []);
+
+  // Effective asset slots from Admin Portal saved mappings and strict WPN convention matcher
+  const effectiveResult = React.useMemo(() => {
+    return getProductEffectiveAssetSlots({
+      id: productId || `${cleanCode}-${cleanName}`,
+      setCode: cleanCode,
+      displayName,
+      packagingType,
+      imageUrl,
+    });
+  }, [productId, cleanCode, displayName, packagingType, imageUrl, mappingsVersion]);
+
+  const hasLinkedPicture = Boolean(
+    effectiveResult.isManual ||
+    (imageUrl && imageUrl.trim().length > 0) ||
+    (effectiveResult.guesses && effectiveResult.guesses.some((g) => g.score >= 40))
+  );
+
   // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
+    if (!hasLinkedPicture) return [];
     const urls: string[] = [];
 
-    // Check for saved manual mapping overrides first
-    try {
-      const savedMappings = loadSavedAssetMappings();
-      // Match by exact key or setCode + cleanName
-      for (const key of Object.keys(savedMappings)) {
-        const mapping = savedMappings[key];
-        if (mapping && mapping.isManualOverride && Array.isArray(mapping.slots) && mapping.slots.length > 0) {
-          const mappingSet = (mapping.setCode || '').toLowerCase().trim();
-          if (mappingSet === cleanCode) {
-            const keyLower = key.toLowerCase();
-            if (keyLower === cleanName || cleanName.includes(keyLower) || keyLower.includes(cleanName) || imageUrl?.includes(key)) {
-              mapping.slots.forEach((s) => {
-                if (s && s.trim().length > 0) urls.push(s.trim());
-              });
-            }
-          }
-        }
-      }
-    } catch {
-      // Ignore storage read error
+    if (effectiveResult.slots && effectiveResult.slots.length > 0) {
+      effectiveResult.slots.forEach((s) => {
+        if (s && s.trim().length > 0) urls.push(s.trim());
+      });
     }
 
     if (imageUrl && imageUrl.trim().length > 0) {
       urls.push(imageUrl.trim());
     }
 
-    if (cleanCode) {
-      // 1. Slugified display name candidates (e.g. /products/hob-the_hobbit_collector_booster_box.png)
-      const nameSlug = cleanName
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-
-      if (nameSlug) {
-        urls.push(`/products/${cleanCode}-${nameSlug}.png`);
-        urls.push(`/products/${cleanCode}-${nameSlug}.webp`);
-
-        // Strip leading set prefixes or set codes (e.g. "the_hobbit_collector_booster_box" -> "collector_booster_box")
-        const strippedSlug = nameSlug
-          .replace(/^(the_[a-z0-9_]+?_|magic_[a-z0-9_]+?_|commander_deck_|commander_|deck_|scene_box_|scene_)/, '')
-          .replace(new RegExp(`^(${cleanCode}_)`, 'i'), '');
-
-        if (strippedSlug && strippedSlug !== nameSlug) {
-          urls.push(`/products/${cleanCode}-${strippedSlug}.png`);
-          urls.push(`/products/${cleanCode}-${strippedSlug}.webp`);
-          urls.push(`/products/${cleanCode}-commander_${strippedSlug}.png`);
-          urls.push(`/products/${cleanCode}-deck_${strippedSlug}.png`);
-          urls.push(`/products/${cleanCode}-scene_${strippedSlug}.png`);
-        }
-      }
-
-      // 2. WPN Official Marketing Asset Naming Conventions
-      if (isCollector && (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box'))) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_01.png`);
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_02.png`);
-        urls.push(`/products/${cleanCode}-collector_booster_box.png`);
-        urls.push(`/products/${cleanCode}-collector_box.png`);
-        urls.push(`/products/${cleanCode}-collector.png`);
-      } else if (!isCollector && (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box') || cleanName.includes('display'))) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_01.png`);
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_02.png`);
-        urls.push(`/products/${cleanCode}-play_booster_box.png`);
-        urls.push(`/products/${cleanCode}-play_box.png`);
-        urls.push(`/products/${cleanCode}-box.png`);
-      }
-
-      if (isCollector && (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack'))) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_clctr_bstr_01.png`);
-        urls.push(`/products/${cleanCode}-collector_booster_pack.png`);
-        urls.push(`/products/${cleanCode}-collector_pack.png`);
-      } else if (!isCollector && (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack'))) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_01.png`);
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_02.png`);
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_03.png`);
-        urls.push(`/products/${cleanCode}-play_booster_pack.png`);
-        urls.push(`/products/${cleanCode}-play_pack.png`);
-        urls.push(`/products/${cleanCode}-pack.png`);
-      }
-
-      if (isGift) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_gftbndl_otrbx_01.png`);
-        urls.push(`/products/${cleanCode}-gift_bundle.png`);
-        urls.push(`/products/${cleanCode}-gift.png`);
-      } else if (cleanType === 'bundle' || cleanName.includes('bundle')) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_bndl_otrbx_01.png`);
-        urls.push(`/products/${cleanCode}-bundle.png`);
-      }
-
-      if (isPrerelease || cleanType === 'limited_aid_case' || cleanType === 'limited_aid_tool') {
-        if (isDraftNight) {
-          urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_drftnght_otrbx_01.png`);
-          urls.push(`/products/${cleanCode}-draft_night.png`);
-        } else {
-          urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_prrls_otrbx_01.png`);
-          urls.push(`/products/${cleanCode}-prerelease.png`);
-        }
-      }
-
-      if (isScene) {
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_01.png`);
-        urls.push(`/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_02.png`);
-        urls.push(`/products/${cleanCode}-scene_01.png`);
-        urls.push(`/products/${cleanCode}-scene_02.png`);
-      }
-
-      // 3. Specialty product types
-      if (isCollector) {
-        urls.push(`/products/${cleanCode}-collector.png`);
-        urls.push(`/products/${cleanCode}-collector_box.png`);
-        urls.push(`/products/${cleanCode}-collector_pack.png`);
-        urls.push(`/products/${cleanCode}-collector.webp`);
-      }
-
-      if (isJumpstart) {
-        if (cleanType === 'pack' || cleanName.includes('pack')) {
-          urls.push(`/products/${cleanCode}-jumpstart_pack.png`);
-        }
-        urls.push(`/products/${cleanCode}-jumpstart_box.png`);
-        urls.push(`/products/${cleanCode}-jumpstart.png`);
-      }
-
-      if (isStarter) {
-        urls.push(`/products/${cleanCode}-starter_kit.png`);
-        urls.push(`/products/${cleanCode}-starter.png`);
-      }
-
-      if (isPrerelease) {
-        urls.push(`/products/${cleanCode}-prerelease.png`);
-        urls.push(`/products/${cleanCode}-pr.png`);
-      }
-
-      // 4. Standard type files
-      urls.push(`/products/${cleanCode}-${cleanType}.png`);
-      urls.push(`/products/${cleanCode}-${cleanType}.webp`);
-      urls.push(`/products/${cleanCode}-${cleanType}.jpg`);
-
-      // 5. Common packaging aliases
-      if (cleanType === 'box' || cleanType === 'booster_box') {
-        urls.push(`/products/${cleanCode}-box.png`);
-        urls.push(`/products/${cleanCode}-play_box.png`);
-        urls.push(`/products/${cleanCode}-display.png`);
-        urls.push(`/products/${cleanCode}-booster_box.png`);
-      } else if (cleanType === 'pack' || cleanType === 'booster_pack') {
-        urls.push(`/products/${cleanCode}-pack.png`);
-        urls.push(`/products/${cleanCode}-play_pack.png`);
-        urls.push(`/products/${cleanCode}-booster.png`);
-      } else if (cleanType === 'bundle') {
-        urls.push(`/products/${cleanCode}-bundle.png`);
-        urls.push(`/products/${cleanCode}-fatpack.png`);
-      } else if (cleanType === 'prerelease' || cleanType === 'limited_aid_tool') {
-        urls.push(`/products/${cleanCode}-prerelease.png`);
-        urls.push(`/products/${cleanCode}-pr.png`);
-      } else if (cleanType === 'case' || cleanType === 'bundle_case' || cleanType === 'booster_case' || cleanType === 'limited_aid_case') {
-        urls.push(`/products/${cleanCode}-case.png`);
-      } else if (cleanType === 'starter_deck' || cleanType === 'deck') {
-        urls.push(`/products/${cleanCode}-deck.png`);
-        urls.push(`/products/${cleanCode}-commander.png`);
-      }
-    }
-
-    // Deduplicate while preserving priority order
     return Array.from(new Set(urls));
-  }, [imageUrl, cleanCode, cleanType, cleanName, isCollector, isGift, isJumpstart, isStarter, isPrerelease, isDraftNight, isScene]);
+  }, [effectiveResult, imageUrl, hasLinkedPicture]);
 
   // Reset image candidate testing when props change
   useEffect(() => {
@@ -243,6 +125,10 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   // Discover and probe other booster/box art variations (e.g. Pack Art or Box Angles 01_01, 01_02, 02_01)
   useEffect(() => {
+    if (effectiveResult.isManual) {
+      setFoundVariations(candidateUrls.length > 0 ? candidateUrls : [activeSrc].filter(Boolean));
+      return;
+    }
     if (!hasImageLoaded || !activeSrc) return;
 
     let isMounted = true;
@@ -625,6 +511,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     md: 'w-24 h-32 text-xs',
     lg: 'w-36 h-48 text-xs',
     hero: 'w-48 h-64 text-sm',
+    full: 'w-full h-full min-h-[180px] text-sm',
   };
 
   const hasMultipleVariations = foundVariations.length > 1;
@@ -639,7 +526,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
             setIsZoomed(true);
           }}
           title="Click to inspect picture and browse art variations"
-          className={`relative rounded-xl overflow-hidden shadow-md bg-slate-950 border border-slate-800 flex items-center justify-center select-none group cursor-pointer hover:border-amber-500/50 transition ${sizeClasses[size]} ${className}`}
+          className={`relative rounded-xl overflow-hidden flex items-center justify-center select-none group cursor-pointer transition ${sizeClasses[size]} ${className}`}
         >
           <img
             key={currentDisplaySrc}
@@ -647,7 +534,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
             alt={displayName}
             onLoad={handleImageSuccess}
             onError={handleImageError}
-            className={`w-full h-full object-contain p-1.5 transition-all duration-300 ${
+            className={`w-full h-full object-contain p-0 transition-all duration-300 ${
               hasImageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
             referrerPolicy="no-referrer"
@@ -660,41 +547,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               <ImageIcon className="w-5 h-5 mb-1 opacity-50" />
               <span className="text-[9px] font-mono">{cleanCode}</span>
             </div>
-          )}
-
-          {/* Set Symbol Stamp Badge */}
-          <div className="absolute bottom-1 right-1 bg-slate-950/80 backdrop-blur-sm p-1 rounded border border-slate-700 shadow-sm flex items-center gap-1 z-10 pointer-events-none">
-            <SetSymbolIcon setCode={setCode} size="xs" />
-          </div>
-
-          {/* Multiple Variation Indicator Badge (e.g. 1/4) */}
-          {hasMultipleVariations && hasImageLoaded && (
-            <div className="absolute top-1 left-1 bg-slate-950/85 backdrop-blur-sm px-1.5 py-0.5 rounded text-[9px] font-semibold font-mono text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-0.5 z-10 pointer-events-none">
-              <Layers className="w-2.5 h-2.5" />
-              <span>
-                {activeVariationIdx + 1}/{foundVariations.length}
-              </span>
-            </div>
-          )}
-
-          {/* Quick Hover Navigation Chevrons when multiple variations exist */}
-          {hasMultipleVariations && hasImageLoaded && size !== 'xs' && (
-            <>
-              <button
-                onClick={handlePrevVariation}
-                title="Previous art variation"
-                className="absolute left-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-lg z-20"
-              >
-                <ChevronLeft className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleNextVariation}
-                title="Next art variation"
-                className="absolute right-0.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-lg z-20"
-              >
-                <ChevronRight className="w-3 h-3" />
-              </button>
-            </>
           )}
 
           {/* Zoom Overlay (if allowZoom enabled) */}
@@ -718,7 +570,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <SetSymbolIcon setCode={setCode} size="sm" />
+                  <SetSymbolIcon setCode={setCode} size="sm" invert={true} />
                   <div>
                     <h3 className="text-base font-bold text-slate-100 leading-tight">{displayName}</h3>
                     <p className="text-xs text-slate-400 font-mono">
@@ -762,38 +614,27 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                     </button>
                   </>
                 )}
-
-                {/* Variation Counter Tag */}
-                {hasMultipleVariations && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-amber-300 border border-amber-500/40 shadow-lg flex items-center gap-1.5">
-                    <RotateCw className="w-3.5 h-3.5" />
-                    <span>{packagingType === 'pack' || cleanType.includes('pack') || cleanName.includes('pack') ? `Pack Art ${activeVariationIdx + 1} of ${foundVariations.length}` : `Variation ${activeVariationIdx + 1} of ${foundVariations.length}`}</span>
-                  </div>
-                )}
               </div>
 
               {/* Variation Thumbnails Strip */}
               {hasMultipleVariations && (
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    {packagingType === 'pack' || cleanType.includes('pack') || cleanName.includes('pack') ? `Booster Pack Art Variations (${foundVariations.length})` : `Product Variations (${foundVariations.length})`}
-                  </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <div className="p-2 bg-slate-950/80 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-3 overflow-x-auto p-2">
                     {foundVariations.map((varUrl, idx) => {
                       const isCurrent = idx === activeVariationIdx;
                       return (
                         <button
                           key={varUrl}
                           onClick={() => setActiveVariationIdx(idx)}
-                          className={`relative w-14 h-16 rounded-lg p-1 bg-slate-950 border transition-all flex items-center justify-center shrink-0 cursor-pointer ${
+                          className={`relative w-14 h-16 rounded-lg p-1 bg-slate-900 border transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                             isCurrent
-                              ? 'border-amber-400 ring-2 ring-amber-400/30 scale-105 shadow-md'
-                              : 'border-slate-800 hover:border-slate-600 opacity-70 hover:opacity-100'
+                              ? 'border-amber-400 ring-2 ring-amber-400/80 shadow-lg'
+                              : 'border-slate-800 hover:border-slate-600 opacity-75 hover:opacity-100'
                           }`}
                         >
                           <img
                             src={varUrl}
-                            alt={`Variation ${idx + 1}`}
+                            alt={`Artwork ${idx + 1}`}
                             className="max-h-full max-w-full object-contain"
                           />
                           <span className="absolute bottom-0.5 right-1 text-[8px] font-mono font-bold text-amber-300">
@@ -806,11 +647,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 </div>
               )}
 
-              {/* Footer File Info */}
-              <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                <span className="font-mono text-amber-400 truncate max-w-xs">{currentDisplaySrc}</span>
-                <span className="font-semibold text-slate-300 shrink-0">WPN Marketing Asset</span>
-              </div>
             </div>
           </div>,
           document.body
@@ -874,7 +710,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
             >
               <div className="w-full flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <SetSymbolIcon setCode={setCode} size="sm" />
+                  <SetSymbolIcon setCode={setCode} size="sm" invert={true} />
                   <div>
                     <h3 className="text-base font-bold text-slate-100">{displayName}</h3>
                     <p className="text-xs text-slate-400 font-mono">
@@ -901,13 +737,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                   themeColor={resolvedThemeColor}
                   size="hero"
                 />
-              </div>
-
-              <div className="w-full flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                <span className={`font-mono ${isCollectorPack ? 'text-purple-400' : 'text-emerald-400'}`}>
-                  {isCollectorPack ? 'Prismatic Holographic Foil Collector Template' : 'Authentic White Foil Pack Template'}
-                </span>
-                <span className="text-slate-300 font-medium">Official Vector Scryfall Emblem</span>
               </div>
             </div>
           </div>,
@@ -982,7 +811,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <SetSymbolIcon setCode={setCode} size="sm" />
+                  <SetSymbolIcon setCode={setCode} size="sm" invert={true} />
                   <div>
                     <h3 className="text-base font-bold text-slate-100">{displayName}</h3>
                     <p className="text-xs text-slate-400 font-mono">
@@ -1019,13 +848,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                   />
                 )}
               </div>
-
-              <div className="w-full flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                <span className={`font-mono ${isCollector ? 'text-purple-400' : 'text-indigo-400'}`}>
-                  {isCollector ? 'Authentic 12-Pack Collector Retail Display Box (200 x 130 x 72 mm)' : 'Authentic 36-Pack Retail Open Display Box (200 x 130 x 72 mm)'}
-                </span>
-                <span className="text-slate-300 font-medium">Official Vector Scryfall Emblem</span>
-              </div>
             </div>
           </div>,
           document.body
@@ -1056,7 +878,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               PLAY BOOSTER
             </span>
             <div className="w-4 h-4 rounded bg-black/40 flex items-center justify-center p-0.5 border border-white/10">
-              <SetSymbolIcon setCode={setCode} size="xs" />
+              <SetSymbolIcon setCode={setCode} size="xs" invert={true} />
             </div>
           </div>
         ) : packagingType === 'box' ? (
@@ -1069,7 +891,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               </span>
             </div>
             <div className="w-5 h-5 rounded-md bg-indigo-900/80 backdrop-blur-sm flex items-center justify-center p-0.5 border border-indigo-500/40">
-              <SetSymbolIcon setCode={setCode} size="xs" />
+              <SetSymbolIcon setCode={setCode} size="xs" invert={true} />
             </div>
           </div>
         ) : (
@@ -1080,7 +902,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               {theme.label}
             </span>
             <div className="w-5 h-5 rounded-md bg-white/10 backdrop-blur-sm flex items-center justify-center p-0.5 border border-white/20">
-              <SetSymbolIcon setCode={setCode} size="xs" />
+              <SetSymbolIcon setCode={setCode} size="xs" invert={true} />
             </div>
           </div>
         )}
@@ -1089,7 +911,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         <div className="my-auto text-center space-y-1.5 z-10 flex flex-col items-center py-1">
           {/* Logo Frame with Holographic Backdrop */}
           <div className="relative p-2 rounded-2xl bg-black/40 border border-white/15 backdrop-blur-md shadow-inner group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
-            <SetSymbolIcon setCode={setCode} size={size === 'hero' ? 'lg' : size === 'lg' ? 'md' : 'sm'} />
+            <SetSymbolIcon setCode={setCode} size={size === 'hero' ? 'lg' : size === 'lg' ? 'md' : 'sm'} invert={true} />
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-amber-500/10 via-transparent to-indigo-500/10 pointer-events-none" />
           </div>
 
@@ -1148,7 +970,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           >
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <SetSymbolIcon setCode={setCode} size="sm" />
+                <SetSymbolIcon setCode={setCode} size="sm" invert={true} />
                 <div>
                   <h3 className="text-base font-bold text-slate-100">{displayName}</h3>
                   <p className="text-xs text-slate-400 font-mono">
@@ -1198,11 +1020,6 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
               </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <span className="font-mono text-amber-400">Procedural 3D Recreation</span>
-              <span className="text-slate-300 font-medium">Scryfall Vector SVG Engine</span>
             </div>
           </div>
         </div>,

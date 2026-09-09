@@ -34,7 +34,7 @@ interface BoosterFoilPackMockupProps {
   cardCount?: number;
   layoutVariant?: FoilPackLayoutVariant;
   themeColor?: 'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate';
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero' | 'full';
   className?: string;
   onClick?: () => void;
 }
@@ -201,9 +201,24 @@ export const BoosterFoilPackMockup: React.FC<BoosterFoilPackMockupProps> = ({
       sideSpineWidth: 'w-11',
       sideSpineText: 'text-[11.5px] tracking-widest',
     },
+    full: {
+      wrapper: 'w-full max-w-[240px]',
+      crimpHeight: 'h-5',
+      bodyHeight: 'h-72',
+      headerPadding: 'pt-3 px-3',
+      logoScale: 'scale-100 my-0.5',
+      fontSizeCards: 'text-[11px]',
+      fontSize13: 'text-[10px] w-5 h-5',
+      setNameText: 'text-xs font-black leading-snug px-2 pb-1.5',
+      bannerPadding: 'py-2 px-2',
+      bannerText: 'text-[10.5px] leading-snug',
+      centerMaxHeight: 'max-h-40',
+      sideSpineWidth: 'w-8',
+      sideSpineText: 'text-[9.5px] tracking-widest',
+    },
   };
 
-  const dim = dimensions[size];
+  const dim = dimensions[size] || dimensions.full || dimensions.hero;
 
   return (
     <div

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { cleanPureSetName } from './BoosterFoilPackMockup';
 
 export interface BoosterDisplayBoxMockupProps {
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'hero' | 'full';
   className?: string;
   onClick?: () => void;
   setCode?: string;
