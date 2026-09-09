@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "ingest-wpn": "tsx scripts/ingest-wpn.ts",
+    "ingest-wpn": "node scripts/ingest-wpn.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
