@@ -105,17 +105,100 @@ function detectSetCode(filename, zipEntries, forcedCode) {
   return match ? match[0] : 'mtg';
 }
 
-function classifyPackagingType(entryPath) {
-  const p = entryPath.toLowerCase();
-  const baseName = path.basename(p);
-  const ext = path.extname(p);
+function getProductGroupKey(filename) {
+  const base = path.basename(filename, path.extname(filename)).toLowerCase();
+  return base
+    .replace(/^(\d{1,2}[_\-\s]|angle\d{1,2}[_\-\s]|pos\d{1,2}[_\-\s])/i, '')
+    .replace(/([_\-\s]\d{1,2}|[_\-\s]angle\d{1,2}|[_\-\s]pos\d{1,2})$/i, '')
+    .replace(/[-_\s]+/g, '_')
+    .trim();
+}
 
-  // Must be an image
-  if (!['.png', '.webp', '.jpg', '.jpeg'].includes(ext)) {
-    return null;
+function determineTargetFilenames(setCode, rawFilename) {
+  const p = rawFilename.toLowerCase();
+  const base = path.basename(p, path.extname(p));
+  
+  // Clean base without angle prefixes/suffixes
+  const clean = base
+    .replace(/^(\d{1,2}[_\-\s]|angle\d{1,2}[_\-\s]|pos\d{1,2}[_\-\s])/i, '')
+    .replace(/([_\-\s]\d{1,2}|[_\-\s]angle\d{1,2}|[_\-\s]pos\d{1,2})$/i, '')
+    .replace(/_3d$/i, '')
+    .replace(/[-_\s]+/g, '_')
+    .trim();
+
+  const filenames = [];
+
+  // Match specific product types
+  if (p.includes('collector') && (p.includes('box') || p.includes('display'))) {
+    filenames.push(`${setCode}-collector.png`);
+    filenames.push(`${setCode}-collector_box.png`);
+  } else if (p.includes('collector') && p.includes('pack')) {
+    filenames.push(`${setCode}-collector_pack.png`);
+  } else if (p.includes('collector') && p.includes('case')) {
+    filenames.push(`${setCode}-collector_case.png`);
+  } else if (p.includes('gift') && (p.includes('bundle') || p.includes('edition'))) {
+    filenames.push(`${setCode}-gift_bundle.png`);
+    filenames.push(`${setCode}-gift.png`);
+  } else if (p.includes('bundle') || p.includes('fatpack')) {
+    filenames.push(`${setCode}-bundle.png`);
+  } else if (p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack') || p.includes('prpack')) {
+    filenames.push(`${setCode}-prerelease.png`);
+  } else if (p.includes('jumpstart') && (p.includes('box') || p.includes('display'))) {
+    filenames.push(`${setCode}-jumpstart_box.png`);
+    filenames.push(`${setCode}-jumpstart.png`);
+  } else if (p.includes('jumpstart') && p.includes('pack')) {
+    filenames.push(`${setCode}-jumpstart_pack.png`);
+  } else if (p.includes('starter') || p.includes('beginner')) {
+    filenames.push(`${setCode}-starter_kit.png`);
+    filenames.push(`${setCode}-starter.png`);
+  } else if (p.includes('play') && (p.includes('box') || p.includes('display'))) {
+    filenames.push(`${setCode}-box.png`);
+    filenames.push(`${setCode}-play_box.png`);
+  } else if (p.includes('draft') && (p.includes('box') || p.includes('display'))) {
+    filenames.push(`${setCode}-draft_box.png`);
+    if (!filenames.includes(`${setCode}-box.png`)) filenames.push(`${setCode}-box.png`);
+  } else if (p.includes('set') && (p.includes('box') || p.includes('display')) && !p.includes('box_set')) {
+    filenames.push(`${setCode}-set_box.png`);
+    if (!filenames.includes(`${setCode}-box.png`)) filenames.push(`${setCode}-box.png`);
+  } else if ((p.includes('play') || p.includes('draft') || p.includes('booster')) && p.includes('pack')) {
+    filenames.push(`${setCode}-pack.png`);
+    filenames.push(`${setCode}-play_pack.png`);
+  } else if (p.includes('commander') || p.includes('deck') || p.includes('precon')) {
+    // Generate slug from deck name, e.g. hob-commander_riders_of_rohan.png
+    const deckSlug = clean.replace(/^(commander_deck_|commander_|deck_)/i, '');
+    filenames.push(`${setCode}-commander_${deckSlug}.png`);
+    filenames.push(`${setCode}-deck_${deckSlug}.png`);
+  } else if (p.includes('scene')) {
+    const sceneSlug = clean.replace(/^scene_box_/i, '');
+    filenames.push(`${setCode}-scene_${sceneSlug}.png`);
+  } else if (p.includes('case')) {
+    filenames.push(`${setCode}-case.png`);
+  } else if (p.includes('box') || p.includes('display')) {
+    filenames.push(`${setCode}-box.png`);
+  } else if (p.includes('pack')) {
+    filenames.push(`${setCode}-pack.png`);
   }
 
-  // Ignore tiny web banners, social tiles, logos, headers, thumbnails, dielines, and posters
+  // Always include a cleaned descriptive filename based on the asset itself
+  const genericCleanSlug = clean
+    .replace(new RegExp(`^${setCode}_`, 'i'), '')
+    .replace(new RegExp(`_${setCode}$`, 'i'), '');
+  
+  if (genericCleanSlug) {
+    filenames.push(`${setCode}-${genericCleanSlug}.png`);
+  }
+
+  return Array.from(new Set(filenames));
+}
+
+function isImageFile(entryPath) {
+  const p = entryPath.toLowerCase();
+  const ext = path.extname(p);
+  if (!['.png', '.webp', '.jpg', '.jpeg'].includes(ext)) {
+    return false;
+  }
+
+  // Ignore marketing banners, logos, social media, flat dielines, etc.
   if (
     p.includes('social') ||
     p.includes('facebook') ||
@@ -128,13 +211,18 @@ function classifyPackagingType(entryPath) {
     p.includes('flyer') ||
     p.includes('dieline') ||
     p.includes('diemap') ||
-    p.includes('flat')
+    p.includes('flat') ||
+    p.includes('wallpaper')
   ) {
-    return null;
+    return false;
   }
 
-  // Check for angle 01 vs alternative angles (02, 03, etc.)
-  const isAngle01 =
+  return true;
+}
+
+function checkIsAngle01(filename) {
+  const baseName = path.basename(filename).toLowerCase();
+  return (
     baseName.startsWith('01_') ||
     baseName.startsWith('01-') ||
     baseName.startsWith('01.') ||
@@ -145,9 +233,13 @@ function classifyPackagingType(entryPath) {
     baseName.includes('angle01') ||
     baseName.includes('angle_1') ||
     baseName.includes('pos01') ||
-    baseName.includes('pos_1');
+    baseName.includes('pos_1')
+  );
+}
 
-  const isOtherAngle =
+function checkIsOtherAngle(filename) {
+  const baseName = path.basename(filename).toLowerCase();
+  return (
     baseName.startsWith('02_') ||
     baseName.startsWith('03_') ||
     baseName.startsWith('04_') ||
@@ -157,82 +249,8 @@ function classifyPackagingType(entryPath) {
     baseName.includes('_03_') ||
     baseName.includes('_04_') ||
     baseName.includes('angle02') ||
-    baseName.includes('angle03');
-
-  // Angle weighting: heavily favor 01 angle renders
-  let angleBonus = 0;
-  if (isAngle01) angleBonus = 60;
-  else if (isOtherAngle) angleBonus = -80;
-
-  // Prefer transparent 3D PNG renders
-  const isPng = ext === '.png';
-  const pngBonus = isPng ? 20 : 0;
-  const totalBonus = angleBonus + pngBonus;
-
-  // 1. Collector Display Box
-  if (
-    (p.includes('collector') && (p.includes('box') || p.includes('display'))) ||
-    p.includes('collector_box') ||
-    p.includes('collector_display')
-  ) {
-    return { type: 'collector', confidence: 100 + totalBonus, isAngle01 };
-  }
-
-  // 2. Bundle Box / Gift Bundle
-  if (p.includes('bundle') || p.includes('gift_edition') || p.includes('fatpack')) {
-    if (p.includes('3d') || p.includes('render') || p.includes('box')) {
-      return { type: 'bundle', confidence: 90 + totalBonus, isAngle01 };
-    }
-    return { type: 'bundle', confidence: 70 + totalBonus, isAngle01 };
-  }
-
-  // 3. Prerelease Pack
-  if (p.includes('prerelease') || p.includes('pre-release') || p.includes('pr_pack') || p.includes('prpack')) {
-    return { type: 'prerelease', confidence: 85 + totalBonus, isAngle01 };
-  }
-
-  // 4. Booster Box / Play Box / Display
-  if (
-    (p.includes('play') && p.includes('box')) ||
-    (p.includes('booster') && p.includes('box')) ||
-    (p.includes('play') && p.includes('display')) ||
-    (p.includes('booster') && p.includes('display')) ||
-    p.includes('box_3d') ||
-    p.includes('display_3d')
-  ) {
-    return { type: 'box', confidence: 95 + totalBonus, isAngle01 };
-  }
-
-  // 5. Single Booster Pack
-  if (
-    (p.includes('booster') && p.includes('pack')) ||
-    (p.includes('play') && p.includes('pack')) ||
-    p.includes('pack_front') ||
-    p.includes('pack_3d') ||
-    p.includes('foil_pack')
-  ) {
-    return { type: 'pack', confidence: 80 + totalBonus, isAngle01 };
-  }
-
-  // 6. Commander Deck / Precon Deck
-  if (p.includes('commander') || p.includes('deck') || p.includes('precon')) {
-    return { type: 'deck', confidence: 75 + totalBonus, isAngle01 };
-  }
-
-  // 7. Sealed Case
-  if (p.includes('case') || p.includes('master_case') || p.includes('shipping_box')) {
-    return { type: 'case', confidence: 70 + totalBonus, isAngle01 };
-  }
-
-  // Generic box or pack fallback
-  if (p.includes('display') || p.includes('box')) {
-    return { type: 'box', confidence: 60 + totalBonus, isAngle01 };
-  }
-  if (p.includes('pack')) {
-    return { type: 'pack', confidence: 55 + totalBonus, isAngle01 };
-  }
-
-  return null;
+    baseName.includes('angle03')
+  );
 }
 
 async function optimizeAndSaveImage(inputBuffer, destinationPath) {
@@ -312,61 +330,86 @@ export async function processZipFile(zipFilePath, explicitSetCode) {
 
   console.log(`🏷️  Detected Set: \x1b[32m${setName} (${setCode.toUpperCase()})\x1b[0m`);
 
-  // Group candidate files by packaging type, filtering and prioritizing "01" angle renders
-  const bestCandidatesByType = {};
+  // Group candidates by distinct product base name, prioritizing angle 01
+  const productGroups = {};
 
   for (const entry of entries) {
     if (entry.isDirectory) continue;
+    if (!isImageFile(entry.entryName)) continue;
 
-    const classification = classifyPackagingType(entry.entryName);
-    if (!classification) continue;
+    const groupKey = getProductGroupKey(entry.entryName);
+    const isAngle01 = checkIsAngle01(entry.entryName);
+    const isOther = checkIsOtherAngle(entry.entryName);
 
-    const currentBest = bestCandidatesByType[classification.type];
-    if (!currentBest || classification.confidence > currentBest.confidence) {
-      bestCandidatesByType[classification.type] = {
+    let score = 50;
+    if (isAngle01) score = 100;
+    else if (isOther) score = 10;
+
+    if (!productGroups[groupKey] || score > productGroups[groupKey].score) {
+      productGroups[groupKey] = {
         entry,
-        confidence: classification.confidence,
-        isAngle01: classification.isAngle01,
+        isAngle01,
+        score,
+        groupKey,
       };
     }
   }
 
-  const detectedTypes = Object.keys(bestCandidatesByType);
-  if (detectedTypes.length === 0) {
-    console.log(`⚠️  No standard 3D packaging renders detected in this ZIP archive.`);
+  const groupKeys = Object.keys(productGroups);
+  if (groupKeys.length === 0) {
+    console.log(`⚠️  No standard packaging renders detected in this ZIP archive.`);
     console.log(`   (Checked ${entries.length} files. Ensure this is a DMA / Product Shots kit from WPN)`);
     return;
   }
 
-  console.log(`✨ Found ${detectedTypes.length} packaging product render(s) (preferring angle 01):`);
+  console.log(`✨ Found \x1b[32m${groupKeys.length}\x1b[0m distinct product(s) in kit (preferring angle 01):`);
 
-  for (const type of detectedTypes) {
-    const candidate = bestCandidatesByType[type];
-    const targetFilename = `${setCode}-${type}.png`;
-    const destinationPath = path.join(TARGET_PRODUCTS_DIR, targetFilename);
+  let processedCount = 0;
+
+  for (const groupKey of groupKeys) {
+    const item = productGroups[groupKey];
+    const targetFilenames = determineTargetFilenames(setCode, item.entry.entryName);
+
+    if (targetFilenames.length === 0) continue;
 
     try {
-      const rawBuffer = candidate.entry.getData();
-      const stats = await optimizeAndSaveImage(rawBuffer, destinationPath);
+      const rawBuffer = item.entry.getData();
+      const primaryTarget = targetFilenames[0];
+      const destinationPath = path.join(TARGET_PRODUCTS_DIR, primaryTarget);
 
-      const angleTag = candidate.isAngle01 ? '\x1b[35m[Angle 01]\x1b[0m ' : '';
+      const stats = await optimizeAndSaveImage(rawBuffer, destinationPath);
+      processedCount++;
+
+      // Copy to alias target filenames if any
+      for (let i = 1; i < targetFilenames.length; i++) {
+        const aliasFilename = targetFilenames[i];
+        const aliasPath = path.join(TARGET_PRODUCTS_DIR, aliasFilename);
+        fs.copyFileSync(destinationPath, aliasPath);
+        const webpSrc = destinationPath.replace(/\.png$/i, '.webp');
+        const webpDest = aliasPath.replace(/\.png$/i, '.webp');
+        if (fs.existsSync(webpSrc)) {
+          fs.copyFileSync(webpSrc, webpDest);
+        }
+      }
+
+      const angleTag = item.isAngle01 ? '\x1b[35m[01]\x1b[0m ' : '    ';
+      const aliasTag = targetFilenames.length > 1 ? ` \x1b[90m(+${targetFilenames.length - 1} aliases)\x1b[0m` : '';
 
       if (stats.hasSharp) {
         const ratio = (((stats.originalSize - stats.optimizedSize) / stats.originalSize) * 100).toFixed(1);
         console.log(
-          `   ✅ ${angleTag}Saved \x1b[32m${targetFilename}\x1b[0m + \x1b[34m${targetFilename.replace('.png', '.webp')}\x1b[0m ` +
+          `   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag} ` +
           `(${formatBytes(stats.originalSize)} ➔ \x1b[32m${formatBytes(stats.optimizedSize)}\x1b[0m, -${ratio}%)`
         );
       } else {
-        console.log(
-          `   ✅ ${angleTag}Saved \x1b[32m${targetFilename}\x1b[0m (${formatBytes(stats.originalSize)}) ` +
-          `\x1b[33m[Tip: install sharp for automatic downscaling]\x1b[0m`
-        );
+        console.log(`   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag} (${formatBytes(stats.originalSize)})`);
       }
     } catch (err) {
-      console.error(`   ❌ Failed to optimize and extract ${targetFilename}:`, err);
+      console.error(`   ❌ Failed to process ${groupKey}:`, err.message);
     }
   }
+
+  console.log(`\n🎉 Extracted and optimized \x1b[32m${processedCount}\x1b[0m products for ${setCode.toUpperCase()}!`);
 }
 
 export async function runIngestion(forcedSetCode) {

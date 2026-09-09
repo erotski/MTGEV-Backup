@@ -38,7 +38,12 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   const cleanCode = (setCode || '').toLowerCase().trim();
   const cleanType = (packagingType || 'pack').toLowerCase().trim();
-  const isCollector = (displayName || '').toLowerCase().includes('collector');
+  const cleanName = (displayName || '').toLowerCase().trim();
+  const isCollector = cleanName.includes('collector');
+  const isGift = cleanName.includes('gift');
+  const isJumpstart = cleanName.includes('jumpstart');
+  const isStarter = cleanName.includes('starter') || cleanName.includes('beginner');
+  const isPrerelease = cleanName.includes('prerelease') || cleanName.includes('pre-release');
 
   // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
@@ -48,24 +53,70 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     }
 
     if (cleanCode) {
-      if (isCollector) {
-        urls.push(`/products/${cleanCode}-collector.png`);
-        urls.push(`/products/${cleanCode}-collector.webp`);
-        urls.push(`/products/${cleanCode}-collector_box.png`);
+      // 1. Slugified display name candidates (e.g. /products/hob-riders_of_rohan.png)
+      const nameSlug = cleanName
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      if (nameSlug) {
+        urls.push(`/products/${cleanCode}-${nameSlug}.png`);
+        urls.push(`/products/${cleanCode}-${nameSlug}.webp`);
+        const strippedSlug = nameSlug
+          .replace(/^(commander_deck_|commander_|deck_|scene_box_|scene_)/, '');
+        if (strippedSlug && strippedSlug !== nameSlug) {
+          urls.push(`/products/${cleanCode}-commander_${strippedSlug}.png`);
+          urls.push(`/products/${cleanCode}-deck_${strippedSlug}.png`);
+          urls.push(`/products/${cleanCode}-${strippedSlug}.png`);
+        }
       }
 
-      // Standard type files
+      // 2. Specialty product types
+      if (isGift) {
+        urls.push(`/products/${cleanCode}-gift_bundle.png`);
+        urls.push(`/products/${cleanCode}-gift.png`);
+      }
+
+      if (isCollector) {
+        if (cleanType === 'pack' || cleanName.includes('pack')) {
+          urls.push(`/products/${cleanCode}-collector_pack.png`);
+        }
+        urls.push(`/products/${cleanCode}-collector.png`);
+        urls.push(`/products/${cleanCode}-collector_box.png`);
+        urls.push(`/products/${cleanCode}-collector.webp`);
+      }
+
+      if (isJumpstart) {
+        if (cleanType === 'pack' || cleanName.includes('pack')) {
+          urls.push(`/products/${cleanCode}-jumpstart_pack.png`);
+        }
+        urls.push(`/products/${cleanCode}-jumpstart_box.png`);
+        urls.push(`/products/${cleanCode}-jumpstart.png`);
+      }
+
+      if (isStarter) {
+        urls.push(`/products/${cleanCode}-starter_kit.png`);
+        urls.push(`/products/${cleanCode}-starter.png`);
+      }
+
+      if (isPrerelease) {
+        urls.push(`/products/${cleanCode}-prerelease.png`);
+        urls.push(`/products/${cleanCode}-pr.png`);
+      }
+
+      // 3. Standard type files
       urls.push(`/products/${cleanCode}-${cleanType}.png`);
       urls.push(`/products/${cleanCode}-${cleanType}.webp`);
       urls.push(`/products/${cleanCode}-${cleanType}.jpg`);
 
-      // Common packaging aliases
+      // 4. Common packaging aliases
       if (cleanType === 'box') {
         urls.push(`/products/${cleanCode}-box.png`);
+        urls.push(`/products/${cleanCode}-play_box.png`);
         urls.push(`/products/${cleanCode}-display.png`);
         urls.push(`/products/${cleanCode}-booster_box.png`);
       } else if (cleanType === 'pack') {
         urls.push(`/products/${cleanCode}-pack.png`);
+        urls.push(`/products/${cleanCode}-play_pack.png`);
         urls.push(`/products/${cleanCode}-booster.png`);
       } else if (cleanType === 'bundle') {
         urls.push(`/products/${cleanCode}-bundle.png`);
@@ -83,7 +134,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
     // Deduplicate while preserving priority order
     return Array.from(new Set(urls));
-  }, [imageUrl, cleanCode, cleanType, isCollector]);
+  }, [imageUrl, cleanCode, cleanType, cleanName, isCollector, isGift, isJumpstart, isStarter, isPrerelease]);
 
   // Reset image candidate testing when props change
   useEffect(() => {

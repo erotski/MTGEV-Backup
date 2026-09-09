@@ -111,67 +111,98 @@ def is_other_angle(filename: str) -> bool:
     )
 
 
-def classify_product_type(path_str: str) -> tuple[str, int, bool] | None:
-    """
-    Classifies a packaging file into standard product types.
-    Returns: (product_type, confidence_score, is_angle_01)
-    """
+def get_product_group_key(filename: str) -> str:
+    """Extracts normalized base product name without angle prefixes/suffixes."""
+    base = os.path.splitext(os.path.basename(filename))[0].lower()
+    clean = re.sub(r"^(\d{1,2}[_\-\s]|angle\d{1,2}[_\-\s]|pos\d{1,2}[_\-\s])", "", base, flags=re.IGNORECASE)
+    clean = re.sub(r"([_\-\s]\d{1,2}|[_\-\s]angle\d{1,2}|[_\-\s]pos\d{1,2})$", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"[-_\s]+", "_", clean).strip()
+    return clean
+
+
+def determine_target_filenames(set_code: str, raw_filename: str) -> list[str]:
+    """Determines canonical target filenames and aliases for a product."""
+    p = raw_filename.lower()
+    base = os.path.splitext(os.path.basename(p))[0]
+
+    clean = re.sub(r"^(\d{1,2}[_\-\s]|angle\d{1,2}[_\-\s]|pos\d{1,2}[_\-\s])", "", base, flags=re.IGNORECASE)
+    clean = re.sub(r"([_\-\s]\d{1,2}|[_\-\s]angle\d{1,2}|[_\-\s]pos\d{1,2})$", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"_3d$", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"[-_\s]+", "_", clean).strip("_")
+
+    filenames = []
+
+    # 1. Collector Display Box
+    if "collector" in p and ("box" in p or "display" in p):
+        filenames.extend([f"{set_code}-collector.png", f"{set_code}-collector_box.png"])
+    elif "collector" in p and "pack" in p:
+        filenames.append(f"{set_code}-collector_pack.png")
+    elif "collector" in p and "case" in p:
+        filenames.append(f"{set_code}-collector_case.png")
+    elif "gift" in p and ("bundle" in p or "edition" in p):
+        filenames.extend([f"{set_code}-gift_bundle.png", f"{set_code}-gift.png"])
+    elif "bundle" in p or "fatpack" in p:
+        filenames.append(f"{set_code}-bundle.png")
+    elif "prerelease" in p or "pre-release" in p or "pr_pack" in p or "prpack" in p:
+        filenames.append(f"{set_code}-prerelease.png")
+    elif "jumpstart" in p and ("box" in p or "display" in p):
+        filenames.extend([f"{set_code}-jumpstart_box.png", f"{set_code}-jumpstart.png"])
+    elif "jumpstart" in p and "pack" in p:
+        filenames.append(f"{set_code}-jumpstart_pack.png")
+    elif "starter" in p or "beginner" in p:
+        filenames.extend([f"{set_code}-starter_kit.png", f"{set_code}-starter.png"])
+    elif "play" in p and ("box" in p or "display" in p):
+        filenames.extend([f"{set_code}-box.png", f"{set_code}-play_box.png"])
+    elif "draft" in p and ("box" in p or "display" in p):
+        filenames.append(f"{set_code}-draft_box.png")
+        if f"{set_code}-box.png" not in filenames:
+            filenames.append(f"{set_code}-box.png")
+    elif "set" in p and ("box" in p or "display" in p) and "box_set" not in p:
+        filenames.append(f"{set_code}-set_box.png")
+        if f"{set_code}-box.png" not in filenames:
+            filenames.append(f"{set_code}-box.png")
+    elif ("play" in p or "draft" in p or "booster" in p) and "pack" in p:
+        filenames.extend([f"{set_code}-pack.png", f"{set_code}-play_pack.png"])
+    elif "commander" in p or "deck" in p or "precon" in p:
+        deck_slug = re.sub(r"^(commander_deck_|commander_|deck_)", "", clean, flags=re.IGNORECASE)
+        filenames.extend([f"{set_code}-commander_{deck_slug}.png", f"{set_code}-deck_{deck_slug}.png"])
+    elif "scene" in p:
+        scene_slug = re.sub(r"^scene_box_", "", clean, flags=re.IGNORECASE)
+        filenames.append(f"{set_code}-scene_{scene_slug}.png")
+    elif "case" in p:
+        filenames.append(f"{set_code}-case.png")
+    elif "box" in p or "display" in p:
+        filenames.append(f"{set_code}-box.png")
+    elif "pack" in p:
+        filenames.append(f"{set_code}-pack.png")
+
+    generic_slug = re.sub(f"^{set_code}_", "", clean, flags=re.IGNORECASE)
+    generic_slug = re.sub(f"_{set_code}$", "", generic_slug, flags=re.IGNORECASE)
+    if generic_slug:
+        filenames.append(f"{set_code}-{generic_slug}.png")
+
+    # Deduplicate while preserving order
+    seen = set()
+    result = []
+    for f in filenames:
+        if f not in seen:
+            seen.add(f)
+            result.append(f)
+    return result
+
+
+def is_image_file(path_str: str) -> bool:
     p = path_str.lower()
     ext = os.path.splitext(p)[1]
-
     if ext not in [".png", ".webp", ".jpg", ".jpeg"]:
-        return None
+        return False
 
     # Ignore marketing banners, logos, social media, flat dielines, etc.
     ignore_keywords = [
         "social", "facebook", "instagram", "banner", "header", "logo",
         "symbol", "poster", "flyer", "dieline", "diemap", "flat", "wallpaper"
     ]
-    if any(k in p for k in ignore_keywords):
-        return None
-
-    angle_01 = is_angle_01(p)
-    other_angle = is_other_angle(p)
-
-    bonus = 60 if angle_01 else (-80 if other_angle else 0)
-    png_bonus = 20 if ext == ".png" else 0
-    total_bonus = bonus + png_bonus
-
-    # 1. Collector Display Box
-    if ("collector" in p and ("box" in p or "display" in p)) or "collector_box" in p or "collector_display" in p:
-        return ("collector", 100 + total_bonus, angle_01)
-
-    # 2. Bundle Box / Gift Edition
-    if "bundle" in p or "gift_edition" in p or "fatpack" in p:
-        return ("bundle", 90 + total_bonus, angle_01)
-
-    # 3. Prerelease Pack
-    if "prerelease" in p or "pre-release" in p or "pr_pack" in p or "prpack" in p:
-        return ("prerelease", 85 + total_bonus, angle_01)
-
-    # 4. Booster Display Box (Play / Standard / Draft / Set)
-    if ("play" in p and "box" in p) or ("booster" in p and "box" in p) or ("display" in p) or "box_3d" in p:
-        return ("box", 95 + total_bonus, angle_01)
-
-    # 5. Single Booster Pack
-    if ("pack" in p and ("booster" in p or "play" in p)) or "pack_front" in p or "pack_3d" in p or "foil_pack" in p:
-        return ("pack", 80 + total_bonus, angle_01)
-
-    # 6. Commander / Precon Deck
-    if "commander" in p or "deck" in p or "precon" in p:
-        return ("deck", 75 + total_bonus, angle_01)
-
-    # 7. Master Case
-    if "case" in p or "master_case" in p:
-        return ("case", 70 + total_bonus, angle_01)
-
-    # Generic fallbacks
-    if "box" in p:
-        return ("box", 60 + total_bonus, angle_01)
-    if "pack" in p:
-        return ("pack", 55 + total_bonus, angle_01)
-
-    return None
+    return not any(k in p for k in ignore_keywords)
 
 
 def resize_and_save(img_bytes: bytes, out_png_path: Path) -> tuple[int, int]:
@@ -218,46 +249,63 @@ def process_zip(zip_path: Path, output_dir: Path, explicit_set: str = None):
     set_name = KNOWN_SETS.get(set_code, set_code.upper())
     print(f"🏷️  Target Set: \033[32m{set_name} ({set_code.upper()})\033[0m")
 
-    best_by_type = {}
+    product_groups = {}
 
     with zipfile.ZipFile(zip_path, "r") as z:
         for info in z.infolist():
             if info.is_dir():
                 continue
-
-            res = classify_product_type(info.filename)
-            if not res:
+            if not is_image_file(info.filename):
                 continue
 
-            prod_type, confidence, is_01 = res
-            current = best_by_type.get(prod_type)
+            group_key = get_product_group_key(info.filename)
+            is_01 = is_angle_01(info.filename)
+            is_other = is_other_angle(info.filename)
 
-            if not current or confidence > current["confidence"]:
-                best_by_type[prod_type] = {
+            score = 100 if is_01 else (10 if is_other else 50)
+
+            if group_key not in product_groups or score > product_groups[group_key]["score"]:
+                product_groups[group_key] = {
                     "filename": info.filename,
-                    "confidence": confidence,
+                    "score": score,
                     "is_01": is_01,
                     "bytes": z.read(info.filename),
                 }
 
-        if not best_by_type:
+        if not product_groups:
             print("⚠️  No product packaging renders found in this archive.")
             return
 
-        print(f"✨ Found {len(best_by_type)} packaging renders (selected Angle 01):")
+        print(f"✨ Found \033[32m{len(product_groups)}\033[0m distinct product(s) in kit (preferring angle 01):")
 
-        for prod_type, item in best_by_type.items():
-            target_filename = f"{set_code}-{prod_type}.png"
-            dest_path = output_dir / target_filename
+        for group_key, item in product_groups.items():
+            target_filenames = determine_target_filenames(set_code, item["filename"])
+            if not target_filenames:
+                continue
+
+            primary_target = target_filenames[0]
+            dest_path = output_dir / primary_target
 
             orig_size, opt_size = resize_and_save(item["bytes"], dest_path)
             ratio = ((orig_size - opt_size) / orig_size) * 100
-            angle_tag = "\033[35m[Angle 01]\033[0m " if item["is_01"] else ""
+            angle_tag = "\033[35m[01]\033[0m " if item["is_01"] else "    "
+            alias_tag = f" \033[90m(+{len(target_filenames) - 1} aliases)\033[0m" if len(target_filenames) > 1 else ""
+
+            # Copy to aliases
+            for alias in target_filenames[1:]:
+                alias_path = output_dir / alias
+                shutil.copy2(dest_path, alias_path)
+                webp_src = dest_path.with_suffix(".webp")
+                webp_dest = alias_path.with_suffix(".webp")
+                if webp_src.exists():
+                    shutil.copy2(webp_src, webp_dest)
 
             print(
-                f"   ✅ {angle_tag}Saved \033[32m{target_filename}\033[0m "
+                f"   ✅ {angle_tag}\033[32m{primary_target}\033[0m{alias_tag} "
                 f"({format_bytes(orig_size)} ➔ \033[32m{format_bytes(opt_size)}\033[0m, -{ratio:.1f}%)"
             )
+
+    print(f"\n🎉 Extracted and optimized \033[32m{len(product_groups)}\033[0m products for {set_code.upper()}!")
 
 
 def process_folder(folder_path: Path, output_dir: Path, explicit_set: str = None):
@@ -266,44 +314,59 @@ def process_folder(folder_path: Path, output_dir: Path, explicit_set: str = None
     set_name = KNOWN_SETS.get(set_code, set_code.upper())
     print(f"🏷️  Target Set: \033[32m{set_name} ({set_code.upper()})\033[0m")
 
-    best_by_type = {}
+    product_groups = {}
 
     for root, _, files in os.walk(folder_path):
         for f in files:
             full_path = Path(root) / f
-            res = classify_product_type(str(full_path))
-            if not res:
+            if not is_image_file(str(full_path)):
                 continue
 
-            prod_type, confidence, is_01 = res
-            current = best_by_type.get(prod_type)
+            group_key = get_product_group_key(str(full_path))
+            is_01 = is_angle_01(str(full_path))
+            is_other = is_other_angle(str(full_path))
 
-            if not current or confidence > current["confidence"]:
-                best_by_type[prod_type] = {
+            score = 100 if is_01 else (10 if is_other else 50)
+
+            if group_key not in product_groups or score > product_groups[group_key]["score"]:
+                product_groups[group_key] = {
                     "path": full_path,
-                    "confidence": confidence,
+                    "score": score,
                     "is_01": is_01,
                 }
 
-    if not best_by_type:
+    if not product_groups:
         print("⚠️  No product packaging renders found.")
         return
 
-    print(f"✨ Found {len(best_by_type)} packaging renders:")
+    print(f"✨ Found \033[32m{len(product_groups)}\033[0m distinct product(s):")
 
-    for prod_type, item in best_by_type.items():
-        target_filename = f"{set_code}-{prod_type}.png"
-        dest_path = output_dir / target_filename
+    for group_key, item in product_groups.items():
+        target_filenames = determine_target_filenames(set_code, str(item["path"]))
+        if not target_filenames:
+            continue
+
+        primary_target = target_filenames[0]
+        dest_path = output_dir / primary_target
 
         with open(item["path"], "rb") as fp:
             data = fp.read()
 
         orig_size, opt_size = resize_and_save(data, dest_path)
         ratio = ((orig_size - opt_size) / orig_size) * 100
-        angle_tag = "\033[35m[Angle 01]\033[0m " if item["is_01"] else ""
+        angle_tag = "\033[35m[01]\033[0m " if item["is_01"] else "    "
+        alias_tag = f" \033[90m(+{len(target_filenames) - 1} aliases)\033[0m" if len(target_filenames) > 1 else ""
+
+        for alias in target_filenames[1:]:
+            alias_path = output_dir / alias
+            shutil.copy2(dest_path, alias_path)
+            webp_src = dest_path.with_suffix(".webp")
+            webp_dest = alias_path.with_suffix(".webp")
+            if webp_src.exists():
+                shutil.copy2(webp_src, webp_dest)
 
         print(
-            f"   ✅ {angle_tag}Saved \033[32m{target_filename}\033[0m "
+            f"   ✅ {angle_tag}\033[32m{primary_target}\033[0m{alias_tag} "
             f"({format_bytes(orig_size)} ➔ \033[32m{format_bytes(opt_size)}\033[0m, -{ratio:.1f}%)"
         )
 
