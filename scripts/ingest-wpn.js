@@ -325,122 +325,40 @@ export async function processZipFile(zipFilePath, explicitSetCode, writeWebp = f
 
   console.log(`🏷️  Detected Set: \x1b[32m${setName} (${setCode.toUpperCase()})\x1b[0m`);
 
-  // Group all candidate files by distinct product base name, collecting all angles/variations
-  const productGroups = {};
+  const setDir = path.join(TARGET_PRODUCTS_DIR, setCode.toLowerCase());
+  if (!fs.existsSync(setDir)) {
+    fs.mkdirSync(setDir, { recursive: true });
+  }
+
+  let processedCount = 0;
 
   for (const entry of entries) {
     if (entry.isDirectory) continue;
     if (!isImageFile(entry.entryName)) continue;
 
-    const groupKey = getProductGroupKey(entry.entryName);
-    const isAngle01 = checkIsAngle01(entry.entryName);
-    const isOther = checkIsOtherAngle(entry.entryName);
-
-    // Extract angle/variation number if present (e.g. 01, 02, 03, 04)
-    const angleMatch = path.basename(entry.entryName).match(/(\d{1,2})/);
-    const variationNum = angleMatch ? angleMatch[1].padStart(2, '0') : (isAngle01 ? '01' : null);
-
-    let score = 50;
-    if (isAngle01) score = 100;
-    else if (isOther) score = 20;
-
-    if (!productGroups[groupKey]) {
-      productGroups[groupKey] = {
-        primaryEntry: entry,
-        primaryIsAngle01: isAngle01,
-        bestScore: score,
-        groupKey,
-        variations: [],
-      };
-    }
-
-    productGroups[groupKey].variations.push({
-      entry,
-      variationNum,
-      isAngle01,
-      score,
-    });
-
-    if (score > productGroups[groupKey].bestScore) {
-      productGroups[groupKey].primaryEntry = entry;
-      productGroups[groupKey].primaryIsAngle01 = isAngle01;
-      productGroups[groupKey].bestScore = score;
-    }
-  }
-
-  const groupKeys = Object.keys(productGroups);
-  if (groupKeys.length === 0) {
-    console.log(`⚠️  No standard packaging renders detected in this ZIP archive.`);
-    console.log(`   (Checked ${entries.length} files. Ensure this is a DMA / Product Shots kit from WPN)`);
-    return;
-  }
-
-  console.log(`✨ Found \x1b[32m${groupKeys.length}\x1b[0m distinct product(s) in kit:`);
-
-  let processedCount = 0;
-
-  for (const groupKey of groupKeys) {
-    const group = productGroups[groupKey];
-    const targetFilenames = determineTargetFilenames(setCode, group.primaryEntry.entryName);
-
-    if (targetFilenames.length === 0) continue;
+    const originalBasename = path.basename(entry.entryName);
+    const destinationPath = path.join(setDir, originalBasename);
 
     try {
-      // 1. Process and save the primary render (preferring Angle 01)
-      const primaryRawBuffer = group.primaryEntry.getData();
-      const primaryTarget = targetFilenames[0];
-      const destinationPath = path.join(TARGET_PRODUCTS_DIR, primaryTarget);
-
-      const stats = await optimizeAndSaveImage(primaryRawBuffer, destinationPath, writeWebp);
+      const rawBuffer = entry.getData();
+      const stats = await optimizeAndSaveImage(rawBuffer, destinationPath, writeWebp);
       processedCount++;
-
-      // Copy primary to aliases if any
-      for (let i = 1; i < targetFilenames.length; i++) {
-        const aliasFilename = targetFilenames[i];
-        const aliasPath = path.join(TARGET_PRODUCTS_DIR, aliasFilename);
-        fs.copyFileSync(destinationPath, aliasPath);
-      }
-
-      // 2. Also process distinct front art variations (01, 02, 03...) for booster packs and scene kits
-      const isBoosterPack = primaryTarget.includes('pack') || group.primaryEntry.entryName.toLowerCase().includes('bstr');
-      const isScene = primaryTarget.includes('scene') || group.primaryEntry.entryName.toLowerCase().includes('scene');
-      
-      const distinctVariations = (isBoosterPack || isScene)
-        ? group.variations
-            .filter((v) => v.variationNum)
-            .sort((a, b) => (a.variationNum || '').localeCompare(b.variationNum || ''))
-        : [];
-
-      if (distinctVariations.length > 1) {
-        for (const v of distinctVariations) {
-          const varTarget = primaryTarget.replace(/\.png$/i, `_${v.variationNum}.png`);
-          const varDestPath = path.join(TARGET_PRODUCTS_DIR, varTarget);
-          if (!fs.existsSync(varDestPath)) {
-            const varBuffer = v.entry.getData();
-            await optimizeAndSaveImage(varBuffer, varDestPath, writeWebp);
-          }
-        }
-      }
-
-      const angleTag = group.primaryIsAngle01 ? '\x1b[35m[01]\x1b[0m ' : '    ';
-      const aliasTag = targetFilenames.length > 1 ? ` \x1b[90m(+${targetFilenames.length - 1} aliases)\x1b[0m` : '';
-      const varTag = distinctVariations.length > 1 ? ` \x1b[36m(${distinctVariations.length} pack arts)\x1b[0m` : '';
 
       if (stats.hasSharp) {
         const ratio = (((stats.originalSize - stats.optimizedSize) / stats.originalSize) * 100).toFixed(1);
         console.log(
-          `   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag}${varTag} ` +
+          `   ✅ \x1b[32m${setCode.toLowerCase()}/${originalBasename}\x1b[0m ` +
           `(${formatBytes(stats.originalSize)} ➔ \x1b[32m${formatBytes(stats.optimizedSize)}\x1b[0m, -${ratio}%)`
         );
       } else {
-        console.log(`   ✅ ${angleTag}\x1b[32m${primaryTarget}\x1b[0m${aliasTag}${varTag} (${formatBytes(stats.originalSize)})`);
+        console.log(`   ✅ \x1b[32m${setCode.toLowerCase()}/${originalBasename}\x1b[0m (${formatBytes(stats.originalSize)})`);
       }
     } catch (err) {
-      console.error(`   ❌ Failed to process ${groupKey}:`, err.message);
+      console.error(`   ❌ Failed to process ${originalBasename}:`, err.message);
     }
   }
 
-  console.log(`\n🎉 Extracted and optimized \x1b[32m${processedCount}\x1b[0m products for ${setCode.toUpperCase()}!`);
+  console.log(`\n🎉 Extracted and optimized \x1b[32m${processedCount}\x1b[0m pictures into folder: \x1b[36mpublic/products/${setCode.toLowerCase()}/\x1b[0m!`);
 }
 
 export async function runIngestion(forcedSetCode) {
