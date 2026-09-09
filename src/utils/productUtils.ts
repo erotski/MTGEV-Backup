@@ -340,8 +340,69 @@ export function resolveSingleCardEv(
   };
 }
 
+interface PreconDeckIndex {
+  byId: Map<string, any>;
+  byExactName: Map<string, any>;
+  bySet: Map<string, any[]>;
+  bySetExactName: Map<string, any>;
+  byStripped: Map<string, any>;
+  cache: Map<string, any | undefined>;
+}
+
+const preconIndexCache = new WeakMap<object, PreconDeckIndex>();
+
+function getOrBuildPreconIndex(preconDecks: Record<string, any>): PreconDeckIndex {
+  let index = preconIndexCache.get(preconDecks);
+  if (index) return index;
+
+  const byId = new Map<string, any>();
+  const byExactName = new Map<string, any>();
+  const bySet = new Map<string, any[]>();
+  const bySetExactName = new Map<string, any>();
+  const byStripped = new Map<string, any>();
+  const cache = new Map<string, any | undefined>();
+
+  // If preconDecks has .decks or is a raw dictionary, iterate canonical decks
+  const decksObj = (preconDecks as any).decks || preconDecks;
+  const entries = Object.entries(decksObj);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [key, rawD] = entries[i];
+    const d: any = rawD;
+    if (!d) continue;
+    const lowerKey = key.toLowerCase().trim();
+    byId.set(lowerKey, d);
+
+    const s = (d.setCode || d.set || '').toLowerCase().trim();
+    if (s) {
+      let list = bySet.get(s);
+      if (!list) {
+        list = [];
+        bySet.set(s, list);
+      }
+      list.push(d);
+    }
+
+    const n = (d.deckName || d.name || '').toLowerCase().trim();
+    if (n) {
+      if (!byExactName.has(n)) byExactName.set(n, d);
+      if (s) {
+        bySetExactName.set(`${n}___${s}`, d);
+      }
+      const stripped = n.replace(/[^a-z0-9]/g, '');
+      if (stripped && !byStripped.has(stripped)) {
+        byStripped.set(stripped, d);
+      }
+    }
+  }
+
+  index = { byId, byExactName, bySet, bySetExactName, byStripped, cache };
+  preconIndexCache.set(preconDecks, index);
+  return index;
+}
+
 /**
- * Finds a matching precon deck from preconDecks dictionary.
+ * Finds a matching precon deck from preconDecks dictionary using high-performance indexed lookups.
  */
 export function findMatchingPreconDeck(
   preconDecks: Record<string, any>,
@@ -351,32 +412,38 @@ export function findMatchingPreconDeck(
 ) {
   if (!preconDecks) return undefined;
 
-  // 1. Direct ID lookup if targetId provided
-  if (targetId) {
-    if (preconDecks[targetId]) return preconDecks[targetId];
-    const lowerId = targetId.toLowerCase().trim();
-    if (preconDecks[lowerId]) return preconDecks[lowerId];
+  const index = getOrBuildPreconIndex(preconDecks);
+  const cacheKey = `${targetId || ''}|${targetSet || ''}|${targetName || ''}`;
+  if (index.cache.has(cacheKey)) {
+    return index.cache.get(cacheKey);
   }
 
-  if (!targetName) return undefined;
+  // 1. Direct ID lookup if targetId provided
+  if (targetId) {
+    const lowerId = targetId.toLowerCase().trim();
+    if (index.byId.has(lowerId)) {
+      const match = index.byId.get(lowerId);
+      index.cache.set(cacheKey, match);
+      return match;
+    }
+  }
+
+  if (!targetName) {
+    index.cache.set(cacheKey, undefined);
+    return undefined;
+  }
+
   const cleanTarget = targetName.toLowerCase().trim();
   const lowerSet = targetSet ? targetSet.toLowerCase().trim() : '';
 
-  // 1b. Composite ID + deck name lookups
-  if (targetId) {
-    const lowerId = targetId.toLowerCase().trim();
-    if (preconDecks[`${lowerId}_${cleanTarget}`]) return preconDecks[`${lowerId}_${cleanTarget}`];
-    if (preconDecks[`${targetId}_${targetName}`]) return preconDecks[`${targetId}_${targetName}`];
-  }
-
   // 2. Direct exact keys with set
   if (lowerSet) {
-    const setCompositeKey = `${cleanTarget}___${lowerSet}`;
-    if (preconDecks[setCompositeKey]) return preconDecks[setCompositeKey];
-    const prefixSetKey = `${lowerSet}_${cleanTarget}`;
-    if (preconDecks[prefixSetKey]) return preconDecks[prefixSetKey];
-    const upperSetKey = `${targetName}_${lowerSet.toUpperCase()}`;
-    if (preconDecks[upperSetKey]) return preconDecks[upperSetKey];
+    const setKey = `${cleanTarget}___${lowerSet}`;
+    if (index.bySetExactName.has(setKey)) {
+      const match = index.bySetExactName.get(setKey);
+      index.cache.set(cacheKey, match);
+      return match;
+    }
   }
 
   // 3. Normalize "Collector's Edition", "Secret Lair", "Superdrop", "Commander Deck", etc.
@@ -399,64 +466,58 @@ export function findMatchingPreconDeck(
     .trim();
 
   if (strippedTarget && strippedTarget !== cleanTarget && lowerSet) {
-    const strippedDirectKey = `${strippedTarget}___${lowerSet}`;
-    if (preconDecks[strippedDirectKey]) return preconDecks[strippedDirectKey];
-    const strippedPrefixKey = `${lowerSet}_${strippedTarget}`;
-    if (preconDecks[strippedPrefixKey]) return preconDecks[strippedPrefixKey];
-    if (preconDecks[strippedTarget]) return preconDecks[strippedTarget];
+    const strippedSetKey = `${strippedTarget}___${lowerSet}`;
+    if (index.bySetExactName.has(strippedSetKey)) {
+      const match = index.bySetExactName.get(strippedSetKey);
+      index.cache.set(cacheKey, match);
+      return match;
+    }
   }
 
   const toAlpha = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
   const cleanTargetAlpha = toAlpha(cleanTarget);
   const strippedTargetAlpha = strippedTarget ? toAlpha(strippedTarget) : '';
 
-  // 4. Exact set matches within preconDecks dictionary
-  if (lowerSet) {
-    for (const [key, d] of Object.entries(preconDecks)) {
-      if (targetId && (key === targetId || key.toLowerCase() === targetId.toLowerCase())) {
+  // 4. Exact set matches within scoped set decks ONLY (2-5 items, never 8,000!)
+  if (lowerSet && index.bySet.has(lowerSet)) {
+    const setDecks = index.bySet.get(lowerSet)!;
+    for (let i = 0; i < setDecks.length; i++) {
+      const d = setDecks[i];
+      const dName = (d.deckName || d.name || '').toLowerCase().trim();
+      if (dName === cleanTarget || (strippedTarget && dName === strippedTarget)) {
+        index.cache.set(cacheKey, d);
         return d;
       }
-      const dSet = (d.set || d.setCode || '').toLowerCase().trim();
-      if (dSet === lowerSet) {
-        const dName = (d.deckName || d.name || '').toLowerCase().trim();
-        if (dName === cleanTarget) return d;
-        if (strippedTarget && dName === strippedTarget) return d;
-        const dNameAlpha = toAlpha(dName);
-        if (dNameAlpha && (dNameAlpha === cleanTargetAlpha || dNameAlpha === strippedTargetAlpha)) return d;
-        if (dName && (cleanTarget.includes(dName) || (strippedTarget && strippedTarget.includes(dName)))) {
-          return d;
-        }
-        if (strippedTargetAlpha.length >= 6 && dNameAlpha && (cleanTargetAlpha.includes(dNameAlpha) || strippedTargetAlpha.includes(dNameAlpha) || dNameAlpha.includes(strippedTargetAlpha))) {
-          return d;
-        }
+      const dNameAlpha = toAlpha(dName);
+      if (dNameAlpha && (dNameAlpha === cleanTargetAlpha || dNameAlpha === strippedTargetAlpha)) {
+        index.cache.set(cacheKey, d);
+        return d;
+      }
+      if (dName && (cleanTarget.includes(dName) || (strippedTarget && strippedTarget.includes(dName)))) {
+        index.cache.set(cacheKey, d);
+        return d;
       }
     }
   }
 
-  // 5. If no set was provided (or no match within set), allow exact and fuzzy match across all decks
-  if (preconDecks[cleanTarget]) return preconDecks[cleanTarget];
-  if (preconDecks[targetName]) return preconDecks[targetName];
-  if (strippedTarget && preconDecks[strippedTarget]) return preconDecks[strippedTarget];
-
-  for (const [key, d] of Object.entries(preconDecks)) {
-    const dName = (d.deckName || d.name || '').toLowerCase().trim();
-    if (dName === cleanTarget) return d;
-    if (strippedTarget && dName === strippedTarget) return d;
-    const dNameAlpha = toAlpha(dName);
-    if (dNameAlpha && (dNameAlpha === cleanTargetAlpha || (strippedTargetAlpha && dNameAlpha === strippedTargetAlpha))) {
-      return d;
-    }
-    if (cleanTarget.length >= 8 && dName && (dName.includes(cleanTarget) || cleanTarget.includes(dName))) {
-      return d;
-    }
-    if (strippedTarget && strippedTarget.length >= 6 && dName && (dName.includes(strippedTarget) || strippedTarget.includes(dName))) {
-      return d;
-    }
-    if (strippedTargetAlpha.length >= 8 && dNameAlpha && (strippedTargetAlpha.includes(dNameAlpha) || dNameAlpha.includes(strippedTargetAlpha))) {
-      return d;
-    }
+  // 5. Global name lookups via index
+  if (index.byExactName.has(cleanTarget)) {
+    const match = index.byExactName.get(cleanTarget);
+    index.cache.set(cacheKey, match);
+    return match;
+  }
+  if (strippedTarget && index.byExactName.has(strippedTarget)) {
+    const match = index.byExactName.get(strippedTarget);
+    index.cache.set(cacheKey, match);
+    return match;
+  }
+  if (cleanTargetAlpha && index.byStripped.has(cleanTargetAlpha)) {
+    const match = index.byStripped.get(cleanTargetAlpha);
+    index.cache.set(cacheKey, match);
+    return match;
   }
 
+  index.cache.set(cacheKey, undefined);
   return undefined;
 }
 

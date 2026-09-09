@@ -355,6 +355,42 @@ class DataService {
         if (response.ok) {
           const raw = await response.json();
           if (typeof raw === 'object' && raw !== null) {
+            if (raw._format === 'compact' && raw.decks && raw.aliases) {
+              const decks = raw.decks;
+              const aliases = raw.aliases;
+              const proxy = new Proxy(decks, {
+                get(target, prop: string) {
+                  if (prop in target) return target[prop];
+                  const aliasTarget = aliases[prop];
+                  if (aliasTarget && aliasTarget in target) return target[aliasTarget];
+                  return (target as any)[prop];
+                },
+                has(target, prop: string) {
+                  return (prop in target) || (prop in aliases);
+                },
+                ownKeys(target) {
+                  return Array.from(new Set([...Object.keys(target), ...Object.keys(aliases)]));
+                },
+                getOwnPropertyDescriptor(target, prop: string) {
+                  if (prop in target) return Object.getOwnPropertyDescriptor(target, prop);
+                  if (prop in aliases) {
+                    const canonical = aliases[prop];
+                    if (canonical in target) {
+                      return {
+                        configurable: true,
+                        enumerable: true,
+                        writable: false,
+                        value: target[canonical],
+                      };
+                    }
+                  }
+                  return undefined;
+                },
+              });
+              this.preconDecksCache = proxy;
+              this.injectSldFallbackDecks(this.preconDecksCache);
+              return this.preconDecksCache;
+            }
             this.preconDecksCache = raw;
             this.injectSldFallbackDecks(this.preconDecksCache);
             return this.preconDecksCache;

@@ -14,6 +14,7 @@ import {
   Search,
   Layers,
   Award,
+  ChevronLeft,
   ChevronRight,
   Package,
   Box,
@@ -56,19 +57,28 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
   const [preconDecks, setPreconDecks] = useState<Record<string, any>>({});
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([
-      dataService.getPreconDecks(),
-      dataService.getSingleCardPrices(),
-    ]).then(([pd, sc]) => {
-      if (isMounted) {
-        if (pd) setPreconDecks(pd);
-        if (sc) setSingleCardPrices(sc);
-      }
-    }).catch(() => {});
-    return () => { isMounted = false; };
+    // Defer loading heavy auxiliary precon & single card indexes until main thread is idle
+    const timer = setTimeout(() => {
+      Promise.all([
+        dataService.getPreconDecks(),
+        dataService.getSingleCardPrices(),
+      ]).then(([pd, sc]) => {
+        if (isMounted) {
+          if (pd) setPreconDecks(pd);
+          if (sc) setSingleCardPrices(sc);
+        }
+      }).catch(() => {});
+    }, 300);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   const recordByUuid = useMemo(() => new Map(records.map((r) => [r.productUuid, r])), [records]);
@@ -161,6 +171,38 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
   const adjustedRecords = useMemo(() => {
+    // Fast path: if default options (direct, all) are selected, records in arbitrage_leaderboard.json
+    // are already the canonical metrics. We only need to adjust effectiveEv/profitUsd/roiPct per evBasis.
+    const isDefaultPricing = priceMode === 'direct' && vendor === 'all';
+    if (isDefaultPricing) {
+      return records.map((r) => {
+        let effectiveEv = r.totalEvAvg || 0;
+        if (evBasis === 'min') effectiveEv = r.totalEvMin || 0;
+        else if (evBasis === 'mid90') effectiveEv = r.totalEvMid90 || effectiveEv;
+        else if (evBasis === 'max') effectiveEv = r.totalEvMax || 0;
+
+        const profitUsd = Number((effectiveEv - (r.marketPrice || 0)).toFixed(2));
+        const roiPct = (r.marketPrice || 0) > 0 ? Number(((profitUsd / r.marketPrice) * 100).toFixed(2)) : 0;
+        const isPrecon = (r.category || '').toLowerCase().includes('deck') || (r.packCount === 0);
+        const evScore = calculateEvScore(
+          r.marketPrice,
+          r.totalEvAvg,
+          r.totalEvMin,
+          r.totalEvMid90,
+          r.totalEvMax,
+          isPrecon
+        );
+
+        return {
+          ...r,
+          effectiveEv,
+          profitUsd,
+          roiPct,
+          evScore,
+        };
+      });
+    }
+
     return records.map((r) => {
       // Single canonical source of truth for containment, breakdown, and EV calculation
       const metrics = getCanonicalProductMetrics(
@@ -278,6 +320,19 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         return sortOrder === 'desc' ? valB - valA : valA - valB;
       });
   }, [adjustedRecords, searchTerm, selectedCategory, sortBy, sortOrder]);
+
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, sortBy, sortOrder, evBasis]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+  const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedRecords = useMemo(() => {
+    const startIndex = (validPage - 1) * pageSize;
+    return filteredRecords.slice(startIndex, startIndex + pageSize);
+  }, [filteredRecords, validPage, pageSize]);
 
   // Derive Top 3 Best ROI and Top 3 Worst ROI from all products
   const sortedByRoi = useMemo(() => {
@@ -948,7 +1003,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((box, i) => {
+                paginatedRecords.map((box, i) => {
                 const isPositive = box.profitUsd > 0;
                 return (
                   <tr
@@ -1032,6 +1087,99 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* High Performance Responsive Pagination Footer */}
+        {filteredRecords.length > 0 && (
+          <div className="p-4 border-t border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-xs text-slate-600">
+              <span>
+                Showing <strong className="text-slate-900 font-mono font-semibold">{(validPage - 1) * pageSize + 1}</strong> to{' '}
+                <strong className="text-slate-900 font-mono font-semibold">
+                  {Math.min(validPage * pageSize, filteredRecords.length).toLocaleString()}
+                </strong>{' '}
+                of <strong className="text-slate-900 font-mono font-semibold">{filteredRecords.length.toLocaleString()}</strong> products
+              </span>
+
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                <span className="text-slate-500 text-[11px]">Per page:</span>
+                <select
+                  id="pagination-page-size-select"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+              </div>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  id="pagination-prev-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={validPage === 1}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer transition shadow-xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Prev</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - validPage) <= 2)
+                    .reduce((acc: (number | string)[], p, idx, arr) => {
+                      if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                        acc.push('...');
+                      }
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((pageItem, idx) => {
+                      if (typeof pageItem === 'string') {
+                        return (
+                          <span key={`ellipsis-${idx}`} className="px-2 text-xs text-slate-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      const isCur = pageItem === validPage;
+                      return (
+                        <button
+                          key={pageItem}
+                          id={`pagination-page-${pageItem}-btn`}
+                          onClick={() => setCurrentPage(pageItem)}
+                          className={`w-8 h-8 rounded-lg text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center ${
+                            isCur
+                              ? 'bg-amber-500 text-slate-950 shadow-xs'
+                              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-xs'
+                          }`}
+                        >
+                          {pageItem}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  id="pagination-next-btn"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={validPage === totalPages}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer transition shadow-xs"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
