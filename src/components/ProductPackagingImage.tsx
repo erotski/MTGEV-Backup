@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ProductPackagingType } from '../ecommerceBoosterData';
+import { loadSavedAssetMappings } from '../utils/productAssetMatcher';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { BoosterFoilPackMockup, cleanPureSetName } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
@@ -53,6 +54,29 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
     const urls: string[] = [];
+
+    // Check for saved manual mapping overrides first
+    try {
+      const savedMappings = loadSavedAssetMappings();
+      // Match by exact key or setCode + cleanName
+      for (const key of Object.keys(savedMappings)) {
+        const mapping = savedMappings[key];
+        if (mapping && mapping.isManualOverride && Array.isArray(mapping.slots) && mapping.slots.length > 0) {
+          const mappingSet = (mapping.setCode || '').toLowerCase().trim();
+          if (mappingSet === cleanCode) {
+            const keyLower = key.toLowerCase();
+            if (keyLower === cleanName || cleanName.includes(keyLower) || keyLower.includes(cleanName) || imageUrl?.includes(key)) {
+              mapping.slots.forEach((s) => {
+                if (s && s.trim().length > 0) urls.push(s.trim());
+              });
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore storage read error
+    }
+
     if (imageUrl && imageUrl.trim().length > 0) {
       urls.push(imageUrl.trim());
     }

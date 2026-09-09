@@ -8,6 +8,7 @@ import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
 import { BoosterDisplayBoxMockup } from './BoosterDisplayBoxMockup';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { Vendor, PriceMode } from '../types';
+import { PackagingAssetManager } from './PackagingAssetManager';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -32,7 +33,8 @@ import {
   Wrench,
   FileCode,
   Check,
-  ArrowUpRight
+  ArrowUpRight,
+  Puzzle
 } from 'lucide-react';
 
 interface AdminPortalProps {
@@ -67,7 +69,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const handlePriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
 
   // Top-level Admin Section Tab
-  const [activeAdminSection, setActiveAdminSection] = useState<'audit' | 'integrity' | 'studio'>('audit');
+  const [activeAdminSection, setActiveAdminSection] = useState<'audit' | 'integrity' | 'studio' | 'matcher'>('audit');
 
   // Filters & State
   const [selectedSetFilter, setSelectedSetFilter] = useState<string>('all');
@@ -510,9 +512,27 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <Sparkles className={`w-4 h-4 ${activeAdminSection === 'studio' ? 'text-purple-400' : 'text-slate-400'}`} />
           <span>Procedural 3D Packaging Studio</span>
         </button>
+
+        <button
+          onClick={() => setActiveAdminSection('matcher')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'matcher'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Puzzle className={`w-4 h-4 ${activeAdminSection === 'matcher' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>Packaging Asset Guessing & Manual Overrides</span>
+        </button>
       </div>
 
       {/* Render Active Section */}
+      {activeAdminSection === 'matcher' && (
+        <div className="mt-4">
+          <PackagingAssetManager />
+        </div>
+      )}
+
       {activeAdminSection === 'integrity' && (
         <div className="space-y-6">
           {/* Summary Metric Cards */}
