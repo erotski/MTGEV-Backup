@@ -138,9 +138,9 @@ function determineTargetFilenames(setCode, rawFilename) {
 
   // Match specific product types
   if (isCollector && isDisplayBox) {
-    filenames.push(`${setCode}-collector.png`);
     filenames.push(`${setCode}-collector_box.png`);
     filenames.push(`${setCode}-collector_booster_box.png`);
+    filenames.push(`${setCode}-collector.png`);
   } else if (isCollector && isBoosterPack) {
     filenames.push(`${setCode}-collector_pack.png`);
     filenames.push(`${setCode}-collector_booster_pack.png`);
@@ -174,21 +174,11 @@ function determineTargetFilenames(setCode, rawFilename) {
   } else if (p.includes('commander') || p.includes('deck') || p.includes('precon')) {
     const deckSlug = clean.replace(/^(commander_deck_|commander_|deck_)/i, '');
     filenames.push(`${setCode}-commander_${deckSlug}.png`);
-    filenames.push(`${setCode}-deck_${deckSlug}.png`);
   } else if (p.includes('scene')) {
     const sceneSlug = clean.replace(/^scene_box_/i, '');
     filenames.push(`${setCode}-scene_${sceneSlug}.png`);
   } else if (p.includes('case')) {
     filenames.push(`${setCode}-case.png`);
-  }
-
-  // Always include a cleaned descriptive filename based on the asset itself
-  const genericCleanSlug = clean
-    .replace(new RegExp(`^${setCode}_`, 'i'), '')
-    .replace(new RegExp(`_${setCode}$`, 'i'), '');
-  
-  if (genericCleanSlug) {
-    filenames.push(`${setCode}-${genericCleanSlug}.png`);
   }
 
   return Array.from(new Set(filenames));
@@ -411,10 +401,15 @@ export async function processZipFile(zipFilePath, explicitSetCode, writeWebp = f
         fs.copyFileSync(destinationPath, aliasPath);
       }
 
-      // 2. Also process distinct variation angles (01, 02, 03, 04...) if multiple exist
-      const distinctVariations = group.variations
-        .filter((v) => v.variationNum)
-        .sort((a, b) => (a.variationNum || '').localeCompare(b.variationNum || ''));
+      // 2. Also process distinct front art variations (01, 02, 03...) for booster packs and scene kits
+      const isBoosterPack = primaryTarget.includes('pack') || group.primaryEntry.entryName.toLowerCase().includes('bstr');
+      const isScene = primaryTarget.includes('scene') || group.primaryEntry.entryName.toLowerCase().includes('scene');
+      
+      const distinctVariations = (isBoosterPack || isScene)
+        ? group.variations
+            .filter((v) => v.variationNum)
+            .sort((a, b) => (a.variationNum || '').localeCompare(b.variationNum || ''))
+        : [];
 
       if (distinctVariations.length > 1) {
         for (const v of distinctVariations) {
@@ -429,7 +424,7 @@ export async function processZipFile(zipFilePath, explicitSetCode, writeWebp = f
 
       const angleTag = group.primaryIsAngle01 ? '\x1b[35m[01]\x1b[0m ' : '    ';
       const aliasTag = targetFilenames.length > 1 ? ` \x1b[90m(+${targetFilenames.length - 1} aliases)\x1b[0m` : '';
-      const varTag = distinctVariations.length > 1 ? ` \x1b[36m(${distinctVariations.length} angles)\x1b[0m` : '';
+      const varTag = distinctVariations.length > 1 ? ` \x1b[36m(${distinctVariations.length} pack arts)\x1b[0m` : '';
 
       if (stats.hasSharp) {
         const ratio = (((stats.originalSize - stats.optimizedSize) / stats.originalSize) * 100).toFixed(1);

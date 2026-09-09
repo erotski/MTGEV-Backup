@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { BoosterFoilPackMockup, cleanPureSetName } from './BoosterFoilPackMockup';
@@ -216,109 +217,109 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   const activeSrc = candidateUrls[candidateIndex];
 
-  // Discover and probe other angle & art variations for this product
+  // Discover and probe other booster front art variations (e.g. Pack Art 01, 02, 03)
   useEffect(() => {
     if (!hasImageLoaded || !activeSrc) return;
 
     let isMounted = true;
-    setFoundVariations([activeSrc]);
+    const isPack = packagingType === 'pack' || cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack');
 
-    const basePathWithoutExt = activeSrc.replace(/\.(png|webp|jpg|jpeg)$/i, '');
-    const variationCandidates: string[] = [];
+    if (isPack) {
+      // For booster packs, probe distinct front art variations (01, 02, 03, 04, 05)
+      // Each slot number (1..5) gets at most ONE canonical image URL.
+      const slotMap: Record<number, string> = {};
 
-    // 1. If base path already has a _01 / _02 suffix (e.g. mtghob_en_play_bstr_01), strip it to probe sibling numbers
-    const strippedSuffixBase = basePathWithoutExt.replace(/_\d{2}$/, '');
-    if (strippedSuffixBase !== basePathWithoutExt) {
-      for (let i = 1; i <= 6; i++) {
-        const padNum = i.toString().padStart(2, '0');
-        const varPath = `${strippedSuffixBase}_${padNum}.png`;
-        if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
-          variationCandidates.push(varPath);
-        }
+      // If activeSrc already has an art index like _01, _02, record it for that slot
+      const activeMatch = activeSrc.match(/_0?([1-5])\.(png|webp|jpg)$/i);
+      if (activeMatch) {
+        slotMap[parseInt(activeMatch[1], 10)] = activeSrc;
+      } else {
+        slotMap[1] = activeSrc;
       }
-    }
 
-    // 2. Check _01 through _06 variations from current base
-    for (let i = 1; i <= 6; i++) {
-      const padNum = i.toString().padStart(2, '0');
-      const varPath = `${basePathWithoutExt}_${padNum}.png`;
-      if (varPath !== activeSrc && !variationCandidates.includes(varPath)) {
-        variationCandidates.push(varPath);
-      }
-    }
+      const updateVariations = () => {
+        if (!isMounted) return;
+        const sortedSlots = Object.keys(slotMap)
+          .map(Number)
+          .sort((a, b) => a - b);
+        const uniqueUrls = sortedSlots.map((slot) => slotMap[slot]);
+        setFoundVariations(uniqueUrls.length > 0 ? uniqueUrls : [activeSrc]);
+      };
 
-    // 3. Set-level standard pack art variations (e.g. hob-pack_01.png, hob-pack_02.png, hob-pack_03.png)
-    if (cleanType === 'pack' || cleanType === 'booster_pack' || cleanName.includes('pack')) {
+      updateVariations();
+
+      // Probe slots 1 to 5
       for (let i = 1; i <= 5; i++) {
         const padNum = i.toString().padStart(2, '0');
-        const paths = [
-          `/products/${cleanCode}-pack_${padNum}.png`,
-          `/products/${cleanCode}-play_pack_${padNum}.png`,
-          `/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_${padNum}.png`,
-        ];
-        paths.forEach((p) => {
-          if (p !== activeSrc && !variationCandidates.includes(p)) {
-            variationCandidates.push(p);
-          }
+        const candidatePaths = isCollector
+          ? [
+              `/products/${cleanCode}-collector_pack_${padNum}.png`,
+              `/products/${cleanCode}-collector_${padNum}.png`,
+              `/products/${cleanCode}-mtg${cleanCode}_en_clctr_bstr_${padNum}.png`,
+            ]
+          : [
+              `/products/${cleanCode}-pack_${padNum}.png`,
+              `/products/${cleanCode}-play_pack_${padNum}.png`,
+              `/products/${cleanCode}-mtg${cleanCode}_en_play_bstr_${padNum}.png`,
+            ];
+
+        // Probe candidates for this slot
+        candidatePaths.forEach((pathUrl) => {
+          const img = new Image();
+          img.src = pathUrl;
+          img.onload = () => {
+            if (!isMounted) return;
+            // Only assign if slot is not yet filled or if filled with raw alias
+            if (!slotMap[i] || slotMap[i] === activeSrc) {
+              slotMap[i] = pathUrl;
+              updateVariations();
+            }
+          };
         });
       }
-    }
+    } else if (isScene || cleanName.includes('scene')) {
+      // Scene boxes have multiple distinct scene kits (01, 02, etc.)
+      const slotMap: Record<number, string> = { 1: activeSrc };
+      const updateVariations = () => {
+        if (!isMounted) return;
+        const sortedSlots = Object.keys(slotMap)
+          .map(Number)
+          .sort((a, b) => a - b);
+        setFoundVariations(sortedSlots.map((s) => slotMap[s]));
+      };
 
-    // 4. Set-level standard box angle variations (e.g. hob-box_01.png, hob-box_02.png)
-    if (cleanType === 'box' || cleanType === 'booster_box' || cleanName.includes('box')) {
       for (let i = 1; i <= 4; i++) {
         const padNum = i.toString().padStart(2, '0');
-        const paths = [
-          `/products/${cleanCode}-box_${padNum}.png`,
-          `/products/${cleanCode}-collector_${padNum}.png`,
-          `/products/${cleanCode}-mtg${cleanCode}_en_play_dspbx_${padNum}.png`,
-          `/products/${cleanCode}-mtg${cleanCode}_en_dspbx_clctr_${padNum}.png`,
-        ];
-        paths.forEach((p) => {
-          if (p !== activeSrc && !variationCandidates.includes(p)) {
-            variationCandidates.push(p);
-          }
-        });
-      }
-    }
-
-    // 5. Scene box variations (e.g. hob-scene_01.png, hob-scene_02.png)
-    if (isScene || cleanName.includes('scene')) {
-      for (let i = 1; i <= 4; i++) {
-        const padNum = i.toString().padStart(2, '0');
-        const paths = [
+        const candidatePaths = [
           `/products/${cleanCode}-scene_${padNum}.png`,
           `/products/${cleanCode}-mtg${cleanCode}_en_scene_otrbx_${padNum}.png`,
         ];
-        paths.forEach((p) => {
-          if (p !== activeSrc && !variationCandidates.includes(p)) {
-            variationCandidates.push(p);
-          }
+        candidatePaths.forEach((pathUrl) => {
+          const img = new Image();
+          img.src = pathUrl;
+          img.onload = () => {
+            if (!isMounted) return;
+            slotMap[i] = pathUrl;
+            updateVariations();
+          };
         });
       }
+    } else {
+      // For display boxes, bundles, prerelease packs, draft night: single front render, no duplicate angle cycling
+      setFoundVariations([activeSrc]);
     }
-
-    // Probe candidates gently in the background
-    variationCandidates.forEach((candidateUrl) => {
-      const img = new Image();
-      img.src = candidateUrl;
-      img.onload = () => {
-        if (!isMounted) return;
-        setFoundVariations((prev) => {
-          if (prev.includes(candidateUrl)) return prev;
-          return [...prev, candidateUrl];
-        });
-      };
-    });
 
     return () => {
       isMounted = false;
     };
-  }, [hasImageLoaded, activeSrc, cleanType, cleanCode, isScene, cleanName]);
+  }, [hasImageLoaded, activeSrc, cleanType, cleanCode, isScene, cleanName, isCollector, packagingType]);
 
-  // Keyboard navigation for zoomed gallery
+  // Keyboard navigation and body scroll lock for zoomed gallery
   useEffect(() => {
     if (!isZoomed) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -331,7 +332,10 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
   }, [isZoomed, foundVariations.length]);
 
   const currentDisplaySrc = foundVariations[activeVariationIdx] || activeSrc;
@@ -671,13 +675,13 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         </div>
 
         {/* Modal Lightbox for Packaging Close-Up Inspection & Multi-Variation Gallery */}
-        {isZoomed && (
+        {isZoomed && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
             onClick={() => setIsZoomed(false)}
           >
             <div
-              className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-5 text-white shadow-2xl relative space-y-4"
+              className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-5 text-white shadow-2xl relative space-y-4 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -693,7 +697,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 </div>
                 <button
                   onClick={() => setIsZoomed(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -713,14 +717,14 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                   <>
                     <button
                       onClick={handlePrevVariation}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl cursor-pointer"
                       title="Previous variation (Left arrow key)"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={handleNextVariation}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/90 text-slate-200 hover:text-white hover:bg-amber-600 border border-slate-700 flex items-center justify-center transition shadow-xl cursor-pointer"
                       title="Next variation (Right arrow key)"
                     >
                       <ChevronRight className="w-5 h-5" />
@@ -732,7 +736,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 {hasMultipleVariations && (
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-amber-300 border border-amber-500/40 shadow-lg flex items-center gap-1.5">
                     <RotateCw className="w-3.5 h-3.5" />
-                    <span>Variation {activeVariationIdx + 1} of {foundVariations.length}</span>
+                    <span>{packagingType === 'pack' || cleanType.includes('pack') || cleanName.includes('pack') ? `Pack Art ${activeVariationIdx + 1} of ${foundVariations.length}` : `Variation ${activeVariationIdx + 1} of ${foundVariations.length}`}</span>
                   </div>
                 )}
               </div>
@@ -741,7 +745,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               {hasMultipleVariations && (
                 <div className="space-y-1.5">
                   <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Pack Art & Angle Variations ({foundVariations.length})
+                    {packagingType === 'pack' || cleanType.includes('pack') || cleanName.includes('pack') ? `Booster Pack Art Variations (${foundVariations.length})` : `Product Variations (${foundVariations.length})`}
                   </div>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {foundVariations.map((varUrl, idx) => {
@@ -750,7 +754,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                         <button
                           key={varUrl}
                           onClick={() => setActiveVariationIdx(idx)}
-                          className={`relative w-14 h-16 rounded-lg p-1 bg-slate-950 border transition-all flex items-center justify-center shrink-0 ${
+                          className={`relative w-14 h-16 rounded-lg p-1 bg-slate-950 border transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                             isCurrent
                               ? 'border-amber-400 ring-2 ring-amber-400/30 scale-105 shadow-md'
                               : 'border-slate-800 hover:border-slate-600 opacity-70 hover:opacity-100'
@@ -777,7 +781,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 <span className="font-semibold text-slate-300 shrink-0">WPN Marketing Asset</span>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
@@ -827,13 +832,13 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         />
 
         {/* Modal Lightbox for Pack Close-Up Inspection */}
-        {isZoomed && (
+        {isZoomed && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
             onClick={() => setIsZoomed(false)}
           >
             <div
-              className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-4 flex flex-col items-center"
+              className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-4 flex flex-col items-center max-h-[92vh] animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-full flex items-center justify-between border-b border-slate-800 pb-3">
@@ -848,7 +853,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 </div>
                 <button
                   onClick={() => setIsZoomed(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -874,7 +879,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 <span className="text-slate-300 font-medium">Official Vector Scryfall Emblem</span>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
@@ -934,13 +940,13 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
         )}
 
         {/* Modal Lightbox for Packaging Close-Up Inspection */}
-        {isZoomed && (
+        {isZoomed && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
             onClick={() => setIsZoomed(false)}
           >
             <div
-              className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 text-white shadow-2xl relative space-y-4"
+              className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 text-white shadow-2xl relative space-y-4 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -955,7 +961,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 </div>
                 <button
                   onClick={() => setIsZoomed(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -990,7 +996,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
                 <span className="text-slate-300 font-medium">Official Vector Scryfall Emblem</span>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
@@ -1099,13 +1106,13 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
       </div>
 
       {/* Lightbox for Procedural Close-Up Inspection */}
-      {isZoomed && (
+      {isZoomed && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setIsZoomed(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-5"
+            className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-5 max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1120,7 +1127,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               </div>
               <button
                 onClick={() => setIsZoomed(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1167,7 +1174,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
               <span className="text-slate-300 font-medium">Scryfall Vector SVG Engine</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
