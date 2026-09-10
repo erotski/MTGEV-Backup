@@ -234,6 +234,102 @@ const SPECIAL_CHASE_CARDS: SpecialChaseCard[] = [
     ]
   },
   {
+    id: 'masterpiece-series',
+    name: 'The Masterpiece Series: Inventions & Expeditions',
+    subtitle: 'Kaladesh & Zendikar Ultra-Rare Lottery Cards (1:144 Packs)',
+    setCode: 'MPS',
+    number: 'MPS',
+    fallbackImgUrl: 'https://api.scryfall.com/cards/mps/17?format=image',
+    story: 'Beginning with Battle for Zendikar in 2015 and reaching its artistic pinnacle with Kaladesh in 2016, Wizards of the Coast pioneered the modern "Lottery Card" era through the Masterpiece Series (Zendikar Expeditions and Kaladesh Inventions). Inserted at an ultra-rare drop rate of approximately 1 in 144 booster packs (~1 per 4 booster boxes / 1 per case), these premium foil cards featured stunning full-bleed metallic filigree copper frames and bespoke fantasy artwork. Kaladesh Inventions showcases iconic artifact staples like Mana Crypt, Sol Ring, Mox Opal, and Mana Vault. Their breathtaking filigree aesthetics and extreme scarcity make them high-tier vintage treasures, frequently driving unopened Kaladesh boxes to premium valuations.',
+    prices: {
+      tcgplayer: 1250.00,
+      cardmarket: 980.00,
+      cardkingdom: 1400.00,
+      manapool: 1200.00
+    },
+    products: [
+      {
+        name: 'Kaladesh Booster Box',
+        setCode: 'KLD',
+        productId: '9a748fe4-fde6-5a7f-b10e-e080141114a3',
+        boosterName: 'draft',
+        productPrice: 508.70
+      },
+      {
+        name: 'Kaladesh Booster Pack',
+        setCode: 'KLD',
+        productId: 'cf0f8060-bd6a-5d26-994c-202112e5177c',
+        boosterName: 'draft',
+        productPrice: 15.64
+      },
+      {
+        name: 'Oath of the Gatewatch Booster Box',
+        setCode: 'OGW',
+        productId: 'd1d5ff36-b38c-5767-84be-8977e1501c18',
+        boosterName: 'draft',
+        productPrice: 174.79
+      },
+      {
+        name: 'Battle for Zendikar Booster Box',
+        setCode: 'BFZ',
+        productId: '0620e76e-374e-5566-b2c7-f4ca61d75ca0',
+        boosterName: 'draft',
+        productPrice: 226.87
+      }
+    ],
+    variantTitle: 'Iconic Masterpiece Inventions & Expeditions',
+    variants: [
+      {
+        suffix: 'crypt',
+        number: '17',
+        name: 'Mana Crypt (Invention #17)',
+        imageUrl: 'https://api.scryfall.com/cards/mps/17?format=image',
+        description: 'Kaladesh Inventions. Adds 2 colorless mana for 0 casting cost with a coin flip drawback. The defining centerpiece of the Kaladesh Inventions series.',
+        tcgPrice: 1250.00
+      },
+      {
+        suffix: 'solring',
+        number: '24',
+        name: 'Sol Ring (Invention #24)',
+        imageUrl: 'https://api.scryfall.com/cards/mps/24?format=image',
+        description: 'Kaladesh Inventions. The most recognized and widely played mana rock in Commander history, adorned with ornamental copper filigree.',
+        tcgPrice: 950.00
+      },
+      {
+        suffix: 'moxopal',
+        number: '19',
+        name: 'Mox Opal (Invention #19)',
+        imageUrl: 'https://api.scryfall.com/cards/mps/19?format=image',
+        description: 'Kaladesh Inventions. Adds 1 mana of any color with Metalcraft. Modern and Legacy staple in fast artifact decks.',
+        tcgPrice: 520.00
+      },
+      {
+        suffix: 'manavault',
+        number: '18',
+        name: 'Mana Vault (Invention #18)',
+        imageUrl: 'https://api.scryfall.com/cards/mps/18?format=image',
+        description: 'Kaladesh Inventions. Fast ritual mana source tapping for 3 colorless mana. Coveted across high-power cEDH tables.',
+        tcgPrice: 480.00
+      },
+      {
+        suffix: 'scalding',
+        number: '19',
+        name: 'Scalding Tarn (Expedition #19)',
+        imageUrl: 'https://api.scryfall.com/cards/exp/19?format=image',
+        description: 'Zendikar Expeditions (BFZ/OGW). Full-art foil fetchland that pays 1 life to search for an Island or Mountain.',
+        tcgPrice: 380.00
+      },
+      {
+        suffix: 'polluted',
+        number: '17',
+        name: 'Polluted Delta (Expedition #17)',
+        imageUrl: 'https://api.scryfall.com/cards/exp/17?format=image',
+        description: 'Zendikar Expeditions (BFZ/OGW). Full-art foil fetchland searching for an Island or Swamp, iconic in vintage formats.',
+        tcgPrice: 340.00
+      }
+    ]
+  },
+  {
     id: 'gala-greeter',
     name: 'New Capenna: Russian Gala Greeters',
     subtitle: 'Streets of New Capenna Box Topper #459',

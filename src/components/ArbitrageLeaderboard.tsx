@@ -827,6 +827,45 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
           </div>
         </div>
 
+        {/* Active EV Basis Notice Banner when non-average basis is selected */}
+        {evBasis !== 'avg' && (
+          <div
+            id="arbitrage-ev-basis-alert"
+            className={`px-4 py-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b ${
+              evBasis === 'max'
+                ? 'bg-amber-500/10 text-amber-900 border-amber-500/20'
+                : evBasis === 'min'
+                ? 'bg-blue-500/10 text-blue-900 border-blue-500/20'
+                : 'bg-slate-100 text-slate-800 border-slate-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 shrink-0 text-amber-600" />
+              <span>
+                {evBasis === 'max' ? (
+                  <>
+                    <strong>Active EV Basis: Ceiling (Max 5% / 99th Percentile).</strong> Values reflect extreme simulated upper bounds (e.g. hitting jackpot Masterpieces/foils across packs), not mean expected return.
+                  </>
+                ) : evBasis === 'min' ? (
+                  <>
+                    <strong>Active EV Basis: Floor (Min 5% / 1st Percentile).</strong> Values reflect worst-case simulated collation floors.
+                  </>
+                ) : (
+                  <>
+                    <strong>Active EV Basis: Mid 90% (Trimmed Median).</strong> Values reflect the 5th-95th percentile trimmed mean.
+                  </>
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() => setEvBasis('avg')}
+              className="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-900 font-bold rounded-lg border border-slate-200 shadow-2xs cursor-pointer text-[11px] self-start sm:self-auto shrink-0 transition"
+            >
+              Reset to Mean (Avg)
+            </button>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>

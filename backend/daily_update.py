@@ -33,7 +33,8 @@ SCRIPTS = [
     ("sync_live_sealed_prices.py",       "Sync live TCGplayer sealed product prices"),
     ("populate_booster_ev_to_db.py",     "Build price data from synced card data"),
     ("export_app_data.py",               "Export MySQL data to React JSON format"),
-    ("composite_evaluator.py",           "Evaluate composite products & quantiles (10,000 MC samples)")
+    ("composite_evaluator.py",           "Evaluate composite products & quantiles (10,000 MC samples)"),
+    ("validate_pricing_and_ev.py",       "Run automated quality and pricing/EV validation audit")
 ]
 
 
