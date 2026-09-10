@@ -120,6 +120,36 @@ def run_validation():
         status = "✔" if (is_mean_bounded and is_median_bounded) else "✘"
         print(f"  {status} {name[:36]:<36} | {arch[:12]:<12} | Mean: ${mean_ev:>7.2f} | 50%: ${p50:>7.2f} | EV Score: {ev_score:>3}% | Breakeven: {breakeven:>3}%")
 
+    # 4. Variable Slots & Multi-Tier Superdrop Bundle Validation
+    var_prods = [p for p in evaluated_prods if p.get("id") == "078b63b5-10a0-55d5-8739-0ae2c83f69d5" or (p.get("contents", {}).get("variable"))]
+    print(f"\nVariable Slot & Multi-Tier Bundle Audit ({len(var_prods)} items found):")
+
+    var_errors = 0
+    for p in var_prods:
+        name = p.get("displayName") or p.get("name")
+        mean_ev = p.get("totalEvAvg", 0)
+        p50 = p.get("totalEvMid90", 0)
+        p05 = p.get("totalEvMin5", 0)
+        p95 = p.get("totalEvMax5", 0)
+        q = p.get("quantiles", [])
+
+        # Check that curve has spread when variable slots with variance exist
+        has_variance = (q[-1] - q[0]) > 0.1
+        if mean_ev > 0 and has_variance:
+            print(f"  ✔ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | 5%: ${p05:>8.2f} | 50%: ${p50:>8.2f} | 95%: ${p95:>8.2f}")
+        elif mean_ev > 0:
+            print(f"  ✔ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | (Deterministic / Narrow variance)")
+        else:
+            var_errors += 1
+            print(f"  ✘ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | INVALID EV")
+
+    if var_errors == 0:
+        print("✔ [PASS] Variable Slot & Superdrop Invariant: All variable-slot products evaluated with valid distributions.")
+        passed_checks += 1
+    else:
+        print(f"✘ [FAIL] Variable Slot & Superdrop Invariant: {var_errors} products failed evaluation.")
+        failed_checks += 1
+
     print("\n" + "=" * 70)
     print(f"VALIDATION SUMMARY: {passed_checks} passed, {failed_checks} failed")
     print("=" * 70)

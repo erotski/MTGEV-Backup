@@ -80,37 +80,47 @@ def build_booster_lookup(booster_ev_list):
             }
     return lookup
 
-def resolve_product_contents(prod_id, product_map, visited=None):
-    """Recursively resolves all child packs, cards, and decks in a product."""
+def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
+    """Recursively resolves all child packs, cards, decks, and variable slots in a product."""
     if visited is None:
         visited = set()
     if prod_id in visited:
-        return {"packs": {}, "cards": [], "decks": []}
+        return {"packs": {}, "cards": [], "decks": [], "variables": []}
     visited.add(prod_id)
 
     prod = product_map.get(prod_id)
     if not prod:
-        return {"packs": {}, "cards": [], "decks": []}
+        return {"packs": {}, "cards": [], "decks": [], "variables": []}
 
     c = prod.get("contents") or {}
     packs = {}
     cards = list(c.get("card", []))
     decks = list(c.get("deck", []))
+    variables = list(c.get("variable", []))
 
-    # 1. Sealed items (e.g. packs, sub-boxes, display cases)
+    # 1. Sealed items (e.g. packs, sub-boxes, display cases, nested secret lair drops)
     for s in c.get("sealed", []):
         s_count = int(s.get("count", 1) or 1)
         child_uuid = s.get("uuid")
         child_set = (s.get("set") or prod.get("setCode") or "").upper()
-        child_name = (s.get("name") or "").lower()
+        child_name = (s.get("name") or "").strip().lower()
 
+        child_prod = None
         if child_uuid and child_uuid in product_map:
-            sub = resolve_product_contents(child_uuid, product_map, visited.copy())
+            child_prod = product_map[child_uuid]
+        elif name_map and (child_set, child_name) in name_map:
+            child_prod = name_map[(child_set, child_name)]
+        elif name_map and child_name in name_map:
+            child_prod = name_map[child_name]
+
+        if child_prod:
+            sub = resolve_product_contents(child_prod["id"], product_map, visited.copy(), name_map)
             for (p_set, p_code), cnt in sub["packs"].items():
                 k = (p_set, p_code)
                 packs[k] = packs.get(k, 0) + cnt * s_count
             cards.extend(sub["cards"] * s_count)
             decks.extend(sub["decks"] * s_count)
+            variables.extend(sub["variables"] * s_count)
         else:
             # Infer booster type from child name if no child product in database
             b_code = "play"
@@ -139,7 +149,7 @@ def resolve_product_contents(prod_id, product_map, visited=None):
         pk_code = (pk.get("code") or "play").lower()
         packs[(pk_set, pk_code)] = packs.get((pk_set, pk_code), 0) + pk_cnt
 
-    return {"packs": packs, "cards": cards, "decks": decks}
+    return {"packs": packs, "cards": cards, "decks": decks, "variables": variables}
 
 def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", prod=None):
     """Calculates fixed singles EV for guaranteed cards, lands, and precon decks."""
@@ -199,13 +209,88 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", 
 
     return round(total_fixed, 2)
 
-def simulate_composite_draws(pack_specs, fixed_ev=0.0, iterations=10000):
+def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, vendor="all"):
+    """
+    Normalizes a discrete MTGJson variable slot into options with probabilities,
+    fixed values (cards/decks), and booster pack quantile specs.
+    """
+    configs = slot.get("configs", [])
+    if not configs:
+        return []
+
+    raw_options = []
+    total_chance = 0.0
+
+    for cfg in configs:
+        vc = cfg.get("variable_config", [{}])
+        vc_first = vc[0] if vc else {}
+        chance = vc_first.get("chance")
+
+        if chance is not None:
+            c_val = float(chance)
+        else:
+            c_val = 1.0
+
+        raw_options.append((c_val, cfg))
+        total_chance += c_val
+
+    if total_chance <= 0:
+        total_chance = float(len(configs))
+        raw_options = [(1.0, cfg) for cfg in configs]
+
+    normalized_options = []
+    for c_val, cfg in raw_options:
+        prob = c_val / total_chance
+
+        cards = cfg.get("card", [])
+        decks = cfg.get("deck", [])
+        fixed_val = calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor=vendor)
+
+        pack_specs = []
+        for pk in cfg.get("pack", []):
+            pk_set = (pk.get("set") or "SLD").upper()
+            pk_code = (pk.get("code") or "play").lower()
+            cnt = int(pk.get("count", 1) or 1)
+            booster_entry = (
+                booster_lookup.get((pk_set, pk_code, vendor, "direct")) or
+                booster_lookup.get((pk_set, pk_code, "all", "direct")) or
+                booster_lookup.get((pk_set, "play", vendor, "direct")) or
+                booster_lookup.get((pk_set, "default", vendor, "direct"))
+            )
+            if booster_entry and booster_entry.get("quantiles"):
+                pack_specs.append((cnt, booster_entry["quantiles"]))
+            elif booster_entry and booster_entry.get("evAverage"):
+                fixed_val += float(booster_entry["evAverage"]) * cnt
+
+        desc_parts = []
+        for cd in cards:
+            desc_parts.append(f"Card: {cd.get('name')} #{cd.get('number')}")
+        for pk in cfg.get("pack", []):
+            desc_parts.append(f"Pack: {pk.get('code')}")
+        for dk in decks:
+            desc_parts.append(f"Deck: {dk.get('name')}")
+
+        normalized_options.append({
+            "probability": prob,
+            "fixed_ev": round(fixed_val, 2),
+            "pack_specs": pack_specs,
+            "description": ", ".join(desc_parts) or "Empty"
+        })
+
+    return normalized_options
+
+def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iterations=10000):
     """
     Simulates composite product with 10,000 draws using NumPy if available,
     or high-performance random.choices fallback.
     pack_specs: list of (count, quantiles_100_list)
+    variable_slots: list of slot option lists, where each option has:
+      { 'probability': float, 'fixed_ev': float, 'pack_specs': [(count, quantiles)] }
     """
-    if len(pack_specs) == 0:
+    has_packs = len(pack_specs) > 0
+    has_vars = bool(variable_slots and len(variable_slots) > 0)
+
+    if not has_packs and not has_vars:
         # Pure precon / fixed cards (Archetype 1)
         fixed_val = round(fixed_ev, 2)
         return {
@@ -223,6 +308,8 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, iterations=10000):
 
     if HAS_NUMPY:
         composite_draws = np.full(iterations, fixed_ev, dtype=np.float64)
+
+        # 1. Guaranteed packs
         for count, q_list in pack_specs:
             if count <= 0 or not q_list:
                 continue
@@ -230,6 +317,26 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, iterations=10000):
             draw_indices = np.random.randint(0, len(q_arr), size=(count, iterations))
             pack_evs = q_arr[draw_indices]
             composite_draws += np.sum(pack_evs, axis=0)
+
+        # 2. Variable lottery slots
+        if has_vars:
+            for slot_opts in variable_slots:
+                probs = [opt["probability"] for opt in slot_opts]
+                k_opts = len(slot_opts)
+                chosen_indices = np.random.choice(k_opts, size=iterations, p=probs)
+                for opt_idx, opt in enumerate(slot_opts):
+                    mask = (chosen_indices == opt_idx)
+                    count_chosen = int(np.sum(mask))
+                    if count_chosen == 0:
+                        continue
+                    if opt.get("fixed_ev", 0.0) > 0:
+                        composite_draws[mask] += opt["fixed_ev"]
+                    for p_cnt, p_quantiles in opt.get("pack_specs", []):
+                        if p_cnt <= 0 or not p_quantiles:
+                            continue
+                        q_arr = np.array(p_quantiles[:100], dtype=np.float64)
+                        p_draws = np.random.randint(0, len(q_arr), size=(p_cnt, count_chosen))
+                        composite_draws[mask] += np.sum(q_arr[p_draws], axis=0)
 
         composite_draws.sort()
         mean_val = float(np.mean(composite_draws))
@@ -251,6 +358,8 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, iterations=10000):
         }
     else:
         totals = [fixed_ev] * iterations
+
+        # 1. Guaranteed packs
         for count, q_list in pack_specs:
             if count <= 0 or not q_list:
                 continue
@@ -258,6 +367,21 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, iterations=10000):
                 choices = random.choices(q_list[:100], k=iterations)
                 for i in range(iterations):
                     totals[i] += choices[i]
+
+        # 2. Variable lottery slots
+        if has_vars:
+            for slot_opts in variable_slots:
+                weights = [opt["probability"] for opt in slot_opts]
+                chosen = random.choices(slot_opts, weights=weights, k=iterations)
+                for i in range(iterations):
+                    opt = chosen[i]
+                    if opt.get("fixed_ev", 0.0) > 0:
+                        totals[i] += opt["fixed_ev"]
+                    for p_cnt, p_quantiles in opt.get("pack_specs", []):
+                        if p_cnt <= 0 or not p_quantiles:
+                            continue
+                        p_picks = random.choices(p_quantiles[:100], k=p_cnt)
+                        totals[i] += sum(p_picks)
         
         totals.sort()
         n = iterations
@@ -289,6 +413,14 @@ def run_composite_evaluator(target_set=None):
     sealed_products, booster_ev, precon_decks, single_prices = load_data()
     booster_lookup = build_booster_lookup(booster_ev)
     product_map = {p["id"]: p for p in sealed_products if p.get("id")}
+    name_map = {}
+    for p in sealed_products:
+        n = (p.get("displayName") or p.get("name") or "").strip().lower()
+        s = (p.get("setCode") or "").strip().upper()
+        if n:
+            name_map[(s, n)] = p
+            if n not in name_map:
+                name_map[n] = p
 
     evaluated_count = 0
     updated_products = []
@@ -303,23 +435,25 @@ def run_composite_evaluator(target_set=None):
             updated_products.append(p)
             continue
 
-        resolved = resolve_product_contents(prod_id, product_map)
+        resolved = resolve_product_contents(prod_id, product_map, name_map=name_map)
         packs_dict = resolved["packs"]
         cards = resolved["cards"]
         decks = resolved["decks"]
+        variables = resolved.get("variables", [])
 
         has_packs = len(packs_dict) > 0
         has_fixed = len(cards) > 0 or len(decks) > 0
+        has_variables = len(variables) > 0
 
-        if not has_packs and not has_fixed:
+        if not has_packs and not has_fixed and not has_variables:
             # Nothing to evaluate
             updated_products.append(p)
             continue
 
         # Classify Archetype
-        if not has_packs and has_fixed:
+        if not has_packs and not has_variables and has_fixed:
             archetype = "pure_precon"
-        elif has_packs and not has_fixed:
+        elif (has_packs or has_variables) and not has_fixed:
             archetype = "pure_randomized"
         else:
             archetype = "mixed_composite"
@@ -343,10 +477,21 @@ def run_composite_evaluator(target_set=None):
                 if booster_entry and booster_entry.get("quantiles"):
                     pack_specs.append((count, booster_entry["quantiles"]))
 
-            if len(pack_specs) == 0 and fixed_ev <= 0:
+            variable_slots_for_vendor = []
+            for slot in variables:
+                opts = resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, vendor=v)
+                if opts:
+                    variable_slots_for_vendor.append(opts)
+
+            if len(pack_specs) == 0 and len(variable_slots_for_vendor) == 0 and fixed_ev <= 0:
                 continue
 
-            stats = simulate_composite_draws(pack_specs, fixed_ev=fixed_ev, iterations=10000)
+            stats = simulate_composite_draws(
+                pack_specs,
+                fixed_ev=fixed_ev,
+                variable_slots=variable_slots_for_vendor,
+                iterations=10000
+            )
             quantiles_by_vendor[v] = stats["quantiles"]
             vendor_stats[v] = stats
 
