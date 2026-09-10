@@ -302,6 +302,17 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           rawCategory: cat,
           specialFeatures: [],
           rawContents: sp.contents,
+          totalEvAvg: sp.totalEvAvg,
+          totalEvMid90: sp.totalEvMid90,
+          totalEvMin5: sp.totalEvMin5,
+          totalEvMax5: sp.totalEvMax5,
+          totalEvMin: sp.totalEvMin,
+          totalEvMax: sp.totalEvMax,
+          evScore: sp.evScore,
+          breakevenPercentile: sp.breakevenPercentile,
+          archetype: sp.archetype,
+          quantiles: sp.quantiles,
+          quantilesByVendor: sp.quantilesByVendor,
         };
       });
       setDbProducts(mapped);
@@ -483,23 +494,29 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : (canonicalMetrics?.marketPrice || packMarketPrice);
 
-  // Calculate dynamic product EV from canonical metrics (or fallback)
-  const productEstimatedEv = canonicalMetrics?.estimatedEv ?? (
+  // Check if viewing default pricing mode to use authentic precomputed composite metrics
+  const isDefaultPricing = (vendor === 'all' || vendor === 'tcgplayer') && priceMode === 'direct';
+
+  // Calculate dynamic product EV from canonical metrics (or precomputed 10,000-sample composite)
+  const productEstimatedEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
     productAudit && productAudit.totalEv > 0
       ? productAudit.totalEv
       : isPreconProduct && activeProduct
       ? Number(activeProduct.estimatedEv.toFixed(2))
       : Number((activeBooster.evAverage * productPacksCount).toFixed(2))
-  );
+  ));
 
-  const productMid90Ev = canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2)));
-  const productMin5 = canonicalMetrics?.min5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2)));
-  const productMax5 = canonicalMetrics?.max5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2)));
-  const productMin = canonicalMetrics?.minEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2)));
-  const productMax = canonicalMetrics?.maxEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2)));
+  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2))));
+  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2))));
+  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2))));
+  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2))));
+  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2))));
 
   // EV score number (0 - 100): Probability of opening value >= sealed market price
   const productEvScore = useMemo(() => {
+    if (isDefaultPricing && activeProduct?.evScore != null) {
+      return activeProduct.evScore;
+    }
     if (productMarketPrice <= 0) return 100;
     if (isPreconProduct) {
       if (productEstimatedEv >= productMarketPrice) return 100;
@@ -514,7 +531,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       const pct = 50 - ((productMarketPrice - productMid90Ev) / (productMax5 - productMid90Ev)) * 45;
       return Math.round(Math.max(5, Math.min(50, pct)));
     }
-  }, [productMarketPrice, isPreconProduct, productEstimatedEv, productMin5, productMid90Ev, productMax5]);
+  }, [isDefaultPricing, activeProduct?.evScore, productMarketPrice, isPreconProduct, productEstimatedEv, productMin5, productMid90Ev, productMax5]);
 
   const getRarityBadge = (rarity: string) => {
     switch (rarity) {
@@ -1161,6 +1178,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               variableEv={productVariableEv}
               cardCount={productTotalCards}
               packItems={flatPackItems}
+              quantilesByVendor={activeProduct?.quantilesByVendor}
+              precomputedQuantiles={activeProduct?.quantiles}
             />
           )}
 

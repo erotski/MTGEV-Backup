@@ -87,6 +87,17 @@ export interface CatalogPackProduct {
   contents?: any;
   category?: string;
   subtype?: string;
+  totalEvAvg?: number;
+  totalEvMid90?: number;
+  totalEvMin5?: number;
+  totalEvMax5?: number;
+  totalEvMin?: number;
+  totalEvMax?: number;
+  evScore?: number;
+  breakevenPercentile?: number;
+  archetype?: string;
+  quantiles?: number[];
+  quantilesByVendor?: Record<string, number[]>;
 }
 
 export const ECOMMERCE_CATALOG_PACKS: CatalogPackProduct[] = [

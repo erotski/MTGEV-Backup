@@ -52,6 +52,8 @@ interface PackDistributionCurveProps {
   variableEv?: number;
   cardCount?: number;
   packItems?: CompositePackItem[];
+  precomputedQuantiles?: number[];
+  quantilesByVendor?: Record<string, number[]>;
 }
 
 export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
@@ -69,6 +71,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   variableEv,
   cardCount,
   packItems,
+  precomputedQuantiles,
+  quantilesByVendor,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
   const scale = multiplier > 0 ? multiplier : 1;
@@ -172,92 +176,129 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const vendorSimulations: Record<string, number[]> = {};
     const vendorsToSim = ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
 
+    const effectiveVendorQuantiles = quantilesByVendor || (activeBooster as any)?.quantilesByVendor;
+    const hasPrecomputedComposite = Boolean(
+      effectiveVendorQuantiles && Object.keys(effectiveVendorQuantiles).length > 0
+    );
+
     if (!isPreconstructed) {
-      vendorsToSim.forEach((v) => {
-        const fallbackRatios: Record<string, number> = {
-          tcgplayer: 1.0,
-          cardkingdom: 1.15,
-          cardmarket: 0.88,
-          manapool: 0.98,
-          all: 0.94,
-          all_average: 1.0
-        };
-        const fallbackRatio = fallbackRatios[v] || 1.0;
-
-        let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
-        
-        if (effectivePackItems.length > 0) {
-          effectivePackItems.forEach((item) => {
-            const count = item.count || 1;
-            const setCode = item.set || activeBooster?.setCode || '';
-            const code = item.code || item.packName || activeBooster?.boosterName || '';
-            let rec: BoosterEVRecord | undefined;
-            if (boosterEvMap) {
-              rec = findBoosterEv(boosterEvMap, setCode, code, priceMode as any, v as any);
-            } else if (allSetBoosters && allSetBoosters.length > 0) {
-              rec = allSetBoosters.find(b => 
-                (b.boosterName || '').toLowerCase() === code.toLowerCase() &&
-                (b.priceMode || 'direct') === priceMode &&
-                normalizeVendor(b.vendor) === normalizeVendor(v)
-              );
+      if (hasPrecomputedComposite) {
+        // Fast path: Authentic 10,000-draw precomputed quantiles exist on the product
+        vendorsToSim.forEach((v) => {
+          const qArr =
+            effectiveVendorQuantiles[v] ||
+            effectiveVendorQuantiles['all'] ||
+            effectiveVendorQuantiles['tcgplayer'];
+          if (qArr && qArr.length >= 100) {
+            if (priceMode === 'cheapest_reprint') {
+              vendorSimulations[v] = qArr.map((x: number) => Number((x * 0.82).toFixed(2)));
+            } else {
+              vendorSimulations[v] = qArr;
             }
-            if (!rec && (activeBooster?.boosterName || '').toLowerCase() === (code || '').toLowerCase()) {
-              rec = vendorRecords[v] || activeBooster;
-            }
+          }
+        });
+      } else if (precomputedQuantiles && precomputedQuantiles.length >= 100) {
+        // Fallback precomputed single vendor quantiles
+        vendorsToSim.forEach((v) => {
+          const fallbackRatios: Record<string, number> = {
+            tcgplayer: 1.0,
+            cardkingdom: 1.15,
+            cardmarket: 0.88,
+            manapool: 0.98,
+            all: 0.94,
+            all_average: 1.0,
+          };
+          const mult = (fallbackRatios[v] || 1.0) * (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
+          vendorSimulations[v] = precomputedQuantiles.map((x) => Number((x * mult).toFixed(2)));
+        });
+      } else {
+        // Dynamic client-side convolution fallback
+        vendorsToSim.forEach((v) => {
+          const fallbackRatios: Record<string, number> = {
+            tcgplayer: 1.0,
+            cardkingdom: 1.15,
+            cardmarket: 0.88,
+            manapool: 0.98,
+            all: 0.94,
+            all_average: 1.0
+          };
+          const fallbackRatio = fallbackRatios[v] || 1.0;
 
+          let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
+          
+          if (effectivePackItems.length > 0) {
+            effectivePackItems.forEach((item) => {
+              const count = item.count || 1;
+              const setCode = item.set || activeBooster?.setCode || '';
+              const code = item.code || item.packName || activeBooster?.boosterName || '';
+              let rec: BoosterEVRecord | undefined;
+              if (boosterEvMap) {
+                rec = findBoosterEv(boosterEvMap, setCode, code, priceMode as any, v as any);
+              } else if (allSetBoosters && allSetBoosters.length > 0) {
+                rec = allSetBoosters.find(b => 
+                  (b.boosterName || '').toLowerCase() === code.toLowerCase() &&
+                  (b.priceMode || 'direct') === priceMode &&
+                  normalizeVendor(b.vendor) === normalizeVendor(v)
+                );
+              }
+              if (!rec && (activeBooster?.boosterName || '').toLowerCase() === (code || '').toLowerCase()) {
+                rec = vendorRecords[v] || activeBooster;
+              }
+
+              const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+              
+              let itemQuantiles = rec?.quantiles;
+              if (!itemQuantiles || itemQuantiles.length < 100) {
+                if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
+                  itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
+                }
+              }
+
+              let itemAvg = rec?.evAverage;
+              if (itemAvg == null && activeBooster) {
+                itemAvg = activeBooster.evAverage * fallbackRatio;
+              }
+
+              if (itemQuantiles && modeMult !== 1.0) {
+                itemQuantiles = itemQuantiles.map(q => q * modeMult);
+              }
+              if (itemAvg != null && modeMult !== 1.0) {
+                itemAvg *= modeMult;
+              }
+
+              simItems.push({ count, quantiles: itemQuantiles, evAverage: itemAvg });
+            });
+          } else {
+            // Single booster fallback (when packItems is empty)
+            const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
             const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-            
             let itemQuantiles = rec?.quantiles;
             if (!itemQuantiles || itemQuantiles.length < 100) {
-              if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-                itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
-              }
+               if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
+                  itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
+               }
             }
-
-            let itemAvg = rec?.evAverage;
-            if (itemAvg == null && activeBooster) {
-              itemAvg = activeBooster.evAverage * fallbackRatio;
-            }
-
             if (itemQuantiles && modeMult !== 1.0) {
-              itemQuantiles = itemQuantiles.map(q => q * modeMult);
+               itemQuantiles = itemQuantiles.map(q => q * modeMult);
             }
-            if (itemAvg != null && modeMult !== 1.0) {
-              itemAvg *= modeMult;
-            }
-
-            simItems.push({ count, quantiles: itemQuantiles, evAverage: itemAvg });
-          });
-        } else {
-          // Single booster fallback (when packItems is empty)
-          const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
-          const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-          let itemQuantiles = rec?.quantiles;
-          if (!itemQuantiles || itemQuantiles.length < 100) {
-             if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-                itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
-             }
+            simItems.push({ count: scale, quantiles: itemQuantiles, evAverage: (rec?.evAverage || activeBooster?.evAverage || 0) * modeMult });
           }
-          if (itemQuantiles && modeMult !== 1.0) {
-             itemQuantiles = itemQuantiles.map(q => q * modeMult);
+
+          // Add baseOffset as a constant offset (count: 1)
+          if (baseOffset > 0) {
+            simItems.push({ count: 1, evAverage: baseOffset });
           }
-          simItems.push({ count: scale, quantiles: itemQuantiles, evAverage: (rec?.evAverage || activeBooster?.evAverage || 0) * modeMult });
-        }
 
-        // Add baseOffset as a constant offset (count: 1)
-        if (baseOffset > 0) {
-          simItems.push({ count: 1, evAverage: baseOffset });
-        }
-
-        // Optimization/Fix: If this is a single booster (total count is 1) and no base offset,
-        // just pass the quantiles straight through! Do NOT run them through the RNG simulator,
-        // as picking 5000 random items from an array of 100 and sorting them distorts the curve.
-        if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
-          vendorSimulations[v] = [...simItems[0].quantiles];
-        } else {
-          vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
-        }
-      });
+          // Optimization/Fix: If this is a single booster (total count is 1) and no base offset,
+          // just pass the quantiles straight through! Do NOT run them through the RNG simulator,
+          // as picking 5000 random items from an array of 100 and sorting them distorts the curve.
+          if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
+            vendorSimulations[v] = [...simItems[0].quantiles];
+          } else {
+            vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
+          }
+        });
+      }
     }
 
     for (let p = 1; p <= 100; p += 1) {

@@ -13,6 +13,7 @@ export interface BoosterEVRecord {
   evMin5: number;
   evMax5: number;
   quantiles?: number[];
+  quantilesByVendor?: Record<string, number[]>;
   completeBoosterPct: number;
   exactMatchPct: number;
   differentFinishPct: number;
@@ -81,11 +82,17 @@ export interface BoxArbitrageRecord {
   unitEvMax?: number;
   /** EV of this whole product (unitEv * quantity, or its own singles/contents EV) */
   totalEvMin?: number;
+  totalEvMin5?: number;
   totalEvAvg: number;
   totalEvMid90: number;
+  totalEvMax5?: number;
   totalEvMax?: number;
   effectiveEv?: number;
   evScore?: number;
+  quantiles?: number[];
+  quantilesByVendor?: Record<string, number[]>;
+  breakevenPercentile?: number;
+  archetype?: 'pure_precon' | 'pure_randomized' | 'mixed_composite' | string;
   profitUsd: number;
   roiPct: number;
   vendor: string;
