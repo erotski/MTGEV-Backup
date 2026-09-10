@@ -624,6 +624,12 @@ class DatabaseBoosterEVEngine:
         if arr:
           np_arr = np.array(arr)
           s_arr = np.sort(np_arr)
+          
+          if set_code.upper() == 'HOB' and booster_name.lower() == 'play' and mode.lower() == 'direct' and v.lower() == 'tcgplayer':
+              import json
+              with open('hob_play_tcgplayer_5000.json', 'w') as f:
+                  json.dump(s_arr.tolist(), f)
+          
           trim = max(1, int(len(s_arr) * self.hi_lo_ratio))
           mid = s_arr[trim:-trim] if len(s_arr) > trim * 2 else s_arr
 
