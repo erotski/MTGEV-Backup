@@ -627,7 +627,9 @@ class DatabaseBoosterEVEngine:
           
           if set_code.upper() == 'HOB' and booster_name.lower() == 'play' and mode.lower() == 'direct' and v.lower() == 'tcgplayer':
               import json
-              with open('hob_play_tcgplayer_5000.json', 'w') as f:
+              import os
+              os.makedirs('public/data', exist_ok=True)
+              with open('public/data/hob_play_tcgplayer_5000.json', 'w') as f:
                   json.dump(s_arr.tolist(), f)
           
           trim = max(1, int(len(s_arr) * self.hi_lo_ratio))
