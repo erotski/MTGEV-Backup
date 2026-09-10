@@ -1438,7 +1438,7 @@ export function resolveRecursiveProductAudit(
   
   // Precon decks and fixed items (no variance)
   for (const d of deckItems) {
-    simulationItems.push({ count: d.count, evAverage: d.unitEv });
+    simulationItems.push({ count: d.count, evAverage: d.unitSinglesEv });
   }
   for (const c of cardItems) {
     simulationItems.push({ count: c.count, evAverage: c.unitEv });
