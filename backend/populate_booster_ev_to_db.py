@@ -627,10 +627,9 @@ class DatabaseBoosterEVEngine:
           
           if set_code.upper() == 'HOB' and booster_name.lower() == 'play' and mode.lower() == 'direct' and v.lower() == 'tcgplayer':
               import json
-              import os
-              os.makedirs('public/data', exist_ok=True)
-              with open('public/data/hob_play_tcgplayer_5000.json', 'w') as f:
-                  json.dump(s_arr.tolist(), f)
+              print("=== HOB PLAY TCGPLAYER 5000 SAMPLES ===")
+              print(json.dumps(s_arr.tolist()))
+              print("=======================================")
           
           trim = max(1, int(len(s_arr) * self.hi_lo_ratio))
           mid = s_arr[trim:-trim] if len(s_arr) > trim * 2 else s_arr
