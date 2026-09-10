@@ -303,48 +303,18 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           manapool: mpVal,
         });
       } else {
-        // Fallback to mathematical quantile anchors if legacy data without quantiles
-        const t = p / 100;
-        let baseVal: number;
-        
-        // Ensure q0, q5, q50, q95, q100 exist here for fallback calculation
-        const q0 = activeBooster ? activeBooster.evMin : 0;
-        const q5 = activeBooster?.evMin5 || q0 * 1.5;
-        const q50 = activeBooster?.evMid90 || activeBooster?.evAverage || 0;
-        const q95 = activeBooster?.evMax5 || q50 * 2.5;
-        const q100 = activeBooster?.evMax || q50 * 3.5;
-
-        if (t <= 0.05) {
-          const subT = t / 0.05;
-          baseVal = q0 + subT * (q5 - q0);
-        } else if (t <= 0.50) {
-          const subT = (t - 0.05) / 0.45;
-          baseVal = q5 + Math.pow(subT, 0.9) * (q50 - q5);
-        } else if (t <= 0.95) {
-          const subT = (t - 0.50) / 0.45;
-          baseVal = q50 + Math.pow(subT, 1.25) * (q95 - q50);
-        } else {
-          const subT = (t - 0.95) / 0.05;
-          baseVal = q95 + Math.pow(subT, 2.4) * (q100 - q95);
-        }
-        const scaledBase = baseOffset + (baseVal * scale);
-        
-        const tcgVal = Number(scaledBase.toFixed(2));
-        const ckVal = Number((scaledBase * 1.08).toFixed(2));
-        const cmVal = Number((scaledBase * 0.92).toFixed(2));
-        const mpVal = Number((scaledBase * 0.96).toFixed(2));
-        const allCheapestVal = Math.min(tcgVal, ckVal, cmVal, mpVal);
-        const allAvgVal = Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
-
+        // Pure empirical enforcement: NEVER synthesize fake curves from summary stats (evMin5, evMid90, evMax5)!
+        // If no 1% empirical quantiles exist for this product, output only the fixed baseline value.
+        const flatVal = Number(baseOffset.toFixed(2));
         points.push({
           percentile: `${p}%`,
           percentileNum: p,
-          all: allCheapestVal,
-          all_average: allAvgVal,
-          tcgplayer: tcgVal,
-          cardmarket: cmVal,
-          cardkingdom: ckVal,
-          manapool: mpVal,
+          all: flatVal,
+          all_average: flatVal,
+          tcgplayer: flatVal,
+          cardmarket: flatVal,
+          cardkingdom: flatVal,
+          manapool: flatVal,
         });
       }
     }
