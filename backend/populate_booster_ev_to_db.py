@@ -626,9 +626,8 @@ class DatabaseBoosterEVEngine:
           s_arr = np.sort(np_arr)
           
           if set_code.upper() == 'HOB' and booster_name.lower() == 'play' and mode.lower() == 'direct' and v.lower() == 'tcgplayer':
-              import json
               print("=== HOB PLAY TCGPLAYER 5000 SAMPLES ===")
-              print(json.dumps(s_arr.tolist()))
+              print(__import__('json').dumps(s_arr.tolist()))
               print("=======================================")
           
           trim = max(1, int(len(s_arr) * self.hi_lo_ratio))
@@ -673,7 +672,7 @@ class DatabaseBoosterEVEngine:
             ev_max,
             ev_min5,
             ev_max5,
-            json.dumps(quantiles),
+            __import__('json').dumps(quantiles),
             complete_pct,
             exact_pct,
             finish_pct,
