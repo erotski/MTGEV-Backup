@@ -47,6 +47,7 @@ jobs:
           DB_PASSWORD: rootpassword
           DB_NAME: test_for_cards
         run: |
+          set -e
           python backend/daily_update.py
 
       - name: Commit & Push Updated Datasets to Dedicated Data Branch

@@ -249,7 +249,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           simItems.push({ count: 1, evAverage: baseOffset });
         }
 
-        vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
+        // Optimization/Fix: If this is a single booster (total count is 1) and no base offset,
+        // just pass the quantiles straight through! Do NOT run them through the RNG simulator,
+        // as picking 5000 random items from an array of 100 and sorting them distorts the curve.
+        if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
+          vendorSimulations[v] = [...simItems[0].quantiles];
+        } else {
+          vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
+        }
       });
     }
 
