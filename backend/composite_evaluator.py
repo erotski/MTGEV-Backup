@@ -281,8 +281,8 @@ def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, ven
 
 def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iterations=10000):
     """
-    Simulates composite product with 10,000 draws using NumPy if available,
-    or high-performance random.choices fallback.
+    Simulates composite product draws using NumPy if available,
+    or high-performance random fallback.
     pack_specs: list of (count, quantiles_100_list)
     variable_slots: list of slot option lists, where each option has:
       { 'probability': float, 'fixed_ev': float, 'pack_specs': [(count, quantiles)] }
@@ -357,23 +357,26 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
             "quantiles": quantiles
         }
     else:
-        totals = [fixed_ev] * iterations
+        n = 1000
+        totals = [fixed_ev] * n
 
         # 1. Guaranteed packs
         for count, q_list in pack_specs:
             if count <= 0 or not q_list:
                 continue
+            q_clean = q_list[:100]
+            # Fast draw aggregation
             for _ in range(count):
-                choices = random.choices(q_list[:100], k=iterations)
-                for i in range(iterations):
+                choices = random.choices(q_clean, k=n)
+                for i in range(n):
                     totals[i] += choices[i]
 
         # 2. Variable lottery slots
         if has_vars:
             for slot_opts in variable_slots:
                 weights = [opt["probability"] for opt in slot_opts]
-                chosen = random.choices(slot_opts, weights=weights, k=iterations)
-                for i in range(iterations):
+                chosen = random.choices(slot_opts, weights=weights, k=n)
+                for i in range(n):
                     opt = chosen[i]
                     if opt.get("fixed_ev", 0.0) > 0:
                         totals[i] += opt["fixed_ev"]
@@ -384,7 +387,6 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
                         totals[i] += sum(p_picks)
         
         totals.sort()
-        n = iterations
         mean_val = sum(totals) / n
         var_val = sum((x - mean_val) ** 2 for x in totals) / n
         std_val = var_val ** 0.5

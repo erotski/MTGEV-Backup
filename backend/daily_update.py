@@ -6,14 +6,16 @@ Run directly for an immediate update, or schedule via Windows Task Scheduler
 
 import argparse
 import importlib.util
+import json
 import logging
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 LOG_FILE = Path(__file__).parent / "daily_update.log"
+TELEMETRY_JSON = Path(__file__).parent.parent / "public" / "data" / "pipeline_execution_logs.json"
 INTERVAL_SECONDS = 24 * 60 * 60  # 1 day
 
 logging.basicConfig(
@@ -38,37 +40,104 @@ SCRIPTS = [
 ]
 
 
-def run_script(script_name: str, description: str) -> bool:
+def update_telemetry_file(run_record: dict):
+    """Appends or updates pipeline execution telemetry for the Admin Portal."""
+    try:
+        data = {"lastUpdated": datetime.now(timezone.utc).isoformat(), "runs": [], "commonRemediations": []}
+        if TELEMETRY_JSON.exists():
+            with open(TELEMETRY_JSON, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        
+        runs = data.get("runs", [])
+        runs.insert(0, run_record)
+        data["runs"] = runs[:15]  # Keep last 15 runs
+        data["lastUpdated"] = datetime.now(timezone.utc).isoformat()
+        
+        # Save back
+        TELEMETRY_JSON.parent.mkdir(parents=True, exist_ok=True)
+        with open(TELEMETRY_JSON, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        log.warning("Could not write telemetry JSON: %s", e)
+
+
+def run_script(script_name: str, description: str) -> tuple[bool, float, int, str]:
     path = Path(__file__).parent / script_name
     log.info("▶  %s — %s", script_name, description)
+    t0 = time.time()
     result = subprocess.run(
         [sys.executable, str(path)],
-        capture_output=False,   # let each script print to console/log normally
+        capture_output=True,
         text=True,
     )
+    duration = round(time.time() - t0, 2)
+    stdout_msg = result.stdout or ""
+    stderr_msg = result.stderr or ""
+    
+    # Print output to stdout for loggers
+    if stdout_msg:
+        print(stdout_msg, flush=True)
+    if stderr_msg:
+        print(stderr_msg, file=sys.stderr, flush=True)
+
     if result.returncode == 0:
-        log.info("✔  %s finished successfully", script_name)
-        return True
+        log.info("✔  %s finished successfully (%.2fs)", script_name, duration)
+        return True, duration, 0, ""
     else:
-        log.error("✘  %s exited with code %d", script_name, result.returncode)
-        return False
+        log.error("✘  %s exited with code %d (%.2fs)", script_name, result.returncode, duration)
+        err_snippet = (stderr_msg.strip() or stdout_msg.strip())[-1000:]
+        return False, duration, result.returncode, err_snippet
 
 
 def run_all() -> bool:
-    log.info("═══ Daily update started at %s ═══", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    start_dt = datetime.now(timezone.utc)
+    log.info("═══ Daily update started at %s ═══", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
     failures = []
+    stage_records = []
+    error_records = []
+    overall_t0 = time.time()
+
     for script, description in SCRIPTS:
-        if not run_script(script, description):
+        success, duration, exit_code, err_msg = run_script(script, description)
+        stage_records.append({
+            "name": script,
+            "description": description,
+            "status": "success" if success else "failed",
+            "duration": duration,
+            "exitCode": exit_code
+        })
+        if not success:
             failures.append(script)
-            # Fail-fast: If download or price ingestion fails, downstream computation cannot proceed
+            error_records.append({
+                "stage": script,
+                "exitCode": exit_code,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "errorTrace": err_msg or f"Process exited with non-zero code {exit_code}"
+            })
+            # Fail-fast on prerequisite failure
             if script in ("download.py", "download_prices_today.py", "lowest_prices.py"):
                 log.error("Critical prerequisite %s failed. Aborting downstream pipeline.", script)
                 break
+
+    total_duration = round(time.time() - overall_t0, 2)
+    overall_status = "failed" if failures else "success"
+
+    run_record = {
+        "id": f"run-{start_dt.strftime('%Y-%m-%d-%H%M%S')}",
+        "timestamp": start_dt.isoformat(),
+        "trigger": "scheduled_pipeline",
+        "status": overall_status,
+        "durationSeconds": total_duration,
+        "stages": stage_records,
+        "errors": error_records
+    }
+    update_telemetry_file(run_record)
+
     if failures:
         log.error("Completed with failures: %s", ", ".join(failures))
         return False
     else:
-        log.info("═══ All scripts completed successfully ═══")
+        log.info("═══ All scripts completed successfully (%.2fs) ═══", total_duration)
         return True
 
 
