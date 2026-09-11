@@ -1,7 +1,7 @@
 /**
  * Utility functions for calculating and styling EV Score (0 - 100).
- * Represents the probability or value-retention ratio of opening singles
- * value equal to or greater than the sealed market price.
+ * Represents the probability (0% - 100%) of opening singles value
+ * equal to or greater than the sealed market price.
  */
 
 export function calculateEvScore(
@@ -16,7 +16,7 @@ export function calculateEvScore(
 ): number | null {
   if (!marketPrice || marketPrice <= 0) return null;
 
-  // 1. Empirical 100-sample quantiles from 5,000 pack simulation
+  // 1. Empirical 100-sample quantiles from 10,000 / 5,000 pack simulation
   if (quantiles && quantiles.length >= 100) {
     const firstAboveIndex = quantiles.findIndex((q) => q >= marketPrice);
     if (firstAboveIndex === -1) {
@@ -28,10 +28,11 @@ export function calculateEvScore(
     return 100 - firstAboveIndex;
   }
 
-  // 2. Deterministic/zero-variance items (precon decks, fixed sets)
-  if (isDeterministic || (!evMin && !evMax) || Math.abs((evMin ?? 0) - (evMax ?? 0)) < 0.01) {
-    if (evAvg >= marketPrice) return 100;
-    return Math.max(0, Math.min(99, Math.round((evAvg / marketPrice) * 100)));
+  // 2. Deterministic / zero-variance items (precon decks, fixed sets, promo packs)
+  // When an item has zero collation variance, every copy contains identical cards.
+  // The probability of singles value exceeding sealed market price is strictly binary: 100 or 0.
+  if (isDeterministic || packsCount === 0 || (!evMin && !evMax) || Math.abs((evMin ?? 0) - (evMax ?? 0)) < 0.01) {
+    return evAvg >= marketPrice ? 100 : 0;
   }
 
   // 3. Piecewise linear estimation using 5th, 50th, and 95th percentile anchors
@@ -45,11 +46,11 @@ export function calculateEvScore(
   if (marketPrice <= mid50) {
     const frac = (marketPrice - min5) / Math.max(0.01, mid50 - min5);
     const pctBelow = 5 + frac * 45;
-    return Math.round(100 - pctBelow);
+    return Math.max(0, Math.min(100, Math.round(100 - pctBelow)));
   } else {
     const frac = (marketPrice - mid50) / Math.max(0.01, max95 - mid50);
     const pctBelow = 50 + frac * 45;
-    return Math.round(100 - pctBelow);
+    return Math.max(0, Math.min(100, Math.round(100 - pctBelow)));
   }
 }
 

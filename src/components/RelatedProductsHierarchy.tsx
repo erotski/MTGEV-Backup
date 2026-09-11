@@ -1162,13 +1162,14 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   const isSelected = activeProduct?.id === prod.id;
                   const badge = getPackagingBadge(prod);
                   const BadgeIcon = badge.icon;
+                  const isDeterministic = prod.packsCount === 0 || (prod as any).archetype === 'pure_precon';
                   const evScore = (prod as any).evScore ?? calculateEvScore(
                     prod.marketPrice,
                     prod.estimatedEv,
                     prod.estimatedEvMin,
                     prod.estimatedEvMid90,
                     prod.estimatedEvMax,
-                    false,
+                    isDeterministic,
                     (prod as any).quantiles,
                     prod.packsCount
                   );

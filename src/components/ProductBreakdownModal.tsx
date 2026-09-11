@@ -216,6 +216,14 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
     (product.variations && product.variations.length > 0)
   );
 
+  const isDeterministic = Boolean(
+    isSingleCard ||
+    isDeck ||
+    product.packagingType === 'starter_deck' ||
+    (((displayProduct as any).packsCount === 0 || (displayProduct as any).packCount === 0) && (!displayProduct.variations || displayProduct.variations.length === 0)) ||
+    (displayProduct as any).archetype === 'pure_precon'
+  );
+
   const profit = Number((displayProduct.estimatedEv - displayProduct.marketPrice).toFixed(2));
   const roiPct = displayProduct.marketPrice > 0 ? Number(((profit / displayProduct.marketPrice) * 100).toFixed(1)) : 0;
   const productEvScore = typeof (displayProduct as any).evScore === 'number'
@@ -226,7 +234,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
         (displayProduct as any).evMin ?? displayProduct.estimatedEv * 0.25,
         (displayProduct as any).evMid90 ?? displayProduct.estimatedEv,
         (displayProduct as any).evMax ?? displayProduct.estimatedEv * 3.5,
-        isDeck,
+        isDeterministic,
         (displayProduct as any).quantiles
       );
 

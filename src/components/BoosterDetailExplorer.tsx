@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
+import { calculateEvScore } from '../utils/evScore';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 
 interface BoosterDetailExplorerProps {
@@ -452,14 +453,21 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const isPurePreconProduct = useMemo(() => {
     if (!activeProduct) return false;
+    if (activeProduct.archetype === 'pure_precon') return true;
     const cat = (activeProduct.rawCategory || '').toLowerCase();
     const packaging = activeProduct.packagingType;
     const isDeckCat = packaging === 'starter_deck' || cat === 'deck' || cat === 'commander_deck' || cat === 'multiple_decks' || cat === 'deck_box';
+    const totalPacks = productAudit?.totalPacks ?? activeProduct.packsCount ?? 0;
+    const hasPacks = totalPacks > 0 || ((productAudit?.packItems?.length || 0) > 0);
+    const hasVariable = productVariableEv > 0 || ((productAudit?.variableItems?.length || 0) > 0);
+
+    // If it has no packs and no variable EV, it is completely deterministic (precon deck, promo pack, single promo, etc.)
+    if (!hasPacks && !hasVariable) return true;
+
     return (
       (isDeckCat || (productAudit && productAudit.totalDecks > 0)) &&
-      (productAudit?.totalPacks === 0 || !productAudit) &&
-      (productAudit?.variableItems?.length === 0 || !productAudit) &&
-      productVariableEv === 0
+      !hasPacks &&
+      !hasVariable
     );
   }, [activeProduct, productAudit, productVariableEv]);
 
@@ -545,24 +553,62 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // EV score number (0 - 100): Probability of opening value >= sealed market price
   const productEvScore = useMemo(() => {
+    if (productMarketPrice <= 0) return 100;
+
+    // 1. Deterministic/preconstructed products: probability is strictly binary (100% or 0%)
+    if (isPreconProduct || (activeProduct?.packsCount === 0 && (productAudit?.totalPacks ?? 0) === 0)) {
+      return productEstimatedEv >= productMarketPrice ? 100 : 0;
+    }
+
+    // 2. Default pricing: if backend precomputed score exists, use it
     if (isDefaultPricing && activeProduct?.evScore != null) {
       return activeProduct.evScore;
     }
-    if (productMarketPrice <= 0) return 100;
-    if (isPreconProduct) {
-      if (productEstimatedEv >= productMarketPrice) return 100;
-      return Math.max(0, Math.min(99, Math.round((productEstimatedEv / productMarketPrice) * 100)));
+
+    // 3. Empirical quantiles by vendor (scaled by reprintMultiplier if in Cheapest Reprint mode)
+    const vendorKey = vendor === 'all' ? 'all' : vendor;
+    const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey] || activeProduct?.quantiles;
+    if (rawQuantiles && rawQuantiles.length >= 100) {
+      const reprintMult = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
+      const quantiles = reprintMult !== 1.0 ? rawQuantiles.map((q) => q * reprintMult) : rawQuantiles;
+      const score = calculateEvScore(
+        productMarketPrice,
+        productEstimatedEv,
+        productMin5,
+        productMid90Ev,
+        productMax5,
+        false,
+        quantiles,
+        productPacksCount
+      );
+      if (score != null) return score;
     }
-    if (productMarketPrice <= productMin5) return 100;
-    if (productMarketPrice >= productMax5) return 0;
-    if (productMarketPrice <= productMid90Ev) {
-      const pct = 95 - ((productMarketPrice - productMin5) / (productMid90Ev - productMin5)) * 45;
-      return Math.round(Math.max(50, Math.min(95, pct)));
-    } else {
-      const pct = 50 - ((productMarketPrice - productMid90Ev) / (productMax5 - productMid90Ev)) * 45;
-      return Math.round(Math.max(5, Math.min(50, pct)));
-    }
-  }, [isDefaultPricing, activeProduct?.evScore, productMarketPrice, isPreconProduct, productEstimatedEv, productMin5, productMid90Ev, productMax5]);
+
+    // 4. Piecewise linear fallback using percentile anchors
+    return calculateEvScore(
+      productMarketPrice,
+      productEstimatedEv,
+      productMin5,
+      productMid90Ev,
+      productMax5,
+      isPreconProduct,
+      undefined,
+      productPacksCount
+    ) ?? 0;
+  }, [
+    isDefaultPricing,
+    activeProduct,
+    productMarketPrice,
+    isPreconProduct,
+    productEstimatedEv,
+    productMin5,
+    productMid90Ev,
+    productMax5,
+    vendor,
+    priceMode,
+    productPacksCount,
+    productAudit,
+  ]);
 
   const getRarityBadge = (rarity: string) => {
     switch (rarity) {
