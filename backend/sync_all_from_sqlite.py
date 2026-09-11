@@ -133,7 +133,8 @@ def run_sync():
     precon_decks = {}
     if (PUBLIC_DATA_DIR / "precon_decks.json").exists():
         with open(PUBLIC_DATA_DIR / "precon_decks.json", "r", encoding="utf-8") as f:
-            precon_decks = json.load(f)
+            pd = json.load(f)
+            precon_decks = pd.get("decks", {}) if isinstance(pd, dict) and "decks" in pd else pd
 
     # 4b. Load Single Card Prices for singles/promos in contents
     single_prices = {}

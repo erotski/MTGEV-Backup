@@ -539,6 +539,9 @@ def run_composite_evaluator(target_set=None):
             vendor_stats[v] = stats
 
         if not quantiles_by_vendor:
+            # We didn't evaluate anything. Wipe any old EV data to prevent stale inflation!
+            for k in ["totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "quantiles", "quantilesByVendor", "evScore", "breakevenPercentile", "archetype"]:
+                p.pop(k, None)
             updated_products.append(p)
             continue
 
@@ -609,21 +612,15 @@ def run_composite_evaluator(target_set=None):
                 u = r.get("productUuid") or r.get("id")
                 if u and u in prod_lookup:
                     up = prod_lookup[u]
-                    if "quantiles" in up:
-                        r["quantiles"] = up["quantiles"]
-                    if "quantilesByVendor" in up:
-                        r["quantilesByVendor"] = up["quantilesByVendor"]
-                    if "totalEvAvg" in up:
-                        r["totalEvAvg"] = up["totalEvAvg"]
-                        r["totalEvMid90"] = up["totalEvMid90"]
-                        r["totalEvMin5"] = up["totalEvMin5"]
-                        r["totalEvMax5"] = up["totalEvMax5"]
-                        r["totalEvMin"] = up["totalEvMin"]
-                        r["totalEvMax"] = up["totalEvMax"]
-                    if "breakevenPercentile" in up:
-                        r["breakevenPercentile"] = up["breakevenPercentile"]
-                    if "archetype" in up:
-                        r["archetype"] = up["archetype"]
+                    for k in ["quantiles", "quantilesByVendor", "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "breakevenPercentile", "archetype"]:
+                        if k in up:
+                            r[k] = up[k]
+                        elif k in r:
+                            # if it was wiped, wipe it here too, or set to 0
+                            if "totalEv" in k:
+                                r[k] = 0.0
+                            else:
+                                r.pop(k, None)
 
             with open(arb_path, "w", encoding="utf-8") as af:
                 json.dump(arb_records, af, indent=2, default=str)

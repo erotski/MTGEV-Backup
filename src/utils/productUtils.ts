@@ -432,6 +432,7 @@ export function findMatchingPreconDeck(
   targetId?: string
 ) {
   if (!preconDecks) return undefined;
+  if (preconDecks.decks) preconDecks = preconDecks.decks;
 
   const index = getOrBuildPreconIndex(preconDecks);
   const cacheKey = `${targetId || ''}|${targetSet || ''}|${targetName || ''}`;

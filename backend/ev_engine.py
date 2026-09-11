@@ -223,7 +223,7 @@ def evaluate_product_composite(prod, product_map, booster_ev_lookup, precon_deck
 
     # Do not invent EV for products with explicit MTGJSON contents that simply priced at 0
     # (e.g. accessory-only bundles) - fall back to the product's own market price as its EV.
-    if ev_avg == 0.0 and not c:
+    if ev_avg == 0.0:
         m_price = float(prod.get("marketPrice", 0) or 0)
         if m_price > 0:
             ev_avg = m_price
