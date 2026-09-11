@@ -15,6 +15,7 @@ and statistical telemetry directly into sealed_products.json and arbitrage_leade
 
 import json
 import random
+import re
 import time
 from pathlib import Path
 
@@ -179,24 +180,46 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", 
     for d in decks:
         dname = (d.get("name") or "").strip().lower()
         dset = (d.get("set") or "").strip().upper()
+        dname_alpha = re.sub(r"[^a-z0-9]", "", dname)
         matched_deck = None
+
+        # 1. Exact name or key match in same set or without set constraint
         for k, deck_obj in precon_decks.items():
             if not isinstance(deck_obj, dict):
                 continue
             obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
             obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
+            if dset and obj_set and dset != obj_set:
+                continue
             if (dname and obj_name == dname) or (k.strip().lower() == dname):
-                if not dset or not obj_set or dset == obj_set:
+                matched_deck = deck_obj
+                break
+
+        # 2. Match within same set if set is specified
+        if not matched_deck and dname and dset:
+            for k, deck_obj in precon_decks.items():
+                if not isinstance(deck_obj, dict):
+                    continue
+                obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
+                if obj_set != dset:
+                    continue
+                obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
+                obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
+                if (dname_alpha and dname_alpha == obj_alpha) or (dname in obj_name) or (obj_name in dname):
                     matched_deck = deck_obj
                     break
-        if not matched_deck and dname:
+
+        # 3. Exact full alphanumeric match across all decks only if sets do not conflict
+        if not matched_deck and dname and not dset:
             for k, deck_obj in precon_decks.items():
                 if not isinstance(deck_obj, dict):
                     continue
                 obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
-                if (len(dname) > 3 and dname in obj_name) or (len(obj_name) > 3 and obj_name in dname):
+                obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
+                if dname_alpha and dname_alpha == obj_alpha:
                     matched_deck = deck_obj
                     break
+
         if matched_deck:
             d_ev = float(matched_deck.get("totalSinglesEv") or matched_deck.get("singlesEv") or matched_deck.get("estimatedEv") or 0.0)
             total_fixed += max(0.0, d_ev)
@@ -357,7 +380,25 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
             "quantiles": quantiles
         }
     else:
-        n = 1000
+        # If no variable slots and single pack count:
+        if not has_vars and len(pack_specs) == 1 and pack_specs[0][0] == 1:
+            q_clean = sorted(pack_specs[0][1][:100])
+            mean_val = sum(q_clean) / len(q_clean) + fixed_ev
+            q_res = [round(x + fixed_ev, 2) for x in q_clean]
+            return {
+                "mean": round(mean_val, 2),
+                "median": q_res[49],
+                "min": q_res[0],
+                "max": q_res[-1],
+                "p05": q_res[4],
+                "p50": q_res[49],
+                "p95": q_res[94],
+                "p99": q_res[99],
+                "std": 0.0,
+                "quantiles": q_res
+            }
+
+        n = 500
         totals = [fixed_ev] * n
 
         # 1. Guaranteed packs
@@ -365,7 +406,7 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
             if count <= 0 or not q_list:
                 continue
             q_clean = q_list[:100]
-            # Fast draw aggregation
+            # Batch sample simulation
             for _ in range(count):
                 choices = random.choices(q_clean, k=n)
                 for i in range(n):

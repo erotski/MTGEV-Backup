@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { BoosterEVRecord, PriceMode, Vendor, PreconstructedDeckDetail } from '../types';
+import { BoosterEVRecord, PriceMode, Vendor, PreconstructedDeckDetail, EvBasis } from '../types';
 import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
@@ -34,6 +34,7 @@ export interface ProductBreakdownTableProps {
   singleCardPrices?: any;
   vendor?: Vendor;
   priceMode?: PriceMode;
+  evBasis?: EvBasis;
   reprintMultiplier?: number;
   auditResult?: RecursiveProductBreakdownResult | null;
   className?: string;
@@ -53,6 +54,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   singleCardPrices = { byUuid: {}, byName: {}, byNameSet: {} },
   vendor = 'all',
   priceMode = 'direct',
+  evBasis = 'avg',
   reprintMultiplier = 1.0,
   auditResult: passedAuditResult,
   className = '',

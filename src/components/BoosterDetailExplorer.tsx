@@ -498,7 +498,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const isDefaultPricing = (vendor === 'all' || vendor === 'tcgplayer') && priceMode === 'direct';
 
   // Calculate dynamic product EV from canonical metrics (or precomputed 10,000-sample composite)
-  const productEstimatedEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
+  const productAvgEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
     productAudit && productAudit.totalEv > 0
       ? productAudit.totalEv
       : isPreconProduct && activeProduct
@@ -506,11 +506,42 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       : Number((activeBooster.evAverage * productPacksCount).toFixed(2))
   ));
 
-  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2))));
-  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2))));
-  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2))));
-  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMin * productPacksCount).toFixed(2))));
-  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productEstimatedEv : Number((activeBooster.evMax * productPacksCount).toFixed(2))));
+  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2))));
+  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2))));
+  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2))));
+  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMin * productPacksCount).toFixed(2))));
+  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMax * productPacksCount).toFixed(2))));
+
+  // Product Active EV matching the selected basis (Floor, Mid 90%, Mean, Ceiling)
+  const productEstimatedEv = useMemo(() => {
+    if (evBasis === 'min') return productMin;
+    if (evBasis === 'mid90') return productMid90Ev;
+    if (evBasis === 'max') return productMax;
+    return productAvgEv;
+  }, [evBasis, productMin, productMid90Ev, productMax, productAvgEv]);
+
+  // Active booster EV based on selected EV Basis
+  const activeBoosterEffectiveEv = useMemo(() => {
+    if (!activeBooster) return 0;
+    if (evBasis === 'min') return activeBooster.evMin;
+    if (evBasis === 'mid90') return activeBooster.evMid90;
+    if (evBasis === 'max') return activeBooster.evMax;
+    return activeBooster.evAverage;
+  }, [activeBooster, evBasis]);
+
+  const getBasisLabel = (basis: EvBasis | string = 'avg') => {
+    switch (basis) {
+      case 'min':
+        return 'Floor (Min)';
+      case 'mid90':
+        return 'Mid 90%';
+      case 'max':
+        return 'Ceiling (Max)';
+      case 'avg':
+      default:
+        return 'Mean (Avg)';
+    }
+  };
 
   // EV score number (0 - 100): Probability of opening value >= sealed market price
   const productEvScore = useMemo(() => {
@@ -925,6 +956,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           activeBooster={activeBooster}
           priceMode={priceMode}
           vendor={vendor}
+          evBasis={evBasis}
+          onEvBasisChange={onEvBasisChange}
           selectedProductId={selectedProductId}
           onPriceModeChange={onPriceModeChange}
           onVendorChange={onVendorChange}
@@ -1078,10 +1111,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   {isPreconProduct
                     ? 'Precon Singles Total'
                     : isMixedProduct
-                    ? 'Total Mixed Product EV'
+                    ? `Total Mixed Product EV (${getBasisLabel(evBasis)})`
                     : productPacksCount > 1
-                    ? `${cleanProductName(activeProduct?.displayName || 'Product')} EV`
-                    : 'Average Pack EV'}
+                    ? `${cleanProductName(activeProduct?.displayName || 'Product')} EV (${getBasisLabel(evBasis)})`
+                    : `Booster Pack EV (${getBasisLabel(evBasis)})`}
                 </span>
                 <Sparkles className="w-4 h-4 text-amber-500" />
               </div>
@@ -1115,7 +1148,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 ) : (
                   productPacksCount > 1 && (
                     <span className="font-mono font-semibold text-slate-700">
-                      ${activeBooster.evAverage.toFixed(2)} / pack
+                      ${activeBoosterEffectiveEv.toFixed(2)} / pack
                     </span>
                   )
                 )}
@@ -1244,17 +1277,17 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   <div className="space-y-4 pt-2">
                     {/* Top Indicators: Absolute Min, Average, Absolute Max (clean, without arrow clutter) */}
                     <div className="flex items-center justify-between text-xs font-mono text-slate-700 px-1">
-                      <div className="flex items-center gap-1.5 text-slate-600">
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${evBasis === 'min' ? 'text-amber-900 bg-amber-100 border border-amber-300 font-bold ring-2 ring-amber-400/40' : 'text-slate-600'}`}>
                         <span className="font-medium text-slate-500">Absolute Min:</span>
                         <span className="font-bold text-slate-900">${productMin.toFixed(2)}</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                        <span className="font-medium text-emerald-600">Average EV:</span>
-                        <span className="font-black">${productEstimatedEv.toFixed(2)}</span>
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition ${evBasis === 'avg' ? 'text-emerald-800 bg-emerald-100 border-emerald-300 ring-2 ring-emerald-400/40 font-bold' : evBasis === 'mid90' ? 'text-emerald-700 bg-emerald-50 border-emerald-200 ring-2 ring-emerald-400/40' : 'text-slate-700 bg-slate-50 border-slate-200'}`}>
+                        <span className="font-medium text-emerald-700">Average EV:</span>
+                        <span className="font-black">${productAvgEv.toFixed(2)}</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-slate-600">
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition ${evBasis === 'max' ? 'text-indigo-900 bg-indigo-100 border border-indigo-300 font-bold ring-2 ring-indigo-400/40' : 'text-slate-600'}`}>
                         <span className="font-medium text-slate-500">Absolute Max:</span>
                         <span className="font-bold text-slate-900">${productMax.toFixed(2)}</span>
                       </div>

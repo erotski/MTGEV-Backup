@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, PriceMode, Vendor } from '../types';
+import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { resolveCardPrice, normalizeVendor, findBoosterEv } from '../utils/vendorUtils';
 import { getCanonicalProductMetrics } from '../utils/productUtils';
@@ -54,6 +54,7 @@ interface RelatedProductsHierarchyProps {
   activeBooster: BoosterEVRecord;
   priceMode: PriceMode;
   vendor: Vendor;
+  evBasis?: EvBasis;
   selectedProductId?: string;
   arbitrageMap?: Record<string, any>;
   productMap?: Map<string, any> | Record<string, any>;
@@ -64,6 +65,7 @@ interface RelatedProductsHierarchyProps {
   onSelectProduct?: (productId: string, boosterName: string, product?: CatalogPackProduct) => void;
   onPriceModeChange?: (mode: PriceMode) => void;
   onVendorChange?: (vendor: Vendor) => void;
+  onEvBasisChange?: (basis: EvBasis) => void;
 }
 
 export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> = ({
@@ -72,6 +74,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   activeBooster,
   priceMode,
   vendor,
+  evBasis = 'avg',
   selectedProductId: propSelectedProductId,
   arbitrageMap,
   productMap,
@@ -82,6 +85,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   onSelectProduct,
   onPriceModeChange,
   onVendorChange,
+  onEvBasisChange,
 }) => {
   // Price & EV scaling based on priceMode & vendor
   const reprintMultiplier = propReprintMultiplier ?? (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
@@ -226,14 +230,15 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 rawPrecon,
                 rawSingle,
                 vendor,
-                priceMode
+                priceMode,
+                evBasis
               );
 
               const pCount = metrics.packsCount;
               const determinedCardCount = metrics.cardCount;
               const determinedBoosterName = metrics.primaryBoosterName;
               const mPrice = metrics.marketPrice > 0 ? metrics.marketPrice : Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
-              const ev = metrics.estimatedEv;
+              const ev = metrics.effectiveEv;
 
               let badgeText = 'Factory Sealed';
               if (category === 'box_set') {
@@ -336,7 +341,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     return () => {
       isMounted = false;
     };
-  }, [setCode, setName, priceMode, vendor, activeBooster]);
+  }, [setCode, setName, priceMode, vendor, activeBooster, evBasis]);
 
   /*
    * Legacy synthetic product definitions are retained below for reference only.
