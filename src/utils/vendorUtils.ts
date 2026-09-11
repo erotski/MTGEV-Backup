@@ -114,6 +114,25 @@ export function resolveCardPrice(
 }
 
 /**
+ * Normalizes full booster/pack display names (e.g. "Final Fantasy Play Booster Pack") into canonical booster codes.
+ */
+export function normalizeBoosterCode(rawName?: string): string {
+  if (!rawName) return 'play';
+  const n = rawName.toLowerCase().trim();
+  if (n.includes('collector') && n.includes('sample')) return 'collector-sample';
+  if (n.includes('collector')) return 'collector';
+  if (n.includes('play')) return 'play';
+  if (n.includes('draft')) return 'draft';
+  if (n.includes('prerelease')) return 'prerelease';
+  if (n.includes('jumpstart')) return 'jumpstart';
+  if (n.includes('set') && n.includes('booster')) return 'set';
+  if (n.includes('topper')) return 'box-topper';
+  if (n.includes('beyond')) return 'beyond';
+  if (n.includes('value')) return 'value';
+  return n;
+}
+
+/**
  * Looks up booster EV calculation for a given set, boosterName, priceMode, and vendor.
  */
 export function findBoosterEv(
@@ -127,14 +146,20 @@ export function findBoosterEv(
   const records = boosterEvMap[sUpper] || [];
   if (records.length === 0) return undefined;
 
-  const targetBooster = (boosterName || 'draft').toLowerCase().trim();
+  const rawTarget = (boosterName || 'play').toLowerCase().trim();
+  const normTarget = normalizeBoosterCode(rawTarget);
   const targetMode = (priceMode || 'direct').toLowerCase().trim();
   const vNorm = normalizeVendor(vendor);
+
+  const matchesCode = (rBoosterName: string) => {
+    const rLower = rBoosterName.toLowerCase().trim();
+    return rLower === rawTarget || normalizeBoosterCode(rLower) === normTarget;
+  };
 
   // 1. Exact match: boosterName + priceMode + vendor
   let match = records.find(
     (r) =>
-      r.boosterName.toLowerCase() === targetBooster &&
+      matchesCode(r.boosterName) &&
       (r.priceMode || 'direct').toLowerCase() === targetMode &&
       normalizeVendor(r.vendor) === vNorm
   );
@@ -143,7 +168,7 @@ export function findBoosterEv(
   // 2. Fallback priceMode for same vendor
   match = records.find(
     (r) =>
-      r.boosterName.toLowerCase() === targetBooster &&
+      matchesCode(r.boosterName) &&
       normalizeVendor(r.vendor) === vNorm
   );
   if (match) return match;
@@ -151,11 +176,11 @@ export function findBoosterEv(
   // 3. Fallback to 'all' or 'tcgplayer'
   match = records.find(
     (r) =>
-      r.boosterName.toLowerCase() === targetBooster &&
+      matchesCode(r.boosterName) &&
       (r.priceMode || 'direct').toLowerCase() === targetMode &&
       normalizeVendor(r.vendor) === 'all'
   );
   if (match) return match;
 
-  return records.find((r) => r.boosterName.toLowerCase() === targetBooster);
+  return records.find((r) => matchesCode(r.boosterName)) || records[0];
 }

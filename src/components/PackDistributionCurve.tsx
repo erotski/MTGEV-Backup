@@ -27,7 +27,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
-import { findBoosterEv, normalizeVendor } from '../utils/vendorUtils';
+import { findBoosterEv, normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
 import { simulateCompositeQuantiles } from '../utils/evScore';
 
 export interface CompositePackItem {
@@ -197,35 +197,19 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           }
         });
       } else if (precomputedQuantiles && precomputedQuantiles.length >= 100) {
-        // Fallback precomputed single vendor quantiles
+        // Direct precomputed single vendor empirical quantiles
         vendorsToSim.forEach((v) => {
-          const fallbackRatios: Record<string, number> = {
-            tcgplayer: 1.0,
-            cardkingdom: 1.15,
-            cardmarket: 0.88,
-            manapool: 0.98,
-            all: 0.94,
-            all_average: 1.0,
-          };
-          const mult = (fallbackRatios[v] || 1.0) * (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
-          vendorSimulations[v] = precomputedQuantiles.map((x) => Number((x * mult).toFixed(2)));
+          vendorSimulations[v] = priceMode === 'cheapest_reprint' 
+            ? precomputedQuantiles.map((x) => Number((x * 0.82).toFixed(2)))
+            : [...precomputedQuantiles];
         });
       } else {
-        // Dynamic client-side convolution fallback
+        // Dynamic client-side convolution — STRICT EMPIRICAL ONLY (No synthetic fallback ratios)
         vendorsToSim.forEach((v) => {
-          const fallbackRatios: Record<string, number> = {
-            tcgplayer: 1.0,
-            cardkingdom: 1.15,
-            cardmarket: 0.88,
-            manapool: 0.98,
-            all: 0.94,
-            all_average: 1.0
-          };
-          const fallbackRatio = fallbackRatios[v] || 1.0;
-
           let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
           
           if (effectivePackItems.length > 0) {
+            let missingEmpiricalQuantiles = false;
             effectivePackItems.forEach((item) => {
               const count = item.count || 1;
               const setCode = item.set || activeBooster?.setCode || '';
@@ -234,70 +218,71 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               if (boosterEvMap) {
                 rec = findBoosterEv(boosterEvMap, setCode, code, priceMode as any, v as any);
               } else if (allSetBoosters && allSetBoosters.length > 0) {
+                const normCode = normalizeBoosterCode(code);
                 rec = allSetBoosters.find(b => 
-                  (b.boosterName || '').toLowerCase() === code.toLowerCase() &&
+                  normalizeBoosterCode(b.boosterName) === normCode &&
                   (b.priceMode || 'direct') === priceMode &&
                   normalizeVendor(b.vendor) === normalizeVendor(v)
                 );
               }
-              if (!rec && (activeBooster?.boosterName || '').toLowerCase() === (code || '').toLowerCase()) {
+              if (!rec) {
                 rec = vendorRecords[v] || activeBooster;
               }
 
               const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-              
               let itemQuantiles = rec?.quantiles;
               if (!itemQuantiles || itemQuantiles.length < 100) {
                 if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-                  itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
+                  itemQuantiles = activeBooster.quantiles;
+                } else {
+                  missingEmpiricalQuantiles = true;
                 }
-              }
-
-              let itemAvg = rec?.evAverage;
-              if (itemAvg == null && activeBooster) {
-                itemAvg = activeBooster.evAverage * fallbackRatio;
               }
 
               if (itemQuantiles && modeMult !== 1.0) {
                 itemQuantiles = itemQuantiles.map(q => q * modeMult);
               }
-              if (itemAvg != null && modeMult !== 1.0) {
-                itemAvg *= modeMult;
-              }
 
-              simItems.push({ count, quantiles: itemQuantiles, evAverage: itemAvg });
+              if (itemQuantiles) {
+                simItems.push({ count, quantiles: itemQuantiles });
+              }
             });
+
+            if (!missingEmpiricalQuantiles && simItems.length > 0) {
+              if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
+                vendorSimulations[v] = [...simItems[0].quantiles];
+              } else {
+                const simRes = simulateCompositeQuantiles(simItems, 5000);
+                if (simRes) vendorSimulations[v] = simRes;
+              }
+            }
           } else {
-            // Single booster fallback (when packItems is empty)
-            const rec = vendorRecords[v] || (v === 'all' ? vendorRecords['all_cheapest'] : undefined);
+            // Single booster empirical lookup
+            const rec = vendorRecords[v] || activeBooster;
             const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
             let itemQuantiles = rec?.quantiles;
-            if (!itemQuantiles || itemQuantiles.length < 100) {
-               if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-                  itemQuantiles = activeBooster.quantiles.map(q => q * fallbackRatio);
-               }
+            if (itemQuantiles && itemQuantiles.length >= 100) {
+              if (modeMult !== 1.0) {
+                itemQuantiles = itemQuantiles.map(q => q * modeMult);
+              }
+              if (scale === 1) {
+                vendorSimulations[v] = [...itemQuantiles];
+              } else {
+                const simRes = simulateCompositeQuantiles([{ count: scale, quantiles: itemQuantiles }], 5000);
+                if (simRes) vendorSimulations[v] = simRes;
+              }
             }
-            if (itemQuantiles && modeMult !== 1.0) {
-               itemQuantiles = itemQuantiles.map(q => q * modeMult);
-            }
-            simItems.push({ count: scale, quantiles: itemQuantiles, evAverage: (rec?.evAverage || activeBooster?.evAverage || 0) * modeMult });
-          }
-
-          // Add baseOffset as a constant offset (count: 1)
-          if (baseOffset > 0) {
-            simItems.push({ count: 1, evAverage: baseOffset });
-          }
-
-          // Optimization/Fix: If this is a single booster (total count is 1) and no base offset,
-          // just pass the quantiles straight through! Do NOT run them through the RNG simulator,
-          // as picking 5000 random items from an array of 100 and sorting them distorts the curve.
-          if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
-            vendorSimulations[v] = [...simItems[0].quantiles];
-          } else {
-            vendorSimulations[v] = simulateCompositeQuantiles(simItems, 5000) || [];
           }
         });
       }
+    }
+
+    const hasValidSimulations = Object.values(vendorSimulations).some((arr) => arr && arr.length >= 100);
+
+    if (!isPreconstructed && !hasValidSimulations) {
+      // Pure empirical enforcement: Do NOT output fake flat fallback curves.
+      // Return empty points array so an explicit missing-data error state is displayed in the UI.
+      return [];
     }
 
     for (let p = 1; p <= 100; p += 1) {
@@ -315,48 +300,32 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         continue;
       }
 
-      if (hasSimulatedQuantiles) {
-        const qIdx = p - 1;
-        const getSimVal = (v: string) => {
-          const simData = vendorSimulations[v];
-          if (simData && simData.length >= 100) {
-             return Number(simData[qIdx].toFixed(2));
-          }
-          return baseOffset;
-        };
+      const qIdx = p - 1;
+      const getSimVal = (v: string) => {
+        const simData = vendorSimulations[v] || vendorSimulations['all'] || vendorSimulations['tcgplayer'];
+        if (simData && simData.length >= 100) {
+          return Number((simData[qIdx] + baseOffset).toFixed(2));
+        }
+        return baseOffset;
+      };
 
-        const tcgVal = getSimVal('tcgplayer');
-        const ckVal = getSimVal('cardkingdom');
-        const cmVal = getSimVal('cardmarket');
-        const mpVal = getSimVal('manapool');
-        const allVal = vendorSimulations['all']?.length >= 100 ? getSimVal('all') : Math.min(tcgVal, ckVal, cmVal, mpVal);
-        const allAvgVal = vendorSimulations['all_average']?.length >= 100 ? getSimVal('all_average') : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+      const tcgVal = getSimVal('tcgplayer');
+      const ckVal = getSimVal('cardkingdom');
+      const cmVal = getSimVal('cardmarket');
+      const mpVal = getSimVal('manapool');
+      const allVal = vendorSimulations['all']?.length >= 100 ? getSimVal('all') : Math.min(tcgVal, ckVal, cmVal, mpVal);
+      const allAvgVal = vendorSimulations['all_average']?.length >= 100 ? getSimVal('all_average') : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
 
-        points.push({
-          percentile: `${p}%`,
-          percentileNum: p,
-          all: allVal,
-          all_average: allAvgVal,
-          tcgplayer: tcgVal,
-          cardmarket: cmVal,
-          cardkingdom: ckVal,
-          manapool: mpVal,
-        });
-      } else {
-        // Pure empirical enforcement: NEVER synthesize fake curves from summary stats (evMin5, evMid90, evMax5)!
-        // If no 1% empirical quantiles exist for this product, output only the fixed baseline value.
-        const flatVal = Number(baseOffset.toFixed(2));
-        points.push({
-          percentile: `${p}%`,
-          percentileNum: p,
-          all: flatVal,
-          all_average: flatVal,
-          tcgplayer: flatVal,
-          cardmarket: flatVal,
-          cardkingdom: flatVal,
-          manapool: flatVal,
-        });
-      }
+      points.push({
+        percentile: `${p}%`,
+        percentileNum: p,
+        all: allVal,
+        all_average: allAvgVal,
+        tcgplayer: tcgVal,
+        cardmarket: cmVal,
+        cardkingdom: ckVal,
+        manapool: mpVal,
+      });
     }
 
     // Ensure non-decreasing monotonicity across percentiles
@@ -789,8 +758,21 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       </div>
 
       {/* Main Interactive Chart Canvas */}
-      <div className="w-full h-[440px] pt-2">
-        <ResponsiveContainer width="100%" height="100%">
+      {!isPreconstructed && (!allCurveData || allCurveData.length === 0) ? (
+        <div className="w-full h-[320px] flex flex-col items-center justify-center p-8 bg-rose-50 border-2 border-dashed border-rose-300 rounded-2xl text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+            <Info className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="text-base font-bold text-rose-950">Missing Empirical Simulation Quantiles</h4>
+            <p className="text-xs text-rose-700 max-w-md mt-1">
+              No authentic 100-sample empirical simulation quantiles are available for this product or booster set. Synthetic fallbacks and artificial ratio estimators have been strictly disabled.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full h-[440px] pt-2">
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={filteredCurveData} margin={{ top: 25, right: 35, left: 15, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis
@@ -1025,6 +1007,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
 
       {/* Axis View Sliders: X-Axis & Y-Axis Zoom */}
       <div className="bg-slate-50/90 p-4 rounded-xl border border-slate-200/80 space-y-3">

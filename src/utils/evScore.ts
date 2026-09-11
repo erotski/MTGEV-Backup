@@ -35,23 +35,9 @@ export function calculateEvScore(
     return evAvg >= marketPrice ? 100 : 0;
   }
 
-  // 3. Piecewise linear estimation using 5th, 50th, and 95th percentile anchors
-  const min5 = evMin && evMin > 0 ? evMin : evAvg * 0.25;
-  const max95 = evMax && evMax > 0 ? evMax : evAvg * 3.5;
-  const mid50 = evMid90 && evMid90 > 0 ? evMid90 : evAvg;
-
-  if (marketPrice <= min5) return 100;
-  if (marketPrice >= max95) return 0;
-
-  if (marketPrice <= mid50) {
-    const frac = (marketPrice - min5) / Math.max(0.01, mid50 - min5);
-    const pctBelow = 5 + frac * 45;
-    return Math.max(0, Math.min(100, Math.round(100 - pctBelow)));
-  } else {
-    const frac = (marketPrice - mid50) / Math.max(0.01, max95 - mid50);
-    const pctBelow = 50 + frac * 45;
-    return Math.max(0, Math.min(100, Math.round(100 - pctBelow)));
-  }
+  // Pure empirical enforcement: NO synthetic piecewise linear estimation fallback.
+  // If true empirical 100-sample quantiles are unavailable, return null instead of generating synthetic values.
+  return null;
 }
 
 export function simulateCompositeQuantiles(
@@ -60,11 +46,13 @@ export function simulateCompositeQuantiles(
 ): number[] | undefined {
   if (!packItems || packItems.length === 0) return undefined;
 
-  let hasAnyQuantiles = false;
+  // Strict empirical check: Every booster pack item MUST have authentic 100-sample quantiles
   for (const item of packItems) {
-    if (item.quantiles && item.quantiles.length >= 100) hasAnyQuantiles = true;
+    if (!item.quantiles || item.quantiles.length < 100) {
+      console.warn('Simulation Error: Missing empirical quantiles for pack item in composite simulation.', item);
+      return undefined;
+    }
   }
-  if (!hasAnyQuantiles) return undefined;
 
   const sums = new Float32Array(iterations);
 
@@ -72,14 +60,10 @@ export function simulateCompositeQuantiles(
     let iterationSum = 0;
 
     for (const item of packItems) {
-      if (item.quantiles && item.quantiles.length >= 100) {
-        const qLen = item.quantiles.length;
-        for (let c = 0; c < item.count; c++) {
-          const randomIndex = Math.floor(Math.random() * qLen);
-          iterationSum += item.quantiles[randomIndex];
-        }
-      } else if (item.evAverage != null) {
-        iterationSum += item.evAverage * item.count;
+      const qLen = item.quantiles!.length;
+      for (let c = 0; c < item.count; c++) {
+        const randomIndex = Math.floor(Math.random() * qLen);
+        iterationSum += item.quantiles![randomIndex];
       }
     }
 

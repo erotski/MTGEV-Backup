@@ -129,6 +129,26 @@ def export_all():
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
     print("▶ 4. Exporting arbitrage_leaderboard.json...")
     try:
+        # Pre-load quantiles from existing sealed_products.json if available
+        sp_quantiles_lookup = {}
+        sp_file = OUTPUT_DIR / "sealed_products.json"
+        if sp_file.exists():
+            try:
+                with open(sp_file, "r", encoding="utf-8") as spf:
+                    sp_list = json.load(spf)
+                    for sp_item in sp_list:
+                        sp_id = sp_item.get("id") or sp_item.get("uuid")
+                        if sp_id:
+                            sp_quantiles_lookup[sp_id] = {
+                                "quantiles": sp_item.get("quantiles"),
+                                "quantilesByVendor": sp_item.get("quantilesByVendor"),
+                                "archetype": sp_item.get("archetype"),
+                                "breakevenPercentile": sp_item.get("breakevenPercentile"),
+                                "evScore": sp_item.get("evScore"),
+                            }
+            except Exception as e:
+                print(f"  [WARN] Reading existing sealed_products.json quantiles: {e}")
+
         # Pre-load booster EV lookup by (set_code, booster_name)
         cursor.execute("""
             SELECT set_code, booster_name, ev_average, ev_mid90, ev_min, ev_max, exact_match_pct, updated_at
@@ -459,6 +479,22 @@ def export_all():
             a['roiPct'] = roi_pct
             a['vendor'] = 'tcgplayer'
             a['priceMode'] = 'direct'
+
+            # Attach pre-computed quantiles if available
+            p_uuid = a.get("productUuid") or a.get("id")
+            if p_uuid and p_uuid in sp_quantiles_lookup:
+                q_data = sp_quantiles_lookup[p_uuid]
+                if q_data.get("quantiles"):
+                    a['quantiles'] = q_data['quantiles']
+                if q_data.get("quantilesByVendor"):
+                    a['quantilesByVendor'] = q_data['quantilesByVendor']
+                if q_data.get("archetype"):
+                    a['archetype'] = q_data['archetype']
+                if q_data.get("breakevenPercentile"):
+                    a['breakevenPercentile'] = q_data['breakevenPercentile']
+                if q_data.get("evScore"):
+                    a['evScore'] = q_data['evScore']
+
             valid_arbs.append(a)
 
         # Sort by best ROI
