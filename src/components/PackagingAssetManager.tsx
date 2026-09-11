@@ -13,7 +13,9 @@ import {
   GuessMatchResult,
 } from '../utils/productAssetMatcher';
 import { ProductPackagingImage } from './ProductPackagingImage';
+import { CatalogSetSummary, buildUnifiedCatalogProducts, extractAllCatalogSets } from '../utils/catalogProductLoader';
 import {
+  Image as ImageIcon,
   Sparkles,
   Lock,
   Unlock,
@@ -37,15 +39,18 @@ import {
   ExternalLink,
   ChevronRight,
   FolderOpen,
-  Image as ImageIcon,
+  ChevronLeft,
+  Wand2,
 } from 'lucide-react';
 
 interface PackagingAssetManagerProps {
   onSelectProductPreview?: (product: CatalogPackProduct) => void;
+  onOpenStudio?: (setCode: string, packagingType: ProductPackagingType, productId?: string) => void;
 }
 
 export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
   onSelectProductPreview,
+  onOpenStudio,
 }) => {
   const [mappings, setMappings] = useState<Record<string, ProductAssetMapping>>(() => loadSavedAssetMappings());
   const [catalogProducts, setCatalogProducts] = useState<CatalogPackProduct[]>(ECOMMERCE_CATALOG_PACKS);
@@ -53,52 +58,22 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
   const [selectedSetFilter, setSelectedSetFilter] = useState<string>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'manual' | 'guessed' | 'empty'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'photo' | 'procedural' | 'manual' | 'empty'>('all');
   const [previewProduct, setPreviewProduct] = useState<CatalogPackProduct | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showRuleGuide, setShowRuleGuide] = useState<boolean>(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(30);
 
   useEffect(() => {
     let isMounted = true;
     dataService.getSealedProducts()
       .then((sealedList) => {
         if (isMounted && Array.isArray(sealedList) && sealedList.length > 0) {
-          const mapped: CatalogPackProduct[] = sealedList.map((p) => {
-            const id = String(p.id || p.uuid || '').trim();
-            const setCode = String(p.setCode || p.set_code || 'SET').toUpperCase();
-            const name = p.displayName || p.name || 'Sealed Product';
-            const lowerName = name.toLowerCase();
-
-            let packagingType: ProductPackagingType = 'box';
-            if (lowerName.includes('booster pack') || lowerName.includes('pack')) packagingType = 'pack';
-            else if (lowerName.includes('bundle')) packagingType = 'bundle';
-            else if (lowerName.includes('booster box') || lowerName.includes('display')) packagingType = 'box';
-            else if (lowerName.includes('collector') || lowerName.includes('collector booster')) packagingType = 'pack';
-
-            return {
-              id: id || `${setCode}-${name}`,
-              setCode,
-              setName: setCode,
-              releaseDate: '2024-01-01',
-              block: 'Standard',
-              packagingType,
-              boosterName: 'play',
-              displayName: name,
-              marketPrice: p.marketPrice || p.price || 0,
-              estimatedEv: 0,
-              packsCount: 1,
-              imageUrl: p.imageUrl || p.image_url,
-              cardCount: p.cardCount,
-              specialFeatures: [],
-            } as CatalogPackProduct;
-          });
-
-          const existingIds = new Set(ECOMMERCE_CATALOG_PACKS.map(p => p.id));
-          const combined = [
-            ...ECOMMERCE_CATALOG_PACKS,
-            ...mapped.filter(p => !existingIds.has(p.id))
-          ];
-          setCatalogProducts(combined);
+          const unified = buildUnifiedCatalogProducts(sealedList);
+          setCatalogProducts(unified);
         }
       })
       .catch((err) => {
@@ -112,6 +87,8 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
       isMounted = false;
     };
   }, []);
+
+  const catalogSets = useMemo(() => extractAllCatalogSets(catalogProducts), [catalogProducts]);
 
   // Available files list (including known assets + user additions)
   const [knownFilesList, setKnownFilesList] = useState<string[]>(KNOWN_SYSTEM_ASSET_FILES);
@@ -342,6 +319,58 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
     reader.readAsText(file);
   };
 
+  // Dynamic catalog stats
+  const assetStats = useMemo(() => {
+    let withPhoto = 0;
+    let withProcedural = 0;
+    let withManual = 0;
+
+    catalogProducts.forEach((p) => {
+      const m = mappings[p.id];
+      if (m?.isManualOverride) withManual++;
+      if (m?.useProceduralRender || m?.slots?.[0] === '__PROCEDURAL_3D__') {
+        withProcedural++;
+      } else if (p.imageUrl || (m?.slots?.[0] && m.slots[0] !== '__PROCEDURAL_3D__')) {
+        withPhoto++;
+      } else {
+        withProcedural++; // Procedural fallback
+      }
+    });
+
+    return {
+      total: catalogProducts.length,
+      withPhoto,
+      withProcedural,
+      withManual,
+      photoPct: Math.round((withPhoto / Math.max(1, catalogProducts.length)) * 100),
+    };
+  }, [catalogProducts, mappings]);
+
+  const handleToggleProcedural = (product: CatalogPackProduct) => {
+    const current = mappings[product.id];
+    const isCurrentlyProcedural = current?.useProceduralRender || current?.slots?.[0] === '__PROCEDURAL_3D__';
+
+    const updated: ProductAssetMapping = {
+      productId: product.id,
+      setCode: product.setCode,
+      isManualOverride: true,
+      useProceduralRender: !isCurrentlyProcedural,
+      slots: !isCurrentlyProcedural ? ['__PROCEDURAL_3D__'] : (product.imageUrl ? [product.imageUrl] : []),
+      updatedAt: new Date().toISOString(),
+    };
+
+    updateMappings({
+      ...mappings,
+      [product.id]: updated,
+    });
+
+    showToast(
+      !isCurrentlyProcedural
+        ? `Switched "${product.displayName}" to authentic Procedural 3D Render.`
+        : `Switched "${product.displayName}" to default photo mode.`
+    );
+  };
+
   // Filtered Products List
   const filteredProducts = useMemo(() => {
     return catalogProducts.filter((product) => {
@@ -354,11 +383,13 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
 
       const mapping = mappings[product.id];
       const isManual = mapping?.isManualOverride;
-      const hasSlots = mapping?.slots && mapping.slots.length > 0;
+      const isProcedural = Boolean(mapping?.useProceduralRender || mapping?.slots?.[0] === '__PROCEDURAL_3D__');
+      const hasPhoto = Boolean(product.imageUrl || (mapping?.slots?.[0] && mapping.slots[0] !== '__PROCEDURAL_3D__'));
 
       if (statusFilter === 'manual' && !isManual) return false;
-      if (statusFilter === 'guessed' && isManual) return false;
-      if (statusFilter === 'empty' && hasSlots) return false;
+      if (statusFilter === 'photo' && (!hasPhoto || isProcedural)) return false;
+      if (statusFilter === 'procedural' && !isProcedural && hasPhoto) return false;
+      if (statusFilter === 'empty' && (hasPhoto || isProcedural)) return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -370,7 +401,18 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
 
       return true;
     });
-  }, [selectedSetFilter, selectedTypeFilter, statusFilter, searchQuery, mappings]);
+  }, [catalogProducts, selectedSetFilter, selectedTypeFilter, statusFilter, searchQuery, mappings]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSetFilter, selectedTypeFilter, statusFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -429,6 +471,36 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
           </div>
         </div>
 
+        {/* Harmonization Health Banner */}
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-800 pt-5">
+          <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60">
+            <div className="text-[10px] uppercase font-bold text-slate-400">Total Sealed Products</div>
+            <div className="text-lg font-black text-white">{assetStats.total.toLocaleString()}</div>
+            <div className="text-[10px] text-slate-400">Across {catalogSets.length} sets</div>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60">
+            <div className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1">
+              <span>📸 Verified Photos</span>
+            </div>
+            <div className="text-lg font-black text-emerald-300">{assetStats.withPhoto.toLocaleString()}</div>
+            <div className="text-[10px] text-slate-400">{assetStats.photoPct}% photo coverage</div>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60">
+            <div className="text-[10px] uppercase font-bold text-purple-400 flex items-center gap-1">
+              <span>✨ Procedural 3D Renders</span>
+            </div>
+            <div className="text-lg font-black text-purple-300">{assetStats.withProcedural.toLocaleString()}</div>
+            <div className="text-[10px] text-slate-400">Guaranteed visual fallback</div>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/60">
+            <div className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1">
+              <span>🔒 Manual Overrides</span>
+            </div>
+            <div className="text-lg font-black text-amber-300">{assetStats.withManual.toLocaleString()}</div>
+            <div className="text-[10px] text-slate-400">Custom user-locked</div>
+          </div>
+        </div>
+
         {/* Toast Notification */}
         {toastMessage && (
           <div className="mt-4 px-4 py-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs font-bold text-emerald-300 flex items-center gap-2 animate-fade-in">
@@ -472,12 +544,12 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
             <select
               value={selectedSetFilter}
               onChange={(e) => setSelectedSetFilter(e.target.value)}
-              className="text-xs font-bold bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+              className="text-xs font-bold bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer max-w-[220px]"
             >
-              <option value="all">All Sets</option>
-              {INITIAL_SETS.map((s) => (
+              <option value="all">All Sets ({catalogSets.length} sets)</option>
+              {catalogSets.map((s) => (
                 <option key={s.code} value={s.code.toLowerCase()}>
-                  {s.name} ({s.code.toUpperCase()})
+                  {s.code.toUpperCase()} - {s.name} ({s.count})
                 </option>
               ))}
             </select>
@@ -503,16 +575,17 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
 
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status:</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Visual Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="text-xs font-bold bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
             >
-              <option value="all">All Statuses</option>
-              <option value="manual">Manual Overrides (Locked)</option>
-              <option value="guessed">Auto-Guessed</option>
-              <option value="empty">No Slots Configured</option>
+              <option value="all">All Products ({catalogProducts.length})</option>
+              <option value="photo">📸 Real Photo Verified ({assetStats.withPhoto})</option>
+              <option value="procedural">✨ Procedural 3D Render ({assetStats.withProcedural})</option>
+              <option value="manual">🔒 Manual Overrides ({assetStats.withManual})</option>
+              <option value="empty">⚠️ Unassigned</option>
             </select>
           </div>
         </div>
@@ -533,8 +606,13 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
       {/* Products Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
-          <span>Showing {filteredProducts.length} Products</span>
-          <span>Set: {selectedSetFilter.toUpperCase()}</span>
+          <span>
+            Showing {filteredProducts.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} Products
+          </span>
+          <div className="flex items-center gap-3">
+            <span>Set: {selectedSetFilter.toUpperCase()}</span>
+            <span>Page {currentPage} of {totalPages}</span>
+          </div>
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -544,12 +622,14 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
             <p className="text-xs text-slate-400">Try selecting a different set or clearing your search term.</p>
           </div>
         ) : (
-          filteredProducts.map((product) => {
+          paginatedProducts.map((product) => {
             const mapping = mappings[product.id];
             const isManual = Boolean(mapping?.isManualOverride);
+            const isProcedural = Boolean(mapping?.useProceduralRender || mapping?.slots?.[0] === '__PROCEDURAL_3D__');
             const effective = getProductEffectiveAssetSlots(product, mappings, knownFilesList);
             const slots = isManual ? (mapping?.slots || []) : effective.slots;
             const guesses = effective.guesses;
+            const hasPhoto = Boolean(product.imageUrl || (slots[0] && slots[0] !== '__PROCEDURAL_3D__'));
 
             return (
               <div
@@ -588,15 +668,24 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
                         <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md uppercase">
                           {product.packagingType}
                         </span>
-                        {isManual ? (
+                        {isProcedural ? (
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded-md flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-purple-600" />
+                            Procedural 3D Render
+                          </span>
+                        ) : hasPhoto ? (
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1">
-                            <Lock className="w-3 h-3" />
-                            Manual Override Locked
+                            📸 Real Photo Verified
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-amber-500" />
-                            Auto-Guessed Match
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                            ✨ Procedural Fallback
+                          </span>
+                        )}
+                        {isManual && (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            Locked
                           </span>
                         )}
                       </div>
@@ -615,6 +704,32 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
 
                   {/* Actions & Manual Override Toggle */}
                   <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* Open in 3D Studio */}
+                    {onOpenStudio && (
+                      <button
+                        onClick={() => onOpenStudio(product.setCode, product.packagingType, product.id)}
+                        className="px-3 py-1.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-purple-100 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                        title="Open this product in 3D Studio"
+                      >
+                        <Wand2 className="w-3.5 h-3.5 text-purple-300" />
+                        <span>3D Studio</span>
+                      </button>
+                    )}
+
+                    {/* Force Procedural 3D Toggle */}
+                    <button
+                      onClick={() => handleToggleProcedural(product)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                        isProcedural
+                          ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                      }`}
+                      title={isProcedural ? "Using Procedural 3D. Click to switch to photo mode." : "Assign authentic Procedural 3D render."}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <span>{isProcedural ? '3D Active' : 'Set 3D'}</span>
+                    </button>
+
                     {/* Toggle Button */}
                     <button
                       onClick={() => handleToggleManual(product)}
@@ -625,7 +740,7 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
                       }`}
                     >
                       {isManual ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                      <span>{isManual ? 'Manual: LOCKED' : 'Enable Manual Override'}</span>
+                      <span>{isManual ? 'Locked' : 'Lock'}</span>
                     </button>
 
                     {/* Run Guesser on this single product */}
@@ -635,7 +750,7 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
                       title="Run guessing game heuristics and fill slots"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Re-Guess Assets</span>
+                      <span>Guess</span>
                     </button>
 
                     {/* Live Preview Button */}
@@ -644,7 +759,7 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
                       className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
                     >
                       <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Preview Gallery</span>
+                      <span>Preview</span>
                     </button>
                   </div>
                 </div>
@@ -826,6 +941,56 @@ export const PackagingAssetManager: React.FC<PackagingAssetManagerProps> = ({
           })
         )}
       </div>
+
+      {/* Pagination Bar */}
+      {filteredProducts.length > pageSize && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-slate-500 font-bold">
+            Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} Products
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Page size:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700"
+            >
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={60}>60</option>
+              <option value={120}>120</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-30 flex items-center gap-1 cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+
+            <div className="text-xs font-mono font-bold px-2 text-slate-700">
+              Page {currentPage} of {totalPages}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-30 flex items-center gap-1 cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Live Preview Modal */}
       {previewProduct && (

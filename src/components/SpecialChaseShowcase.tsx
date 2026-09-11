@@ -541,17 +541,6 @@ export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSe
 
   return (
     <div className="space-y-6" id="special-chase-showcase">
-      {/* Intro section */}
-      <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 p-6 rounded-2xl shadow-sm border border-amber-400">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-6 h-6 text-slate-950" />
-          <h2 className="text-xl font-black tracking-tight uppercase font-mono">Special Chase Legends</h2>
-        </div>
-        <p className="text-sm font-medium leading-relaxed max-w-3xl">
-          Dive into the lore, historical stories, and live valuations of trading card game legends. From the geopolitical mystery of the Russian Gala Greeter to the multi-million dollar 1-of-1 One Ring, inspect where they reside, their exact vendor prices, and instantly explore their parent products in our expected value engine.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Side: Interactive Sidebar Menu */}
         <div className="lg:col-span-4 space-y-3">

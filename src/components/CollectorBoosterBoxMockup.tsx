@@ -201,66 +201,10 @@ export const CollectorBoosterBoxMockup: React.FC<CollectorBoosterBoxMockupProps>
           strokeLinejoin="round"
         />
 
-        {/* 3a. Header text: "12-PACK DISPLAY" & "13+" */}
-        <g
-          transform={`translate(${whiteCenterX}, ${whiteCenterY + hz * 0.38}) rotate(${frontAngle}) skewY(${frontSkew})`}
-        >
-          <text
-            x={-splitFx * 0.38}
-            y="0"
-            textAnchor="start"
-            dominantBaseline="central"
-            fill="#525252"
-            fontFamily="monospace"
-            fontWeight="bold"
-            fontSize={`${7 * scale}px`}
-            letterSpacing="0.06em"
-          >
-            {packCount}-PACK DISPLAY
-          </text>
-          <text
-            x={splitFx * 0.38}
-            y="0"
-            textAnchor="end"
-            dominantBaseline="central"
-            fill="#171717"
-            fontFamily="sans-serif"
-            fontWeight="900"
-            fontSize={`${6.5 * scale}px`}
-          >
-            13+
-          </text>
-        </g>
-
-        {/* 3b. Center Set Logo with "MAGIC THE GATHERING" */}
+        {/* 3b. Center Set Logo */}
         <g
           transform={`translate(${whiteCenterX}, ${whiteCenterY - 4 * scale}) rotate(${frontAngle}) skewY(${frontSkew})`}
         >
-          <text
-            x="0"
-            y={-19 * scale}
-            textAnchor="middle"
-            fill="#171717"
-            fontFamily="serif"
-            fontWeight="900"
-            fontSize={`${6 * scale}px`}
-            letterSpacing="0.15em"
-          >
-            MAGIC
-          </text>
-          <text
-            x="0"
-            y={-14 * scale}
-            textAnchor="middle"
-            fill="#525252"
-            fontFamily="sans-serif"
-            fontWeight="bold"
-            fontSize={`${3.8 * scale}px`}
-            letterSpacing="0.18em"
-          >
-            THE GATHERING
-          </text>
-
           {/* Scryfall Vector Set Logo */}
           {!imgError ? (
             <image

@@ -12,6 +12,7 @@ export interface ProductAssetMapping {
   productId: string;
   setCode: string;
   isManualOverride: boolean;
+  useProceduralRender?: boolean;
   slots: string[]; // Up to 10 image paths/URLs
   updatedAt?: string;
 }
@@ -295,6 +296,15 @@ export function getProductEffectiveAssetSlots(
 
   const guesses = guessAssetSlotsForProduct(product, availableFiles, 10);
 
+  // Forced Procedural 3D Render
+  if (saved && (saved.useProceduralRender || saved.slots?.[0] === '__PROCEDURAL_3D__')) {
+    return {
+      slots: ['__PROCEDURAL_3D__'],
+      isManual: true,
+      guesses,
+    };
+  }
+
   if (saved && saved.isManualOverride && Array.isArray(saved.slots) && saved.slots.length > 0) {
     const validSlots = saved.slots.filter((s) => s && s.trim().length > 0);
     if (validSlots.length > 0) {
@@ -304,6 +314,15 @@ export function getProductEffectiveAssetSlots(
         guesses,
       };
     }
+  }
+
+  // If the product record has an explicit real photo URL
+  if (product.imageUrl && product.imageUrl.trim().length > 0) {
+    return {
+      slots: [product.imageUrl.trim()],
+      isManual: false,
+      guesses,
+    };
   }
 
   if (guesses.length > 0) {

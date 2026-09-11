@@ -175,20 +175,27 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
-    setCatalogProducts[0]?.id || ''
+    initialProductId || setCatalogProducts[0]?.id || ''
   );
 
   useEffect(() => {
     if (initialProductId) {
       setSelectedProductId(initialProductId);
-      const matched = [...setCatalogProducts, ...dbProducts].find(
-        (p) => p.id === initialProductId || p.uuid === initialProductId
+      const matched = [...dbProducts, ...setCatalogProducts].find(
+        (p) =>
+          p.id === initialProductId ||
+          p.uuid === initialProductId ||
+          (p.uuid && p.uuid.toLowerCase() === initialProductId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === initialProductId.toLowerCase())
       );
-      if (matched && matched.boosterName) {
-        setActiveBoosterName(matched.boosterName);
-      }
-      if (onClearInitialProductId) {
-        onClearInitialProductId();
+      if (matched) {
+        setSelectedProductOverride(matched);
+        if (matched.boosterName) {
+          setActiveBoosterName(matched.boosterName);
+        }
+        if (onClearInitialProductId) {
+          onClearInitialProductId();
+        }
       }
     }
   }, [initialProductId, setCatalogProducts, dbProducts, onClearInitialProductId]);
@@ -249,9 +256,11 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     setSelectedProductOverride(null);
     dataService.getSealedProducts().then((raw) => {
       if (!isMounted || !Array.isArray(raw)) return;
-      const matching = raw.filter(
-        (sp) => (sp.setCode || sp.set_code || '').toUpperCase() === selectedSetCode.toUpperCase()
-      );
+      const relatedCodes = getAllRelatedSetCodes(selectedSetCode);
+      const matching = raw.filter((sp) => {
+        const code = (sp.setCode || sp.set_code || '').toUpperCase();
+        return relatedCodes.includes(code);
+      });
       const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
         const pName = sp.displayName || sp.name || 'Sealed Product';
         const sCode = (sp.setCode || sp.set_code || selectedSetCode).toUpperCase();
@@ -318,29 +327,53 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       });
       setDbProducts(mapped);
       if (mapped.length > 0) {
-        const preferred = mapped.find((p) => p.packagingType === 'pack') || mapped.find((p) => p.packagingType === 'box') || mapped[0];
-        setSelectedProductOverride(preferred);
-        setSelectedProductId(preferred.id);
-        if (preferred.boosterName) {
-          setActiveBoosterName(preferred.boosterName);
+        const targetId = initialProductId || selectedProductId;
+        const targetMatch = targetId
+          ? mapped.find(
+              (p) =>
+                p.id === targetId ||
+                p.uuid === targetId ||
+                (p.uuid && p.uuid.toLowerCase() === targetId.toLowerCase()) ||
+                (p.id && p.id.toLowerCase() === targetId.toLowerCase())
+            )
+          : null;
+
+        if (targetMatch) {
+          setSelectedProductOverride(targetMatch);
+          setSelectedProductId(targetMatch.id);
+          if (targetMatch.boosterName) {
+            setActiveBoosterName(targetMatch.boosterName);
+          }
+          if (initialProductId && onClearInitialProductId) {
+            onClearInitialProductId();
+          }
+        } else if (!selectedProductId || !mapped.some((p) => p.id === selectedProductId || p.uuid === selectedProductId)) {
+          const preferred = mapped.find((p) => p.packagingType === 'pack') || mapped.find((p) => p.packagingType === 'box') || mapped[0];
+          setSelectedProductOverride(preferred);
+          setSelectedProductId(preferred.id);
+          if (preferred.boosterName) {
+            setActiveBoosterName(preferred.boosterName);
+          }
         }
       }
     }).catch(() => {});
     return () => { isMounted = false; };
-  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, initialProductId]);
 
   // Sync when set changes
   useEffect(() => {
+    if (initialProductId) return;
+
     const prods = ECOMMERCE_CATALOG_PACKS.filter(
       (p) => p.setCode.toUpperCase() === selectedSetCode.toUpperCase()
     );
-    if (prods.length > 0) {
+    if (prods.length > 0 && !selectedProductId) {
       setSelectedProductId(prods[0].id);
       setActiveBoosterName(prods[0].boosterName || 'play');
-    } else if (currentBoosters.length > 0) {
+    } else if (currentBoosters.length > 0 && !activeBoosterName) {
       setActiveBoosterName(currentBoosters[0].boosterName);
     }
-  }, [selectedSetCode]);
+  }, [selectedSetCode, initialProductId]);
 
   const activeBooster = useMemo(() => {
     return (
@@ -371,13 +404,35 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     if (selectedProductOverride) {
       const overrideSet = selectedProductOverride.setCode.toUpperCase();
       const related = getAllRelatedSetCodes(selectedSetCode);
-      if (related.includes(overrideSet)) {
+      const isIdMatch =
+        !selectedProductId ||
+        selectedProductOverride.id === selectedProductId ||
+        selectedProductOverride.uuid === selectedProductId ||
+        (selectedProductOverride.uuid && selectedProductId && selectedProductOverride.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+        (selectedProductOverride.id && selectedProductId && selectedProductOverride.id.toLowerCase() === selectedProductId.toLowerCase());
+      if (related.includes(overrideSet) && isIdMatch) {
         return selectedProductOverride;
       }
     }
-    const dbMatch = dbProducts.find((p) => p.id === selectedProductId);
+    const dbMatch = dbProducts.find(
+      (p) =>
+        p.id === selectedProductId ||
+        p.uuid === selectedProductId ||
+        (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+        (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
+    );
     if (dbMatch) return dbMatch;
-    return setCatalogProducts.find((p) => p.id === selectedProductId) || dbProducts[0] || setCatalogProducts[0];
+    return (
+      setCatalogProducts.find(
+        (p) =>
+          p.id === selectedProductId ||
+          p.uuid === selectedProductId ||
+          (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+          (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
+      ) ||
+      dbProducts[0] ||
+      setCatalogProducts[0]
+    );
   }, [selectedProductOverride, selectedSetCode, dbProducts, selectedProductId, setCatalogProducts]);
 
   // Lookup raw product with full contents metadata

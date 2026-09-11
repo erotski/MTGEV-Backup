@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 import { INITIAL_SETS } from '../data';
 import { dataService } from '../services/dataService';
+import { buildUnifiedCatalogProducts, extractAllCatalogSets } from '../utils/catalogProductLoader';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { BoosterFoilPackMockup } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
@@ -44,8 +45,19 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  X
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Users,
+  Lock,
+  LogOut,
+  Key,
+  Smartphone,
+  ShieldAlert
 } from 'lucide-react';
+import { AdminSecurityGate } from './AdminSecurityGate';
+import { AdminUserManagement } from './AdminUserManagement';
+import { adminAuthService } from '../services/adminAuthService';
 
 interface AdminPortalProps {
   onNavigateToExplorer?: (setCode: string) => void;
@@ -118,8 +130,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const activePriceMode = externalPriceMode || internalPriceMode;
   const handlePriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
 
+  // Admin Authentication & Session State
+  const [adminSession, setAdminSession] = useState(adminAuthService.getCurrentSession());
+
+  const handleLogoutAdmin = () => {
+    adminAuthService.logout();
+    setAdminSession(null);
+  };
+
   // Top-level Admin Section Tab
-  const [activeAdminSection, setActiveAdminSection] = useState<'audit' | 'integrity' | 'studio' | 'matcher' | 'logs'>('audit');
+  const [activeAdminSection, setActiveAdminSection] = useState<'audit' | 'integrity' | 'studio' | 'matcher' | 'logs' | 'users'>('audit');
   const [pipelineTelemetry, setPipelineTelemetry] = useState<PipelineTelemetryData | null>(null);
   const [selectedLogRunId, setSelectedLogRunId] = useState<string | null>(null);
   const [isTelemetryLoading, setIsTelemetryLoading] = useState<boolean>(true);
@@ -233,9 +253,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     };
   }, []);
 
+  // Unified Catalog Products (Merging default catalog packs + 4,200+ MTGJSON sealed products)
+  const catalogProducts = useMemo(() => {
+    return buildUnifiedCatalogProducts(sealedProducts);
+  }, [sealedProducts]);
+
+  const catalogSets = useMemo(() => {
+    return extractAllCatalogSets(catalogProducts);
+  }, [catalogProducts]);
+
   const handleSelectFoilSet = (code: string) => {
     setFoilPackSetCode(code);
-    const foundSet = INITIAL_SETS.find((s) => s.code.toLowerCase() === code.toLowerCase());
+    const foundSet = catalogSets.find((s) => s.code.toLowerCase() === code.toLowerCase()) || INITIAL_SETS.find((s) => s.code.toLowerCase() === code.toLowerCase());
     if (foundSet) {
       setFoilPackSetName(foundSet.name);
     } else {
@@ -248,6 +277,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedPath(id);
     setTimeout(() => setCopiedPath(null), 2000);
+  };
+
+  // Assign Studio Generated Image Override
+  const handleAssignStudioMockup = () => {
+    const matchingProducts = catalogProducts.filter(
+      (p) => p.setCode.toLowerCase() === studioSetCode.toLowerCase() && p.packagingType === studioPackagingType
+    );
+
+    if (matchingProducts.length === 0) {
+      alert(`No products found in catalog for set "${studioSetCode.toUpperCase()}" with packaging type "${studioPackagingType}".`);
+      return;
+    }
+
+    setCustomImageOverrides((prev) => {
+      const next = { ...prev };
+      matchingProducts.forEach((p) => {
+        next[p.id] = `/products/${p.setCode.toLowerCase()}-${p.packagingType.toLowerCase()}.png`;
+      });
+      return next;
+    });
+
+    alert(`Successfully assigned generated picture override to ${matchingProducts.length} product(s) in set ${studioSetCode.toUpperCase()}!`);
   };
 
   // Image override save
@@ -278,7 +329,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   // Compute Catalog Statistics
-  const totalProducts = ECOMMERCE_CATALOG_PACKS.length;
+  const totalProducts = catalogProducts.length;
   
   // Calculate image statistics
   const productStats = useMemo(() => {
@@ -293,7 +344,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       starter_deck: { total: 0, missing: 0 },
     };
 
-    ECOMMERCE_CATALOG_PACKS.forEach((p) => {
+    catalogProducts.forEach((p) => {
       const type = p.packagingType || 'pack';
       if (!typeBreakdown[type]) {
         typeBreakdown[type] = { total: 0, missing: 0 };
@@ -309,9 +360,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       }
     });
 
-    const coveragePct = Math.round((withExplicitUrl / totalProducts) * 100) || 0;
-    const totalMarketValue = ECOMMERCE_CATALOG_PACKS.reduce((acc, p) => acc + p.marketPrice, 0);
-    const totalEstimatedEv = ECOMMERCE_CATALOG_PACKS.reduce((acc, p) => acc + p.estimatedEv, 0);
+    const coveragePct = Math.round((withExplicitUrl / Math.max(1, totalProducts)) * 100) || 0;
+    const totalMarketValue = catalogProducts.reduce((acc, p) => acc + (p.marketPrice || 0), 0);
+    const totalEstimatedEv = catalogProducts.reduce((acc, p) => acc + (p.estimatedEv || 0), 0);
 
     return {
       withExplicitUrl,
@@ -321,7 +372,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       totalMarketValue,
       totalEstimatedEv,
     };
-  }, [totalProducts, customImageOverrides]);
+  }, [catalogProducts, totalProducts, customImageOverrides]);
 
   const integrityIssues = useMemo<ProductIntegrityIssue[]>(() => {
     const idCounts = new Map<string, number>();
@@ -503,14 +554,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     integritySortDirection,
   ]);
 
+  // Audit Table Pagination
+  const [auditPage, setAuditPage] = useState<number>(1);
+  const [auditPageSize, setAuditPageSize] = useState<number>(25);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [selectedSetFilter, selectedTypeFilter, imageStatusFilter, searchQuery]);
+
   // Filtered Products List for the Audit Table
   const filteredProducts = useMemo(() => {
-    return ECOMMERCE_CATALOG_PACKS.filter((product) => {
+    return catalogProducts.filter((product) => {
       const activeUrl = customImageOverrides[product.id] || product.imageUrl;
       const hasPhoto = Boolean(activeUrl);
 
       // Set filter
-      if (selectedSetFilter !== 'all' && product.setCode !== selectedSetFilter) {
+      if (selectedSetFilter !== 'all' && product.setCode.toLowerCase() !== selectedSetFilter.toLowerCase()) {
         return false;
       }
 
@@ -543,7 +602,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
       return true;
     });
-  }, [selectedSetFilter, selectedTypeFilter, imageStatusFilter, searchQuery, customImageOverrides]);
+  }, [catalogProducts, selectedSetFilter, selectedTypeFilter, imageStatusFilter, searchQuery, customImageOverrides]);
+
+  const auditTotalPages = Math.max(1, Math.ceil(filteredProducts.length / auditPageSize));
+  const paginatedAuditProducts = useMemo(() => {
+    const start = (auditPage - 1) * auditPageSize;
+    return filteredProducts.slice(start, start + auditPageSize);
+  }, [filteredProducts, auditPage, auditPageSize]);
 
   // Export JSON Report
   const handleExportAuditReport = () => {
@@ -556,7 +621,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         coveragePct: `${productStats.coveragePct}%`,
         proceduralFallbackActive: productStats.missingExplicitUrl,
       },
-      products: ECOMMERCE_CATALOG_PACKS.map((p) => ({
+      products: filteredProducts.map((p) => ({
         id: p.id,
         setCode: p.setCode,
         setName: p.setName,
@@ -579,13 +644,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  // Render Admin Security Gate if session is not authenticated
+  if (!adminSession) {
+    return (
+      <AdminSecurityGate
+        onAuthenticated={() => setAdminSession(adminAuthService.getCurrentSession())}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Admin Header Banner */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="px-3 py-1 bg-amber-500/20 text-amber-300 font-mono text-xs font-bold rounded-full border border-amber-500/30 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 SYSTEM ADMINISTRATOR PORTAL
@@ -593,17 +667,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               <span className="px-2.5 py-1 bg-slate-800 text-slate-300 font-mono text-xs rounded-full border border-slate-700">
                 v2.4 Live Engine
               </span>
+              <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 font-mono text-xs rounded-full border border-emerald-500/30 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                Logged in as @{adminSession.user.username} ({adminSession.user.role})
+              </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               Application Telemetry & Catalog Asset Center
             </h1>
             <p className="text-sm text-slate-400 max-w-2xl">
-              Inspect sealed packaging asset health, audit missing product photography, test image URL overrides, and tune the Monte Carlo booster simulation engine.
+              Inspect sealed packaging asset health, audit missing product photography, test image URL overrides, tune Monte Carlo simulation engine, and manage admin users & security access.
             </p>
           </div>
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleLogoutAdmin}
+              className="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>Lock / Sign Out</span>
+            </button>
             {/* Vendor Selector Filter */}
             <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
               <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
@@ -739,12 +824,41 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             {isTelemetryLoading ? '...' : pipelineTelemetry?.runs.some((r) => r.status === 'failed') ? 'ERRORS' : 'HEALTHY'}
           </span>
         </button>
+
+        <button
+          onClick={() => setActiveAdminSection('users')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminSection === 'users'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Users className={`w-4 h-4 ${activeAdminSection === 'users' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>Security & User Access</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-100 text-emerald-800 font-bold">
+            2FA Active
+          </span>
+        </button>
       </div>
 
       {/* Render Active Section */}
+      {activeAdminSection === 'users' && (
+        <AdminUserManagement onLogout={handleLogoutAdmin} />
+      )}
       {activeAdminSection === 'matcher' && (
         <div className="mt-4">
-          <PackagingAssetManager />
+          <PackagingAssetManager
+            onSelectProductPreview={(product) => {
+              setStudioSetCode(product.setCode);
+              setStudioPackagingType(product.packagingType);
+              setActiveAdminSection('studio');
+            }}
+            onOpenStudio={(setCode, packagingType) => {
+              setStudioSetCode(setCode);
+              setStudioPackagingType(packagingType);
+              setActiveAdminSection('studio');
+            }}
+          />
         </div>
       )}
 
@@ -1483,13 +1597,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   <select
                     value={studioSetCode}
                     onChange={(e) => setStudioSetCode(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-amber-400"
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-amber-400 max-w-[200px]"
                   >
-                    {INITIAL_SETS.map((s) => (
-                      <option key={s.code} value={s.code}>
-                        {s.code} - {s.name}
-                      </option>
-                    ))}
+                    {catalogSets.length > 0 ? (
+                      catalogSets.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.code.toUpperCase()} - {s.name}
+                        </option>
+                      ))
+                    ) : (
+                      INITIAL_SETS.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.code} - {s.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -1544,6 +1666,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <span className="font-bold text-slate-200 capitalize">{studioPackagingType} Silhouette</span>
                   </div>
                 </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={handleAssignStudioMockup}
+                    className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                    <span>Assign Generated Mockup as Product Picture for {studioSetCode.toUpperCase()} ({studioPackagingType})</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1564,8 +1696,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </div>
           <div className="my-2">
-            <div className="text-2xl font-black text-slate-900">{totalProducts} Sealed Products</div>
-            <div className="text-xs text-slate-500">Across {INITIAL_SETS.length} Premier Sets</div>
+            <div className="text-2xl font-black text-slate-900">{totalProducts.toLocaleString()} Sealed Products</div>
+            <div className="text-xs text-slate-500">Across {catalogSets.length > 0 ? catalogSets.length : INITIAL_SETS.length} Expansion Sets</div>
           </div>
           <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded w-fit">
             100% Schema Validated
@@ -1581,8 +1713,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </div>
           <div className="my-2">
-            <div className="text-2xl font-black text-slate-900">{productStats.withExplicitUrl} of {totalProducts}</div>
-            <div className="text-xs text-slate-500">{productStats.missingExplicitUrl} using Procedural 3D Visuals</div>
+            <div className="text-2xl font-black text-slate-900">{productStats.withExplicitUrl.toLocaleString()} of {totalProducts.toLocaleString()}</div>
+            <div className="text-xs text-slate-500">{productStats.missingExplicitUrl.toLocaleString()} using Procedural 3D Visuals</div>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
             <div className="bg-emerald-500 h-full" style={{ width: `${productStats.coveragePct}%` }} />
@@ -1820,11 +1952,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   onChange={(e) => handleSelectFoilSet(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-purple-500"
                 >
-                  {INITIAL_SETS.map((s) => (
-                    <option key={s.code} value={s.code}>
-                      {s.code} - {s.name}
-                    </option>
-                  ))}
+                  {catalogSets.length > 0 ? (
+                    catalogSets.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.code.toUpperCase()} - {s.name}
+                      </option>
+                    ))
+                  ) : (
+                    INITIAL_SETS.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.code} - {s.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -2063,14 +2203,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <select
               value={selectedSetFilter}
               onChange={(e) => setSelectedSetFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500 max-w-[200px]"
             >
-              <option value="all">All Sets</option>
-              {INITIAL_SETS.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.code} - {s.name}
-                </option>
-              ))}
+              <option value="all">All Sets ({catalogSets.length > 0 ? catalogSets.length : INITIAL_SETS.length})</option>
+              {catalogSets.length > 0 ? (
+                catalogSets.map((s) => (
+                  <option key={s.code} value={s.code}>
+                    {s.code.toUpperCase()} - {s.name} ({s.count})
+                  </option>
+                ))
+              ) : (
+                INITIAL_SETS.map((s) => (
+                  <option key={s.code} value={s.code}>
+                    {s.code} - {s.name}
+                  </option>
+                ))
+              )}
             </select>
 
             {/* Type Filter Dropdown */}
@@ -2124,7 +2272,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => {
+                paginatedAuditProducts.map((product) => {
                   const customUrl = customImageOverrides[product.id];
                   const hasCustom = Boolean(customUrl);
                   const hasDefaultUrl = Boolean(product.imageUrl);
@@ -2276,6 +2424,54 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Audit Table Pagination Footer */}
+        {filteredProducts.length > 0 && (
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div className="text-slate-500 font-bold">
+              Showing {Math.min((auditPage - 1) * auditPageSize + 1, filteredProducts.length)}–{Math.min(auditPage * auditPageSize, filteredProducts.length)} of {filteredProducts.length.toLocaleString()} Products
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-bold">Per page:</span>
+              <select
+                value={auditPageSize}
+                onChange={(e) => {
+                  setAuditPageSize(Number(e.target.value));
+                  setAuditPage(1);
+                }}
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-700 cursor-pointer"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={250}>250</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setAuditPage((p) => Math.max(1, p - 1))}
+                disabled={auditPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-white disabled:opacity-30 flex items-center gap-1 cursor-pointer transition"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev</span>
+              </button>
+              <span className="font-mono font-bold px-2 text-slate-700">
+                Page {auditPage} of {auditTotalPages}
+              </span>
+              <button
+                onClick={() => setAuditPage((p) => Math.min(auditTotalPages, p + 1))}
+                disabled={auditPage === auditTotalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold hover:bg-white disabled:opacity-30 flex items-center gap-1 cursor-pointer transition"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Engine & Simulation Diagnostic Settings */}

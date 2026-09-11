@@ -6,7 +6,7 @@ import { SetSymbolIcon } from './SetSymbolIcon';
 import { BoosterFoilPackMockup, cleanPureSetName } from './BoosterFoilPackMockup';
 import { CollectorBoosterBoxMockup } from './CollectorBoosterBoxMockup';
 import { BoosterDisplayBoxMockup } from './BoosterDisplayBoxMockup';
-import { Package, Box as BoxIcon, Archive, Gift, Layers3, Sparkles, Image as ImageIcon, ZoomIn, X, Crown, ChevronLeft, ChevronRight, Layers, RotateCw } from 'lucide-react';
+import { Package, Box as BoxIcon, Archive, Gift, Layers3, Sparkles, Image as ImageIcon, ZoomIn, X, Crown, ChevronLeft, ChevronRight, Layers, RotateCw, CheckCircle2 } from 'lucide-react';
 
 interface ProductPackagingImageProps {
   productId?: string;
@@ -20,6 +20,7 @@ interface ProductPackagingImageProps {
   className?: string;
   themeColor?: 'emerald' | 'navy' | 'crimson' | 'gold' | 'purple' | 'slate';
   allowZoom?: boolean;
+  showProvenanceBadge?: boolean;
 }
 
 export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
@@ -34,6 +35,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   className = '',
   themeColor,
   allowZoom = false,
+  showProvenanceBadge = false,
 }) => {
   const [candidateIndex, setCandidateIndex] = useState<number>(0);
   const [hasImageLoaded, setHasImageLoaded] = useState<boolean>(false);
@@ -76,7 +78,9 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     });
   }, [productId, cleanCode, displayName, packagingType, imageUrl, mappingsVersion]);
 
-  const hasLinkedPicture = Boolean(
+  const isProceduralForced = effectiveResult.slots?.[0] === '__PROCEDURAL_3D__';
+
+  const hasLinkedPicture = !isProceduralForced && Boolean(
     effectiveResult.isManual ||
     (imageUrl && imageUrl.trim().length > 0) ||
     (effectiveResult.guesses && effectiveResult.guesses.some((g) => g.score >= 40))
@@ -84,12 +88,12 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   // Generate candidate list of local and remote image paths to test
   const candidateUrls = React.useMemo(() => {
-    if (!hasLinkedPicture) return [];
+    if (!hasLinkedPicture || isProceduralForced) return [];
     const urls: string[] = [];
 
     if (effectiveResult.slots && effectiveResult.slots.length > 0) {
       effectiveResult.slots.forEach((s) => {
-        if (s && s.trim().length > 0) urls.push(s.trim());
+        if (s && s.trim().length > 0 && s !== '__PROCEDURAL_3D__') urls.push(s.trim());
       });
     }
 
@@ -98,7 +102,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
     }
 
     return Array.from(new Set(urls));
-  }, [effectiveResult, imageUrl, hasLinkedPicture]);
+  }, [effectiveResult, imageUrl, hasLinkedPicture, isProceduralForced]);
 
   // Reset image candidate testing when props change
   useEffect(() => {
@@ -546,6 +550,16 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
             <div className="absolute inset-0 bg-slate-900 animate-pulse flex flex-col items-center justify-center p-2 text-center text-slate-500">
               <ImageIcon className="w-5 h-5 mb-1 opacity-50" />
               <span className="text-[9px] font-mono">{cleanCode}</span>
+            </div>
+          )}
+
+          {/* Provenance Badge Overlay */}
+          {(showProvenanceBadge || size === 'hero') && hasImageLoaded && (
+            <div className="absolute top-1.5 left-1.5 z-10 pointer-events-none">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase font-mono bg-emerald-950/85 text-emerald-300 border border-emerald-500/40 backdrop-blur-xs shadow-sm">
+                <CheckCircle2 className="w-2.5 h-2.5" />
+                Official WPN Photo
+              </span>
             </div>
           )}
 

@@ -634,12 +634,31 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const handleSelectProduct = (prodId: string, boosterName?: string) => {
     setSelectedProductId(prodId);
     if (onSelectProduct) {
-      const found = setProducts.find((p) => p.id === prodId);
+      const found = setProducts.find(
+        (p) =>
+          p.id === prodId ||
+          p.uuid === prodId ||
+          (p.uuid && p.uuid.toLowerCase() === prodId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === prodId.toLowerCase())
+      );
       onSelectProduct(prodId, boosterName || found?.boosterName || 'play', found);
     }
   };
 
-  const activeProduct = setProducts.find((p) => p.id === selectedProductId) || setProducts[0];
+  const activeProduct = useMemo(() => {
+    const target = selectedProductId || propSelectedProductId;
+    if (target) {
+      const match = setProducts.find(
+        (p) =>
+          p.id === target ||
+          p.uuid === target ||
+          (p.uuid && p.uuid.toLowerCase() === target.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === target.toLowerCase())
+      );
+      if (match) return match;
+    }
+    return setProducts.find((p) => p.packagingType === 'box') || setProducts[0];
+  }, [setProducts, selectedProductId, propSelectedProductId]);
 
   const effectiveProductMap = useMemo(() => {
     if (productMap && (productMap instanceof Map ? productMap.size > 0 : Object.keys(productMap).length > 0)) {
@@ -934,6 +953,25 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const [isListCollapsed, setIsListCollapsed] = useState<boolean>(true);
   const COLLAPSED_LIMIT = 6;
 
+  // When a specific product is targeted via prop (e.g. from Arbitrage "Inspect Set"):
+  // Select it, uncollapse the list, and switch category to 'all' so it is actively visible!
+  useEffect(() => {
+    if (propSelectedProductId && setProducts.length > 0) {
+      const match = setProducts.find(
+        (p) =>
+          p.id === propSelectedProductId ||
+          p.uuid === propSelectedProductId ||
+          (p.uuid && p.uuid.toLowerCase() === propSelectedProductId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === propSelectedProductId.toLowerCase())
+      );
+      if (match) {
+        setSelectedProductId(match.id);
+        setActiveCategory('all');
+        setIsListCollapsed(false);
+      }
+    }
+  }, [propSelectedProductId, setProducts]);
+
   // Filter products by search query
   const filteredProducts = useMemo(() => {
     let prods = displayedProducts;
@@ -948,11 +986,62 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     return prods;
   }, [displayedProducts, searchQuery]);
 
+  // If the active product exists in filteredProducts but beyond COLLAPSED_LIMIT, automatically uncollapse
+  useEffect(() => {
+    if (activeProduct && filteredProducts.length > COLLAPSED_LIMIT && isListCollapsed) {
+      const index = filteredProducts.findIndex(
+        (p) =>
+          p.id === activeProduct.id ||
+          (activeProduct.uuid && p.uuid === activeProduct.uuid) ||
+          (activeProduct.id && p.uuid === activeProduct.id)
+      );
+      if (index >= COLLAPSED_LIMIT) {
+        setIsListCollapsed(false);
+      }
+    }
+  }, [activeProduct, filteredProducts, isListCollapsed]);
+
+  // Smooth scroll into view when a product is targeted from props
+  useEffect(() => {
+    if (propSelectedProductId && activeProduct) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`btn-product-tier-${activeProduct.id}`) ||
+                   document.getElementById(`btn-product-tier-list-${activeProduct.id}`) ||
+                   document.getElementById('related-products-hierarchy-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [propSelectedProductId, activeProduct?.id]);
+
   // Determine actual items to render on the page
   const visibleProducts = useMemo(() => {
     if (!isListCollapsed) return filteredProducts;
-    return filteredProducts.slice(0, COLLAPSED_LIMIT);
-  }, [filteredProducts, isListCollapsed]);
+    const base = filteredProducts.slice(0, COLLAPSED_LIMIT);
+    // If an active product exists in filteredProducts but not in the first COLLAPSED_LIMIT, ensure it's included so the active card is never omitted
+    if (activeProduct) {
+      const isInBase = base.some(
+        (p) =>
+          p.id === activeProduct.id ||
+          (activeProduct.uuid && p.uuid === activeProduct.uuid) ||
+          (activeProduct.id && p.uuid === activeProduct.id)
+      );
+      if (!isInBase) {
+        const fullMatch = filteredProducts.find(
+          (p) =>
+            p.id === activeProduct.id ||
+            (activeProduct.uuid && p.uuid === activeProduct.uuid) ||
+            (activeProduct.id && p.uuid === activeProduct.id)
+        );
+        if (fullMatch) {
+          return [...base, fullMatch];
+        }
+      }
+    }
+    return base;
+  }, [filteredProducts, isListCollapsed, activeProduct]);
 
   if (isLoadingDbProducts) {
     return (
@@ -1159,7 +1248,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               // FLAT GRID VIEW
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                 {visibleProducts.map((prod) => {
-                  const isSelected = activeProduct?.id === prod.id;
+                  const isSelected =
+                    (activeProduct?.id && prod.id && activeProduct.id === prod.id) ||
+                    (activeProduct?.uuid && prod.uuid && activeProduct.uuid === prod.uuid) ||
+                    (activeProduct?.id && prod.uuid && activeProduct.id === prod.uuid) ||
+                    (activeProduct?.uuid && prod.id && activeProduct.uuid === prod.id) ||
+                    Boolean(selectedProductId && (prod.id === selectedProductId || prod.uuid === selectedProductId));
                   const badge = getPackagingBadge(prod);
                   const BadgeIcon = badge.icon;
                   const isDeterministic = prod.packsCount === 0 || (prod as any).archetype === 'pure_precon';
@@ -1401,7 +1495,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {visibleProducts.map((p) => {
-                      const isCurrent = p.id === activeProduct?.id;
+                      const isCurrent =
+                        (activeProduct?.id && p.id && activeProduct.id === p.id) ||
+                        (activeProduct?.uuid && p.uuid && activeProduct.uuid === p.uuid) ||
+                        (activeProduct?.id && p.uuid && activeProduct.id === p.uuid) ||
+                        (activeProduct?.uuid && p.id && activeProduct.uuid === p.id) ||
+                        Boolean(selectedProductId && (p.id === selectedProductId || p.uuid === selectedProductId));
                       const badge = getPackagingBadge(p);
                       const BadgeIcon = badge.icon;
                       const margin = p.estimatedEv - p.marketPrice;
