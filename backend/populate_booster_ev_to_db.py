@@ -640,11 +640,11 @@ class DatabaseBoosterEVEngine:
           ev_min5 = round(float(np.mean(s_arr[:trim])), 2)
           ev_max5 = round(float(np.mean(s_arr[-trim:])), 2)
 
-          # Calculate 100 samples from 5,000 simulations (average of each 50-increment bucket)
-          bucket_size = max(1, len(s_arr) // 100)
+          # Calculate 100 quantiles from 5,000 simulations (exact 1% quantile buckets)
+          n = len(s_arr)
           quantiles = [
-              round(float(np.mean(s_arr[i * bucket_size : (i + 1) * bucket_size])), 2)
-              for i in range(100)
+              round(float(s_arr[min(n - 1, max(0, int((p / 100.0) * n) - 1))]), 2)
+              for p in range(1, 101)
           ]
         else:
           ev_avg = ev_mid90 = ev_min = ev_max = ev_min5 = ev_max5 = 0.0

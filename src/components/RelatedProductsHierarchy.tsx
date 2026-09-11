@@ -1538,6 +1538,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   product={activeProduct}
                   vendor={vendor}
                   priceMode={priceMode}
+                  evBasis={evBasis}
                   arbitrageMap={arbitrageMap}
                   productMap={effectiveProductMap}
                   preconDecks={preconDecks}

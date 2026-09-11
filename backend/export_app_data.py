@@ -112,12 +112,14 @@ def export_all():
             FROM booster_ev_results;
         """)
         ev_results = cursor.fetchall()
+
         for r in ev_results:
             if r.get("quantiles") and isinstance(r["quantiles"], str):
                 try:
                     r["quantiles"] = json.loads(r["quantiles"])
                 except Exception:
-                    pass
+                    r["quantiles"] = []
+
         with open(OUTPUT_DIR / "booster_ev.json", "w", encoding="utf-8") as f:
             json.dump(ev_results, f, indent=2, default=str)
         print(f"  ✔ Exported {len(ev_results)} booster EV simulations")

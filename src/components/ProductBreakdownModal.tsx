@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { PreconstructedDeckDetail, BoosterEVRecord } from '../types';
+import { PreconstructedDeckDetail, BoosterEVRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { BoosterSlotViewer } from './BoosterSlotViewer';
 import { PreconstructedDeckViewer } from './PreconstructedDeckViewer';
@@ -29,6 +29,7 @@ interface ProductBreakdownModalProps {
   onClose: () => void;
   priceMode?: string;
   vendor?: string;
+  evBasis?: EvBasis | string;
   preconDecks?: Record<string, PreconstructedDeckDetail>;
   deckDetail?: PreconstructedDeckDetail;
   onNavigateToSet?: (setCode: string, boosterName?: string) => void;
@@ -45,6 +46,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
   onClose,
   priceMode = 'direct',
   vendor = 'tcgplayer',
+  evBasis = 'avg',
   preconDecks,
   deckDetail,
   onNavigateToSet,
@@ -431,6 +433,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                     product={displayProduct}
                     vendor={vendor as any}
                     priceMode={priceMode as any}
+                    evBasis={evBasis as any}
                     hideModalLaunchButton={true}
                     preconDecks={effectivePreconDecks}
                     arbitrageMap={effectiveArbitrageMap}

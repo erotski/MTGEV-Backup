@@ -565,7 +565,8 @@ export function resolveRecursiveProductAudit(
   vendor: Vendor | string = 'all',
   priceMode: PriceMode = 'direct',
   multiplier: number = 1,
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  evBasis: EvBasis | string = 'avg'
 ): RecursiveProductBreakdownResult {
   const pId = product?.id || product?.uuid || '';
   const parentSet = (product?.setCode || product?.set_code || '').toUpperCase();
@@ -681,7 +682,12 @@ export function resolveRecursiveProductAudit(
       const res = resolveBoosterPackEv(pk, parentSet, boosterEvMap, vendor, priceMode, reprintMultiplier);
       const cardsPerPack = getCardsPerPack(pk.code, product.category, product.subtype);
       const packCardsTotal = count * cardsPerPack;
-      const subtotalEv = Number((count * res.unitEvAvg).toFixed(2));
+
+      const effectiveUnitEv = evBasis === 'min' ? res.unitEvMin :
+                              evBasis === 'mid90' ? res.unitEvMid90 :
+                              evBasis === 'max' ? res.unitEvMax :
+                              res.unitEvAvg;
+      const subtotalEv = Number((count * effectiveUnitEv).toFixed(2));
 
       totalCards += packCardsTotal;
       totalPacks += count;
@@ -700,7 +706,7 @@ export function resolveRecursiveProductAudit(
         count,
         cardsPerPack,
         totalCards: packCardsTotal,
-        unitEv: res.unitEvAvg,
+        unitEv: effectiveUnitEv,
         unitMid90: res.unitEvMid90,
         unitMin: res.unitEvMin,
         unitMin5: res.unitEvMin5,
@@ -999,7 +1005,8 @@ export function resolveRecursiveProductAudit(
           vendor,
           priceMode,
           count,
-          new Set(visited)
+          new Set(visited),
+          evBasis
         );
 
         totalCards += childAudit.totalCards;
@@ -1529,7 +1536,9 @@ export function getCanonicalProductMetrics(
     singleCardPrices,
     normVendor,
     priceMode,
-    1
+    1,
+    new Set<string>(),
+    evBasis
   );
 
   let estimatedEv = audit.totalEv;

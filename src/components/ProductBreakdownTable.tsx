@@ -255,16 +255,26 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
       }
 
+      const effectiveUnitEv =
+        evBasis === 'min'
+          ? unitEvMin
+          : evBasis === 'mid90'
+          ? unitEvMid90
+          : evBasis === 'max'
+          ? unitEvMax
+          : unitEvAvg;
+
       return {
         setCode: pkSet,
         boosterCode: pkCode,
+        unitEv: effectiveUnitEv,
         unitEvAvg,
         unitEvMid90,
         unitEvMin,
         unitEvMax,
       };
     },
-    [effectiveBoosterEvMap, vendor, priceMode, reprintMultiplier]
+    [effectiveBoosterEvMap, vendor, priceMode, reprintMultiplier, evBasis]
   );
 
   // Helper to resolve card prices and EV
@@ -429,8 +439,12 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         effectivePreconDecks,
         effectiveSingleCardPrices,
         vendor || 'all',
-        (priceMode || 'direct') as PriceMode
+        (priceMode || 'direct') as PriceMode,
+        evBasis
       );
+      if (canonical.effectiveEv > 0) {
+        return Number((canonical.effectiveEv * mult).toFixed(2));
+      }
       if (canonical.estimatedEv > 0) {
         return Number((canonical.estimatedEv * mult).toFixed(2));
       }
@@ -441,7 +455,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       }
       return 0;
     },
-    [effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, reprintMultiplier]
+    [effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, reprintMultiplier, evBasis]
   );
 
   // Resolve audit if not passed directly
@@ -457,10 +471,12 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         effectiveSingleCardPrices,
         vendor || 'all',
         (priceMode || 'direct') as PriceMode,
-        1
+        1,
+        new Set<string>(),
+        evBasis
       )
     );
-  }, [passedAuditResult, product, effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode]);
+  }, [passedAuditResult, product, effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, evBasis]);
 
   const uid = product.id || product.uuid || product.productUuid || '';
   const arb = effectiveArbitrageMap[uid] || Object.values(effectiveArbitrageMap).find((a: any) =>
@@ -1038,7 +1054,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                   {itemContents!.pack!.map((pk: any, idx: number) => {
                     const count = (pk.count || 1) * multiplier;
                     const res = resolvePack(pk, item.setCode || '');
-                    const subtotalEv = Number((count * res.unitEvAvg).toFixed(2));
+                    const subtotalEv = Number((count * res.unitEv).toFixed(2));
 
                     return (
                       <div
@@ -1063,7 +1079,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                   code: res.boosterCode,
                                   set: res.setCode,
                                   count,
-                                  unitEv: res.unitEvAvg,
+                                  unitEv: res.unitEv,
                                 })
                               }
                               className="inline-flex items-center gap-1.5 text-slate-400 hover:text-amber-300 text-xs font-medium transition cursor-pointer group underline-offset-4 hover:underline"
@@ -1081,11 +1097,15 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
                           <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-750">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase">Pack EV (Single)</div>
-                            <div className="font-mono font-bold text-amber-400 text-xs sm:text-sm">
-                              ${res.unitEvAvg.toFixed(2)}
+                            <div className="text-[10px] font-bold text-slate-400 uppercase">
+                              Pack EV ({evBasis === 'min' ? 'Floor' : evBasis === 'mid90' ? 'Mid 90%' : evBasis === 'max' ? 'Ceiling' : 'Mean'})
                             </div>
-                            <div className="text-[9px] text-slate-400 font-mono">Mid90: ${res.unitEvMid90.toFixed(2)}</div>
+                            <div className="font-mono font-bold text-amber-400 text-xs sm:text-sm">
+                              ${res.unitEv.toFixed(2)}
+                            </div>
+                            <div className="text-[9px] text-slate-400 font-mono">
+                              Mean: ${res.unitEvAvg.toFixed(2)} • Mid90: ${res.unitEvMid90.toFixed(2)}
+                            </div>
                           </div>
 
                           <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-750">
@@ -1101,7 +1121,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                             <div className="font-mono font-black text-indigo-400 text-xs sm:text-sm">
                               ${subtotalEv.toFixed(2)}
                             </div>
-                            <div className="text-[9px] text-slate-400 font-mono">{count} × ${res.unitEvAvg.toFixed(2)}</div>
+                            <div className="text-[9px] text-slate-400 font-mono">{count} × ${res.unitEv.toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
@@ -1522,6 +1542,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
             <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-bold border border-slate-700">
               {calculatedTotalCards} Total Cards
             </span>
+            {evBasis && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">
+                Basis: {evBasis === 'min' ? 'Floor' : evBasis === 'mid90' ? 'Mid 90%' : evBasis === 'max' ? 'Ceiling' : 'Mean'}
+              </span>
+            )}
             {audit.totalPacks > 0 && (
               <span className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700">
                 {audit.totalPacks} Packs
@@ -1631,7 +1656,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       <th className="text-center pb-2.5 px-3 font-bold">Qty</th>
                       <th className="text-right pb-2.5 px-4 font-bold text-slate-300">Unit Cards</th>
                       <th className="text-right pb-2.5 px-4 font-bold text-amber-300">Cards SubTotal</th>
-                      <th className="text-right pb-2.5 px-4 font-bold text-slate-300">Unit EV</th>
+                      <th className="text-right pb-2.5 px-4 font-bold text-slate-300">
+                        Unit EV {evBasis ? `(${evBasis === 'min' ? 'Floor' : evBasis === 'mid90' ? 'Mid 90%' : evBasis === 'max' ? 'Ceiling' : 'Mean'})` : ''}
+                      </th>
                       <th className="text-right pb-2.5 px-4 font-bold text-amber-400">Contents EV Subtotal</th>
                       <th className="text-right pb-2.5 px-4 font-bold text-indigo-300">EV Share</th>
                       <th className="text-center pb-2.5 pl-4 font-bold text-amber-400">Inspect</th>
