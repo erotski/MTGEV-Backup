@@ -626,8 +626,8 @@ class DatabaseBoosterEVEngine:
           np_arr = np.array(arr)
           s_arr = np.sort(np_arr)
           
-          if set_code.upper() == 'HOB' and booster_name.lower() == 'play' and mode.lower() == 'direct' and v.lower() == 'tcgplayer':
-              print("=== HOB PLAY TCGPLAYER 5000 SAMPLES ===")
+          if mode.lower() == 'direct' and v.lower() == 'tcgplayer' and ((set_code.upper() == 'ISD' and booster_name.lower() == 'draft') or (set_code.upper() == 'SNC' and booster_name.lower() == 'set')):
+              print(f"=== {set_code.upper()} {booster_name.upper()} TCGPLAYER 5000 SAMPLES ===")
               print(__import__('json').dumps(s_arr.tolist()))
               print("=======================================")
           
