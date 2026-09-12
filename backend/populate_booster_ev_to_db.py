@@ -1,12 +1,12 @@
 from collections import defaultdict
 import json
-import os
 from pathlib import Path
 import time
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
 from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG
+from price_resolver import PriceResolver
 
 
 def convert_time(seconds: float) -> str:
@@ -47,6 +47,9 @@ class DatabaseBoosterEVEngine:
     self.card_cache = {}
     self.price_cache = {}
     self.lowest_cache = {}
+    self.price_resolver = PriceResolver(
+      self.card_cache, self.price_cache, self.lowest_cache
+    )
 
     self.conn = mysql.connector.connect(**self.db_config)
     self.cursor = self.conn.cursor(dictionary=True)
@@ -210,180 +213,6 @@ class DatabaseBoosterEVEngine:
           self.lowest_cache[row['name']]['min_all'] = float(row['min_p'])
 
   # ====================================================
-  # 2. PRICE RESOLUTION ENGINE
-  # ====================================================
-  def resolve_card_price(
-      self,
-      uuid: str,
-      requested_finish: str,
-      target_vendor: str,
-      use_reprints: bool,
-  ):
-    """Hierarchy: Exact Match -> Finish Fallback (Normal > Foil > Etched) -> Different Vendor -> UNPRICED."""
-    card = self.card_cache.get(uuid)
-    if not card or card['is_online']:
-      return None, 'unpriced'
-    if card['is_ignored']:
-      return 0.0, 'ignored'
-
-    finish_fallback_order = (
-        ['foil', 'normal', 'etched']
-        if requested_finish == 'foil'
-        else ['normal', 'foil', 'etched']
-    )
-    target_vendor = target_vendor.lower()
-    if target_vendor == 'all':
-      target_vendor = 'all_cheapest'
-
-    # 1. Direct Set Printing Mode
-    if not use_reprints:
-      vendors_available = self.price_cache.get(uuid, {})
-      if vendors_available:
-        # Step 1: Exact Match
-        if (
-            target_vendor in vendors_available
-            and requested_finish in vendors_available[target_vendor]
-        ):
-          return vendors_available[target_vendor][requested_finish], 'exact'
-
-        # Step 2: Finish Fallback (Same Vendor)
-        if target_vendor in vendors_available:
-          vendor_finishes = vendors_available[target_vendor]
-          for f in finish_fallback_order:
-            if f in vendor_finishes:
-              return vendor_finishes[f], 'finish_fallback'
-
-        # Step 3: Different Vendor (Same Finish)
-        for alt_vendor, finishes in vendors_available.items():
-          if alt_vendor != target_vendor and requested_finish in finishes:
-            return finishes[requested_finish], 'vendor_fallback'
-
-        # Step 4: Different Vendor + Finish Fallback
-        for alt_vendor, finishes in vendors_available.items():
-          if alt_vendor != target_vendor:
-            for f in finish_fallback_order:
-              if f in finishes:
-                return finishes[f], 'vendor_finish_fallback'
-
-    # 2. Cheapest Reprint Mode
-    if use_reprints:
-      name = card['name']
-      lowest_data = self.lowest_cache.get(name)
-      if lowest_data and lowest_data['sellers']:
-        # Step 1: Exact Match from Lowest Table
-        if (
-            target_vendor in lowest_data['sellers']
-            and requested_finish in lowest_data['sellers'][target_vendor]
-        ):
-          return (
-              lowest_data['sellers'][target_vendor][requested_finish],
-              'reprint',
-          )
-
-        # Step 2: Finish Fallback (Same Vendor)
-        if target_vendor in lowest_data['sellers']:
-          vendor_finishes = lowest_data['sellers'][target_vendor]
-          for f in finish_fallback_order:
-            if f in vendor_finishes:
-              return vendor_finishes[f], 'finish_fallback'
-
-        # Step 3: Different Vendor (Same Finish)
-        for alt_vendor, finishes in lowest_data['sellers'].items():
-          if alt_vendor != target_vendor and requested_finish in finishes:
-            return finishes[requested_finish], 'vendor_fallback'
-
-        # Step 4: Any Lowest Price
-        if lowest_data['min_all'] is not None:
-          return lowest_data['min_all'], 'vendor_finish_fallback'
-
-    return None, 'unpriced'
-
-  def resolve_card_price_global(
-      self, uuid: str, requested_finish: str, use_reprints: bool
-  ):
-    """Global (All Vendors) Lowest Price Resolution."""
-    card = self.card_cache.get(uuid)
-    if not card or card['is_online']:
-      return None, 'unpriced'
-    if card['is_ignored']:
-      return 0.0, 'ignored'
-
-    finish_fallback_order = (
-        ['foil', 'normal', 'etched']
-        if requested_finish == 'foil'
-        else ['normal', 'foil', 'etched']
-    )
-
-    if not use_reprints:
-      vendors_available = self.price_cache.get(uuid, {})
-      if vendors_available:
-        prices_exact = [
-            finishes[requested_finish]
-            for finishes in vendors_available.values()
-            if requested_finish in finishes
-        ]
-        if prices_exact:
-          return min(prices_exact), 'exact'
-
-        for f in finish_fallback_order:
-          prices_finish = [
-              finishes[f]
-              for finishes in vendors_available.values()
-              if f in finishes
-          ]
-          if prices_finish:
-            return min(prices_finish), 'finish_fallback'
-
-    if use_reprints:
-      lowest_data = self.lowest_cache.get(card['name'])
-      if lowest_data and lowest_data['sellers']:
-        prices_exact = [
-            finishes[requested_finish]
-            for finishes in lowest_data['sellers'].values()
-            if requested_finish in finishes
-        ]
-        if prices_exact:
-          return min(prices_exact), 'reprint'
-
-        for f in finish_fallback_order:
-          prices_finish = [
-              finishes[f]
-              for finishes in lowest_data['sellers'].values()
-              if f in finishes
-          ]
-          if prices_finish:
-            return min(prices_finish), 'finish_fallback'
-
-        if lowest_data['min_all'] is not None:
-          return lowest_data['min_all'], 'vendor_fallback'
-
-    return None, 'unpriced'
-
-  def resolve_card_price_average(
-      self,
-      uuid: str,
-      requested_finish: str,
-      sellers: list[str],
-      use_reprints: bool,
-  ):
-    """Average named-vendor prices without including the global-cheapest price."""
-    resolved_prices = []
-    statuses = []
-    for seller in sellers:
-      price, status = self.resolve_card_price(
-          uuid, requested_finish, seller, use_reprints
-      )
-      if price is not None:
-        resolved_prices.append(float(price))
-        statuses.append(status)
-
-    if not resolved_prices:
-      return None, 'unpriced'
-    if all(status == 'exact' for status in statuses):
-      return sum(resolved_prices) / len(resolved_prices), 'exact'
-    return sum(resolved_prices) / len(resolved_prices), 'vendor_fallback'
-
-  # ====================================================
   # 3. LOAD BOOSTER CONFIG DIRECTLY FROM MYSQL
   # ====================================================
   def load_booster_config_from_db(self, set_code: str, booster_name: str):
@@ -510,40 +339,40 @@ class DatabaseBoosterEVEngine:
 
       for u in u_list:
         # Direct
-        p_all_dir, st_all_dir = self.resolve_card_price_global(
+        p_all_dir, st_all_dir = self.price_resolver.resolve_card_price_global(
             u, req_finish, use_reprints=False
         )
         matrix['direct']['all_cheapest'].append(p_all_dir)
         status_matrix['direct']['all_cheapest'].append(st_all_dir)
 
-        p_avg_dir, st_avg_dir = self.resolve_card_price_average(
+        p_avg_dir, st_avg_dir = self.price_resolver.resolve_card_price_average(
           u, req_finish, sellers, use_reprints=False
         )
         matrix['direct']['all_average'].append(p_avg_dir)
         status_matrix['direct']['all_average'].append(st_avg_dir)
 
         for s in sellers:
-          p_v_dir, st_v_dir = self.resolve_card_price(
+          p_v_dir, st_v_dir = self.price_resolver.resolve_card_price(
               u, req_finish, target_vendor=s, use_reprints=False
           )
           matrix['direct'][s].append(p_v_dir)
           status_matrix['direct'][s].append(st_v_dir)
 
         # Cheapest Reprint
-        p_all_rep, st_all_rep = self.resolve_card_price_global(
+        p_all_rep, st_all_rep = self.price_resolver.resolve_card_price_global(
             u, req_finish, use_reprints=True
         )
         matrix['cheapest_reprint']['all_cheapest'].append(p_all_rep)
         status_matrix['cheapest_reprint']['all_cheapest'].append(st_all_rep)
 
-        p_avg_rep, st_avg_rep = self.resolve_card_price_average(
+        p_avg_rep, st_avg_rep = self.price_resolver.resolve_card_price_average(
           u, req_finish, sellers, use_reprints=True
         )
         matrix['cheapest_reprint']['all_average'].append(p_avg_rep)
         status_matrix['cheapest_reprint']['all_average'].append(st_avg_rep)
 
         for s in sellers:
-          p_v_rep, st_v_rep = self.resolve_card_price(
+          p_v_rep, st_v_rep = self.price_resolver.resolve_card_price(
               u, req_finish, target_vendor=s, use_reprints=True
           )
           matrix['cheapest_reprint'][s].append(p_v_rep)
@@ -759,161 +588,6 @@ class DatabaseBoosterEVEngine:
         'bucketMeans': buckets,
     }, indent=2), encoding='utf-8')
     print(f'   -> Wrote audit samples to {output_path}')
-
-  def get_card_price(self, uuid: str, requested_finish: str, use_reprints: bool, vendor: str = 'all_cheapest'):
-    """Helper to resolve card price with on-demand prefetch if needed."""
-    if uuid not in self.card_cache:
-      try:
-        self.prefetch_cards([uuid])
-      except Exception:
-        pass
-    if vendor in ('all', 'all_cheapest'):
-      return self.resolve_card_price_global(uuid, requested_finish, use_reprints)
-    else:
-      return self.resolve_card_price(uuid, requested_finish, vendor, use_reprints)
-
-  def calculate_sealed_product_ev(self, contents: dict, mode: str = 'direct', vendor: str = 'all_cheapest') -> float:
-    """Calculates EV for a sealedProduct with JSON `contents` (deck, variable, booster, card)."""
-    if not contents:
-      return 0.0
-    
-    total_ev = 0.0
-    use_reprints = (mode == 'cheapest_reprint')
-
-    # 1. Guaranteed cards (e.g. promo cards, box toppers)
-    if 'card' in contents and isinstance(contents['card'], list):
-      for c in contents['card']:
-        uuid = c.get('uuid')
-        finish = 'foil' if c.get('foil') else 'normal'
-        if uuid:
-          p, _ = self.get_card_price(uuid, finish, use_reprints, vendor)
-          if p:
-            total_ev += p
-
-    # 2. Preconstructed decks (e.g. Signature Spellbook deck, Commander deck)
-    deck_cards_ev = 0.0
-    deck_card_count = 0
-    if 'deck' in contents and isinstance(contents['deck'], list):
-      for d in contents['deck']:
-        deck_name = d.get('name')
-        deck_set = d.get('set')
-        if deck_name and deck_set:
-          # Fetch cards in this deck from the database deck cards table or card associations
-          try:
-            self.cursor.execute(
-              """
-              SELECT c.uuid, dc.count, dc.isFoil
-              FROM deckCards dc
-              JOIN decks dk ON dc.deckId = dk.id
-              JOIN cards c ON dc.cardUuid = c.uuid
-              WHERE dk.name = %s AND dk.code = %s
-              """,
-              (deck_name, deck_set)
-            )
-            rows = self.cursor.fetchall()
-            for r in rows:
-              count = r.get('count', 1) or 1
-              finish = 'foil' if r.get('isFoil') else 'normal'
-              p, _ = self.get_card_price(r['uuid'], finish, use_reprints, vendor)
-              if p:
-                deck_cards_ev += p * count
-              deck_card_count += count
-          except Exception:
-            pass
-
-    # If the product logic specifies that 1 card is foil (replaces a card, not +1 bonus card)
-    # e.g., Signature Spellbooks where 1 of the 8 cards is upgraded to foil (7 normal + 1 foil = 8 cards total)
-    foil_replaces_card = contents.get('foil_replaces_card') or (
-      contents.get('note') and 'not +1' in contents.get('note', '').lower()
-    )
-    if foil_replaces_card and deck_card_count > 0:
-      # Each card has (deck_card_count - 1) / deck_card_count chance of being regular finish
-      total_ev += (deck_cards_ev * (deck_card_count - 1)) / deck_card_count
-    else:
-      total_ev += deck_cards_ev
-
-    # 3. Booster packs contained (e.g. Booster box, Bundles, Prerelease kits)
-    if 'pack' in contents and isinstance(contents['pack'], list):
-      for p in contents['pack']:
-        p_code = p.get('code') or 'play'
-        p_set = (p.get('set') or '').upper()
-        p_count = int(p.get('count', 1) or 1)
-        try:
-          self.cursor.execute(
-            """
-            SELECT ev_average 
-            FROM booster_ev_results 
-            WHERE set_code = %s AND booster_name = %s AND price_mode = %s AND vendor = %s
-            LIMIT 1
-            """,
-            (p_set, p_code, mode, vendor)
-          )
-          row = self.cursor.fetchone()
-          if row and row.get('ev_average'):
-            total_ev += float(row['ev_average']) * p_count
-          else:
-            self.cursor.execute(
-              """
-              SELECT ev_average 
-              FROM booster_ev_results 
-              WHERE set_code = %s AND price_mode = %s AND vendor = %s
-              ORDER BY ev_average DESC
-              LIMIT 1
-              """,
-              (p_set, mode, vendor)
-            )
-            row2 = self.cursor.fetchone()
-            if row2 and row2.get('ev_average'):
-              total_ev += float(row2['ev_average']) * p_count
-        except Exception:
-          pass
-
-    # 4. Variable weighted slots (e.g. Signature Spellbook 1-of-8 foil slot)
-    if 'variable' in contents and isinstance(contents['variable'], list):
-      for var_slot in contents['variable']:
-        configs = var_slot.get('configs', [])
-        total_weight = 0.0
-        weighted_sum = 0.0
-        for cfg in configs:
-          weight = 1.0
-          if 'variable_config' in cfg and cfg['variable_config']:
-            weight = float(cfg['variable_config'][0].get('weight', 1.0))
-          total_weight += weight
-
-          # Card option
-          if 'card' in cfg and cfg['card']:
-            c = cfg['card'][0]
-            uuid = c.get('uuid')
-            finish = 'foil' if c.get('foil') else 'normal'
-            if uuid:
-              p, _ = self.get_card_price(uuid, finish, use_reprints, vendor)
-              if p:
-                weighted_sum += p * weight
-
-          # Contained pack option inside variable slot
-          elif 'pack' in cfg and cfg['pack']:
-            p_obj = cfg['pack'][0]
-            p_code = p_obj.get('code') or 'play'
-            p_set = (p_obj.get('set') or '').upper()
-            try:
-              self.cursor.execute(
-                """
-                SELECT ev_average FROM booster_ev_results 
-                WHERE set_code = %s AND booster_name = %s AND price_mode = %s AND vendor = %s LIMIT 1
-                """,
-                (p_set, p_code, mode, vendor)
-              )
-              row = self.cursor.fetchone()
-              if row and row.get('ev_average'):
-                weighted_sum += float(row['ev_average']) * weight
-            except Exception:
-              pass
-
-        if total_weight > 0:
-          total_ev += weighted_sum / total_weight
-
-    return round(total_ev, 2)
-
 
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
