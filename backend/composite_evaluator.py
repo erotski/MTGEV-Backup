@@ -34,6 +34,27 @@ VENDORS = ["all", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "mana
 def load_data():
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "r", encoding="utf-8") as f:
         sealed_products = json.load(f)
+    
+    # Load overrides
+    overrides = {}
+    overrides_path = PUBLIC_DATA_DIR / "product_overrides.json"
+    if overrides_path.exists():
+        try:
+            with open(overrides_path, "r", encoding="utf-8") as f:
+                overrides = json.load(f)
+            print(f"  [INFO] Loaded {len(overrides)} product overrides.")
+        except Exception as e:
+            print(f"[WARN] Error reading product_overrides.json: {e}")
+    
+    # Apply overrides
+    for sp in sealed_products:
+        sp_id = sp.get("id") or sp.get("uuid")
+        if sp_id and sp_id in overrides:
+            print(f"  [INFO] Applying overrides for product: {sp.get('displayName')}")
+            # Simple deep update for contents
+            if "contents" in overrides[sp_id]:
+                sp["contents"] = overrides[sp_id]["contents"]
+
     with open(PUBLIC_DATA_DIR / "booster_ev.json", "r", encoding="utf-8") as f:
         booster_ev = json.load(f)
     

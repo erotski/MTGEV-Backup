@@ -124,7 +124,7 @@ const FALLBACK_PARENT_MAP: Record<string, string> = {
   MSC: 'MSH',
 
   // Star Trek
-  TRC: 'TRK',
+  TRK: 'TRK',
 };
 
 /**
