@@ -305,28 +305,26 @@ def export_all():
 
             # TCGplayer
             tcg = card_p.get('tcgplayer', {})
-            p_tcg = (tcg.get('foil') if want_foil else tcg.get('normal')) or tcg.get('foil') or tcg.get('normal')
+            p_tcg = tcg.get('foil') if want_foil else tcg.get('normal')
             if p_tcg:
                 res['tcgplayer'] = round(float(p_tcg), 2)
 
             # Card Kingdom
             ck = card_p.get('cardkingdom', {})
-            p_ck = (ck.get('foil') if want_foil else ck.get('normal')) or ck.get('foil') or ck.get('normal')
+            p_ck = ck.get('foil') if want_foil else ck.get('normal')
             if p_ck:
                 res['cardkingdom'] = round(float(p_ck), 2)
 
             # Cardmarket
             cm = card_p.get('cardmarket', {})
-            p_cm = (cm.get('foil') if want_foil else cm.get('normal')) or cm.get('foil') or cm.get('normal')
+            p_cm = cm.get('foil') if want_foil else cm.get('normal')
             if p_cm:
                 res['cardmarket'] = round(float(p_cm) * EUR_USD_RATE, 2)
                 res['cardmarketEur'] = round(float(p_cm), 2)
-            elif p_tcg:
-                res['cardmarket'] = round(float(p_tcg) * 0.94, 2)
 
             # Manapool
             mp = card_p.get('manapool', {})
-            p_mp = (mp.get('foil') if want_foil else mp.get('normal')) or mp.get('foil') or mp.get('normal')
+            p_mp = mp.get('foil') if want_foil else mp.get('normal')
             if p_mp:
                 res['manapool'] = round(float(p_mp), 2)
 
@@ -334,9 +332,6 @@ def export_all():
             if valid_vals:
                 res['all_cheapest'] = round(min(valid_vals), 2)
                 res['all_average'] = round(sum(valid_vals) / len(valid_vals), 2)
-            elif p_tcg:
-                res['all_cheapest'] = round(float(p_tcg), 2)
-                res['all_average'] = round(float(p_tcg), 2)
 
             return res
 

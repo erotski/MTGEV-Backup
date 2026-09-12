@@ -61,8 +61,6 @@ def main():
         for vendor in ["tcgplayer", "cardkingdom", "cardmarket"]:
             v_data = entry.get(vendor, {}).get("retail", {})
             price_dict = v_data.get("foil") if want_foil else v_data.get("normal")
-            if not price_dict:
-                price_dict = v_data.get("normal") or v_data.get("foil") or {}
             if price_dict:
                 latest_date = sorted(price_dict.keys())[-1]
                 val = float(price_dict[latest_date])
@@ -75,8 +73,6 @@ def main():
         valid_vals = [v for k, v in res.items() if k in ["tcgplayer", "cardkingdom", "cardmarket"] and v and v > 0]
         if valid_vals:
             res["all"] = round(sum(valid_vals) / len(valid_vals), 2)
-        else:
-            res["all"] = 0.05
         return res
 
     # Load precon_decks.json
@@ -128,7 +124,9 @@ def main():
             is_foil = c.get("isFoil", False) or ('foil' in c.get('finishes', []) and 'nonfoil' not in c.get('finishes', []))
 
             vendor_prices = resolve_card_prices(c_uuid, want_foil=is_foil)
-            unit_price = vendor_prices.get("tcgplayer") or vendor_prices.get("cardkingdom") or vendor_prices.get("cardmarket") or vendor_prices.get("all") or 0.05
+            unit_price = vendor_prices.get("all")
+            if unit_price is None:
+                continue
             unit_price = round(unit_price, 2)
             total_ev += unit_price * count
 

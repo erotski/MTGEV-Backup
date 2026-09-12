@@ -194,7 +194,7 @@ Audit files contain the exact sorted valid samples and the generated bucket mean
 Review risks:
 
 - The simulation is memory-heavy because all valid pack totals are retained until statistics are calculated.
-- Price resolution intentionally contains finish and vendor fallbacks. These affect data completeness and should be reviewed separately from curve generation.
+- Random booster card-slot price resolution intentionally contains finish and vendor borrowing. If a seller does not carry the exact card or finish in a randomly opened booster slot, the resolver borrows the nearest usable price from a neighboring finish or vendor so that booster coverage remains reasonably complete. This is the only accepted borrowing policy. It is distinct from synthetic curve generation, and its frequency, type, and source should remain explicit in booster status counts and audit output.
 - Some public helper methods still accept legacy `all` input for compatibility.
 
 Function-level review findings:
@@ -202,9 +202,9 @@ Function-level review findings:
 | Area | Current responsibility | Finding |
 |---|---|---|
 | `prefetch_cards` | Loads card metadata, direct prices, and lowest reprint prices | Correct pipeline boundary, but performs three separate batched query families for every new UUID set. |
-| `resolve_card_price` | Resolves named-vendor prices | Contains intentional finish and cross-vendor fallbacks. These should be measured and eventually made explicit per pricing policy. |
-| `resolve_card_price_global` | Resolves `all_cheapest` | Separate implementation duplicates parts of `resolve_card_price`; candidate for a shared resolution primitive. |
-| `resolve_card_price_average` | Resolves `all_average` | Averages only vendors discovered in the current booster card set. This is correct for available vendors, but missing sellers are silently excluded. |
+| `resolve_card_price` | Resolves named-vendor prices for random booster card slots | Uses the only accepted finish and cross-vendor borrowing policy when the exact seller/finish is unavailable. Preserve it for booster completeness, but measure the fallback type and source so borrowed prices remain distinguishable from exact prices. |
+| `resolve_card_price_global` | Resolves `all_cheapest` for random booster card slots | May borrow across finishes for booster completeness; it must not be generalized as a fallback policy for other data domains. Separate implementation duplicates parts of `resolve_card_price`; candidate for a shared resolution primitive. |
+| `resolve_card_price_average` | Resolves `all_average` for random booster card slots | Averages only vendors discovered in the current booster card set. Missing sellers are excluded from the average; they are not borrowed or substituted. |
 | `load_booster_config_from_db` | Reads weighted variants, contents, sheets, and weighted cards | Authoritative booster configuration loader. Keep. |
 | `simulate_and_store` | Builds matrices, runs 5,000 draws, calculates summaries/buckets, writes MySQL, writes audit files | Too many responsibilities in one method. Highest-priority refactor target. |
 | `get_card_price` | Public helper for sealed-product EV | Removed after caller search found no external users. |
@@ -400,11 +400,11 @@ The app should read these files as immutable published snapshots. It should not 
 
 ## 7. Fallback and Synthetic Logic Inventory
 
-High-risk fallback categories:
+Fallback categories requiring explicit policy and observability:
 
 - Legacy vendor `all` aliases.
-- Vendor substitution when a requested vendor row is missing.
-- Finish substitution between normal, foil, and etched.
+- Vendor substitution during random booster card-slot pricing when a requested vendor row is missing (intentional booster-only borrowing).
+- Finish substitution during random booster card-slot pricing between normal, foil, and etched (intentional booster-only borrowing).
 - Product market-price estimates when contents are unresolved.
 - Generic product-title packaging inference.
 - Synthetic EV multipliers for sample/prerelease/unknown booster types.
@@ -414,9 +414,9 @@ High-risk fallback categories:
 
 Recommended rule:
 
-> Missing authoritative data should produce an explicit missing-data result, not an invented value.
+> Only random booster card-slot pricing may produce an explicit borrowed-data result when a documented neighboring price is available. Every other data domain must remain exact or unresolved; it must not borrow or invent a value.
 
-Some fallbacks are still needed for old data coverage, but each should be documented, measured, and eventually removed or isolated behind an explicit compatibility mode.
+Neighboring vendor and finish borrowing are intentional only inside random booster card-slot resolution. Product EV, sealed-product prices, metadata, chase-card exports, preconstructed-deck data, and other outputs must not borrow or invent values; unresolved data must remain missing or fail validation. Existing non-booster fallbacks should be removed or replaced with explicit unresolved states.
 
 ## 8. Recommended Cleanup Order
 
