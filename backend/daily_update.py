@@ -28,6 +28,15 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+REQUIRED_OUTPUTS = (
+    "sets.json",
+    "sealed_products.json",
+    "booster_ev.json",
+    "arbitrage_leaderboard.json",
+    "single_card_prices.json",
+    "product_chase_cards.json",
+)
+
 SCRIPTS = [
     ("download.py",                      "Download mtgjson data + sync MySQL"),
     ("download_prices_today.py",         "Stream AllPricesToday.sql into MySQL"),
@@ -90,6 +99,21 @@ def run_script(script_name: str, description: str) -> tuple[bool, float, int, st
         return False, duration, result.returncode, err_snippet
 
 
+def validate_output_bundle() -> tuple[bool, str]:
+    """Reject incomplete or malformed output before Git publication."""
+    data_dir = Path(__file__).parent.parent / "public" / "data"
+    for filename in REQUIRED_OUTPUTS:
+        path = data_dir / filename
+        if not path.exists() or path.stat().st_size == 0:
+            return False, f"Missing or empty output: {path}"
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                json.load(handle)
+        except (OSError, json.JSONDecodeError) as error:
+            return False, f"Invalid JSON in {path}: {error}"
+    return True, ""
+
+
 def run_all() -> bool:
     start_dt = datetime.now(timezone.utc)
     log.info("═══ Daily update started at %s ═══", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
@@ -115,10 +139,22 @@ def run_all() -> bool:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "errorTrace": err_msg or f"Process exited with non-zero code {exit_code}"
             })
-            # Fail-fast on prerequisite failure
-            if script in ("download.py", "download_prices_today.py", "lowest_prices.py"):
-                log.error("Critical prerequisite %s failed. Aborting downstream pipeline.", script)
-                break
+            # Never publish a partial dataset. Every stage is required for a
+            # coherent set of exported JSON files.
+            log.error("Required stage %s failed. Aborting before publication.", script)
+            break
+
+    if not failures:
+        outputs_valid, output_error = validate_output_bundle()
+        if not outputs_valid:
+            failures.append("output_bundle")
+            error_records.append({
+                "stage": "output_bundle",
+                "exitCode": 1,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "errorTrace": output_error,
+            })
+            log.error("Output bundle validation failed. Aborting before publication: %s", output_error)
 
     total_duration = round(time.time() - overall_t0, 2)
     overall_status = "failed" if failures else "success"

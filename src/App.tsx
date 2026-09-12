@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CHASE_CARDS_BY_SET, INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
+import { INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
 import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, EvBasis } from './types';
 import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
@@ -64,19 +64,11 @@ export default function App() {
 
   // Flattened Booster EV records for exploration
   const allBoosterRecords = Object.values(boosterEvMap).flat();
-  const currentChaseCards = CHASE_CARDS_BY_SET[selectedSetCode] || CHASE_CARDS_BY_SET['MH3'] || [];
-
   const handleSelectSetFromArbitrage = (setCode: string, productUuid?: string) => {
     setSelectedSetCode(resolveToMainSetCode(setCode));
     if (productUuid) {
       setInitialProductId(productUuid);
     }
-    setActiveTab('explorer');
-  };
-
-  const handleSelectProductFromChase = (setCode: string, productId: string) => {
-    setSelectedSetCode(resolveToMainSetCode(setCode));
-    setInitialProductId(productId);
     setActiveTab('explorer');
   };
 
@@ -137,18 +129,6 @@ export default function App() {
                 Booster EV & Chase Cards
               </button>
               <button
-                id="tab-chase-btn"
-                onClick={() => setActiveTab('chase')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'chase'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Award className="w-3.5 h-3.5" />
-                Special Chases
-              </button>
-              <button
                 id="tab-admin-btn"
                 onClick={() => setActiveTab('admin')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
@@ -159,6 +139,16 @@ export default function App() {
               >
                 <Sliders className="w-3.5 h-3.5" />
                 Admin Portal
+              </button>
+              <button
+                id="tab-chase-btn"
+                onClick={() => setActiveTab('chase')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'chase' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                Special Chases
               </button>
             </div>
           </div>
@@ -188,7 +178,6 @@ export default function App() {
             onSelectSetCode={setSelectedSetCode}
             availableSets={availableSets}
             boosterRecords={allBoosterRecords}
-            chaseCards={currentChaseCards}
             priceMode={priceMode}
             onPriceModeChange={setPriceMode}
             vendor={vendor}
@@ -200,12 +189,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'chase' && (
-          <SpecialChaseShowcase
-            onSelectProduct={handleSelectProductFromChase}
-          />
-        )}
-
         {activeTab === 'admin' && (
           <AdminPortal
             onNavigateToExplorer={handleNavigateToExplorerFromAdmin}
@@ -213,6 +196,18 @@ export default function App() {
             onVendorChange={setVendor}
             priceMode={priceMode}
             onPriceModeChange={setPriceMode}
+          />
+        )}
+
+        {activeTab === 'chase' && (
+          <SpecialChaseShowcase
+            onSelectProduct={(setCode, productId) => {
+              setSelectedSetCode(resolveToMainSetCode(setCode));
+              setInitialProductId(productId);
+              setActiveTab('explorer');
+            }}
+            vendor={vendor}
+            priceMode={priceMode}
           />
         )}
       </main>

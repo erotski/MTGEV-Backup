@@ -239,22 +239,6 @@ export type BoosterTypeCategory =
   | 'jumpstart'
   | 'tournament_deck';
 
-export interface PackTemplate {
-  id: string;
-  name: string;
-  category: 'per_set' | 'booster_type' | 'block';
-  blockName?: string;
-  boosterType: BoosterTypeCategory;
-  setCode: string;
-  setName: string;
-  era: EraCategory;
-  description: string;
-  defaultSlots: CustomSlot[];
-  defaultInclusions: AncillaryInclusions;
-  defaultDuplicateLimit: DuplicateLimitMode;
-  packCostEstimate: number;
-}
-
 export interface CustomCube {
   id: string;
   name: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, ChaseCard, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, EvBasis } from '../types';
+import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
 import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
@@ -36,7 +36,6 @@ interface BoosterDetailExplorerProps {
   onSelectSetCode: (code: string) => void;
   availableSets: SetOption[];
   boosterRecords: BoosterEVRecord[];
-  chaseCards: ChaseCard[];
   priceMode: PriceMode;
   onPriceModeChange: (mode: PriceMode) => void;
   vendor: Vendor;
@@ -65,7 +64,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   onSelectSetCode,
   availableSets,
   boosterRecords,
-  chaseCards,
   priceMode,
   onPriceModeChange,
   vendor,
@@ -1124,7 +1122,17 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            {/* Absolute Minimum, independent of the selected EV basis */}
+            <div id="card-stat-absolute-min" className="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm hover:border-rose-300 transition">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Absolute Min</span>
+                <AlertCircle className="w-4 h-4 text-rose-500" />
+              </div>
+              <div className="text-3xl font-black font-mono tracking-tight text-rose-600">${productMin.toFixed(2)}</div>
+              <p className="text-xs text-slate-500 mt-1.5">Lowest observed outcome</p>
+            </div>
+
             {/* Card 1: Bottom 5% Floor */}
             <div
               id="card-stat-floor"
@@ -1134,9 +1142,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {isPreconProduct ? 'Dud Floor (0% Risk)' : isMixedProduct ? 'Bottom 5% Floor (Base + Packs)' : 'Bottom 5% Floor'}
                 </span>
-                <AlertCircle className="w-4 h-4 text-rose-500" />
+                <AlertCircle className="w-4 h-4 text-orange-500" />
               </div>
-              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-rose-600'}`}>
+              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-orange-600'}`}>
                 ${productMin5.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
@@ -1155,7 +1163,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   </span>
                 ) : (
                   productPacksCount > 1 && (
-                    <span className="font-mono font-semibold text-rose-700">
+                    <span className="font-mono font-semibold text-orange-700">
                       ${activeBooster.evMin5.toFixed(2)} / pack
                     </span>
                   )
@@ -1172,9 +1180,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {isPreconProduct ? 'Median Singles Value' : isMixedProduct ? 'Mid 90% EV (Base + Median)' : 'Mid 90% EV'}
                 </span>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <TrendingUp className="w-4 h-4 text-blue-500" />
               </div>
-              <div className="text-3xl font-black text-emerald-600 font-mono tracking-tight">
+              <div className="text-3xl font-black text-blue-600 font-mono tracking-tight">
                 ${productMid90Ev.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
@@ -1186,14 +1194,14 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     : '5% trimmed mean'}
                 </span>
                 {isPreconProduct ? (
-                  <span className="font-mono font-semibold text-emerald-700">0% Variance</span>
+                  <span className="font-mono font-semibold text-blue-700">0% Variance</span>
                 ) : isMixedProduct ? (
                   <span className="font-mono font-semibold text-emerald-700">
                     Expected Normal
                   </span>
                 ) : (
                   productPacksCount > 1 && (
-                    <span className="font-mono font-semibold text-emerald-700">
+                    <span className="font-mono font-semibold text-blue-700">
                       ${activeBooster.evMid90.toFixed(2)} / pack
                     </span>
                   )
@@ -1211,15 +1219,15 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   {isPreconProduct
                     ? 'Precon Singles Total'
                     : isMixedProduct
-                    ? `Total Mixed Product EV (${getBasisLabel(evBasis)})`
+                    ? 'Total Mixed Product Average EV'
                     : productPacksCount > 1
-                    ? `${cleanProductName(activeProduct?.displayName || 'Product')} EV (${getBasisLabel(evBasis)})`
-                    : `Booster Pack EV (${getBasisLabel(evBasis)})`}
+                    ? `${cleanProductName(activeProduct?.displayName || 'Product')} Average EV`
+                    : 'Booster Pack Average EV'}
                 </span>
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <Sparkles className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">
-                ${productEstimatedEv.toFixed(2)}
+                ${productAvgEv.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
                 <span>
@@ -1242,7 +1250,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     100% Fixed Collation
                   </span>
                 ) : isMixedProduct ? (
-                  <span className="font-mono font-semibold text-indigo-700">
+                  <span className="font-mono font-semibold text-emerald-700">
                     Mixed Collation
                   </span>
                 ) : (
@@ -1264,9 +1272,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {isPreconProduct ? 'Singles Value Ceiling' : isMixedProduct ? 'Top 5% Ceiling (Base + God Pack)' : 'Top 5% Ceiling'}
                 </span>
-                <BarChart3 className="w-4 h-4 text-indigo-500" />
+                <BarChart3 className="w-4 h-4 text-amber-900" />
               </div>
-              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-indigo-600'}`}>
+              <div className={`text-3xl font-black font-mono tracking-tight ${isPreconProduct ? 'text-slate-900' : 'text-amber-900'}`}>
                 ${productMax5.toFixed(2)}
               </div>
               <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
@@ -1280,7 +1288,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                 {isPreconProduct ? (
                   <span className="font-mono font-semibold text-slate-700">Fixed List</span>
                 ) : isMixedProduct ? (
-                  <span className="font-mono font-semibold text-indigo-700">
+                  <span className="font-mono font-semibold text-amber-900">
                     Chase Upside
                   </span>
                 ) : (
@@ -1291,6 +1299,16 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   )
                 )}
               </p>
+            </div>
+
+            {/* Absolute Maximum, independent of the selected EV basis */}
+            <div id="card-stat-absolute-max" className="bg-white rounded-2xl p-5 border border-slate-300 shadow-sm hover:border-slate-400 transition">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Absolute Max</span>
+                <BarChart3 className="w-4 h-4 text-slate-900" />
+              </div>
+              <div className="text-3xl font-black font-mono tracking-tight text-slate-900">${productMax.toFixed(2)}</div>
+              <p className="text-xs text-slate-500 mt-1.5">Highest observed outcome</p>
             </div>
           </div>
 

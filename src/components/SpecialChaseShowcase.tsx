@@ -507,9 +507,11 @@ const SPECIAL_CHASE_CARDS: SpecialChaseCard[] = [
 
 interface SpecialChaseShowcaseProps {
   onSelectProduct: (setCode: string, productId: string) => void;
+  vendor: Vendor;
+  priceMode: PriceMode;
 }
 
-export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSelectProduct }) => {
+export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSelectProduct, vendor, priceMode }) => {
   const [selectedCardId, setSelectedCardId] = useState<string>(SPECIAL_CHASE_CARDS[0].id);
   const [selectedVariantSuffix, setSelectedVariantSuffix] = useState<string>('f');
 
@@ -530,11 +532,18 @@ export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSe
     }
   }, [selectedCardId, activeCard]);
 
-  // Dynamic pricing based on active variant or fallback to base prices
-  const tcgplayerPrice = activeVariant ? activeVariant.tcgPrice : activeCard.prices.tcgplayer;
-  const cardmarketPrice = activeVariant ? activeVariant.tcgPrice * 0.88 : activeCard.prices.cardmarket;
-  const cardkingdomPrice = activeVariant ? activeVariant.tcgPrice * 1.01 : activeCard.prices.cardkingdom;
-  const manapoolPrice = activeVariant ? activeVariant.tcgPrice * 0.95 : activeCard.prices.manapool;
+  // Curated showcase data has vendor prices only for the base card. Variant
+  // records expose TCGplayer only, so other vendor values remain unavailable.
+  const curatedVendor = ['tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)
+    ? vendor as keyof typeof activeCard.prices
+    : null;
+  const vendorPrice = activeVariant
+    ? vendor === 'tcgplayer' ? activeVariant.tcgPrice : null
+    : curatedVendor ? activeCard.prices[curatedVendor] : null;
+  const tcgplayerPrice = activeVariant?.tcgPrice ?? activeCard.prices.tcgplayer;
+  const cardmarketPrice = activeVariant ? null : activeCard.prices.cardmarket;
+  const cardkingdomPrice = activeVariant ? null : activeCard.prices.cardkingdom;
+  const manapoolPrice = activeVariant ? null : activeCard.prices.manapool;
 
   const cardImageUrl = activeVariant ? activeVariant.imageUrl : activeCard.fallbackImgUrl;
   const cardCollectorNumber = activeVariant ? activeVariant.number : (activeCard.number || '???');
@@ -602,9 +611,11 @@ export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSe
                 {activeCard.id === 'golden-chocobo' || activeCard.id === 'black-lotus' || activeCard.id === 'vintage-reserved-list' || activeCard.id === 'one-ring' ? 'Estimated Value' : 'TCG Market Price'}
               </span>
               <span className="text-base font-black text-amber-300 font-mono">
-                {tcgplayerPrice >= 1000000
-                  ? `$${(tcgplayerPrice / 1000000).toFixed(1)}M`
-                  : `$${tcgplayerPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                {vendorPrice == null
+                  ? 'Unavailable'
+                  : vendorPrice >= 1000000
+                    ? `$${(vendorPrice / 1000000).toFixed(1)}M`
+                    : `$${vendorPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
               </span>
             </div>
           </div>
@@ -643,15 +654,15 @@ export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSe
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Cardmarket:</span>
-                  <span className="font-bold text-slate-900">€{cardmarketPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-slate-900">{cardmarketPrice == null ? 'Unavailable' : `€${cardmarketPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Card Kingdom:</span>
-                  <span className="font-bold text-slate-900">${cardkingdomPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-slate-900">{cardkingdomPrice == null ? 'Unavailable' : `$${cardkingdomPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Manapool:</span>
-                  <span className="font-bold text-slate-900">${manapoolPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-slate-900">{manapoolPrice == null ? 'Unavailable' : `$${manapoolPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}</span>
                 </div>
               </div>
             </div>
