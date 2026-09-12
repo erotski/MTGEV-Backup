@@ -5,6 +5,7 @@ from pathlib import Path
 import time
 import mysql.connector
 import numpy as np
+from ev_statistics import empirical_quantiles
 from config import DB_CONFIG
 
 
@@ -640,12 +641,8 @@ class DatabaseBoosterEVEngine:
           ev_min5 = round(float(np.mean(s_arr[:trim])), 2)
           ev_max5 = round(float(np.mean(s_arr[-trim:])), 2)
 
-          # Calculate 100 quantiles from 5,000 simulations (exact 1% quantile buckets)
-          n = len(s_arr)
-          quantiles = [
-              round(float(s_arr[min(n - 1, max(0, int((p / 100.0) * n) - 1))]), 2)
-              for p in range(1, 101)
-          ]
+          # Persist buckets derived directly from the simulated pack samples.
+          quantiles = empirical_quantiles(s_arr)
         else:
           ev_avg = ev_mid90 = ev_min = ev_max = ev_min5 = ev_max5 = 0.0
           quantiles = []

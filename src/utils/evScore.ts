@@ -41,14 +41,15 @@ export function calculateEvScore(
 }
 
 export function simulateCompositeQuantiles(
-  packItems: Array<{ count: number; quantiles?: number[]; evAverage?: number }>,
-  iterations: number = 5000
+  packItems: Array<{ count: number; quantiles?: number[]; evAverage?: number; fixed?: boolean }>,
+  iterations: number = 5000,
+  variableSlots: Array<Array<{ probability: number; value: number }>> = []
 ): number[] | undefined {
-  if (!packItems || packItems.length === 0) return undefined;
+  if ((!packItems || packItems.length === 0) && variableSlots.length === 0) return undefined;
 
-  // Strict empirical check: Every booster pack item MUST have authentic 100-sample quantiles
+  // Random pack items require empirical quantiles; fixed inclusions use their deterministic EV.
   for (const item of packItems) {
-    if (!item.quantiles || item.quantiles.length < 100) {
+    if (!item.fixed && (!item.quantiles || item.quantiles.length < 100)) {
       console.warn('Simulation Error: Missing empirical quantiles for pack item in composite simulation.', item);
       return undefined;
     }
@@ -60,11 +61,25 @@ export function simulateCompositeQuantiles(
     let iterationSum = 0;
 
     for (const item of packItems) {
+      if (item.fixed) {
+        iterationSum += (item.evAverage || 0) * item.count;
+        continue;
+      }
       const qLen = item.quantiles!.length;
       for (let c = 0; c < item.count; c++) {
         const randomIndex = Math.floor(Math.random() * qLen);
         iterationSum += item.quantiles![randomIndex];
       }
+    }
+
+    for (const options of variableSlots) {
+      const randomValue = Math.random();
+      let cumulativeProbability = 0;
+      const selected = options.find((option) => {
+        cumulativeProbability += option.probability;
+        return randomValue < cumulativeProbability;
+      });
+      iterationSum += selected?.value ?? options[options.length - 1]?.value ?? 0;
     }
 
     sums[i] = iterationSum;

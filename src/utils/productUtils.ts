@@ -1437,7 +1437,7 @@ export function resolveRecursiveProductAudit(
   }
 
   // Gather all items for composite simulation (flattening nested childBreakdowns)
-  const simulationItems: Array<{ count: number; quantiles?: number[]; evAverage?: number }> = [];
+  const simulationItems: Array<{ count: number; quantiles?: number[]; evAverage?: number; fixed?: boolean }> = [];
   
   // Direct pack items
   for (const p of packItems) {
@@ -1446,10 +1446,10 @@ export function resolveRecursiveProductAudit(
   
   // Precon decks and fixed items (no variance)
   for (const d of deckItems) {
-    simulationItems.push({ count: d.count, evAverage: d.unitSinglesEv });
+    simulationItems.push({ count: d.count, evAverage: d.unitSinglesEv, fixed: true });
   }
   for (const c of cardItems) {
-    simulationItems.push({ count: c.count, evAverage: c.unitEv });
+    simulationItems.push({ count: c.count, evAverage: c.unitEv, fixed: true });
   }
 
   // Recursively add nested sealed items' quantiles
@@ -1458,11 +1458,18 @@ export function resolveRecursiveProductAudit(
       // If the child breakdown has already simulated composite quantiles, we can just treat it as a single unit with those quantiles
       simulationItems.push({ count: s.count, quantiles: s.childBreakdown.quantiles, evAverage: s.unitEv });
     } else {
-      simulationItems.push({ count: s.count, evAverage: s.unitEv });
+      simulationItems.push({ count: s.count, evAverage: s.unitEv, fixed: true });
     }
   }
+
+  const variableSlots = variableItems.map((slot) =>
+    slot.configs.map((config) => ({
+      probability: config.probabilityPct / 100,
+      value: config.configEv,
+    }))
+  );
   
-  let quantiles = simulateCompositeQuantiles(simulationItems, 5000);
+  let quantiles = simulateCompositeQuantiles(simulationItems, 5000, variableSlots);
 
   return {
     totalCards,

@@ -150,8 +150,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     return byVendor;
   }, [allSetBoosters, activeBooster, priceMode]);
 
+  const isSingleBoosterLeaf =
+    !isPreconstructed &&
+    !isMixedProduct &&
+    effectivePackItems.length === 1 &&
+    effectivePackItems[0].count === 1;
+
   // Generate 100 percentile data points (1% to 100%)
-  // Uses authentic 100-sample empirical quantiles from 5,000 pack simulation when available!
+  // Leaf boosters use the authoritative booster simulation directly.
   const allCurveData = useMemo(() => {
     const points: Array<{
       percentile: string;
@@ -164,13 +170,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       manapool: number;
     }> = [];
 
-    // Check if authentic 100-sample quantiles exist on vendor records or activeBooster
-    const hasSimulatedQuantiles =
-      (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) ||
-      ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].some(
-        (v) => vendorRecords[v]?.quantiles && vendorRecords[v]!.quantiles!.length >= 100
-      );
-
     // Map to hold simulated 100-bucket quantiles per vendor
     const vendorSimulations: Record<string, number[]> = {};
     const vendorsToSim = ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
@@ -181,7 +180,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     );
 
     if (!isPreconstructed) {
-      if (hasPrecomputedComposite) {
+      if (hasPrecomputedComposite && !isSingleBoosterLeaf) {
         // Fast path: Authentic 10,000-draw precomputed quantiles exist on the product
         vendorsToSim.forEach((v) => {
           const qArr =
@@ -196,7 +195,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             }
           }
         });
-      } else if (precomputedQuantiles && precomputedQuantiles.length >= 100) {
+      } else if (precomputedQuantiles && precomputedQuantiles.length >= 100 && !isSingleBoosterLeaf) {
         // Direct precomputed single vendor empirical quantiles
         vendorsToSim.forEach((v) => {
           vendorSimulations[v] = priceMode === 'cheapest_reprint' 
@@ -352,7 +351,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     baseOffset,
     effectivePackItems,
     allSetBoosters,
-    boosterEvMap
+    boosterEvMap,
+    isSingleBoosterLeaf
   ]);
 
   const currentVendorKey = useMemo(() => {

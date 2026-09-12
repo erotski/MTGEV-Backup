@@ -19,6 +19,8 @@ import re
 import time
 from pathlib import Path
 
+from ev_statistics import empirical_quantiles
+
 try:
     import numpy as np
     HAS_NUMPY = True
@@ -385,8 +387,7 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
         composite_draws.sort()
         mean_val = float(np.mean(composite_draws))
         std_val = float(np.std(composite_draws))
-        percentiles = np.percentile(composite_draws, np.linspace(1, 100, 100))
-        quantiles = [round(float(x), 2) for x in percentiles]
+        quantiles = empirical_quantiles(composite_draws)
         
         return {
             "mean": round(mean_val, 2),
@@ -452,7 +453,7 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
         mean_val = sum(totals) / n
         var_val = sum((x - mean_val) ** 2 for x in totals) / n
         std_val = var_val ** 0.5
-        quantiles = [round(totals[min(n - 1, max(0, int((p / 100.0) * n) - 1))], 2) for p in range(1, 101)]
+        quantiles = empirical_quantiles(totals)
 
         return {
             "mean": round(mean_val, 2),
