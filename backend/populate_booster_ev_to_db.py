@@ -6,7 +6,7 @@ import time
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
-from config import DB_CONFIG
+from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG
 
 
 def convert_time(seconds: float) -> str:
@@ -37,11 +37,12 @@ def is_ignored_sheet(sheet_name: str) -> bool:
 
 class DatabaseBoosterEVEngine:
 
-  def __init__(self, db_config, sample_size=5000, hi_lo_ratio=0.05):
+  def __init__(self, db_config, sample_size=5000, hi_lo_ratio=0.05, audit_config=None):
     self.db_config = db_config
     self.sample_size = sample_size
     self.hi_lo_ratio = hi_lo_ratio
     self.trim_count = max(1, int(sample_size * hi_lo_ratio))
+    self.audit_config = audit_config
 
     self.card_cache = {}
     self.price_cache = {}
@@ -480,7 +481,8 @@ class DatabaseBoosterEVEngine:
       sellers.update(self.price_cache.get(u, {}).keys())
     sellers = sorted([s for s in sellers if s])
     if not sellers:
-      sellers = ['tcgplayer', 'cardmarket']
+      print(f'   -> No named vendor price data for {set_code} {booster_name}; skipping simulation')
+      return None
 
     # Pre-compile price arrays for all modes & vendors
     sheet_data = {}
@@ -657,7 +659,7 @@ class DatabaseBoosterEVEngine:
     # Remove pre-migration aggregate rows so legacy `all` records cannot
     # compete with the canonical all_cheapest rows during export.
     self.cursor.execute(
-      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all'",
+      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all_cheapest'",
       (set_code, booster_name),
     )
 
@@ -671,11 +673,6 @@ class DatabaseBoosterEVEngine:
           np_arr = np.array(arr)
           s_arr = np.sort(np_arr)
           
-          if mode.lower() == 'direct' and v.lower() == 'tcgplayer' and ((set_code.upper() == 'ISD' and booster_name.lower() == 'draft') or (set_code.upper() == 'SNC' and booster_name.lower() == 'set')):
-              print(f"=== {set_code.upper()} {booster_name.upper()} TCGPLAYER 5000 SAMPLES ===")
-              print(__import__('json').dumps(s_arr.tolist()))
-              print("=======================================")
-          
           trim = max(1, int(len(s_arr) * self.hi_lo_ratio))
           mid = s_arr[trim:-trim] if len(s_arr) > trim * 2 else s_arr
 
@@ -688,6 +685,9 @@ class DatabaseBoosterEVEngine:
 
           # Persist buckets derived directly from the simulated pack samples.
           quantiles = empirical_quantiles(s_arr)
+
+          if self._matches_audit(set_code, booster_name, mode, v):
+            self._write_audit(set_code, booster_name, mode, v, s_arr.tolist(), quantiles)
         else:
           ev_avg = ev_mid90 = ev_min = ev_max = ev_min5 = ev_max5 = 0.0
           quantiles = []
@@ -738,6 +738,27 @@ class DatabaseBoosterEVEngine:
         'complete_pct': direct_all[10],
         'exact_pct': direct_all[11],
     }
+
+  def _matches_audit(self, set_code, booster_name, price_mode, vendor):
+    if not self.audit_config or not self.audit_config.get('enabled'):
+      return False
+    return True
+
+  def _write_audit(self, set_code, booster_name, price_mode, vendor, samples, buckets):
+    output_dir = Path(self.audit_config['output_dir'])
+    output_path = output_dir / f'{set_code}_{booster_name}_{price_mode}_{vendor}'.lower()
+    output_path = output_path.with_suffix('.json')
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps({
+        'setCode': set_code,
+        'boosterName': booster_name,
+        'priceMode': price_mode,
+        'vendor': vendor,
+        'sampleCount': len(samples),
+        'samples': samples,
+        'bucketMeans': buckets,
+    }, indent=2), encoding='utf-8')
+    print(f'   -> Wrote audit samples to {output_path}')
 
   def get_card_price(self, uuid: str, requested_finish: str, use_reprints: bool, vendor: str = 'all_cheapest'):
     """Helper to resolve card price with on-demand prefetch if needed."""
@@ -897,10 +918,10 @@ class DatabaseBoosterEVEngine:
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
-def run_full_pipeline(sample_size: int = 5000, target_set: str = None):
+def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None):
   db_config = DB_CONFIG
 
-  engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size)
+  engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size, audit_config=audit_config)
 
   # Fetch distinct paper booster configurations
   query = """
@@ -971,5 +992,16 @@ if __name__ == '__main__':
       default=None,
       help='Filter to specific setCode (e.g. DFT)',
   )
+  parser.add_argument('--audit-set', type=str, default=None, help='Capture one booster audit run for this set')
+  parser.add_argument('--audit-booster', type=str, default='draft', help='Booster name for --audit-set')
+  parser.add_argument('--audit-vendor', type=str, default='all_cheapest', help='Vendor for --audit-set')
+  parser.add_argument('--audit-price-mode', type=str, default='direct', choices=['direct', 'cheapest_reprint'])
+  parser.add_argument('--audit-output', type=str, default='backend/audit/booster_samples.json')
   args = parser.parse_args()
-  run_full_pipeline(sample_size=args.sample_size, target_set=args.set)
+  audit_config = {
+      'enabled': AUDIT_ENABLED or bool(args.audit_set),
+      'output_dir': AUDIT_OUTPUT_DIR,
+  }
+  if args.audit_output and args.audit_set:
+    audit_config['output_dir'] = str(Path(args.audit_output).parent)
+  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config)

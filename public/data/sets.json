@@ -40,12 +40,24 @@
     "name": "Reality Fracture",
     "releaseDate": "2026-10-02",
     "type": "expansion",
-    "baseSetSize": 44,
-    "totalSetSize": 45,
+    "baseSetSize": 49,
+    "totalSetSize": 49,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 1,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "SLZ",
+    "name": "The Zeta Set",
+    "releaseDate": "2026-09-02",
+    "type": "box",
+    "baseSetSize": 363,
+    "totalSetSize": 363,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
   },
   {
     "code": "HOB",
@@ -54,6 +66,18 @@
     "type": "expansion",
     "baseSetSize": 193,
     "totalSetSize": 321,
+    "hasPlayBooster": 1,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 1
+  },
+  {
+    "code": "MSH",
+    "name": "Marvel Super Heroes",
+    "releaseDate": "2026-06-26",
+    "type": "expansion",
+    "baseSetSize": 296,
+    "totalSetSize": 453,
     "hasPlayBooster": 1,
     "hasCollectorBooster": 1,
     "hasBundle": 1,
@@ -72,12 +96,12 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "MSH",
-    "name": "Marvel Super Heroes",
-    "releaseDate": "2026-06-26",
+    "code": "SOS",
+    "name": "Secrets of Strixhaven",
+    "releaseDate": "2026-04-24",
     "type": "expansion",
-    "baseSetSize": 296,
-    "totalSetSize": 453,
+    "baseSetSize": 281,
+    "totalSetSize": 368,
     "hasPlayBooster": 1,
     "hasCollectorBooster": 1,
     "hasBundle": 1,
@@ -93,18 +117,6 @@
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
-    "code": "SOS",
-    "name": "Secrets of Strixhaven",
-    "releaseDate": "2026-04-24",
-    "type": "expansion",
-    "baseSetSize": 281,
-    "totalSetSize": 368,
-    "hasPlayBooster": 1,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
     "hasCommanderDecks": 1
   },
   {
@@ -132,18 +144,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "ECC",
-    "name": "Lorwyn Eclipsed Commander",
-    "releaseDate": "2026-01-23",
-    "type": "commander",
-    "baseSetSize": 176,
-    "totalSetSize": 176,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "ECL",
     "name": "Lorwyn Eclipsed",
     "releaseDate": "2026-01-23",
@@ -156,16 +156,16 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "TLE",
-    "name": "Avatar: The Last Airbender Eternal",
-    "releaseDate": "2025-11-21",
-    "type": "eternal",
-    "baseSetSize": 0,
-    "totalSetSize": 317,
+    "code": "ECC",
+    "name": "Lorwyn Eclipsed Commander",
+    "releaseDate": "2026-01-23",
+    "type": "commander",
+    "baseSetSize": 176,
+    "totalSetSize": 176,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
-    "hasCommanderDecks": 0
+    "hasCommanderDecks": 1
   },
   {
     "code": "TLA",
@@ -177,6 +177,18 @@
     "hasPlayBooster": 1,
     "hasCollectorBooster": 1,
     "hasBundle": 1,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "TLE",
+    "name": "Avatar: The Last Airbender Eternal",
+    "releaseDate": "2025-11-21",
+    "type": "eternal",
+    "baseSetSize": 0,
+    "totalSetSize": 317,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
     "hasCommanderDecks": 0
   },
   {
@@ -216,18 +228,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "FIN",
-    "name": "Final Fantasy",
-    "releaseDate": "2025-06-13",
-    "type": "expansion",
-    "baseSetSize": 309,
-    "totalSetSize": 598,
-    "hasPlayBooster": 1,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "FIC",
     "name": "Final Fantasy Commander",
     "releaseDate": "2025-06-13",
@@ -238,6 +238,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "FIN",
+    "name": "Final Fantasy",
+    "releaseDate": "2025-06-13",
+    "type": "expansion",
+    "baseSetSize": 309,
+    "totalSetSize": 598,
+    "hasPlayBooster": 1,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
   },
   {
     "code": "TDM",
@@ -264,18 +276,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "DFT",
-    "name": "Aetherdrift",
-    "releaseDate": "2025-02-14",
-    "type": "expansion",
-    "baseSetSize": 291,
-    "totalSetSize": 553,
-    "hasPlayBooster": 1,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "DRC",
     "name": "Aetherdrift Commander",
     "releaseDate": "2025-02-14",
@@ -286,6 +286,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "DFT",
+    "name": "Aetherdrift",
+    "releaseDate": "2025-02-14",
+    "type": "expansion",
+    "baseSetSize": 291,
+    "totalSetSize": 553,
+    "hasPlayBooster": 1,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
   },
   {
     "code": "INR",
@@ -312,6 +324,18 @@
     "hasCommanderDecks": 0
   },
   {
+    "code": "FDC",
+    "name": "Foundations Commander",
+    "releaseDate": "2024-11-15",
+    "type": "commander",
+    "baseSetSize": 3,
+    "totalSetSize": 3,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
+  },
+  {
     "code": "J25",
     "name": "Foundations Jumpstart",
     "releaseDate": "2024-11-15",
@@ -324,12 +348,12 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "FDC",
-    "name": "Foundations Commander",
-    "releaseDate": "2024-11-15",
+    "code": "DSC",
+    "name": "Duskmourn: House of Horror Commander",
+    "releaseDate": "2024-09-27",
     "type": "commander",
-    "baseSetSize": 3,
-    "totalSetSize": 3,
+    "baseSetSize": 40,
+    "totalSetSize": 373,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
@@ -348,12 +372,12 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "DSC",
-    "name": "Duskmourn: House of Horror Commander",
-    "releaseDate": "2024-09-27",
+    "code": "BLC",
+    "name": "Bloomburrow Commander",
+    "releaseDate": "2024-08-02",
     "type": "commander",
     "baseSetSize": 40,
-    "totalSetSize": 373,
+    "totalSetSize": 356,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
@@ -382,18 +406,6 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 0
-  },
-  {
-    "code": "BLC",
-    "name": "Bloomburrow Commander",
-    "releaseDate": "2024-08-02",
-    "type": "commander",
-    "baseSetSize": 40,
-    "totalSetSize": 356,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
   },
   {
     "code": "ACR",
@@ -432,18 +444,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "OTJ",
-    "name": "Outlaws of Thunder Junction",
-    "releaseDate": "2024-04-19",
-    "type": "expansion",
-    "baseSetSize": 286,
-    "totalSetSize": 374,
-    "hasPlayBooster": 1,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "OTC",
     "name": "Outlaws of Thunder Junction Commander",
     "releaseDate": "2024-04-19",
@@ -454,6 +454,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "OTJ",
+    "name": "Outlaws of Thunder Junction",
+    "releaseDate": "2024-04-19",
+    "type": "expansion",
+    "baseSetSize": 286,
+    "totalSetSize": 374,
+    "hasPlayBooster": 1,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
   },
   {
     "code": "PIP",
@@ -516,18 +528,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "LCC",
-    "name": "The Lost Caverns of Ixalan Commander",
-    "releaseDate": "2023-11-17",
-    "type": "commander",
-    "baseSetSize": 16,
-    "totalSetSize": 370,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "LCI",
     "name": "The Lost Caverns of Ixalan",
     "releaseDate": "2023-11-17",
@@ -538,6 +538,18 @@
     "hasCollectorBooster": 1,
     "hasBundle": 1,
     "hasCommanderDecks": 0
+  },
+  {
+    "code": "LCC",
+    "name": "The Lost Caverns of Ixalan Commander",
+    "releaseDate": "2023-11-17",
+    "type": "commander",
+    "baseSetSize": 16,
+    "totalSetSize": 370,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
   },
   {
     "code": "WHO",
@@ -588,18 +600,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "LTR",
-    "name": "The Lord of the Rings: Tales of Middle-earth",
-    "releaseDate": "2023-06-23",
-    "type": "draft_innovation",
-    "baseSetSize": 281,
-    "totalSetSize": 854,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "LTC",
     "name": "Tales of Middle-earth Commander",
     "releaseDate": "2023-06-23",
@@ -612,12 +612,36 @@
     "hasCommanderDecks": 1
   },
   {
+    "code": "LTR",
+    "name": "The Lord of the Rings: Tales of Middle-earth",
+    "releaseDate": "2023-06-23",
+    "type": "draft_innovation",
+    "baseSetSize": 281,
+    "totalSetSize": 854,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
+  },
+  {
     "code": "MAT",
     "name": "March of the Machine: The Aftermath",
     "releaseDate": "2023-05-12",
     "type": "expansion",
     "baseSetSize": 50,
     "totalSetSize": 230,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "MOM",
+    "name": "March of the Machine",
+    "releaseDate": "2023-04-21",
+    "type": "expansion",
+    "baseSetSize": 291,
+    "totalSetSize": 387,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 1,
     "hasBundle": 1,
@@ -636,12 +660,12 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "MOM",
-    "name": "March of the Machine",
-    "releaseDate": "2023-04-21",
+    "code": "ONE",
+    "name": "Phyrexia: All Will Be One",
+    "releaseDate": "2023-02-10",
     "type": "expansion",
-    "baseSetSize": 291,
-    "totalSetSize": 387,
+    "baseSetSize": 271,
+    "totalSetSize": 479,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 1,
     "hasBundle": 1,
@@ -660,18 +684,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "ONE",
-    "name": "Phyrexia: All Will Be One",
-    "releaseDate": "2023-02-10",
-    "type": "expansion",
-    "baseSetSize": 271,
-    "totalSetSize": 479,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "DMR",
     "name": "Dominaria Remastered",
     "releaseDate": "2023-01-13",
@@ -680,18 +692,6 @@
     "totalSetSize": 457,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 1,
-    "hasBundle": 0,
-    "hasCommanderDecks": 0
-  },
-  {
-    "code": "J22",
-    "name": "Jumpstart 2022",
-    "releaseDate": "2022-12-02",
-    "type": "draft_innovation",
-    "baseSetSize": 834,
-    "totalSetSize": 835,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 0
   },
@@ -708,6 +708,18 @@
     "hasCommanderDecks": 1
   },
   {
+    "code": "J22",
+    "name": "Jumpstart 2022",
+    "releaseDate": "2022-12-02",
+    "type": "draft_innovation",
+    "baseSetSize": 834,
+    "totalSetSize": 835,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
+  },
+  {
     "code": "30A",
     "name": "30th Anniversary Edition",
     "releaseDate": "2022-11-28",
@@ -717,6 +729,18 @@
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "BRO",
+    "name": "The Brothers' War",
+    "releaseDate": "2022-11-18",
+    "type": "expansion",
+    "baseSetSize": 287,
+    "totalSetSize": 387,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
     "hasCommanderDecks": 0
   },
   {
@@ -730,18 +754,6 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
-  },
-  {
-    "code": "BRO",
-    "name": "The Brothers' War",
-    "releaseDate": "2022-11-18",
-    "type": "expansion",
-    "baseSetSize": 287,
-    "totalSetSize": 387,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
   },
   {
     "code": "Q08",
@@ -804,18 +816,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "DMU",
-    "name": "Dominaria United",
-    "releaseDate": "2022-09-09",
-    "type": "expansion",
-    "baseSetSize": 281,
-    "totalSetSize": 436,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "DMC",
     "name": "Dominaria United Commander",
     "releaseDate": "2022-09-09",
@@ -826,6 +826,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "DMU",
+    "name": "Dominaria United",
+    "releaseDate": "2022-09-09",
+    "type": "expansion",
+    "baseSetSize": 281,
+    "totalSetSize": 436,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
   },
   {
     "code": "2X2",
@@ -912,18 +924,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "DBL",
-    "name": "Innistrad: Double Feature",
-    "releaseDate": "2022-01-28",
-    "type": "draft_innovation",
-    "baseSetSize": 534,
-    "totalSetSize": 535,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "CC2",
     "name": "Commander Collection: Black",
     "releaseDate": "2022-01-28",
@@ -934,6 +934,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "DBL",
+    "name": "Innistrad: Double Feature",
+    "releaseDate": "2022-01-28",
+    "type": "draft_innovation",
+    "baseSetSize": 534,
+    "totalSetSize": 535,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
   },
   {
     "code": "VOW",
@@ -972,18 +984,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "MIC",
-    "name": "Midnight Hunt Commander",
-    "releaseDate": "2021-09-24",
-    "type": "commander",
-    "baseSetSize": 38,
-    "totalSetSize": 187,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "MID",
     "name": "Innistrad: Midnight Hunt",
     "releaseDate": "2021-09-24",
@@ -994,6 +994,18 @@
     "hasCollectorBooster": 1,
     "hasBundle": 1,
     "hasCommanderDecks": 0
+  },
+  {
+    "code": "MIC",
+    "name": "Midnight Hunt Commander",
+    "releaseDate": "2021-09-24",
+    "type": "commander",
+    "baseSetSize": 38,
+    "totalSetSize": 187,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
   },
   {
     "code": "AFR",
@@ -1080,18 +1092,6 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "KHM",
-    "name": "Kaldheim",
-    "releaseDate": "2021-02-05",
-    "type": "expansion",
-    "baseSetSize": 285,
-    "totalSetSize": 407,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "KHC",
     "name": "Kaldheim Commander",
     "releaseDate": "2021-02-05",
@@ -1102,6 +1102,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "KHM",
+    "name": "Kaldheim",
+    "releaseDate": "2021-02-05",
+    "type": "expansion",
+    "baseSetSize": 285,
+    "totalSetSize": 407,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
   },
   {
     "code": "CC1",
@@ -1128,15 +1140,15 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "ZNR",
-    "name": "Zendikar Rising",
+    "code": "ZNE",
+    "name": "Zendikar Rising Expeditions",
     "releaseDate": "2020-09-25",
-    "type": "expansion",
-    "baseSetSize": 280,
-    "totalSetSize": 392,
+    "type": "masterpiece",
+    "baseSetSize": 30,
+    "totalSetSize": 30,
     "hasPlayBooster": 0,
-    "hasCollectorBooster": 1,
-    "hasBundle": 1,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
     "hasCommanderDecks": 0
   },
   {
@@ -1152,15 +1164,15 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "ZNE",
-    "name": "Zendikar Rising Expeditions",
+    "code": "ZNR",
+    "name": "Zendikar Rising",
     "releaseDate": "2020-09-25",
-    "type": "masterpiece",
-    "baseSetSize": 30,
-    "totalSetSize": 30,
+    "type": "expansion",
+    "baseSetSize": 280,
+    "totalSetSize": 392,
     "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
+    "hasCollectorBooster": 1,
+    "hasBundle": 1,
     "hasCommanderDecks": 0
   },
   {
@@ -1476,18 +1488,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "G18",
-    "name": "M19 Gift Pack",
-    "releaseDate": "2018-11-16",
-    "type": "box",
-    "baseSetSize": 5,
-    "totalSetSize": 5,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "GNT",
     "name": "Game Night",
     "releaseDate": "2018-11-16",
@@ -1497,6 +1497,18 @@
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "G18",
+    "name": "M19 Gift Pack",
+    "releaseDate": "2018-11-16",
+    "type": "box",
+    "baseSetSize": 5,
+    "totalSetSize": 5,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 1,
     "hasCommanderDecks": 0
   },
   {
@@ -1584,18 +1596,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "BBD",
-    "name": "Battlebond",
-    "releaseDate": "2018-06-08",
-    "type": "draft_innovation",
-    "baseSetSize": 254,
-    "totalSetSize": 256,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "CM2",
     "name": "Commander Anthology Volume II",
     "releaseDate": "2018-06-08",
@@ -1606,6 +1606,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 1
+  },
+  {
+    "code": "BBD",
+    "name": "Battlebond",
+    "releaseDate": "2018-06-08",
+    "type": "draft_innovation",
+    "baseSetSize": 254,
+    "totalSetSize": 256,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
   },
   {
     "code": "DOM",
@@ -1620,24 +1632,24 @@
     "hasCommanderDecks": 1
   },
   {
-    "code": "Q01",
-    "name": "Challenger Decks 2018",
-    "releaseDate": "2018-04-06",
-    "type": "box",
-    "baseSetSize": 0,
-    "totalSetSize": 0,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "DDU",
     "name": "Duel Decks: Elves vs. Inventors",
     "releaseDate": "2018-04-06",
     "type": "duel_deck",
     "baseSetSize": 76,
     "totalSetSize": 76,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
+  },
+  {
+    "code": "Q01",
+    "name": "Challenger Decks 2018",
+    "releaseDate": "2018-04-06",
+    "type": "box",
+    "baseSetSize": 0,
+    "totalSetSize": 0,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
@@ -1680,18 +1692,6 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "E02",
-    "name": "Explorers of Ixalan",
-    "releaseDate": "2017-11-24",
-    "type": "box",
-    "baseSetSize": 47,
-    "totalSetSize": 47,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "V17",
     "name": "From the Vault: Transform",
     "releaseDate": "2017-11-24",
@@ -1702,6 +1702,18 @@
     "hasCollectorBooster": 0,
     "hasBundle": 0,
     "hasCommanderDecks": 0
+  },
+  {
+    "code": "E02",
+    "name": "Explorers of Ixalan",
+    "releaseDate": "2017-11-24",
+    "type": "box",
+    "baseSetSize": 47,
+    "totalSetSize": 47,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
   },
   {
     "code": "IMA",
@@ -2160,6 +2172,30 @@
     "hasCommanderDecks": 1
   },
   {
+    "code": "DVD",
+    "name": "Duel Decks Anthology: Divine vs. Demonic",
+    "releaseDate": "2014-12-05",
+    "type": "duel_deck",
+    "baseSetSize": 62,
+    "totalSetSize": 62,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
+  },
+  {
+    "code": "GVL",
+    "name": "Duel Decks Anthology: Garruk vs. Liliana",
+    "releaseDate": "2014-12-05",
+    "type": "duel_deck",
+    "baseSetSize": 63,
+    "totalSetSize": 63,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 1
+  },
+  {
     "code": "JVC",
     "name": "Duel Decks Anthology: Jace vs. Chandra",
     "releaseDate": "2014-12-05",
@@ -2184,32 +2220,8 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "GVL",
-    "name": "Duel Decks Anthology: Garruk vs. Liliana",
-    "releaseDate": "2014-12-05",
-    "type": "duel_deck",
-    "baseSetSize": 63,
-    "totalSetSize": 63,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
     "code": "EVG",
     "name": "Duel Decks Anthology: Elves vs. Goblins",
-    "releaseDate": "2014-12-05",
-    "type": "duel_deck",
-    "baseSetSize": 62,
-    "totalSetSize": 62,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 1
-  },
-  {
-    "code": "DVD",
-    "name": "Duel Decks Anthology: Divine vs. Demonic",
     "releaseDate": "2014-12-05",
     "type": "duel_deck",
     "baseSetSize": 62,
@@ -3744,24 +3756,24 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "PVAN",
-    "name": "Vanguard Series",
-    "releaseDate": "1997-05-01",
-    "type": "vanguard",
-    "baseSetSize": 32,
-    "totalSetSize": 32,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 1,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "POR",
     "name": "Portal",
     "releaseDate": "1997-05-01",
     "type": "starter",
     "baseSetSize": 243,
     "totalSetSize": 257,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 1,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "PVAN",
+    "name": "Vanguard Series",
+    "releaseDate": "1997-05-01",
+    "type": "vanguard",
+    "baseSetSize": 32,
+    "totalSetSize": 32,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 1,
@@ -3864,24 +3876,24 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "RIN",
-    "name": "Rinascimento",
-    "releaseDate": "1995-08-01",
-    "type": "masters",
-    "baseSetSize": 69,
-    "totalSetSize": 69,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "REN",
     "name": "Renaissance",
     "releaseDate": "1995-08-01",
     "type": "masters",
     "baseSetSize": 122,
     "totalSetSize": 122,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "RIN",
+    "name": "Rinascimento",
+    "releaseDate": "1995-08-01",
+    "type": "masters",
+    "baseSetSize": 69,
+    "totalSetSize": 69,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
@@ -3924,24 +3936,24 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "4BB",
-    "name": "Fourth Edition Foreign Black Border",
-    "releaseDate": "1995-04-01",
-    "type": "core",
-    "baseSetSize": 378,
-    "totalSetSize": 378,
-    "hasPlayBooster": 0,
-    "hasCollectorBooster": 0,
-    "hasBundle": 0,
-    "hasCommanderDecks": 0
-  },
-  {
     "code": "4ED",
     "name": "Fourth Edition",
     "releaseDate": "1995-04-01",
     "type": "core",
     "baseSetSize": 378,
     "totalSetSize": 380,
+    "hasPlayBooster": 0,
+    "hasCollectorBooster": 0,
+    "hasBundle": 0,
+    "hasCommanderDecks": 0
+  },
+  {
+    "code": "4BB",
+    "name": "Fourth Edition Foreign Black Border",
+    "releaseDate": "1995-04-01",
+    "type": "core",
+    "baseSetSize": 378,
+    "totalSetSize": 378,
     "hasPlayBooster": 0,
     "hasCollectorBooster": 0,
     "hasBundle": 0,
@@ -4056,8 +4068,8 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "CEI",
-    "name": "Intl. Collectors' Edition",
+    "code": "CED",
+    "name": "Collectors' Edition",
     "releaseDate": "1993-12-10",
     "type": "memorabilia",
     "baseSetSize": 302,
@@ -4068,8 +4080,8 @@
     "hasCommanderDecks": 0
   },
   {
-    "code": "CED",
-    "name": "Collectors' Edition",
+    "code": "CEI",
+    "name": "Intl. Collectors' Edition",
     "releaseDate": "1993-12-10",
     "type": "memorabilia",
     "baseSetSize": 302,

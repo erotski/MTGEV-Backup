@@ -10,6 +10,7 @@ for the 3 MTG product archetypes on The Hobbit (HOB):
 import json
 import random
 import time
+from ev_statistics import empirical_quantiles
 from pathlib import Path
 
 PUBLIC_DATA_DIR = Path("public/data")
@@ -63,11 +64,8 @@ def simulate_composite_product(pack_specs, fixed_ev=0.0, iterations=10000):
     variance = sum((x - mean_val) ** 2 for x in composite_draws) / n
     std_val = variance ** 0.5
     
-    # Extract 100 percentiles
-    percentiles = []
-    for p in range(1, 101):
-        idx = min(n - 1, max(0, int((p / 100.0) * n) - 1))
-        percentiles.append(round(composite_draws[idx], 2))
+    # Extract the same 1%-bucket averages used by the production pipeline.
+    percentiles = empirical_quantiles(composite_draws)
     
     stats = {
         "time_ms": round((t1 - t0) * 1000, 2),
