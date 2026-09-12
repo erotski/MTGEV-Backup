@@ -52,7 +52,6 @@ interface PackDistributionCurveProps {
   variableEv?: number;
   cardCount?: number;
   packItems?: CompositePackItem[];
-  precomputedQuantiles?: number[];
   quantilesByVendor?: Record<string, number[]>;
 }
 
@@ -71,7 +70,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   variableEv,
   cardCount,
   packItems,
-  precomputedQuantiles,
   quantilesByVendor,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
@@ -155,12 +153,12 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const points: Array<{
       percentile: string;
       percentileNum: number;
-      all_cheapest: number;
-      all_average: number;
-      tcgplayer: number;
-      cardmarket: number;
-      cardkingdom: number;
-      manapool: number;
+      all_cheapest: number | null;
+      all_average: number | null;
+      tcgplayer: number | null;
+      cardmarket: number | null;
+      cardkingdom: number | null;
+      manapool: number | null;
     }> = [];
 
     // Map to hold simulated 100-bucket quantiles per vendor
@@ -171,6 +169,13 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const hasPrecomputedComposite = Boolean(
       effectiveVendorQuantiles && Object.keys(effectiveVendorQuantiles).length > 0
     );
+
+    if (isPreconstructed) {
+      const hasFixedVendorValues = vendorsToSim.every(
+        (v) => effectiveVendorQuantiles?.[v]?.length >= 1
+      );
+      if (!hasFixedVendorValues) return [];
+    }
 
     if (!isPreconstructed) {
       if (hasPrecomputedComposite && !isSingleBoosterLeaf) {
@@ -185,13 +190,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               vendorSimulations[v] = qArr;
             }
           }
-        });
-      } else if (precomputedQuantiles && precomputedQuantiles.length >= 100 && !isSingleBoosterLeaf) {
-        // Direct precomputed single vendor empirical quantiles
-        vendorsToSim.forEach((v) => {
-          vendorSimulations[v] = priceMode === 'cheapest_reprint' 
-            ? precomputedQuantiles.map((x) => Number((x * 0.82).toFixed(2)))
-            : [...precomputedQuantiles];
         });
       } else {
         // Dynamic client-side convolution — STRICT EMPIRICAL ONLY (No synthetic fallback ratios)
@@ -216,7 +214,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 );
               }
               if (!rec) {
-                rec = vendorRecords[v] || activeBooster;
+                missingEmpiricalQuantiles = true;
+                return;
               }
 
               const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
@@ -248,7 +247,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             }
           } else {
             // Single booster empirical lookup
-            const rec = vendorRecords[v] || activeBooster;
+            const rec = vendorRecords[v];
             const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
             let itemQuantiles = rec?.quantiles;
             if (itemQuantiles && itemQuantiles.length >= 100) {
@@ -280,12 +279,12 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         points.push({
           percentile: `${p}%`,
           percentileNum: p,
-          all_cheapest: fixedDeckEv,
-          all_average: fixedDeckEv,
-          tcgplayer: fixedDeckEv,
-          cardmarket: fixedDeckEv,
-          cardkingdom: fixedDeckEv,
-          manapool: fixedDeckEv,
+          all_cheapest: effectiveVendorQuantiles?.all_cheapest?.[0] ?? 0,
+          all_average: effectiveVendorQuantiles?.all_average?.[0] ?? 0,
+          tcgplayer: effectiveVendorQuantiles?.tcgplayer?.[0] ?? 0,
+          cardmarket: effectiveVendorQuantiles?.cardmarket?.[0] ?? 0,
+          cardkingdom: effectiveVendorQuantiles?.cardkingdom?.[0] ?? 0,
+          manapool: effectiveVendorQuantiles?.manapool?.[0] ?? 0,
         });
         continue;
       }
@@ -296,7 +295,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         if (simData && simData.length >= 100) {
           return Number((simData[qIdx] + baseOffset).toFixed(2));
         }
-        return baseOffset;
+        return null;
       };
 
       const tcgVal = getSimVal('tcgplayer');
@@ -323,6 +322,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       let maxSeen = 0;
       for (let i = 0; i < points.length; i++) {
         const val = (points[i] as any)[v];
+        if (val == null) {
+          continue;
+        }
         if (val < maxSeen) {
           (points[i] as any)[v] = maxSeen;
         } else {
@@ -343,7 +345,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     effectivePackItems,
     allSetBoosters,
     boosterEvMap,
-    isSingleBoosterLeaf
+    isSingleBoosterLeaf,
+    quantilesByVendor
   ]);
 
   const currentVendorKey = useMemo(() => {

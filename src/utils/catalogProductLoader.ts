@@ -106,7 +106,6 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
       evScore: sp.evScore,
       breakevenPercentile: sp.breakevenPercentile,
       archetype: sp.archetype,
-      quantiles: sp.quantiles,
       quantilesByVendor: sp.quantilesByVendor,
     });
 

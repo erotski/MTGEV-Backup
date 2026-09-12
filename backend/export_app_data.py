@@ -140,7 +140,6 @@ def export_all():
                         sp_id = sp_item.get("id") or sp_item.get("uuid")
                         if sp_id:
                             sp_quantiles_lookup[sp_id] = {
-                                "quantiles": sp_item.get("quantiles"),
                                 "quantilesByVendor": sp_item.get("quantilesByVendor"),
                                 "archetype": sp_item.get("archetype"),
                                 "breakevenPercentile": sp_item.get("breakevenPercentile"),

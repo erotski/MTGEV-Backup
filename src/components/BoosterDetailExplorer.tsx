@@ -321,7 +321,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           evScore: sp.evScore,
           breakevenPercentile: sp.breakevenPercentile,
           archetype: sp.archetype,
-          quantiles: sp.quantiles,
           quantilesByVendor: sp.quantilesByVendor,
         };
       });
@@ -622,7 +621,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
     // 3. Empirical quantiles by vendor (scaled by reprintMultiplier if in Cheapest Reprint mode)
     const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
-    const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey] || activeProduct?.quantiles;
+    const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey];
     if (rawQuantiles && rawQuantiles.length >= 100) {
       const reprintMult = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
       const quantiles = reprintMult !== 1.0 ? rawQuantiles.map((q) => q * reprintMult) : rawQuantiles;
@@ -1313,7 +1312,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               cardCount={productTotalCards}
               packItems={flatPackItems}
               quantilesByVendor={activeProduct?.quantilesByVendor}
-              precomputedQuantiles={activeProduct?.quantiles}
             />
           )}
 

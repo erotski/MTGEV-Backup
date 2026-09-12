@@ -235,7 +235,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
         (displayProduct as any).evMid90 ?? displayProduct.estimatedEv,
         (displayProduct as any).evMax ?? displayProduct.estimatedEv * 3.5,
         isDeterministic,
-        (displayProduct as any).quantiles
+        (displayProduct as any).quantilesByVendor?.all_cheapest
       );
 
   return (

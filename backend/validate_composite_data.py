@@ -37,7 +37,11 @@ def run_validation():
 
     print(f"Loaded {len(products)} products from sealed_products.json")
 
-    evaluated_prods = [p for p in products if p.get("quantiles") and len(p.get("quantiles", [])) == 100]
+    evaluated_prods = [
+        p for p in products
+        if len((p.get("quantilesByVendor") or {}).get("all_cheapest", [])) == 100
+        or len((p.get("quantilesByVendor") or {}).get("all", [])) == 100
+    ]
     print(f"Found {len(evaluated_prods)} products with 100-quantile precomputations\n")
 
     passed_checks = 0
@@ -47,7 +51,8 @@ def run_validation():
     monotonic_errors = 0
     vendor_completeness_errors = 0
     for p in evaluated_prods:
-        q = p["quantiles"]
+        qv = p.get("quantilesByVendor", {})
+        q = qv.get("all_cheapest") or qv.get("all") or []
         # Check monotonicity
         for i in range(len(q) - 1):
             if q[i] > q[i + 1] + 1e-4:
@@ -86,7 +91,8 @@ def run_validation():
     # Check Pure Precon flat curve invariant
     precon_flat_errors = 0
     for p in precons:
-        q = p["quantiles"]
+        qv = p.get("quantilesByVendor", {})
+        q = qv.get("all_cheapest") or qv.get("all") or []
         if abs(q[0] - q[-1]) > 0.05 or abs(p.get("totalEvMin5", 0) - p.get("totalEvMax5", 0)) > 0.05:
             precon_flat_errors += 1
 
@@ -131,7 +137,8 @@ def run_validation():
         p50 = p.get("totalEvMid90", 0)
         p05 = p.get("totalEvMin5", 0)
         p95 = p.get("totalEvMax5", 0)
-        q = p.get("quantiles", [])
+        qv = p.get("quantilesByVendor", {})
+        q = qv.get("all_cheapest") or qv.get("all") or []
 
         # Check that curve has spread when variable slots with variance exist
         has_variance = (q[-1] - q[0]) > 0.1

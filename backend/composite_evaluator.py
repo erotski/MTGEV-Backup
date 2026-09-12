@@ -593,6 +593,7 @@ def run_composite_evaluator(target_set=None):
             ev_score = 100
 
         # Attach computed fields to product
+        p.pop("quantiles", None)
         p["archetype"] = archetype
         p["totalEvAvg"] = primary_stats["mean"]
         p["totalEvMid90"] = primary_stats["median"]
@@ -600,7 +601,6 @@ def run_composite_evaluator(target_set=None):
         p["totalEvMax5"] = primary_stats["p95"]
         p["totalEvMin"] = primary_stats["min"]
         p["totalEvMax"] = primary_stats["max"]
-        p["quantiles"] = primary_quantiles
         p["quantilesByVendor"] = quantiles_by_vendor
         p["breakevenPercentile"] = breakeven_p
         p["evScore"] = ev_score
@@ -638,7 +638,7 @@ def run_composite_evaluator(target_set=None):
                 u = r.get("productUuid") or r.get("id")
                 if u and u in prod_lookup:
                     up = prod_lookup[u]
-                    for k in ["quantiles", "quantilesByVendor", "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "breakevenPercentile", "archetype"]:
+                    for k in ["quantilesByVendor", "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "breakevenPercentile", "archetype"]:
                         if k in up:
                             r[k] = up[k]
                         elif k in r:
