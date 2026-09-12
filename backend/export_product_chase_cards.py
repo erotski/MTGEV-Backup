@@ -50,19 +50,22 @@ def load_booster_candidates(cursor):
 
 
 def load_deck_candidates(cursor):
-    cursor.execute(
-        """
-        SELECT dk.name AS deckName, dk.code AS deckCode,
-               c.uuid AS cardUuid, dc.isFoil AS isFoil
-        FROM deckCards dc
-        JOIN decks dk ON dk.id = dc.deckId
-        JOIN cards c ON c.uuid = dc.cardUuid
-        """
-    )
     decks = {}
-    for row in cursor.fetchall():
-        key = ((row["deckName"] or "").strip().lower(), (row["deckCode"] or "").upper())
-        decks.setdefault(key, set()).add((row["cardUuid"], bool(row["isFoil"])))
+    try:
+        cursor.execute(
+            """
+            SELECT dk.name AS deckName, dk.code AS deckCode,
+                   c.uuid AS cardUuid, dc.isFoil AS isFoil
+            FROM deckCards dc
+            JOIN decks dk ON dk.id = dc.deckId
+            JOIN cards c ON c.uuid = dc.cardUuid
+            """
+        )
+        for row in cursor.fetchall():
+            key = ((row["deckName"] or "").strip().lower(), (row["deckCode"] or "").upper())
+            decks.setdefault(key, set()).add((row["cardUuid"], bool(row["isFoil"])))
+    except mysql.connector.Error as error:
+        print(f"  WARN Deck tables unavailable; continuing with booster/card contents only: {error}")
     return decks
 
 
