@@ -5,6 +5,12 @@ on:
     # Runs daily at 04:00 UTC (12:00 AM EST)
     - cron: '0 4 * * *'
   workflow_dispatch: # Allows manual one-click runs from GitHub Actions UI
+    inputs:
+      audit_enabled:
+        description: 'Capture raw booster samples and bucket audit files'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   update-ev-data:
@@ -46,9 +52,20 @@ jobs:
           DB_USER: root
           DB_PASSWORD: rootpassword
           DB_NAME: test_for_cards
+          AUDIT_ENABLED: ${{ inputs.audit_enabled }}
+          AUDIT_OUTPUT_DIR: backend/audit_output
         run: |
           set -e
           python backend/daily_update.py
+
+      - name: Upload EV audit files
+        if: ${{ inputs.audit_enabled == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ev-simulation-audit-${{ github.run_number }}
+          path: backend/audit_output/
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Commit & Push Updated Datasets to Dedicated Data Branch
         run: |

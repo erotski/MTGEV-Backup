@@ -878,7 +878,7 @@ function findContainedCards(
       const finish = resolveFinish(c, isFoil);
       const isCardFoil = finish === 'foil' || finish === 'etched';
       const pNorm = c.price || c.priceNormal || 0;
-      const pFoil = isCardFoil ? (c.priceFoil || (pNorm > 0 ? Number((pNorm * 1.4).toFixed(2)) : 0)) : undefined;
+      const pFoil = isCardFoil ? c.priceFoil : undefined;
       const scryId = c.scryfallId || '';
       const setC = (c.set || 'SLD').toUpperCase();
       const num = c.number || String(idx + 1);
@@ -931,7 +931,7 @@ function findContainedCards(
               const finish = resolveFinish(c, deckIsFoil);
               const isCardFoil = finish === 'foil' || finish === 'etched';
               const pNorm = c.price || c.priceNormal || 0;
-              const pFoil = isCardFoil ? (c.priceFoil || (pNorm > 0 ? Number((pNorm * 1.5).toFixed(2)) : 0)) : undefined;
+              const pFoil = isCardFoil ? c.priceFoil : undefined;
               const scryId = c.scryfallId || '';
               const setC = (c.set || matchedDeck.setCode || 'SLD').toUpperCase();
               const num = c.number || String(idx + 1);
@@ -971,7 +971,7 @@ function findContainedCards(
               const finish = resolveFinish(c, isFoil);
               const isCardFoil = finish === 'foil' || finish === 'etched';
               const pNorm = c.price || c.priceNormal || 0;
-              const pFoil = isCardFoil ? (c.priceFoil || (pNorm > 0 ? Number((pNorm * 1.4).toFixed(2)) : 0)) : undefined;
+              const pFoil = isCardFoil ? c.priceFoil : undefined;
               const scryId = c.scryfallId || '';
               const setC = (c.set || 'SLD').toUpperCase();
               const num = c.number || String(idx + 1);
@@ -1061,7 +1061,7 @@ function findContainedCards(
               const finish = resolveFinish(c, subIsFoil);
               const isCardFoil = finish === 'foil' || finish === 'etched';
               const pNorm = c.price || c.priceNormal || 0;
-              const pFoil = isCardFoil ? (c.priceFoil || (pNorm > 0 ? Number((pNorm * 1.5).toFixed(2)) : 0)) : undefined;
+              const pFoil = isCardFoil ? c.priceFoil : undefined;
               const scryId = c.scryfallId || '';
               const setC = (c.set || matchedDeck.setCode || 'SLD').toUpperCase();
               const num = c.number || String(idx + 1);
@@ -1105,7 +1105,9 @@ export function getChaseCardsForProduct(
   fallbackSetCards?: ChaseCard[],
   singlePrices?: any,
   preconDecksParam?: Record<string, any> | null,
-  sealedProductsParam?: any[] | null
+  sealedProductsParam?: any[] | null,
+  priceMode: 'direct' | 'cheapest_reprint',
+  vendor: string
 ): ChaseCard[] {
   if (!product) return [];
 
@@ -1117,7 +1119,7 @@ export function getChaseCardsForProduct(
   const rawCat = ((product as any).rawCategory || '').toLowerCase();
 
   // Cache check for instant retrieval
-  const cacheKey = (product.id || (product as any).uuid || `${upperCode}_${prodName}`).toLowerCase();
+  const cacheKey = `${(product.id || (product as any).uuid || `${upperCode}_${prodName}`).toLowerCase()}:${priceMode}`;
   if (productChaseCardsCache.has(cacheKey)) {
     return productChaseCardsCache.get(cacheKey)!;
   }
@@ -1159,7 +1161,7 @@ export function getChaseCardsForProduct(
           const finish = resolveFinish(c, deckIsFoil);
           const isCardFoil = finish === 'foil' || finish === 'etched';
           const pNorm = c.price || c.priceNormal || 0;
-          const pFoil = isCardFoil ? (c.priceFoil || (pNorm > 0 ? Number((pNorm * 1.5).toFixed(2)) : 0)) : undefined;
+          const pFoil = isCardFoil ? c.priceFoil : undefined;
           const scryId = c.scryfallId || '';
           const num = c.number || String(idx + 1);
           const imgUrl = c.imageUrl || getCardImageUrl({ imageUrl: c.imageUrl, scryfallId: scryId, setCode: deckSetCode, number: num });
@@ -1236,7 +1238,7 @@ export function getChaseCardsForProduct(
   // If this product does NOT have booster packs and we already have contained cards, no need for booster pool
   if (!hasPacksInContents && (!isBoosterCategory || isDeckProduct) && allProductCards.length > 0) {
     if (singlePrices) {
-      applyMtgJsonPricesToCards(allProductCards, singlePrices, upperCode);
+      applyMtgJsonPricesToCards(allProductCards, singlePrices, upperCode, priceMode, vendor);
     }
     // Deduplicate and take top 5
     const uniqueCards: ChaseCard[] = [];
@@ -1257,7 +1259,7 @@ export function getChaseCardsForProduct(
   // 4. Resolve Set Booster Pool for booster-containing products
   const setPool =
     CURATED_CHASE_CARDS[upperCode] ||
-    dynamicChaseCardsCache[upperCode] ||
+    dynamicChaseCardsCache[`${upperCode}:${priceMode}`] ||
     fallbackSetCards ||
     [];
 
@@ -1322,7 +1324,7 @@ export function getChaseCardsForProduct(
 
   // 5. Enrich with authentic MTGJSON prices
   if (singlePrices) {
-    applyMtgJsonPricesToCards(allProductCards, singlePrices, upperCode);
+    applyMtgJsonPricesToCards(allProductCards, singlePrices, upperCode, priceMode, vendor);
   }
 
   // 6. Deduplicate so each unique card version is shown once
@@ -1349,7 +1351,13 @@ export function getChaseCardsForProduct(
  * Utility to apply MTGJSON prices strictly to an array of ChaseCards.
  * Protects specific card versions (collector numbers, custom Scryfall IDs) from being overwritten.
  */
-function applyMtgJsonPricesToCards(cards: ChaseCard[], singlePrices: any, setCode: string) {
+export function applyMtgJsonPricesToCards(
+  cards: ChaseCard[],
+  singlePrices: any,
+  setCode: string,
+  priceMode: 'direct' | 'cheapest_reprint',
+  vendor: string
+) {
   if (!singlePrices) return;
   const upperCode = (setCode || '').toLowerCase().trim();
 
@@ -1364,18 +1372,13 @@ function applyMtgJsonPricesToCards(cards: ChaseCard[], singlePrices: any, setCod
       singlePrices.byName?.[cardKey];
 
     if (priceRec) {
-      const pNorm =
-        priceRec.tcgplayerPrice ??
-        priceRec.price ??
-        priceRec.prices?.tcgplayer ??
-        priceRec.priceNormal ??
-        0;
-      const pFoil =
-        priceRec.foilTcgplayerPrice ??
-        priceRec.foilPrice ??
-        priceRec.prices?.tcgplayerFoil ??
-        priceRec.priceFoil ??
-        (pNorm > 0 ? Number((pNorm * 1.4).toFixed(2)) : undefined);
+      const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
+      const pNorm = priceMode === 'cheapest_reprint'
+        ? priceRec.prices?.all_cheapest ?? priceRec.prices?.all ?? 0
+        : priceRec.prices?.[vendorKey] ?? (vendorKey === 'tcgplayer' ? priceRec.tcgplayerPrice : undefined) ?? 0;
+      const pFoil = priceMode === 'cheapest_reprint'
+        ? priceRec.prices?.all_cheapestFoil ?? priceRec.priceFoil
+        : priceRec.foilTcgplayerPrice ?? priceRec.foilPrice ?? priceRec.prices?.tcgplayerFoil ?? priceRec.priceFoil;
 
       if (typeof pNorm === 'number' && pNorm > 0) {
         c.priceNormal = pNorm;
@@ -1413,12 +1416,14 @@ export function preloadChaseCardsForProducts(
   setCode: string,
   singlePrices?: any,
   preconDecksParam?: Record<string, any> | null,
-  sealedProductsParam?: any[] | null
+  sealedProductsParam?: any[] | null,
+  priceMode: 'direct' | 'cheapest_reprint',
+  vendor: string
 ): void {
   if (!Array.isArray(products) || products.length === 0) return;
   for (const prod of products) {
     try {
-      getChaseCardsForProduct(prod, setCode, undefined, singlePrices, preconDecksParam, sealedProductsParam);
+      getChaseCardsForProduct(prod, setCode, undefined, singlePrices, preconDecksParam, sealedProductsParam, priceMode, vendor);
     } catch {
       // safe fallback
     }
@@ -1430,13 +1435,18 @@ export function preloadChaseCardsForProducts(
  * Results are cached in memory so subsequent inspections are instantaneous.
  * PRICE DETAILS ARE QUERIED STRICTLY FROM MTGJSON DATA, NEVER FROM SCRYFALL.
  */
-export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseCard[]> {
+export async function fetchLiveChaseCardsForSet(
+  setCode: string,
+  priceMode: 'direct' | 'cheapest_reprint',
+  vendor: string
+): Promise<ChaseCard[]> {
   const upperCode = (setCode || '').toUpperCase().trim();
   if (!upperCode) return [];
+  const cacheKey = `${upperCode}:${priceMode}`;
 
   // Check cache first
-  if (dynamicChaseCardsCache[upperCode] && dynamicChaseCardsCache[upperCode].length > 0) {
-    return dynamicChaseCardsCache[upperCode];
+  if (dynamicChaseCardsCache[cacheKey] && dynamicChaseCardsCache[cacheKey].length > 0) {
+    return dynamicChaseCardsCache[cacheKey];
   }
 
   // Load authentic MTGJSON vendor pricing feed
@@ -1454,8 +1464,8 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
         price: Math.max(pNorm, pFoil),
       };
     });
-    applyMtgJsonPricesToCards(curatedWithPrice, singlePrices, upperCode);
-    dynamicChaseCardsCache[upperCode] = curatedWithPrice;
+    applyMtgJsonPricesToCards(curatedWithPrice, singlePrices, upperCode, priceMode, vendor);
+    dynamicChaseCardsCache[cacheKey] = curatedWithPrice;
     return curatedWithPrice;
   }
 
@@ -1494,8 +1504,13 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
         singlePrices?.byName?.[cardKey];
 
       // PRICING DETAILS ARE STRICTLY QUERIED FROM MTGJSON, NOT SCRYFALL
-      const priceNorm = priceRec?.prices?.tcgplayer ?? priceRec?.priceNormal ?? priceRec?.price ?? 0;
-      const priceFoil = priceRec?.prices?.tcgplayerFoil ?? priceRec?.priceFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
+      const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
+      const priceNorm = priceMode === 'cheapest_reprint'
+        ? priceRec?.prices?.all_cheapest ?? priceRec?.prices?.all ?? priceRec?.priceNormal ?? 0
+        : priceRec?.prices?.[vendorKey] ?? (vendorKey === 'tcgplayer' ? priceRec?.price : undefined) ?? 0;
+      const priceFoil = priceMode === 'cheapest_reprint'
+        ? priceRec?.prices?.all_cheapestFoil ?? priceRec?.priceFoil
+        : priceRec?.prices?.tcgplayerFoil ?? priceRec?.priceFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
       const cardPrice = Math.max(priceNorm || 0, priceFoil || 0);
 
       const img =
@@ -1523,7 +1538,7 @@ export async function fetchLiveChaseCardsForSet(setCode: string): Promise<ChaseC
 
     cards.sort((a, b) => (b.price || 0) - (a.price || 0));
 
-    dynamicChaseCardsCache[upperCode] = cards;
+    dynamicChaseCardsCache[cacheKey] = cards;
     return cards;
   } catch (err) {
     console.warn(`Could not fetch chase card metadata for set ${upperCode}:`, err);

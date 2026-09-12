@@ -517,6 +517,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
               product={displayProduct}
               setCode={displayProduct.setCode}
               priceMode={priceMode}
+              vendor={vendor}
               preconDecks={effectivePreconDecks}
               deckDetail={deckDetail || (displayProduct as any)?.deckDetail}
               singleCardPrices={effectiveSingleCardPrices}

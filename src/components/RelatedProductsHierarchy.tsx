@@ -1655,6 +1655,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   product={activeProduct}
                   setCode={activeProduct.setCode}
                   priceMode={priceMode}
+                  vendor={vendor}
                   singleCardPrices={singleCardPrices}
                   allProducts={rawProducts || setProducts}
                   preconDecks={preconDecks}

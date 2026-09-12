@@ -105,6 +105,8 @@ class DataService {
   private preconDecksPromise: Promise<Record<string, any>> | null = null;
   private sealedProductsCache: any[] | null = null;
   private sealedProductsPromise: Promise<any[]> | null = null;
+  private productChaseCardsCache: Record<string, any> | null = null;
+  private productChaseCardsPromise: Promise<Record<string, any>> | null = null;
   private singleCardPricesCache: {
     byUuid: Record<string, any>;
     byNameSet: Record<string, any>;
@@ -134,6 +136,23 @@ class DataService {
 
   public getBoosterEvsSync(): Record<string, BoosterEVRecord[]> | null {
     return this.boosterEvCache;
+  }
+
+  public async getProductChaseCards(): Promise<Record<string, any>> {
+    if (this.productChaseCardsCache) return this.productChaseCardsCache;
+    if (this.productChaseCardsPromise) return this.productChaseCardsPromise;
+
+    this.productChaseCardsPromise = fetch('/data/product_chase_cards.json', { cache: 'no-cache' })
+      .then(async (response) => {
+        if (!response.ok) return {};
+        const data = await response.json();
+        return data && typeof data === 'object' ? data : {};
+      })
+      .catch(() => ({}));
+
+    this.productChaseCardsCache = await this.productChaseCardsPromise;
+    this.productChaseCardsPromise = null;
+    return this.productChaseCardsCache;
   }
 
   /**

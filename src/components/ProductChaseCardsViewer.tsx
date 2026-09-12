@@ -7,6 +7,7 @@ import {
   getCardProductAvailability,
   getCardImageUrl,
   preloadChaseCardsForProducts,
+  applyMtgJsonPricesToCards,
 } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
@@ -28,6 +29,7 @@ interface ProductChaseCardsViewerProps {
   product: CatalogPackProduct;
   setCode: string;
   priceMode?: string;
+  vendor: string;
   singleCardPrices?: any;
   className?: string;
   onSelectCard?: (card: ChaseCard) => void;
@@ -101,6 +103,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   product,
   setCode,
   priceMode = 'direct',
+  vendor,
   singleCardPrices: propPrices,
   className = '',
   onSelectCard,
@@ -112,11 +115,27 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
   const [liveCards, setLiveCards] = useState<ChaseCard[]>([]);
   const [loadingLive, setLoadingLive] = useState<boolean>(false);
+  const [backendCards, setBackendCards] = useState<ChaseCard[] | null>(null);
+  const [backendCardsLoaded, setBackendCardsLoaded] = useState<boolean>(false);
   const [mtgJsonPrices, setMtgJsonPrices] = useState<any>(propPrices || null);
   const [sealedProducts, setSealedProducts] = useState<any[] | null>(dataService.getSealedProductsSync());
   const [allPreconDecks, setAllPreconDecks] = useState<Record<string, any> | null>(
     propPreconDecks || dataService.getPreconDecksSync()
   );
+
+  useEffect(() => {
+    let mounted = true;
+    const productId = product.id || (product as any).uuid;
+    if (!productId) return () => { mounted = false; };
+    dataService.getProductChaseCards().then((data) => {
+      if (!mounted) return;
+      const mode = priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct';
+      const cards = data[productId]?.[`${mode}:${vendor}`];
+      setBackendCards(Array.isArray(cards) ? cards : []);
+      setBackendCardsLoaded(true);
+    });
+    return () => { mounted = false; };
+  }, [product, priceMode, vendor]);
 
   // Auto-fetch MTGJSON single prices if not provided in props
   useEffect(() => {
@@ -186,12 +205,13 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
   // Retrieve curated chase cards specifically for this product
   const curatedCards = useMemo(() => {
+    if (backendCardsLoaded) return backendCards || [];
     // If deckDetail with cards was passed directly (precon deck viewer)
     if (deckDetail?.cards && Array.isArray(deckDetail.cards) && deckDetail.cards.length > 0) {
       const isFoil = (product.displayName || '').toLowerCase().includes('foil') || Boolean(deckDetail.isFoil);
       const mapped: ChaseCard[] = deckDetail.cards.map((c: any, idx: number) => {
         const pNorm = c.price ?? c.marketPrice ?? 0;
-        const pFoil = isFoil || c.foil ? (c.priceFoil ?? Number((pNorm * 1.4).toFixed(2))) : undefined;
+        const pFoil = isFoil || c.foil ? c.priceFoil : undefined;
         return {
           uuid: c.uuid || `deck-card-${idx}-${c.name}`,
           name: c.name,
@@ -208,6 +228,15 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
           imageUrl: c.imageUrl,
         };
       });
+      if (mtgJsonPrices) {
+        applyMtgJsonPricesToCards(
+          mapped,
+          mtgJsonPrices,
+          setCode,
+          priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+          vendor
+        );
+      }
       return mapped.sort((a, b) => (b.price || 0) - (a.price || 0));
     }
 
@@ -217,9 +246,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
       undefined,
       mtgJsonPrices,
       allPreconDecks || propPreconDecks,
-      sealedProducts || (allProducts.length > 0 ? allProducts : null)
+      sealedProducts || (allProducts.length > 0 ? allProducts : null),
+      priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+      vendor
     );
-  }, [product, setCode, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts, allProducts, deckDetail]);
+  }, [product, setCode, priceMode, vendor, backendCards, backendCardsLoaded, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts, allProducts, deckDetail]);
 
   // Only query Scryfall API as fallback for booster pack products
   useEffect(() => {
@@ -228,7 +259,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     // Do NOT fetch random set chase cards for fixed non-booster products (Secret Lair, Decks, Bundles)
     if (!isFixedProduct && curatedCards.length === 0 && setCode) {
       setLoadingLive(true);
-      fetchLiveChaseCardsForSet(setCode)
+      fetchLiveChaseCardsForSet(
+        setCode,
+        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+        vendor
+      )
         .then((cards) => {
           if (isMounted) {
             setLiveCards(cards);
@@ -247,7 +282,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     return () => {
       isMounted = false;
     };
-  }, [curatedCards.length, setCode, isFixedProduct]);
+  }, [curatedCards.length, setCode, isFixedProduct, priceMode]);
 
   // Preload and cache top 5 chase cards for all products in the database
   useEffect(() => {
@@ -257,10 +292,12 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
         setCode,
         mtgJsonPrices,
         allPreconDecks || propPreconDecks,
-        sealedProducts || allProducts
+        sealedProducts || allProducts,
+        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+        vendor
       );
     }
-  }, [allProducts, setCode, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts]);
+  }, [allProducts, setCode, priceMode, vendor, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts]);
 
   const chaseCards = curatedCards.length > 0 ? curatedCards : (isFixedProduct ? [] : liveCards);
 
@@ -350,14 +387,9 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 pt-1">
           {topChaseCards.map((card, cardIndex) => {
             const pNormVal = card.priceNormal ?? card.price ?? 0;
-            const displayPriceNormal =
-              priceMode === 'cheapest_reprint'
-                ? Number((pNormVal * 0.74).toFixed(2))
-                : pNormVal;
+            const displayPriceNormal = pNormVal;
             const displayPriceFoil = card.priceFoil
-              ? priceMode === 'cheapest_reprint'
-                ? Number((card.priceFoil * 0.78).toFixed(2))
-                : card.priceFoil
+              ? card.priceFoil
               : undefined;
 
             const cardImg = getCardImageUrl(card, 'normal');
