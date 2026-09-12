@@ -27,8 +27,11 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
-import { findBoosterEv, normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
+import { normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
 import { simulateCompositeQuantiles } from '../utils/evScore';
+
+const CURVE_VENDORS = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'] as const;
+type CurveVendor = (typeof CURVE_VENDORS)[number];
 
 export interface CompositePackItem {
   packName?: string;
@@ -42,13 +45,13 @@ interface PackDistributionCurveProps {
   activeBooster: BoosterEVRecord;
   allSetBoosters?: BoosterEVRecord[];
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
-  defaultPackSealedPrice?: number;
-  multiplier?: number;
-  priceMode?: 'direct' | 'cheapest_reprint';
-  vendor?: string;
-  isPreconstructed?: boolean;
+  defaultPackSealedPrice: number;
+  multiplier: number;
+  priceMode: 'direct' | 'cheapest_reprint';
+  vendor: string;
+  isPreconstructed: boolean;
   preconSinglesEv?: number;
-  fixedBaseEv?: number;
+  fixedBaseEv: number;
   variableEv?: number;
   cardCount?: number;
   packItems?: CompositePackItem[];
@@ -60,20 +63,20 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   activeBooster,
   allSetBoosters,
   boosterEvMap,
-  defaultPackSealedPrice = 7.99,
-  multiplier = 1,
-  priceMode = 'direct',
-  vendor = 'all_cheapest',
-  isPreconstructed = false,
+  defaultPackSealedPrice,
+  multiplier,
+  priceMode,
+  vendor,
+  isPreconstructed,
   preconSinglesEv,
-  fixedBaseEv = 0,
+  fixedBaseEv,
   variableEv,
   cardCount,
   packItems,
   quantilesByVendor,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
-  const scale = multiplier > 0 ? multiplier : 1;
+  const scale = multiplier;
   const isMixedProduct = Boolean(fixedBaseEv > 0 && !isPreconstructed && (variableEv ? variableEv > 0 : scale > 0));
 
   // Build effective list of pack items (handles single booster vs composite bundles/boxes)
@@ -81,15 +84,12 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     if (packItems && packItems.length > 0) {
       return packItems;
     }
-    if (activeBooster) {
-      return [{
-        code: activeBooster.boosterName,
-        set: activeBooster.setCode,
-        count: scale,
-        packName: activeBooster.fullBoosterName || activeBooster.boosterName,
-      }];
-    }
-    return [];
+    return [{
+      code: activeBooster.boosterName,
+      set: activeBooster.setCode,
+      count: scale,
+      packName: activeBooster.fullBoosterName || activeBooster.boosterName,
+    }];
   }, [packItems, activeBooster, scale]);
 
   // State for user-editable pack/deck sealed price
@@ -102,7 +102,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   }, [packMarketPrice, activeBooster.id, activeBooster.boosterName, scale, priceMode, vendor, isPreconstructed, preconSinglesEv, fixedBaseEv]);
 
   // Key percentile benchmarks for the active product
-  const fixedDeckEv = preconSinglesEv ?? fixedBaseEv ?? activeBooster?.evAverage ?? 9.34;
+  const fixedDeckEv = preconSinglesEv ?? (isPreconstructed ? activeBooster.evAverage : fixedBaseEv);
   const baseOffset = isMixedProduct ? fixedBaseEv : 0;
 
   // Sliders state: X-Axis Start/End Percentile
@@ -131,12 +131,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const exactCandidates = list.filter(
       (b) => (b.boosterName || '').toLowerCase().trim() === targetName && b.priceMode === mode
     );
-    const fallbackCandidates = list.filter(
-      (b) => (b.boosterName || '').toLowerCase().trim() === targetName
-    );
-    const candidatePool = exactCandidates.length > 0 ? exactCandidates : fallbackCandidates;
-    ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
-      byVendor[v] = candidatePool.find((b) => b.vendor === v) || (activeBooster?.vendor === v ? activeBooster : undefined);
+    CURVE_VENDORS.forEach((v) => {
+      byVendor[v] = exactCandidates.find((b) => b.vendor === v);
     });
     return byVendor;
   }, [allSetBoosters, activeBooster, priceMode]);
@@ -163,12 +159,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
     // Map to hold simulated 100-bucket quantiles per vendor
     const vendorSimulations: Record<string, number[]> = {};
-    const vendorsToSim = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
+    const vendorsToSim = CURVE_VENDORS;
 
-    const effectiveVendorQuantiles = quantilesByVendor || (activeBooster as any)?.quantilesByVendor;
+    const effectiveVendorQuantiles = quantilesByVendor;
     const hasPrecomputedComposite = Boolean(
       effectiveVendorQuantiles && Object.keys(effectiveVendorQuantiles).length > 0
     );
+
+    if (!CURVE_VENDORS.includes(vendor as CurveVendor)) return [];
 
     if (isPreconstructed) {
       const hasFixedVendorValues = vendorsToSim.every(
@@ -204,7 +202,11 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               const code = item.code || item.packName || activeBooster?.boosterName || '';
               let rec: BoosterEVRecord | undefined;
               if (boosterEvMap) {
-                rec = findBoosterEv(boosterEvMap, setCode, code, priceMode as any, v as any);
+                rec = (boosterEvMap[setCode.toUpperCase()] || []).find((b) =>
+                  normalizeBoosterCode(b.boosterName) === normalizeBoosterCode(code) &&
+                  b.priceMode === priceMode &&
+                  b.vendor === v
+                );
               } else if (allSetBoosters && allSetBoosters.length > 0) {
                 const normCode = normalizeBoosterCode(code);
                 rec = allSetBoosters.find(b => 
@@ -221,11 +223,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
               let itemQuantiles = rec?.quantiles;
               if (!itemQuantiles || itemQuantiles.length < 100) {
-                if (activeBooster?.quantiles && activeBooster.quantiles.length >= 100) {
-                  itemQuantiles = activeBooster.quantiles;
-                } else {
-                  missingEmpiricalQuantiles = true;
-                }
+                missingEmpiricalQuantiles = true;
               }
 
               if (itemQuantiles && modeMult !== 1.0) {
@@ -350,19 +348,18 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   ]);
 
   const currentVendorKey = useMemo(() => {
-    if (['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
-      if (vendor === 'all') return 'all_cheapest';
-      return vendor;
+    if (vendor && CURVE_VENDORS.includes(vendor as CurveVendor)) {
+      return vendor as CurveVendor;
     }
-    return 'all_cheapest';
+    return null;
   }, [vendor]);
 
-  const q0 = isPreconstructed ? fixedDeckEv : Number(allCurveData[0]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
-  const q5 = isPreconstructed ? fixedDeckEv : Number(allCurveData[4]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
-  const q50 = isPreconstructed ? fixedDeckEv : Number(allCurveData[49]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
-  const p90Value = isPreconstructed ? fixedDeckEv : Number(allCurveData[89]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
-  const q95 = isPreconstructed ? fixedDeckEv : Number(allCurveData[94]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
-  const q100 = isPreconstructed ? fixedDeckEv : Number(allCurveData[99]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
+  const q0 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[0]?.[currentVendorKey] : 0) || 0);
+  const q5 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[4]?.[currentVendorKey] : 0) || 0);
+  const q50 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[49]?.[currentVendorKey] : 0) || 0);
+  const p90Value = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[89]?.[currentVendorKey] : 0) || 0);
+  const q95 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[94]?.[currentVendorKey] : 0) || 0);
+  const q100 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[99]?.[currentVendorKey] : 0) || 0);
 
   // Default optimal Y-axis ceiling
   const defaultYCeiling = useMemo(() => {
@@ -433,13 +430,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, baseOffset]);
 
   const vendorKey = useMemo(() => {
-    if (vendor && ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
-      return (vendor === 'all' ? 'all_cheapest' : vendor) as 'all_cheapest' | 'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom' | 'manapool';
+    if (vendor && CURVE_VENDORS.includes(vendor as CurveVendor)) {
+      return vendor;
     }
-    return 'tcgplayer';
+    return null;
   }, [vendor]);
 
   const breakevenPoint = useMemo(() => {
+    if (!vendorKey || allCurveData.length === 0) return null;
     const activeVendorVal = scaledAverages[vendorKey];
     if (isPreconstructed) {
       const isProfitable = activeVendorVal >= sealedPrice;
@@ -485,7 +483,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const sliderYMin = isPreconstructed ? Math.max(5, Math.floor(Math.min(fixedDeckEv, sealedPrice) * 0.5)) : (scale > 1 ? 20 : 6);
   const sliderYMax = isPreconstructed
     ? Math.ceil(Math.max(fixedDeckEv * 1.75, sealedPrice * 1.75))
-    : Math.ceil(Math.max(q100 * 1.1, (activeBooster?.evMax || 0) * scale * 1.1, (activeBooster?.quantiles?.[99] || 0) * scale * 1.1, sealedPrice * 1.25, 20));
+    : Math.ceil(Math.max(q100 * 1.1, sealedPrice * 1.25, 20));
 
   return (
     <div
@@ -513,7 +511,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           <p className="text-xs text-slate-500 mt-1">
             {isPreconstructed
               ? `Deterministic fixed collation${cardCount ? ` (${cardCount} cards)` : ''} with 0% lottery variance across copies vs. Sealed Product Price.`
-              : 'Simulated 5,000 packs grouped into 100 percentile samples (50-pack averages from 0% floor → 100% top hit) vs. Pack Sealed Market Price.'}
+              : 'Simulated 5,000 packs reduced to 100 empirical percentile buckets (1% floor → 100% top hit) vs. Pack Sealed Market Price.'}
           </p>
         </div>
 
@@ -830,7 +828,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             {/* Vendor Solid Price Curves */}
             {visibleVendors.all_cheapest && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="all_cheapest"
                 stroke="#2563eb"
                 strokeWidth={2.4}
@@ -841,7 +839,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
             {visibleVendors.all_average && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="all_average"
                 stroke="#6366f1"
                 strokeWidth={2.2}
@@ -852,7 +850,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
             {visibleVendors.tcgplayer && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="tcgplayer"
                 stroke="#16a34a"
                 strokeWidth={2.6}
@@ -863,7 +861,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
             {visibleVendors.cardmarket && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="cardmarket"
                 stroke="#eab308"
                 strokeWidth={2}
@@ -874,7 +872,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
             {visibleVendors.cardkingdom && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="cardkingdom"
                 stroke="#ea580c"
                 strokeWidth={2}
@@ -885,7 +883,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
             {visibleVendors.manapool && (
               <Line
-                type={isPreconstructed ? 'linear' : 'monotone'}
+                type="linear"
                 dataKey="manapool"
                 stroke="#be123c"
                 strokeWidth={2}
