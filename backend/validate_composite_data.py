@@ -7,7 +7,7 @@ precomputed composite product EV distributions and quantiles.
 
 Verifies:
   1. Monotonicity of 100-quantile curves (q[0] <= q[1] <= ... <= q[99])
-  2. Multi-vendor completeness (all, all_average, tcgplayer, cardmarket, cardkingdom, manapool)
+    2. Multi-vendor completeness (all_cheapest, all_average, tcgplayer, cardmarket, cardkingdom, manapool)
   3. Archetype correctness:
      - Pure Precon: flat horizontal line (min5 == max5 == totalEvAvg)
      - Pure Randomized: strictly monotonic ascending empirical curve
@@ -56,7 +56,7 @@ def run_validation():
 
         # Check vendor completeness
         qv = p.get("quantilesByVendor", {})
-        if not qv or "all" not in qv or "tcgplayer" not in qv:
+        if not qv or ("all_cheapest" not in qv and "all" not in qv) or "tcgplayer" not in qv:
             vendor_completeness_errors += 1
 
     if monotonic_errors == 0:

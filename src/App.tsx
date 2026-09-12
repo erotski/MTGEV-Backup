@@ -15,7 +15,7 @@ export default function App() {
   const [selectedSetCode, setSelectedSetCode] = useState<string>('MH3');
   const [initialProductId, setInitialProductId] = useState<string>('');
   const [priceMode, setPriceMode] = useState<PriceMode>('direct');
-  const [vendor, setVendor] = useState<Vendor>('all');
+  const [vendor, setVendor] = useState<Vendor>('all_cheapest');
   const [evBasis, setEvBasis] = useState<EvBasis>('avg');
 
   // Dynamic state loaded from pipeline JSON files

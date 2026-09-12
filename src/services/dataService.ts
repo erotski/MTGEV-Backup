@@ -330,7 +330,7 @@ class DataService {
                 boosterName: item.boosterName || item.booster_name,
                 fullBoosterName: `${item.boosterName} Booster`,
                 priceMode: item.priceMode || item.price_mode || 'direct',
-                vendor: item.vendor || 'all',
+                vendor: item.vendor === 'all' ? 'all_cheapest' : (item.vendor || 'all_cheapest'),
                 evAverage: Number(item.evAverage || item.ev_average || 0),
                 evMid90: Number(item.evMid90 || item.ev_mid90 || 0),
                 evMin: Number(item.evMin || item.ev_min || 0),

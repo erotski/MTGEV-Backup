@@ -153,7 +153,8 @@ def export_all():
         cursor.execute("""
             SELECT set_code, booster_name, ev_average, ev_mid90, ev_min, ev_max, exact_match_pct, updated_at
             FROM booster_ev_results
-            WHERE price_mode = 'direct' AND vendor = 'all' AND ev_average > 0;
+            WHERE price_mode = 'direct' AND vendor IN ('all_cheapest', 'all') AND ev_average > 0
+            ORDER BY CASE WHEN vendor = 'all_cheapest' THEN 1 ELSE 0 END;
         """)
         ev_rows = cursor.fetchall()
         ev_by_set = {}
@@ -332,10 +333,10 @@ def export_all():
 
             valid_vals = [v for k, v in res.items() if k in ['tcgplayer', 'cardkingdom', 'cardmarket', 'manapool'] and v is not None and v > 0]
             if valid_vals:
-                res['all'] = round(min(valid_vals), 2)
+                res['all_cheapest'] = round(min(valid_vals), 2)
                 res['all_average'] = round(sum(valid_vals) / len(valid_vals), 2)
             elif p_tcg:
-                res['all'] = round(float(p_tcg), 2)
+                res['all_cheapest'] = round(float(p_tcg), 2)
                 res['all_average'] = round(float(p_tcg), 2)
 
             return res
@@ -385,7 +386,7 @@ def export_all():
             if pack_count <= 0:
                 if contents and isinstance(contents, dict) and contents.get("card"):
                     cards = contents["card"]
-                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all", 0.0)) for cd in cards)
+                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all_cheapest", cd.get("prices", {}).get("all", 0.0))) for cd in cards)
                     if singles_ev > 0:
                         a.pop('spCategory', None)
                         a.pop('spSubtype', None)
@@ -538,7 +539,7 @@ def export_all():
                     is_foil = cd.get("foil", False) or ('foil' in finishes and 'nonfoil' not in finishes)
                     resolved_p = resolve_card_prices(u, finishes, is_foil)
 
-                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all") or resolved_p.get("cardkingdom") or 0.0
+                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all_cheapest") or resolved_p.get("all") or resolved_p.get("cardkingdom") or 0.0
                     if p_val > 0:
                         card_entry = {
                             "name": cname,

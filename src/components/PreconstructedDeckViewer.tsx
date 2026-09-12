@@ -64,7 +64,7 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
   const [sortBy, setSortBy] = useState<
     'price_desc' | 'price_asc' | 'total_ev_desc' | 'name_asc' | 'cmc_desc' | 'cmc_asc' | 'rarity' | 'commander'
   >('total_ev_desc');
-  const [vendorMode, setVendorMode] = useState<'all' | 'tcgplayer' | 'cardmarket' | 'cardkingdom'>('all');
+  const [vendorMode, setVendorMode] = useState<'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom'>('all_average');
   const [previewCard, setPreviewCard] = useState<DeckCardItem | null>(null);
 
   // Load precon decks json via dataService (cached & deduplicated)
@@ -238,8 +238,8 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
     if (vendorMode === 'cardkingdom' && c.prices?.cardkingdom) return c.prices.cardkingdom;
     if (vendorMode === 'cardmarket' && c.prices?.cardmarket) return c.prices.cardmarket;
     if (vendorMode === 'tcgplayer' && (c.prices?.tcgplayer || c.price)) return c.prices?.tcgplayer || c.price;
-    if (vendorMode === 'all') {
-      if (c.prices?.all) return c.prices.all;
+    if (vendorMode === 'all_average') {
+      if (c.prices?.all_average) return c.prices.all_average;
       const vals: number[] = [];
       if (c.prices?.tcgplayer || c.price) vals.push(c.prices?.tcgplayer || c.price);
       if (c.prices?.cardmarket) vals.push(c.prices.cardmarket);
@@ -455,7 +455,7 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
 
           <div className="bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-400/30 text-right">
             <span className="text-emerald-300 block text-[10px]">
-              {vendorMode === 'all' ? 'All Vendors Avg EV' : `${vendorMode.toUpperCase()} Total EV`}
+              {vendorMode === 'all_average' ? 'All Vendors Average EV' : `${vendorMode.toUpperCase()} Total EV`}
             </span>
             <span className="font-black text-emerald-300 text-sm">
               ${currentEvTotal.toFixed(2)}
@@ -686,7 +686,7 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
               onChange={(e) => setVendorMode(e.target.value as any)}
               className="px-2 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
             >
-              <option value="all">All Vendors (Average $)</option>
+              <option value="all_average">All Vendors (Average $)</option>
               <option value="tcgplayer">TCGplayer ($)</option>
               <option value="cardmarket">Cardmarket (€ / $)</option>
               <option value="cardkingdom">Card Kingdom ($)</option>
@@ -723,7 +723,7 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
             <strong className="text-slate-900">{totalCardsInDeck}</strong> total cards
           </span>
           <span>
-            {vendorMode === 'all' ? 'All Vendors Avg Subset EV: ' : 'Subset EV: '}
+            {vendorMode === 'all_average' ? 'All Vendors Avg Subset EV: ' : 'Subset EV: '}
             <strong className="text-indigo-600 font-black">
               $
               {processedCards
@@ -940,7 +940,7 @@ const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getC
             <th className="py-2.5 px-3 text-center">Finish</th>
             <th className="py-2.5 px-3 text-center">Qty</th>
             <th className="py-2.5 px-3 text-right">
-              {vendorMode === 'all'
+              {vendorMode === 'all_average'
                 ? 'Avg Unit Price'
                 : vendorMode === 'cardmarket'
                 ? 'Cardmarket Price'

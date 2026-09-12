@@ -126,7 +126,9 @@ def run_sync():
                 s_code = (ev.get("setCode") or "").lower()
                 b_name = (ev.get("boosterName") or "").lower()
                 p_mode = (ev.get("priceMode") or "direct").lower()
-                v_name = (ev.get("vendor") or "all").lower()
+                v_name = (ev.get("vendor") or "all_cheapest").lower()
+                if v_name == "all":
+                    v_name = "all_cheapest"
                 booster_ev_lookup[(s_code, b_name, p_mode, v_name)] = ev
 
     # 4. Load Precon Decks for non-pack products

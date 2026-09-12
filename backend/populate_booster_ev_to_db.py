@@ -231,6 +231,8 @@ class DatabaseBoosterEVEngine:
         else ['normal', 'foil', 'etched']
     )
     target_vendor = target_vendor.lower()
+    if target_vendor == 'all':
+      target_vendor = 'all_cheapest'
 
     # 1. Direct Set Printing Mode
     if not use_reprints:
@@ -356,6 +358,30 @@ class DatabaseBoosterEVEngine:
 
     return None, 'unpriced'
 
+  def resolve_card_price_average(
+      self,
+      uuid: str,
+      requested_finish: str,
+      sellers: list[str],
+      use_reprints: bool,
+  ):
+    """Average named-vendor prices without including the global-cheapest price."""
+    resolved_prices = []
+    statuses = []
+    for seller in sellers:
+      price, status = self.resolve_card_price(
+          uuid, requested_finish, seller, use_reprints
+      )
+      if price is not None:
+        resolved_prices.append(float(price))
+        statuses.append(status)
+
+    if not resolved_prices:
+      return None, 'unpriced'
+    if all(status == 'exact' for status in statuses):
+      return sum(resolved_prices) / len(resolved_prices), 'exact'
+    return sum(resolved_prices) / len(resolved_prices), 'vendor_fallback'
+
   # ====================================================
   # 3. LOAD BOOSTER CONFIG DIRECTLY FROM MYSQL
   # ====================================================
@@ -472,12 +498,12 @@ class DatabaseBoosterEVEngine:
       req_finish = 'foil' if sheet.get('foil', False) else 'normal'
 
       matrix = {
-          'direct': {'all': [], **{s: [] for s in sellers}},
-          'cheapest_reprint': {'all': [], **{s: [] for s in sellers}},
+          'direct': {'all_cheapest': [], 'all_average': [], **{s: [] for s in sellers}},
+          'cheapest_reprint': {'all_cheapest': [], 'all_average': [], **{s: [] for s in sellers}},
       }
       status_matrix = {
-          'direct': {'all': [], **{s: [] for s in sellers}},
-          'cheapest_reprint': {'all': [], **{s: [] for s in sellers}},
+          'direct': {'all_cheapest': [], 'all_average': [], **{s: [] for s in sellers}},
+          'cheapest_reprint': {'all_cheapest': [], 'all_average': [], **{s: [] for s in sellers}},
       }
 
       for u in u_list:
@@ -485,8 +511,14 @@ class DatabaseBoosterEVEngine:
         p_all_dir, st_all_dir = self.resolve_card_price_global(
             u, req_finish, use_reprints=False
         )
-        matrix['direct']['all'].append(p_all_dir)
-        status_matrix['direct']['all'].append(st_all_dir)
+        matrix['direct']['all_cheapest'].append(p_all_dir)
+        status_matrix['direct']['all_cheapest'].append(st_all_dir)
+
+        p_avg_dir, st_avg_dir = self.resolve_card_price_average(
+          u, req_finish, sellers, use_reprints=False
+        )
+        matrix['direct']['all_average'].append(p_avg_dir)
+        status_matrix['direct']['all_average'].append(st_avg_dir)
 
         for s in sellers:
           p_v_dir, st_v_dir = self.resolve_card_price(
@@ -499,8 +531,14 @@ class DatabaseBoosterEVEngine:
         p_all_rep, st_all_rep = self.resolve_card_price_global(
             u, req_finish, use_reprints=True
         )
-        matrix['cheapest_reprint']['all'].append(p_all_rep)
-        status_matrix['cheapest_reprint']['all'].append(st_all_rep)
+        matrix['cheapest_reprint']['all_cheapest'].append(p_all_rep)
+        status_matrix['cheapest_reprint']['all_cheapest'].append(st_all_rep)
+
+        p_avg_rep, st_avg_rep = self.resolve_card_price_average(
+          u, req_finish, sellers, use_reprints=True
+        )
+        matrix['cheapest_reprint']['all_average'].append(p_avg_rep)
+        status_matrix['cheapest_reprint']['all_average'].append(st_avg_rep)
 
         for s in sellers:
           p_v_rep, st_v_rep = self.resolve_card_price(
@@ -526,7 +564,7 @@ class DatabaseBoosterEVEngine:
         len(boosters), size=self.sample_size, p=b_weights
     )
 
-    all_vendors_list = ['all'] + sellers
+    all_vendors_list = ['all_cheapest', 'all_average'] + sellers
     modes = ['direct', 'cheapest_reprint']
 
     valid_packs = {
@@ -616,6 +654,13 @@ class DatabaseBoosterEVEngine:
 
     db_rows = []
 
+    # Remove pre-migration aggregate rows so legacy `all` records cannot
+    # compete with the canonical all_cheapest rows during export.
+    self.cursor.execute(
+      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all'",
+      (set_code, booster_name),
+    )
+
     for mode in modes:
       for v in all_vendors_list:
         arr = valid_packs[mode][v]
@@ -685,7 +730,7 @@ class DatabaseBoosterEVEngine:
     direct_all = [
         r
         for r in db_rows
-        if r[2] == 'direct' and r[3] == 'all'
+        if r[2] == 'direct' and r[3] == 'all_cheapest'
     ][0]
     return {
         'ev_avg': direct_all[4],
@@ -694,19 +739,19 @@ class DatabaseBoosterEVEngine:
         'exact_pct': direct_all[11],
     }
 
-  def get_card_price(self, uuid: str, requested_finish: str, use_reprints: bool, vendor: str = 'all'):
+  def get_card_price(self, uuid: str, requested_finish: str, use_reprints: bool, vendor: str = 'all_cheapest'):
     """Helper to resolve card price with on-demand prefetch if needed."""
     if uuid not in self.card_cache:
       try:
         self.prefetch_cards([uuid])
       except Exception:
         pass
-    if vendor == 'all':
+    if vendor in ('all', 'all_cheapest'):
       return self.resolve_card_price_global(uuid, requested_finish, use_reprints)
     else:
       return self.resolve_card_price(uuid, requested_finish, vendor, use_reprints)
 
-  def calculate_sealed_product_ev(self, contents: dict, mode: str = 'direct', vendor: str = 'all') -> float:
+  def calculate_sealed_product_ev(self, contents: dict, mode: str = 'direct', vendor: str = 'all_cheapest') -> float:
     """Calculates EV for a sealedProduct with JSON `contents` (deck, variable, booster, card)."""
     if not contents:
       return 0.0

@@ -179,7 +179,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const adjustedRecords = useMemo(() => {
     // Fast path: if default options (direct, all) are selected, records in arbitrage_leaderboard.json
     // are already the canonical metrics. We only need to adjust effectiveEv/profitUsd/roiPct per evBasis.
-    const isDefaultPricing = priceMode === 'direct' && vendor === 'all';
+    const isDefaultPricing = priceMode === 'direct' && (vendor === 'all' || vendor === 'all_cheapest');
     if (isDefaultPricing) {
       return records.map((r) => {
         let effectiveEv = r.totalEvAvg || 0;

@@ -135,7 +135,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   });
 
   const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
-    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all') || rows[0];
+    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all_cheapest') || rows[0];
     const mult = base.priceMode === priceMode ? 1.0 : reprintMultiplier;
     return {
       ...base,
@@ -558,7 +558,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : (canonicalMetrics?.marketPrice || packMarketPrice);
 
   // Check if viewing default pricing mode to use authentic precomputed composite metrics
-  const isDefaultPricing = (vendor === 'all' || vendor === 'tcgplayer') && priceMode === 'direct';
+  const isDefaultPricing = (vendor === 'all' || vendor === 'all_cheapest' || vendor === 'tcgplayer') && priceMode === 'direct';
 
   // Calculate dynamic product EV from canonical metrics (or precomputed 10,000-sample composite)
   const productAvgEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
@@ -621,7 +621,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     }
 
     // 3. Empirical quantiles by vendor (scaled by reprintMultiplier if in Cheapest Reprint mode)
-    const vendorKey = vendor === 'all' ? 'all' : vendor;
+    const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
     const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey] || activeProduct?.quantiles;
     if (rawQuantiles && rawQuantiles.length >= 100) {
       const reprintMult = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;

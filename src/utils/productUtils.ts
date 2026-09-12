@@ -156,7 +156,7 @@ export function resolveBoosterPackEv(
   pk: { code?: string; set?: string; count?: number },
   parentSetCode: string,
   boosterEvMap: Record<string, BoosterEVRecord[]>,
-  vendor: Vendor | string = 'all',
+  vendor: Vendor | string = 'all_cheapest',
   priceMode: PriceMode | string = 'direct',
   reprintMultiplier: number = 1.0
 ) {
@@ -337,8 +337,7 @@ export function resolveSingleCardEv(
     else if (vendor === 'all_average') {
       const vals = [vp.tcgplayer, vp.cardmarket, vp.cardkingdom, vp.manapool].filter(Boolean);
       if (vals.length > 0) vendorPrice = vals.reduce((a, b) => a + b, 0) / vals.length;
-    } else if (vendor === 'all') {
-      // all_cheapest
+    } else if (vendor === 'all_cheapest' || vendor === 'all') {
       const vals = [vp.tcgplayer, vp.cardmarket, vp.cardkingdom, vp.manapool].filter(Boolean);
       if (vals.length > 0) vendorPrice = Math.min(...vals);
     }

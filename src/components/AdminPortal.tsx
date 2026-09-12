@@ -122,7 +122,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   priceMode: externalPriceMode,
   onPriceModeChange: externalOnPriceModeChange,
 }) => {
-  const [internalVendor, setInternalVendor] = useState<Vendor>('all');
+  const [internalVendor, setInternalVendor] = useState<Vendor>('all_cheapest');
   const activeVendor = externalVendor || internalVendor;
   const handleVendorChange = externalOnVendorChange || setInternalVendor;
 

@@ -41,7 +41,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
     const tcg = prices.tcgplayer ?? (c.price ? Number(c.price) : null);
     const ck = prices.cardkingdom ?? (tcg ? Number((tcg * 1.15).toFixed(2)) : null);
     const cm = prices.cardmarket ?? (tcg ? Number((tcg * 0.94).toFixed(2)) : null);
-    const avg = prices.all ?? (tcg ?? 0);
+    const avg = prices.all_average ?? prices.all_cheapest ?? prices.all ?? (tcg ?? 0);
 
     let price = avg;
     if (vend === 'cardkingdom') price = ck ?? avg;

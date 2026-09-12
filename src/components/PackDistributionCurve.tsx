@@ -64,7 +64,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   defaultPackSealedPrice = 7.99,
   multiplier = 1,
   priceMode = 'direct',
-  vendor = 'all',
+  vendor = 'all_cheapest',
   isPreconstructed = false,
   preconSinglesEv,
   fixedBaseEv = 0,
@@ -112,7 +112,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const [xMaxPercent, setXMaxPercent] = useState<number>(100);
 
   const [visibleVendors, setVisibleVendors] = useState({
-    all: true,
+    all_cheapest: true,
     all_average: true,
     tcgplayer: true,
     cardmarket: true,
@@ -137,16 +137,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       (b) => (b.boosterName || '').toLowerCase().trim() === targetName
     );
     const candidatePool = exactCandidates.length > 0 ? exactCandidates : fallbackCandidates;
-    ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+    ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
       byVendor[v] = candidatePool.find((b) => b.vendor === v) || (activeBooster?.vendor === v ? activeBooster : undefined);
     });
-    // Alias all and all_cheapest
-    if (byVendor['all_cheapest'] && !byVendor['all']) {
-      byVendor['all'] = byVendor['all_cheapest'];
-    }
-    if (byVendor['all'] && !byVendor['all_cheapest']) {
-      byVendor['all_cheapest'] = byVendor['all'];
-    }
     return byVendor;
   }, [allSetBoosters, activeBooster, priceMode]);
 
@@ -162,7 +155,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const points: Array<{
       percentile: string;
       percentileNum: number;
-      all: number;
+      all_cheapest: number;
       all_average: number;
       tcgplayer: number;
       cardmarket: number;
@@ -172,7 +165,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
     // Map to hold simulated 100-bucket quantiles per vendor
     const vendorSimulations: Record<string, number[]> = {};
-    const vendorsToSim = ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
+    const vendorsToSim = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'];
 
     const effectiveVendorQuantiles = quantilesByVendor || (activeBooster as any)?.quantilesByVendor;
     const hasPrecomputedComposite = Boolean(
@@ -184,9 +177,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         // Fast path: Authentic 10,000-draw precomputed quantiles exist on the product
         vendorsToSim.forEach((v) => {
           const qArr =
-            effectiveVendorQuantiles[v] ||
-            effectiveVendorQuantiles['all'] ||
-            effectiveVendorQuantiles['tcgplayer'];
+            effectiveVendorQuantiles[v];
           if (qArr && qArr.length >= 100) {
             if (priceMode === 'cheapest_reprint') {
               vendorSimulations[v] = qArr.map((x: number) => Number((x * 0.82).toFixed(2)));
@@ -289,7 +280,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         points.push({
           percentile: `${p}%`,
           percentileNum: p,
-          all: fixedDeckEv,
+          all_cheapest: fixedDeckEv,
           all_average: fixedDeckEv,
           tcgplayer: fixedDeckEv,
           cardmarket: fixedDeckEv,
@@ -301,7 +292,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
       const qIdx = p - 1;
       const getSimVal = (v: string) => {
-        const simData = vendorSimulations[v] || vendorSimulations['all'] || vendorSimulations['tcgplayer'];
+        const simData = vendorSimulations[v];
         if (simData && simData.length >= 100) {
           return Number((simData[qIdx] + baseOffset).toFixed(2));
         }
@@ -312,13 +303,13 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       const ckVal = getSimVal('cardkingdom');
       const cmVal = getSimVal('cardmarket');
       const mpVal = getSimVal('manapool');
-      const allVal = vendorSimulations['all']?.length >= 100 ? getSimVal('all') : Math.min(tcgVal, ckVal, cmVal, mpVal);
-      const allAvgVal = vendorSimulations['all_average']?.length >= 100 ? getSimVal('all_average') : Number(((tcgVal + ckVal + cmVal + mpVal) / 4).toFixed(2));
+      const allVal = getSimVal('all_cheapest');
+      const allAvgVal = getSimVal('all_average');
 
       points.push({
         percentile: `${p}%`,
         percentileNum: p,
-        all: allVal,
+        all_cheapest: allVal,
         all_average: allAvgVal,
         tcgplayer: tcgVal,
         cardmarket: cmVal,
@@ -328,7 +319,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     }
 
     // Ensure non-decreasing monotonicity across percentiles
-    ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+    ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
       let maxSeen = 0;
       for (let i = 0; i < points.length; i++) {
         const val = (points[i] as any)[v];
@@ -356,11 +347,11 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   ]);
 
   const currentVendorKey = useMemo(() => {
-    if (vendor === 'all_cheapest') return 'all';
-    if (['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
+    if (['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
+      if (vendor === 'all') return 'all_cheapest';
       return vendor;
     }
-    return 'all';
+    return 'all_cheapest';
   }, [vendor]);
 
   const q0 = isPreconstructed ? fixedDeckEv : Number(allCurveData[0]?.[currentVendorKey as keyof typeof allCurveData[0]] || 0);
@@ -407,7 +398,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const scaledAverages = useMemo(() => {
     if (isPreconstructed) {
       return {
-        all: fixedDeckEv,
+        all_cheapest: fixedDeckEv,
         all_average: fixedDeckEv,
         tcgplayer: fixedDeckEv,
         cardmarket: fixedDeckEv,
@@ -415,25 +406,21 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         manapool: fixedDeckEv,
       };
     }
-    const getAvg = (v: string, fallbackMult: number) => {
+    const getAvg = (v: string) => {
       const rec = vendorRecords[v];
       if (rec && rec.evAverage > 0) {
         return Number((baseOffset + rec.evAverage * scale).toFixed(2));
       }
-      return Number((baseOffset + (activeBooster?.evAverage || 9.34) * fallbackMult * scale).toFixed(2));
+      return baseOffset;
     };
-    const tcgAvg = getAvg('tcgplayer', 1.0);
-    const ckAvg = getAvg('cardkingdom', 1.15);
-    const cmAvg = getAvg('cardmarket', 0.88);
-    const mpAvg = getAvg('manapool', 0.98);
-    const allAvg = vendorRecords['all']?.evAverage
-      ? getAvg('all', 0.94)
-      : Math.min(tcgAvg, ckAvg, cmAvg, mpAvg);
-    const allAverageAvg = vendorRecords['all_average']?.evAverage
-      ? getAvg('all_average', 1.0)
-      : Number(((tcgAvg + ckAvg + cmAvg + mpAvg) / 4).toFixed(2));
+    const tcgAvg = getAvg('tcgplayer');
+    const ckAvg = getAvg('cardkingdom');
+    const cmAvg = getAvg('cardmarket');
+    const mpAvg = getAvg('manapool');
+    const allAvg = getAvg('all_cheapest');
+    const allAverageAvg = getAvg('all_average');
     return {
-      all: allAvg,
+      all_cheapest: allAvg,
       all_average: allAverageAvg,
       tcgplayer: tcgAvg,
       cardmarket: cmAvg,
@@ -443,8 +430,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   }, [isPreconstructed, fixedDeckEv, activeBooster, vendorRecords, scale, baseOffset]);
 
   const vendorKey = useMemo(() => {
-    if (vendor && ['all', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
-      return vendor as 'all' | 'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom' | 'manapool';
+    if (vendor && ['all', 'all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor)) {
+      return (vendor === 'all' ? 'all_cheapest' : vendor) as 'all_cheapest' | 'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom' | 'manapool';
     }
     return 'tcgplayer';
   }, [vendor]);
@@ -645,9 +632,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
 
           <button
             id="toggle-curve-vendor-all"
-            onClick={() => toggleVendor('all')}
+            onClick={() => toggleVendor('all_cheapest')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-              visibleVendors.all
+              visibleVendors.all_cheapest
                 ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-xs'
                 : 'bg-slate-50 text-slate-400 border-slate-200 line-through opacity-60'
             }`}
@@ -838,10 +825,10 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             />
 
             {/* Vendor Solid Price Curves */}
-            {visibleVendors.all && (
+            {visibleVendors.all_cheapest && (
               <Line
                 type={isPreconstructed ? 'linear' : 'monotone'}
-                dataKey="all"
+                dataKey="all_cheapest"
                 stroke="#2563eb"
                 strokeWidth={2.4}
                 dot={false}
@@ -906,14 +893,14 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             )}
 
             {/* Horizontal Dashed Averages Reference Lines */}
-            {showAverages && visibleVendors.all && (
+            {showAverages && visibleVendors.all_cheapest && (
               <ReferenceLine
-                y={scaledAverages.all}
+                y={scaledAverages.all_cheapest}
                 stroke="#2563eb"
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `Cheapest Avg: $${scaledAverages.all.toFixed(2)}`,
+                  value: `Cheapest Avg: $${scaledAverages.all_cheapest.toFixed(2)}`,
                   fill: '#2563eb',
                   fontSize: 10,
                   position: 'insideBottomLeft',
@@ -927,7 +914,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `All Avg: $${scaledAverages.all_average.toFixed(2)}`,
+                  value: `Vendors Average: $${scaledAverages.all_average.toFixed(2)}`,
                   fill: '#6366f1',
                   fontSize: 10,
                   position: 'insideBottomLeft',

@@ -94,7 +94,7 @@ def main():
     print("TESTING 10,000-SAMPLE COMPOSITE EVALUATION ON THE HOBBIT (HOB)")
     print("=" * 70)
     
-    vendors = ["tcgplayer", "cardmarket", "all"]
+    vendors = ["tcgplayer", "cardmarket", "all_cheapest", "all_average"]
     
     # 1. Inspect Single Boosters
     print("\n--- SINGLE BOOSTER EMPIRICAL BENCHMARKS (TCGPLAYER) ---")

@@ -52,7 +52,9 @@ def run_audit(fix_mode: bool = False):
     for b in booster_evs:
         s_code = (b.get("setCode") or "").upper()
         b_name = (b.get("boosterName") or "").lower()
-        v = (b.get("vendor") or "all").lower()
+        v = (b.get("vendor") or "all_cheapest").lower()
+        if v == "all":
+            v = "all_cheapest"
         pm = (b.get("priceMode") or "direct").lower()
         booster_map[(s_code, b_name, v, pm)] = b
 
@@ -137,10 +139,14 @@ def run_audit(fix_mode: bool = False):
                 
                 # Lookup pack ev
                 b_entry = (
+                    booster_map.get((target_set, code, "all_cheapest", "direct")) or
                     booster_map.get((target_set, code, "all", "direct")) or
                     booster_map.get((target_set, code, "tcgplayer", "direct")) or
+                    booster_map.get((target_set, "draft", "all_cheapest", "direct")) or
                     booster_map.get((target_set, "draft", "all", "direct")) or
+                    booster_map.get((target_set, "play", "all_cheapest", "direct")) or
                     booster_map.get((target_set, "play", "all", "direct")) or
+                    booster_map.get((target_set, "default", "all_cheapest", "direct")) or
                     booster_map.get((target_set, "default", "all", "direct"))
                 )
                 unit_ev = float(b_entry.get("evAverage") or 0) if b_entry else 0.0

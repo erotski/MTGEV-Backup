@@ -23,11 +23,14 @@ def get_pack_ev(booster_ev_lookup, set_code, booster_code, vendor="tcgplayer", p
     s_code = (set_code or "").lower()
     b_key = BOOSTER_ALIASES.get((booster_code or "").lower(), (booster_code or "").lower())
     v_key = (vendor or "tcgplayer").lower()
+    if v_key == "all":
+        v_key = "all_cheapest"
     p_key = (price_mode or "direct").lower()
 
     return (
         booster_ev_lookup.get((s_code, b_key, p_key, v_key))
         or booster_ev_lookup.get((s_code, b_key, p_key, "tcgplayer"))
+        or booster_ev_lookup.get((s_code, b_key, p_key, "all_cheapest"))
         or booster_ev_lookup.get((s_code, b_key, p_key, "all"))
         or booster_ev_lookup.get((s_code, "default", p_key, v_key))
         or booster_ev_lookup.get((s_code, "default", p_key, "tcgplayer"))

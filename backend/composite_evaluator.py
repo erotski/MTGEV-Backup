@@ -31,7 +31,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DATA_DIR = ROOT_DIR / "public" / "data"
 DIST_DATA_DIR = ROOT_DIR / "dist" / "data"
 
-VENDORS = ["all", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool"]
+VENDORS = ["all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool"]
 
 def load_data():
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "r", encoding="utf-8") as f:
@@ -88,7 +88,9 @@ def build_booster_lookup(booster_ev_list):
     for b in booster_ev_list:
         sc = (b.get("setCode") or "").upper()
         bn = (b.get("boosterName") or "").lower()
-        v = (b.get("vendor") or "all").lower()
+        v = (b.get("vendor") or "all_cheapest").lower()
+        if v == "all":
+            v = "all_cheapest"
         pm = (b.get("priceMode") or "direct").lower()
         q = b.get("quantiles")
         avg = float(b.get("evAverage") or 0.0)
@@ -175,7 +177,7 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
 
     return {"packs": packs, "cards": cards, "decks": decks, "variables": variables}
 
-def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", prod=None):
+def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_cheapest", prod=None):
     """Calculates fixed singles EV for guaranteed cards, lands, and precon decks."""
     total_fixed = 0.0
     by_uuid = single_prices.get("byUuid", {})
@@ -189,13 +191,13 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", 
         
         # Check prices dictionary inside card item if pre-resolved
         if cd.get("prices") and isinstance(cd["prices"], dict):
-            c_price = float(cd["prices"].get(vendor) or cd["prices"].get("all") or cd["prices"].get("tcgplayer") or 0.0)
+            c_price = float(cd["prices"].get(vendor) or cd["prices"].get("all_cheapest") or cd["prices"].get("all") or cd["prices"].get("tcgplayer") or 0.0)
         elif u and u in by_uuid:
             prices_dict = by_uuid[u].get("prices", {})
-            c_price = float(prices_dict.get(vendor) or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_uuid[u].get("price") or 0.0)
+            c_price = float(prices_dict.get(vendor) or prices_dict.get("all_cheapest") or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_uuid[u].get("price") or 0.0)
         elif cname and cname in by_name:
             prices_dict = by_name[cname].get("prices", {})
-            c_price = float(prices_dict.get(vendor) or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_name[cname].get("price") or 0.0)
+            c_price = float(prices_dict.get(vendor) or prices_dict.get("all_cheapest") or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_name[cname].get("price") or 0.0)
 
         total_fixed += max(0.0, c_price)
 
@@ -255,7 +257,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all", 
 
     return round(total_fixed, 2)
 
-def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, vendor="all"):
+def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, vendor="all_cheapest"):
     """
     Normalizes a discrete MTGJson variable slot into options with probabilities,
     fixed values (cards/decks), and booster pack quantile specs.
@@ -299,6 +301,7 @@ def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, ven
             cnt = int(pk.get("count", 1) or 1)
             booster_entry = (
                 booster_lookup.get((pk_set, pk_code, vendor, "direct")) or
+                booster_lookup.get((pk_set, pk_code, "all_cheapest", "direct")) or
                 booster_lookup.get((pk_set, pk_code, "all", "direct")) or
                 booster_lookup.get((pk_set, "play", vendor, "direct")) or
                 booster_lookup.get((pk_set, "default", vendor, "direct"))
@@ -535,6 +538,7 @@ def run_composite_evaluator(target_set=None):
                 # Look up booster quantiles
                 booster_entry = (
                     booster_lookup.get((p_set, p_code, v, "direct")) or
+                    booster_lookup.get((p_set, p_code, "all_cheapest", "direct")) or
                     booster_lookup.get((p_set, p_code, "all", "direct")) or
                     booster_lookup.get((p_set, "play", v, "direct")) or
                     booster_lookup.get((p_set, "default", v, "direct"))
@@ -567,8 +571,8 @@ def run_composite_evaluator(target_set=None):
             updated_products.append(p)
             continue
 
-        # Use 'all' or 'tcgplayer' as default primary stats
-        primary_stats = vendor_stats.get("all") or vendor_stats.get("tcgplayer") or next(iter(vendor_stats.values()))
+        # Use all_cheapest or tcgplayer as default primary stats
+        primary_stats = vendor_stats.get("all_cheapest") or vendor_stats.get("tcgplayer") or next(iter(vendor_stats.values()))
         primary_quantiles = primary_stats["quantiles"]
 
         # Calculate exact breakeven percentile and EV Score (0-100 probability of profit)
