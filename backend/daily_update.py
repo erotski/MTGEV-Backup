@@ -16,6 +16,7 @@ from pathlib import Path
 
 LOG_FILE = Path(__file__).parent / "daily_update.log"
 TELEMETRY_JSON = Path(__file__).parent.parent / "public" / "data" / "pipeline_execution_logs.json"
+LATEST_RUN_JSON = Path(__file__).parent.parent / "public" / "data" / "latest_pipeline_run.json"
 INTERVAL_SECONDS = 24 * 60 * 60  # 1 day
 
 logging.basicConfig(
@@ -73,7 +74,16 @@ def update_telemetry_file(run_record: dict):
         log.warning("Could not write telemetry JSON: %s", e)
 
 
-def run_script(script_name: str, description: str) -> tuple[bool, float, int, str]:
+def write_latest_run_file(run_record: dict):
+    """Writes the latest run separately for quick inspection without log parsing."""
+    try:
+        with LATEST_RUN_JSON.open("w", encoding="utf-8") as handle:
+            json.dump(run_record, handle, indent=2)
+    except OSError as error:
+        log.warning("Could not write latest pipeline run JSON: %s", error)
+
+
+def run_script(script_name: str, description: str) -> tuple[bool, float, int, str, list[str]]:
     path = Path(__file__).parent / script_name
     log.info("▶  %s — %s", script_name, description)
     t0 = time.time()
@@ -94,11 +104,13 @@ def run_script(script_name: str, description: str) -> tuple[bool, float, int, st
 
     if result.returncode == 0:
         log.info("✔  %s finished successfully (%.2fs)", script_name, duration)
-        return True, duration, 0, ""
+        summary = [line.strip() for line in stdout_msg.splitlines() if line.strip()][-8:]
+        return True, duration, 0, "", summary
     else:
         log.error("✘  %s exited with code %d (%.2fs)", script_name, result.returncode, duration)
         err_snippet = (stderr_msg.strip() or stdout_msg.strip())[-1000:]
-        return False, duration, result.returncode, err_snippet
+        summary = [line.strip() for line in (stdout_msg + "\n" + stderr_msg).splitlines() if line.strip()][-8:]
+        return False, duration, result.returncode, err_snippet, summary
 
 
 def validate_output_bundle() -> tuple[bool, str]:
@@ -125,13 +137,14 @@ def run_all() -> bool:
     overall_t0 = time.time()
 
     for script, description in SCRIPTS:
-        success, duration, exit_code, err_msg = run_script(script, description)
+        success, duration, exit_code, err_msg, output_summary = run_script(script, description)
         stage_records.append({
             "name": script,
             "description": description,
             "status": "success" if success else "failed",
             "duration": duration,
-            "exitCode": exit_code
+            "exitCode": exit_code,
+            "summary": output_summary,
         })
         if not success:
             failures.append(script)
@@ -171,6 +184,7 @@ def run_all() -> bool:
         "errors": error_records
     }
     update_telemetry_file(run_record)
+    write_latest_run_file(run_record)
 
     if failures:
         log.error("Completed with failures: %s", ", ".join(failures))

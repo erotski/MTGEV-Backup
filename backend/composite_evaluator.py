@@ -177,11 +177,14 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
 
     return {"packs": packs, "cards": cards, "decks": decks, "variables": variables}
 
-def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_cheapest", prod=None):
+def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_cheapest", prod=None, provenance=None):
     """Calculates fixed singles EV for guaranteed cards, lands, and precon decks."""
     total_fixed = 0.0
     by_uuid = single_prices.get("byUuid", {})
     by_name = single_prices.get("byName", {})
+
+    if provenance is None:
+        provenance = {"expectedCards": 0, "exactCards": 0, "fallbackCards": 0, "missingCards": 0, "observedEv": 0.0, "fallbackCompletedEv": 0.0}
     
     # 1. Evaluate direct fixed cards
     for cd in cards:
@@ -190,16 +193,31 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
         c_price = 0.0
         
         # Check prices dictionary inside card item if pre-resolved
+        prices_dict = {}
         if cd.get("prices") and isinstance(cd["prices"], dict):
-            c_price = float(cd["prices"].get(vendor) or cd["prices"].get("all_cheapest") or cd["prices"].get("all") or cd["prices"].get("tcgplayer") or 0.0)
+            prices_dict = cd["prices"]
         elif u and u in by_uuid:
             prices_dict = by_uuid[u].get("prices", {})
-            c_price = float(prices_dict.get(vendor) or prices_dict.get("all_cheapest") or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_uuid[u].get("price") or 0.0)
+            c_price = float(prices_dict.get(vendor) or by_uuid[u].get("price") or 0.0)
         elif cname and cname in by_name:
             prices_dict = by_name[cname].get("prices", {})
-            c_price = float(prices_dict.get(vendor) or prices_dict.get("all_cheapest") or prices_dict.get("all") or prices_dict.get("tcgplayer") or by_name[cname].get("price") or 0.0)
+            c_price = float(prices_dict.get(vendor) or by_name[cname].get("price") or 0.0)
 
-        total_fixed += max(0.0, c_price)
+        count = int(cd.get("count", 1) or 1)
+        requested = float(prices_dict.get(vendor) or 0.0)
+        if requested > 0:
+            c_price = requested
+            status = "exact"
+        else:
+            alternatives = [float(prices_dict.get(other) or 0.0) for other in VENDORS if float(prices_dict.get(other) or 0.0) > 0]
+            c_price = alternatives[0] if alternatives else 0.0
+            status = "vendor_fallback" if alternatives else "unpriced"
+        provenance["expectedCards"] += count
+        provenance["observedEv"] += requested * count
+        provenance["fallbackCompletedEv"] += c_price * count
+        provenance["exactCards" if status == "exact" else "fallbackCards" if status == "vendor_fallback" else "missingCards"] += count
+
+        total_fixed += max(0.0, c_price * count)
 
     # 2. Evaluate precon decks
     for d in decks:
@@ -246,7 +264,17 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
                     break
 
         if matched_deck:
-            d_ev = float(matched_deck.get("totalSinglesEv") or matched_deck.get("singlesEv") or matched_deck.get("estimatedEv") or 0.0)
+            deck_stats = (matched_deck.get("pricingReliability") or {}).get(vendor)
+            if deck_stats:
+                provenance["expectedCards"] += int(deck_stats.get("expectedCards") or 0)
+                provenance["exactCards"] += int(deck_stats.get("exactCards") or 0)
+                provenance["fallbackCards"] += int(deck_stats.get("fallbackCards") or 0)
+                provenance["missingCards"] += int(deck_stats.get("missingCards") or 0)
+                provenance["observedEv"] += float(deck_stats.get("observedEv") or 0.0)
+                provenance["fallbackCompletedEv"] += float(deck_stats.get("fallbackCompletedEv") or 0.0)
+                d_ev = float(deck_stats.get("fallbackCompletedEv") or 0.0)
+            else:
+                d_ev = float(matched_deck.get("totalSinglesEv") or matched_deck.get("singlesEv") or matched_deck.get("estimatedEv") or 0.0)
             total_fixed += max(0.0, d_ev)
 
     # Fallback to product estimatedEv or baseline if deck not priced individually
@@ -528,10 +556,34 @@ def run_composite_evaluator(target_set=None):
 
         quantiles_by_vendor = {}
         vendor_stats = {}
+        fixed_pricing_by_vendor = {}
 
         # Evaluate across all vendors for priceMode = 'direct'
         for v in VENDORS:
-            fixed_ev = calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor=v, prod=p)
+            fixed_provenance = {}
+            fixed_ev = calculate_fixed_ev(
+                cards,
+                decks,
+                single_prices,
+                precon_decks,
+                vendor=v,
+                prod=p,
+                provenance=fixed_provenance,
+            )
+            if fixed_provenance.get("expectedCards", 0) > 0:
+                expected = fixed_provenance["expectedCards"]
+                fixed_provenance["observedEv"] = round(fixed_provenance["observedEv"], 2)
+                fixed_provenance["fallbackCompletedEv"] = round(fixed_provenance["fallbackCompletedEv"], 2)
+                fixed_provenance["coveragePct"] = round(
+                    (expected - fixed_provenance["missingCards"]) / expected * 100,
+                    2,
+                )
+                fixed_provenance["status"] = (
+                    "missing" if fixed_provenance["missingCards"]
+                    else "fallback_used" if fixed_provenance["fallbackCards"]
+                    else "exact"
+                )
+                fixed_pricing_by_vendor[v] = fixed_provenance
             pack_specs = []
 
             for (p_set, p_code), count in packs_dict.items():
@@ -573,6 +625,8 @@ def run_composite_evaluator(target_set=None):
 
         # Use all_cheapest or tcgplayer as default primary stats
         primary_stats = vendor_stats.get("all_cheapest") or vendor_stats.get("tcgplayer") or next(iter(vendor_stats.values()))
+        if fixed_pricing_by_vendor:
+            p["fixedPricingByVendor"] = fixed_pricing_by_vendor
         primary_quantiles = primary_stats["quantiles"]
 
         # Calculate exact breakeven percentile and EV Score (0-100 probability of profit)

@@ -17,6 +17,7 @@ The important backend outputs are:
 - Product EV summaries and 100 empirical buckets.
 - Vendor-aware product chase cards.
 - Booster pricing reliability by named vendor and price mode.
+- Fixed-card and deck pricing provenance, including exact, fallback, and missing counts.
 - JSON files consumed by the React application.
 
 ## 2. Runtime Architecture
@@ -100,6 +101,7 @@ Purpose:
 
 - Orchestrates all pipeline stages.
 - Captures stage status and timing in `public/data/pipeline_execution_logs.json`.
+- Writes the latest run, including compact stage summaries, to `public/data/latest_pipeline_run.json`.
 - Stops on failure.
 - Validates generated JSON before publication.
 
@@ -197,7 +199,7 @@ Audit files contain the exact sorted valid samples and the generated bucket mean
 Review risks:
 
 - The simulation is memory-heavy because all valid pack totals are retained until statistics are calculated.
-- Random booster card-slot price resolution intentionally contains finish and vendor borrowing. If a seller does not carry the exact card or finish in a randomly opened booster slot, the resolver borrows the nearest usable price from a neighboring finish or vendor so that booster coverage remains reasonably complete. This is the only accepted borrowing policy. It is distinct from synthetic curve generation, and its frequency, type, and source should remain explicit in booster status counts and audit output.
+- Card-price resolution intentionally contains finish and vendor borrowing for every card-content context. If a seller does not carry the exact card or finish, the resolver borrows the nearest usable price from a neighboring finish or vendor so that product coverage remains reasonably complete. This applies to random booster slots, fixed product cards, preconstructed deck cards, variable card options, and random tiny boosters with set/sheet data. It is distinct from synthetic curve generation, and its frequency, type, and source should remain explicit in provenance telemetry. Random content is weighted by occurrence; fixed content is counted per included card.
 - Some public helper methods still accept legacy `all` input for compatibility.
 
 Function-level review findings:
@@ -205,9 +207,9 @@ Function-level review findings:
 | Area | Current responsibility | Finding |
 |---|---|---|
 | `prefetch_cards` | Loads card metadata, direct prices, and lowest reprint prices | Correct pipeline boundary, but performs three separate batched query families for every new UUID set. |
-| `resolve_card_price` | Resolves named-vendor prices for random booster card slots | Uses the only accepted finish and cross-vendor borrowing policy when the exact seller/finish is unavailable. Preserve it for booster completeness, but measure the fallback type and source so borrowed prices remain distinguishable from exact prices. |
-| `resolve_card_price_global` | Resolves `all_cheapest` for random booster card slots | May borrow across finishes for booster completeness; it must not be generalized as a fallback policy for other data domains. Separate implementation duplicates parts of `resolve_card_price`; candidate for a shared resolution primitive. |
-| `resolve_card_price_average` | Resolves `all_average` for random booster card slots | Averages only vendors discovered in the current booster card set. Missing sellers are excluded from the average; they are not borrowed or substituted. |
+| `resolve_card_price` | Resolves named-vendor prices for card content | Uses finish and cross-vendor borrowing when the exact seller/finish is unavailable. Apply the same resolver to booster slots, fixed cards, decks, variable card options, and tiny random boosters; measure fallback type and source so borrowed prices remain distinguishable from exact prices. |
+| `resolve_card_price_global` | Resolves `all_cheapest` for card content | May borrow across finishes and should share the same card-price provenance contract as named-vendor resolution. Separate implementation duplicates parts of `resolve_card_price`; candidate for a shared resolution primitive. |
+| `resolve_card_price_average` | Resolves `all_average` for card content | Averages resolved named-vendor prices. Borrowing remains visible in per-vendor provenance; aggregate coverage must not hide those statuses. |
 | `load_booster_config_from_db` | Reads weighted variants, contents, sheets, and weighted cards | Authoritative booster configuration loader. Keep. |
 | `simulate_and_store` | Builds matrices, runs 5,000 draws, calculates summaries/buckets, writes MySQL, writes audit files | Too many responsibilities in one method. Highest-priority refactor target. |
 | `get_card_price` | Public helper for sealed-product EV | Removed after caller search found no external users. |
@@ -312,11 +314,14 @@ Purpose:
 
 - Creates the temporary `decks` and `deckCards` tables when the MTGJSON SQL dump does not provide them.
 - Loads the current published `precon_decks.json` snapshot into those tables before chase-card export.
+- Enriches fixed deck cards with current AllPricesToday vendor/finish provenance when the feed is available.
+- Writes per-deck `pricingReliability` summaries with observed and fallback-completed EV.
 
 Review status:
 
 - Active pipeline stage that establishes the relational deck contract.
 - The snapshot remains the current source because the repository has no upstream deck-bundle downloader yet; replacing it with a fresh deck download is a follow-up improvement.
+- Neighbor borrowing is explicit in `priceProvenance`; it is not inferred by the frontend.
 
 ### `sync_all_from_sqlite.py`
 
@@ -411,6 +416,7 @@ Legacy `all` references still exist in a few compatibility paths and should be r
 | `product_chase_cards.json` | `export_product_chase_cards.py` | product TOP 5 chase viewer |
 | `pricing_reliability.json` | `export_app_data.py` | Products Overview vendor reliability indicator |
 | `pipeline_execution_logs.json` | `daily_update.py` | Admin Portal telemetry |
+| `latest_pipeline_run.json` | `daily_update.py` | Direct latest-run inspection |
 
 The app should read these files as immutable published snapshots. It should not reconstruct core EV distributions in the browser when backend output exists.
 
@@ -430,9 +436,9 @@ Fallback categories requiring explicit policy and observability:
 
 Recommended rule:
 
-> Only random booster card-slot pricing may produce an explicit borrowed-data result when a documented neighboring price is available. Every other data domain must remain exact or unresolved; it must not borrow or invent a value.
+> Any card-price lookup may produce an explicit borrowed-data result when a documented neighboring price is available. Non-card domains such as sealed-product market prices, metadata, and product identity must remain exact or unresolved; they must not borrow or invent a value.
 
-Neighboring vendor and finish borrowing are intentional only inside random booster card-slot resolution. Product EV, sealed-product prices, metadata, chase-card exports, preconstructed-deck data, and other outputs must not borrow or invent values; unresolved data must remain missing or fail validation. Existing non-booster fallbacks should be removed or replaced with explicit unresolved states.
+Neighboring vendor and finish borrowing are intentional for all card-price resolution. Product EV should expose the resulting card provenance, while sealed-product market prices, metadata, and product identity must not borrow or invent values. Existing non-card fallbacks should be removed or replaced with explicit unresolved states.
 
 ## 8. Recommended Cleanup Order
 

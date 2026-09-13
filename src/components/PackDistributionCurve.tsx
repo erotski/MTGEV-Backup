@@ -182,11 +182,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           const qArr =
             effectiveVendorQuantiles[v];
           if (qArr && qArr.length >= 100) {
-            if (priceMode === 'cheapest_reprint') {
-              vendorSimulations[v] = qArr.map((x: number) => Number((x * 0.82).toFixed(2)));
-            } else {
-              vendorSimulations[v] = qArr;
-            }
+            vendorSimulations[v] = qArr;
           }
         });
       } else {
@@ -220,14 +216,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                 return;
               }
 
-              const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
               let itemQuantiles = rec?.quantiles;
               if (!itemQuantiles || itemQuantiles.length < 100) {
                 missingEmpiricalQuantiles = true;
-              }
-
-              if (itemQuantiles && modeMult !== 1.0) {
-                itemQuantiles = itemQuantiles.map(q => q * modeMult);
               }
 
               if (itemQuantiles) {
@@ -246,12 +237,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           } else {
             // Single booster empirical lookup
             const rec = vendorRecords[v];
-            const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
             let itemQuantiles = rec?.quantiles;
             if (itemQuantiles && itemQuantiles.length >= 100) {
-              if (modeMult !== 1.0) {
-                itemQuantiles = itemQuantiles.map(q => q * modeMult);
-              }
               if (scale === 1) {
                 vendorSimulations[v] = [...itemQuantiles];
               } else {

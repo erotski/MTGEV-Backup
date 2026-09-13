@@ -106,11 +106,7 @@ export function resolveCardPrice(
     return prices[v];
   }
 
-  const baseTcg = isFoil ? (card.foilPrice || card.price || 0) : (prices.tcgplayer || card.price || 0);
-  if (v === 'cardmarket') return Number((baseTcg * 0.868).toFixed(2));
-  if (v === 'cardkingdom') return Number((baseTcg * 1.15).toFixed(2));
-  if (v === 'manapool') return prices.all || Number((baseTcg * 0.98).toFixed(2));
-  return baseTcg;
+  return 0;
 }
 
 /**

@@ -156,6 +156,13 @@ export interface DeckCardItem {
     all_cheapest?: number;
     all_average?: number;
   };
+  priceProvenance?: Record<string, {
+    status: 'exact' | 'vendor_fallback' | 'finish_fallback' | 'vendor_finish_fallback' | 'reprint' | 'unpriced' | 'ignored';
+    requestedVendor?: string;
+    resolvedVendor?: string;
+    requestedFinish?: string;
+    resolvedFinish?: string;
+  }>;
 }
 
 export interface PreconstructedDeckDetail {
@@ -201,6 +208,14 @@ export interface PreconstructedDeckDetail {
   cards?: DeckCardItem[];
   fullDecklist?: DeckCardItem[];
   sealedProductUuids?: string[];
+  pricingReliability?: Record<string, {
+    expectedCards: number;
+    exactCards: number;
+    fallbackCards: number;
+    missingCards: number;
+    coveragePct: number;
+    status: 'exact' | 'fallback_used' | 'missing' | string;
+  }>;
 }
 
 export interface CustomSlot {

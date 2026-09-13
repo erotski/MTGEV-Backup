@@ -77,13 +77,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor
   const rawSetBoosters = boosterRecords.filter((b) => b.setCode.toUpperCase() === selectedSetCode.toUpperCase());
-  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const normVendor = normalizeVendor(vendor);
-  const vendorEvMultiplier =
-    normVendor === 'cardmarket' ? 0.868 :
-    normVendor === 'cardkingdom' ? 1.15 :
-    normVendor === 'manapool' ? 0.98 :
-    1.0;
 
   // Search & sorting state for MTG Sets dropdown
   const [setSearchQuery, setSetSearchQuery] = useState<string>('');
@@ -123,8 +117,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // 'all' consensus row) - mirrors backend/ev_engine.py's get_pack_ev priority so both the
   // Booster EV explorer and the Product Overview/Admin pages agree on the same numbers.
   const exactModeBoosters = rawSetBoosters.filter((b) => b.priceMode === priceMode);
-  const fallbackBoosters = rawSetBoosters.filter((b) => b.priceMode === 'direct');
-  const sourceBoosters = exactModeBoosters.length > 0 ? exactModeBoosters : fallbackBoosters.length > 0 ? fallbackBoosters : rawSetBoosters;
+  const sourceBoosters = exactModeBoosters;
 
   const boostersByName = new Map<string, BoosterEVRecord[]>();
   sourceBoosters.forEach((b) => {
@@ -134,16 +127,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
     const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all_cheapest') || rows[0];
-    const mult = base.priceMode === priceMode ? 1.0 : reprintMultiplier;
     return {
       ...base,
-      evAverage: Number((base.evAverage * mult).toFixed(2)),
-      evMid90: Number((base.evMid90 * mult).toFixed(2)),
-      evMin: Number((base.evMin * mult).toFixed(2)),
-      evMax: Number((base.evMax * mult).toFixed(2)),
-      evMin5: Number((base.evMin5 * mult).toFixed(2)),
-      evMax5: Number((base.evMax5 * mult).toFixed(2)),
-      quantiles: base.quantiles ? base.quantiles.map((q) => Number((q * mult).toFixed(2))) : undefined,
       priceMode,
       vendor,
     };
@@ -157,9 +142,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return prods.map((p) => ({
       ...p,
       marketPrice: Number((p.marketPrice || 0).toFixed(2)),
-      estimatedEv: Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+      estimatedEv: p.estimatedEv,
     }));
-  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier]);
+  }, [selectedSetCode]);
 
   // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
   const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
@@ -355,7 +340,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }).catch(() => {});
     return () => { isMounted = false; };
-  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, initialProductId]);
+  }, [selectedSetCode, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, initialProductId]);
 
   // Sync when set changes
   useEffect(() => {
@@ -1064,7 +1049,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           preconDecks={preconDecks}
           boosterEvMap={boosterEvMap}
           singleCardPrices={singleCardPrices}
-          reprintMultiplier={reprintMultiplier}
           onSelectProduct={(prodId, bName, product) => {
             setSelectedProductId(prodId);
             if (product) {
