@@ -1,0 +1,24 @@
+# Backend source and pipeline-only files
+backend/
+scripts/
+assets/
+incoming_zips/
+
+# Local development and repository metadata
+node_modules/
+.git/
+.github/
+.vscode/
+
+# Local logs, caches, and generated audit output
+*.log
+__pycache__/
+backend/audit_output/
+dist/
+build/
+coverage/
+
+# Local-only files
+.env
+.env.*
+!.env.example
