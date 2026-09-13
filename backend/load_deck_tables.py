@@ -24,84 +24,6 @@ def load_deck_data():
     return raw.get("decks", raw) if isinstance(raw, dict) else {}
 
 
-def parse_json_column(value):
-    if isinstance(value, str):
-        try:
-            return json.loads(value)
-        except json.JSONDecodeError:
-            return []
-    return value or []
-
-
-def load_mysql_decks(cursor):
-    """Normalize MTGJSON setdecks rows into the local deck snapshot shape."""
-    cursor.execute(
-        """
-        SELECT setCode, code, name, type, releaseDate, source,
-               sealedProductUuids, sourceSetCodes, mainBoard, sideBoard,
-               commander, displayCommander, tokens, planes, schemes
-        FROM setdecks
-        """
-    )
-    decks = {}
-    for row in cursor.fetchall():
-        name = (row.get("name") or "").strip()
-        code = (row.get("setCode") or row.get("code") or "").strip().upper()
-        if not name or not code:
-            continue
-        cards = []
-        for field in ("commander", "mainBoard", "sideBoard"):
-            values = parse_json_column(row.get(field))
-            if isinstance(values, list):
-                cards.extend(values)
-        deck = {
-            "deckName": name,
-            "name": name,
-            "setCode": code,
-            "set": code.lower(),
-            "format": row.get("type") or "casual",
-            "releaseDate": row.get("releaseDate"),
-            "source": row.get("source"),
-            "sealedProductUuids": parse_json_column(row.get("sealedProductUuids")),
-            "sourceSetCodes": parse_json_column(row.get("sourceSetCodes")),
-            "cards": cards,
-            "displayCommander": parse_json_column(row.get("displayCommander")),
-            "tokens": parse_json_column(row.get("tokens")),
-            "planes": parse_json_column(row.get("planes")),
-            "schemes": parse_json_column(row.get("schemes")),
-        }
-        decks[f"{name.lower()}___{code.lower()}"] = deck
-    uuid_list = list({
-        card.get("uuid")
-        for deck in decks.values()
-        for card in deck.get("cards", [])
-        if card.get("uuid")
-    })
-    metadata = {}
-    for start in range(0, len(uuid_list), 1000):
-        batch = uuid_list[start:start + 1000]
-        placeholders = ",".join(["%s"] * len(batch))
-        cursor.execute(
-            f"""
-            SELECT uuid, name, types, manaCost, manaValue, rarity, identifiers
-            FROM cards WHERE uuid IN ({placeholders})
-            """,
-            batch,
-        )
-        metadata.update({row["uuid"]: row for row in cursor.fetchall()})
-    for deck in decks.values():
-        for card in deck.get("cards", []):
-            info = metadata.get(card.get("uuid"), {})
-            card["name"] = info.get("name", card.get("name", "Unknown"))
-            card["types"] = parse_json_column(info.get("types"))
-            card["manaCost"] = info.get("manaCost", "")
-            card["manaValue"] = info.get("manaValue", 0)
-            card["rarity"] = info.get("rarity", "common")
-            identifiers = parse_json_column(info.get("identifiers"))
-            card["scryfallId"] = identifiers.get("scryfallId", "") if isinstance(identifiers, dict) else ""
-    return decks
-
-
 def enrich_deck_prices(decks, all_prices_data=None):
     """Annotate fixed deck cards with explicit fallback provenance."""
     for deck in decks.values():
@@ -228,22 +150,12 @@ def load_tables():
     if ALL_PRICES_PATH.exists():
         with ALL_PRICES_PATH.open("r", encoding="utf-8") as handle:
             all_prices_data = json.load(handle).get("data", {})
+    decks = enrich_deck_prices(load_deck_data(), all_prices_data)
+    with DATA_PATH.open("w", encoding="utf-8") as handle:
+        json.dump({"_format": "compact", "decks": decks}, handle, indent=2)
     connection = mysql.connector.connect(**DB_CONFIG)
     cursor = connection.cursor(dictionary=True)
     try:
-        try:
-            decks = load_mysql_decks(cursor)
-            source = "MySQL setdecks"
-        except mysql.connector.Error:
-            decks = load_deck_data()
-            source = "published snapshot"
-        if not decks:
-            decks = load_deck_data()
-            source = "published snapshot"
-        decks = enrich_deck_prices(decks, all_prices_data)
-        with DATA_PATH.open("w", encoding="utf-8") as handle:
-            json.dump({"_format": "compact", "decks": decks}, handle, indent=2)
-        print(f"  INFO Deck source: {source} ({len(decks)} deck records)")
         create_tables(cursor)
         cursor.execute("DELETE FROM deckCards")
         cursor.execute("DELETE FROM decks")

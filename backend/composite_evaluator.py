@@ -265,7 +265,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
 
         if matched_deck:
             deck_stats = (matched_deck.get("pricingReliability") or {}).get(vendor)
-            if deck_stats:
+            if deck_stats and "expectedCards" in deck_stats:
                 provenance["expectedCards"] += int(deck_stats.get("expectedCards") or 0)
                 provenance["exactCards"] += int(deck_stats.get("exactCards") or 0)
                 provenance["fallbackCards"] += int(deck_stats.get("fallbackCards") or 0)
@@ -274,6 +274,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
                 provenance["fallbackCompletedEv"] += float(deck_stats.get("fallbackCompletedEv") or 0.0)
                 d_ev = float(deck_stats.get("fallbackCompletedEv") or 0.0)
             else:
+                # Preserve compatibility with pre-provenance deck snapshots.
                 d_ev = float(matched_deck.get("totalSinglesEv") or matched_deck.get("singlesEv") or matched_deck.get("estimatedEv") or 0.0)
             total_fixed += max(0.0, d_ev)
 

@@ -312,15 +312,15 @@ Review status:
 
 Purpose:
 
-- Reads authoritative deck metadata and card lists from the MTGJSON `setdecks` table (`mainBoard`, `commander`, and `sideBoard`).
-- Normalizes those rows into temporary `decks` and `deckCards` tables before chase-card export.
+- Creates the temporary `decks` and `deckCards` tables when the MTGJSON SQL dump does not provide them.
+- Loads the current published `precon_decks.json` snapshot into those tables before chase-card export.
 - Enriches fixed deck cards with current AllPricesToday vendor/finish provenance when the feed is available.
 - Writes per-deck `pricingReliability` summaries with observed and fallback-completed EV.
 
 Review status:
 
 - Active pipeline stage that establishes the relational deck contract.
-- Falls back to the published `precon_decks.json` snapshot only when `setdecks` is unavailable or empty.
+- The snapshot remains the current source because the repository has no upstream deck-bundle downloader yet; replacing it with a fresh deck download is a follow-up improvement.
 - Neighbor borrowing is explicit in `priceProvenance`; it is not inferred by the frontend.
 
 ### `sync_all_from_sqlite.py`
