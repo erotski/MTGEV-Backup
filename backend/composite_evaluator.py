@@ -185,6 +185,13 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
 
     if provenance is None:
         provenance = {"expectedCards": 0, "exactCards": 0, "fallbackCards": 0, "missingCards": 0, "observedEv": 0.0, "fallbackCompletedEv": 0.0}
+    else:
+        provenance.setdefault("expectedCards", 0)
+        provenance.setdefault("exactCards", 0)
+        provenance.setdefault("fallbackCards", 0)
+        provenance.setdefault("missingCards", 0)
+        provenance.setdefault("observedEv", 0.0)
+        provenance.setdefault("fallbackCompletedEv", 0.0)
     
     # 1. Evaluate direct fixed cards
     for cd in cards:
