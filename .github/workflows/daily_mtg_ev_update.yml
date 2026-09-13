@@ -1,0 +1,117 @@
+name: Daily MTG Booster EV & Pricing Pipeline
+
+on:
+  schedule:
+    # Runs daily at 04:00 UTC (12:00 AM EST)
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Allows manual one-click runs from GitHub Actions UI
+    inputs:
+      audit_enabled:
+        description: 'Capture raw booster samples and bucket audit files'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  update-ev-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 60
+
+    # Provision temporary MySQL service for zero database hosting costs
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_for_cards
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install MySQL Client & Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          pip install mysql-connector-python requests tqdm numpy
+
+      - name: Prepare Isolated Pipeline Workspace
+        run: |
+          set -e
+          rm -rf ../mtgev-pipeline-workspace
+          mkdir -p ../mtgev-pipeline-workspace
+          rsync -a --exclude='.git' --exclude='node_modules' ./ ../mtgev-pipeline-workspace/
+
+      - name: Execute Daily Update Pipeline & JSON Export
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: rootpassword
+          DB_NAME: test_for_cards
+          AUDIT_ENABLED: ${{ inputs.audit_enabled }}
+          AUDIT_OUTPUT_DIR: backend/audit_output
+        run: |
+          set -e
+          cd ../mtgev-pipeline-workspace
+          python backend/daily_update.py
+
+      - name: Stage Validated Generated Data
+        run: |
+          set -e
+          rm -rf backend/audit_output
+          if [ -d ../mtgev-pipeline-workspace/backend/audit_output ]; then
+            cp -a ../mtgev-pipeline-workspace/backend/audit_output backend/audit_output
+          fi
+          mv public/data public/data.previous
+          if mv ../mtgev-pipeline-workspace/public/data public/data; then
+            rm -rf public/data.previous
+          else
+            mv public/data.previous public/data
+            exit 1
+          fi
+
+      - name: Upload EV audit files
+        if: ${{ inputs.audit_enabled == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ev-simulation-audit-${{ github.run_number }}
+          path: backend/audit_output/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Commit & Push Updated Datasets to Dedicated Data Branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Keep data-sync as a data-only orphan branch so the default Actions
+          # token never needs permission to update .github/workflows files.
+          git checkout --orphan data-sync
+          git reset
+          git add public/data/
+          if git diff --staged --quiet; then
+            echo "No data changes to commit."
+          else
+            git commit -m "Auto-update MTG booster EV & market prices [skip ci]"
+            git push origin data-sync --force
+          fi
+
+      - name: Trigger Vercel Production Deploy
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-args: '--prod --archive=tgz'
+          working-directory: ./

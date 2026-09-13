@@ -1,0 +1,202 @@
+{
+  "3eda255f-9569-5f08-981e-505c1b6d6871": {
+    "_comment": "Secret Lair Drop Secret Lair x Hatsune Miku Electric Entourage Japanese",
+    "contents": {
+      "deck": [
+        {
+          "name": "Hatsune Miku: Electric Entourage",
+          "set": "sld"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "name": "Chandra, Flamecaller",
+                  "number": "807",
+                  "set": "sld",
+                  "uuid": "a49f173e-c6df-5e16-9ac8-728f1e0661ad"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 199,
+                  "weight": 200
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "name": "Snapcaster Mage",
+                  "number": "808",
+                  "set": "sld",
+                  "uuid": "482fced3-4e5c-5315-88c8-9ce471e732d0"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 200
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "5b87bc72-10c8-5829-bf9e-5700497010b7": {
+    "_comment": "Secret Lair Drop Secret Lair x Hatsune Miku Electric Entourage Japanese Rainbow Foil",
+    "contents": {
+      "deck": [
+        {
+          "name": "Hatsune Miku: Electric Entourage Foil Edition",
+          "set": "sld"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Chandra, Flamecaller",
+                  "number": "807",
+                  "set": "sld",
+                  "uuid": "a49f173e-c6df-5e16-9ac8-728f1e0661ad"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 199,
+                  "weight": 200
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Snapcaster Mage",
+                  "number": "808",
+                  "set": "sld",
+                  "uuid": "482fced3-4e5c-5315-88c8-9ce471e732d0"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 200
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "7b3a5aa6-b5fd-5233-853c-b3af44f1310d": {
+    "_comment": "Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese",
+    "contents": {
+      "deck": [
+        {
+          "name": "Hatsune Miku: Winter Diva",
+          "set": "sld"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "name": "Beloved Princess",
+                  "number": "804",
+                  "set": "sld",
+                  "uuid": "52046a10-abfc-5707-929c-02b62260457e"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 199,
+                  "weight": 200
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "name": "Snapcaster Mage",
+                  "number": "808",
+                  "set": "sld",
+                  "uuid": "482fced3-4e5c-5315-88c8-9ce471e732d0"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 200
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "f3c36088-b5c8-5c55-97fc-19beee5174c8": {
+    "_comment": "Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese Rainbow Foil",
+    "contents": {
+      "deck": [
+        {
+          "name": "Hatsune Miku: Winter Diva Foil Edition",
+          "set": "sld"
+        }
+      ],
+      "variable": [
+        {
+          "configs": [
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Beloved Princess",
+                  "number": "804",
+                  "set": "sld",
+                  "uuid": "52046a10-abfc-5707-929c-02b62260457e"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 199,
+                  "weight": 200
+                }
+              ]
+            },
+            {
+              "card": [
+                {
+                  "foil": true,
+                  "name": "Snapcaster Mage",
+                  "number": "808",
+                  "set": "sld",
+                  "uuid": "482fced3-4e5c-5315-88c8-9ce471e732d0"
+                }
+              ],
+              "variable_config": [
+                {
+                  "chance": 1,
+                  "weight": 200
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
