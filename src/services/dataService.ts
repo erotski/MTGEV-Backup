@@ -1,4 +1,4 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
 import { 
   loadScryfallHierarchy, 
@@ -100,6 +100,8 @@ class DataService {
   private arbitragePromise: Promise<BoxArbitrageRecord[]> | null = null;
   private boosterEvCache: Record<string, BoosterEVRecord[]> | null = null;
   private boosterEvPromise: Promise<Record<string, BoosterEVRecord[]>> | null = null;
+  private pricingReliabilityCache: Record<string, PricingReliability> | null = null;
+  private pricingReliabilityPromise: Promise<Record<string, PricingReliability>> | null = null;
   private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
   private preconDecksCache: Record<string, any> | null = null;
   private preconDecksPromise: Promise<Record<string, any>> | null = null;
@@ -381,6 +383,33 @@ class DataService {
     })();
 
     return this.boosterEvPromise;
+  }
+
+  /** Loads aggregate named-vendor booster pricing reliability telemetry. */
+  public async getPricingReliability(): Promise<Record<string, PricingReliability>> {
+    if (this.pricingReliabilityCache) return this.pricingReliabilityCache;
+    if (this.pricingReliabilityPromise) return this.pricingReliabilityPromise;
+
+    this.pricingReliabilityPromise = (async () => {
+      try {
+        const response = await fetch('/data/pricing_reliability.json', { cache: 'no-cache' });
+        if (response.ok) {
+          const raw = await response.json();
+          if (raw?.vendors && typeof raw.vendors === 'object') {
+            this.pricingReliabilityCache = raw.vendors as Record<string, PricingReliability>;
+            return this.pricingReliabilityCache;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not fetch /data/pricing_reliability.json:', error);
+      } finally {
+        this.pricingReliabilityPromise = null;
+      }
+      this.pricingReliabilityCache = {};
+      return this.pricingReliabilityCache;
+    })();
+
+    return this.pricingReliabilityPromise;
   }
 
   /**

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
-import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, EvBasis } from './types';
+import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, EvBasis, PricingReliability } from './types';
 import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
@@ -22,6 +22,7 @@ export default function App() {
   const [availableSets, setAvailableSets] = useState<SetOption[]>(INITIAL_SETS);
   const [arbitrageRecords, setArbitrageRecords] = useState<BoxArbitrageRecord[]>(INITIAL_BOX_ARBITRAGE);
   const [boosterEvMap, setBoosterEvMap] = useState<Record<string, BoosterEVRecord[]>>(INITIAL_BOOSTER_EV_DATA);
+  const [pricingReliability, setPricingReliability] = useState<Record<string, PricingReliability>>({});
   const [isLiveDatabase, setIsLiveDatabase] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -29,10 +30,11 @@ export default function App() {
     async function loadPipelineData() {
       try {
         setIsLoading(true);
-        const [setsRes, arbsRes, evRes] = await Promise.all([
+        const [setsRes, arbsRes, evRes, reliabilityRes] = await Promise.all([
           dataService.getSets(),
           dataService.getArbitrageRecords(),
-          dataService.getBoosterEVs()
+          dataService.getBoosterEVs(),
+          dataService.getPricingReliability(),
         ]);
 
         if (setsRes.sets && setsRes.sets.length > 0) {
@@ -51,6 +53,9 @@ export default function App() {
         }
         if (evRes && Object.keys(evRes).length > 0) {
           setBoosterEvMap(evRes);
+        }
+        if (reliabilityRes && Object.keys(reliabilityRes).length > 0) {
+          setPricingReliability(reliabilityRes);
         }
       } catch (err) {
         console.warn('Error loading dynamic pipeline data:', err);
@@ -169,6 +174,7 @@ export default function App() {
             evBasis={evBasis}
             onEvBasisChange={setEvBasis}
             boosterEvMap={boosterEvMap}
+            pricingReliability={pricingReliability}
           />
         )}
 

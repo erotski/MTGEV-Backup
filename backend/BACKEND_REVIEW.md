@@ -16,6 +16,7 @@ The important backend outputs are:
 - Composite sealed-product distributions by vendor.
 - Product EV summaries and 100 empirical buckets.
 - Vendor-aware product chase cards.
+- Booster pricing reliability by named vendor and price mode.
 - JSON files consumed by the React application.
 
 ## 2. Runtime Architecture
@@ -68,6 +69,7 @@ Required output files currently include:
 - `public/data/arbitrage_leaderboard.json`
 - `public/data/single_card_prices.json`
 - `public/data/product_chase_cards.json`
+- `public/data/pricing_reliability.json`
 
 ## 4. Backend Files
 
@@ -407,6 +409,7 @@ Legacy `all` references still exist in a few compatibility paths and should be r
 | `arbitrage_leaderboard.json` | `export_app_data.py` | Products Overview |
 | `single_card_prices.json` | `export_app_data.py` | card and chase pricing |
 | `product_chase_cards.json` | `export_product_chase_cards.py` | product TOP 5 chase viewer |
+| `pricing_reliability.json` | `export_app_data.py` | Products Overview vendor reliability indicator |
 | `pipeline_execution_logs.json` | `daily_update.py` | Admin Portal telemetry |
 
 The app should read these files as immutable published snapshots. It should not reconstruct core EV distributions in the browser when backend output exists.

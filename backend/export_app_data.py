@@ -88,6 +88,7 @@ def export_all():
 
     # 3. Export Booster EV Simulation Results
     print("▶ 3. Exporting booster_ev.json...")
+    ev_results = []
     try:
         cursor.execute("""
             SELECT 
@@ -125,6 +126,46 @@ def export_all():
         print(f"  ✔ Exported {len(ev_results)} booster EV simulations")
     except Exception as e:
         print(f"  ✘ Error exporting booster EV results: {e}")
+
+    # 3b. Export weighted booster pricing reliability by named vendor.
+    print("▶ 3b. Exporting pricing_reliability.json...")
+    try:
+        named_vendors = {"tcgplayer", "cardmarket", "cardkingdom", "manapool"}
+        reliability = {}
+        for row in ev_results:
+            vendor = str(row.get("vendor") or "").lower()
+            if vendor not in named_vendors:
+                continue
+            key = f"{vendor}:{row.get('priceMode') or 'direct'}"
+            weight = int(row.get("simulatedPacks") or 0)
+            if weight <= 0:
+                continue
+            aggregate = reliability.setdefault(key, {
+                "vendor": vendor,
+                "priceMode": row.get("priceMode") or "direct",
+                "simulatedPacks": 0,
+                "completeBoosterPct": 0.0,
+                "exactMatchPct": 0.0,
+                "differentFinishPct": 0.0,
+                "differentVendorPct": 0.0,
+                "sourceRows": 0,
+            })
+            aggregate["simulatedPacks"] += weight
+            aggregate["sourceRows"] += 1
+            for field in ("completeBoosterPct", "exactMatchPct", "differentFinishPct", "differentVendorPct"):
+                aggregate[field] += float(row.get(field) or 0.0) * weight
+
+        for aggregate in reliability.values():
+            weight = aggregate["simulatedPacks"]
+            for field in ("completeBoosterPct", "exactMatchPct", "differentFinishPct", "differentVendorPct"):
+                aggregate[field] = round(aggregate[field] / weight, 2)
+            aggregate["nonExactPct"] = round(100.0 - aggregate["exactMatchPct"], 2)
+
+        with open(OUTPUT_DIR / "pricing_reliability.json", "w", encoding="utf-8") as f:
+            json.dump({"vendors": reliability}, f, indent=2)
+        print(f"  ✔ Exported reliability for {len(reliability)} vendor/mode combinations")
+    except Exception as e:
+        print(f"  ✘ Error exporting pricing reliability: {e}")
 
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
     print("▶ 4. Exporting arbitrage_leaderboard.json...")

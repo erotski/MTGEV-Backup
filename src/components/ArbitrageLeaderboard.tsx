@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, EvBasis } from '../types';
+import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, EvBasis, PricingReliability } from '../types';
 import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
@@ -40,6 +40,7 @@ interface ArbitrageLeaderboardProps {
   evBasis?: EvBasis;
   onEvBasisChange?: (basis: EvBasis) => void;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
+  pricingReliability?: Record<string, PricingReliability>;
 }
 
 export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
@@ -52,6 +53,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   evBasis: propEvBasis,
   onEvBasisChange,
   boosterEvMap,
+  pricingReliability = {},
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
@@ -824,6 +826,16 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
               Vendor: <strong className="text-slate-900 capitalize">{vendor.replace(/_/g, ' ')}</strong>
             </span>
+            {pricingReliability[`${vendor}:${priceMode}`] && !vendor.startsWith('all_') && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs"
+                title="Booster card-slot telemetry only; fixed products and decks are not included."
+              >
+                Reliability: <strong className="text-slate-900">
+                  {pricingReliability[`${vendor}:${priceMode}`].exactMatchPct.toFixed(1)}% exact
+                </strong>
+              </span>
+            )}
           </div>
         </div>
 

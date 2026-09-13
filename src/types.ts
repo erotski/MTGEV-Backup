@@ -23,6 +23,18 @@ export interface BoosterEVRecord {
   updatedAt: string;
 }
 
+export interface PricingReliability {
+  vendor: string;
+  priceMode: PriceMode;
+  simulatedPacks: number;
+  completeBoosterPct: number;
+  exactMatchPct: number;
+  differentFinishPct: number;
+  differentVendorPct: number;
+  nonExactPct: number;
+  sourceRows: number;
+}
+
 export interface ProductContentsCard {
   foil?: boolean;
   name: string;

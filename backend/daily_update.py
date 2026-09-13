@@ -35,6 +35,7 @@ REQUIRED_OUTPUTS = (
     "arbitrage_leaderboard.json",
     "single_card_prices.json",
     "product_chase_cards.json",
+    "pricing_reliability.json",
 )
 
 SCRIPTS = [
