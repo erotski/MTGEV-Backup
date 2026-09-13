@@ -420,6 +420,8 @@ Legacy `all` references still exist in a few compatibility paths and should be r
 
 The app should read these files as immutable published snapshots. It should not reconstruct core EV distributions in the browser when backend output exists.
 
+`pricing_reliability.json` reports mode-specific reliability metrics. For `direct` records, `directExactPct` measures the share resolved from the requested vendor and exact card/finish match, while `nonExactPct` is the complementary share. For `cheapest_reprint` records, `reprintResolvedPct` measures the share for which the vendor resolved a cheapest name/reprint price, including an explicitly recorded neighboring source when needed; `unresolvedPct` is the complementary share. Exact-match percentages from `booster_ev.json` remain available for backward compatibility, but they must not be used to judge cheapest-reprint coverage.
+
 ## 7. Fallback and Synthetic Logic Inventory
 
 Fallback categories requiring explicit policy and observability:
@@ -509,3 +511,46 @@ For each file, record:
 - Generated data ownership.
 - Safe deletion or refactor candidates.
 - Focused tests required before changing it.
+
+## 10. Workflow Regeneration Runbook
+
+The authoritative regeneration path is GitHub Actions. Local machines do not need MySQL for the production run; the workflow provisions a temporary MySQL 8 service.
+
+### Start a diagnostic run
+
+1. Push the intended code to `main`.
+2. Open `.github/workflows/daily_mtg_ev_update.yml` in GitHub Actions.
+3. Select **Run workflow** and enable `audit_enabled` when validating booster buckets.
+4. Confirm the run checks out the expected commit SHA.
+
+### Required success evidence
+
+The job log should contain successful completion for:
+
+- `load_deck_tables.py` with loaded deck/card counts.
+- `export_product_chase_cards.py` with the exported product count.
+- `composite_evaluator.py` with its completion summary.
+- `validate_pricing_and_ev.py` with no fatal error.
+- The validated generated-data staging/publication step.
+- Vercel deployment, when deployment is enabled.
+
+### Generated files to inspect
+
+After a successful run, inspect the published `public/data/` bundle:
+
+- `latest_pipeline_run.json`: compact run status, stage durations, summaries, and errors.
+- `pricing_reliability.json`: weighted named-vendor booster resolution telemetry.
+- For `direct`, inspect `directExactPct` and `nonExactPct`; for `cheapest_reprint`, inspect `reprintResolvedPct` and `unresolvedPct`. The latter is resolution coverage, not exact vendor-listing coverage.
+- `precon_decks.json`: per-card `priceProvenance` and per-vendor `pricingReliability`.
+- `sealed_products.json`: composite `fixedPricingByVendor` where fixed content was resolved.
+- `product_chase_cards.json`: vendor/mode-aware product chase output.
+
+When audit mode is enabled, download the `ev-simulation-audit-<run number>` artifact and compare arbitrary bucket means against the exact sorted samples in an audit file.
+
+### Publication safety checks
+
+The workflow generates data in an isolated workspace and swaps the validated `public/data/` directory into place only after all required stages pass. A failed run must leave the previous published dataset intact. The `data-sync` branch is data-only; it must not contain `.github/workflows/` files or require workflow write permission from `GITHUB_TOKEN`.
+
+### Known diagnostic warnings
+
+Market-price fetches may report products without a current market price. This is a coverage diagnostic, not permission to invent a sealed-product price. Product and composite validation may also report anomalous ROI or contents/EV mismatches; investigate those counts before treating the dataset as fully trustworthy, even when the workflow technically completes.

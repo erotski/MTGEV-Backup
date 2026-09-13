@@ -832,7 +832,9 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                 title="Booster card-slot telemetry only; fixed products and decks are not included."
               >
                 Reliability: <strong className="text-slate-900">
-                  {pricingReliability[`${vendor}:${priceMode}`].exactMatchPct.toFixed(1)}% exact
+                  {priceMode === 'direct'
+                    ? `${(pricingReliability[`${vendor}:${priceMode}`].directExactPct ?? 0).toFixed(1)}% exact`
+                    : `${(pricingReliability[`${vendor}:${priceMode}`].reprintResolvedPct ?? 0).toFixed(1)}% resolved`}
                 </strong>
               </span>
             )}

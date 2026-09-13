@@ -145,21 +145,31 @@ def export_all():
                 "priceMode": row.get("priceMode") or "direct",
                 "simulatedPacks": 0,
                 "completeBoosterPct": 0.0,
-                "exactMatchPct": 0.0,
+                "resolutionPct": 0.0,
                 "differentFinishPct": 0.0,
                 "differentVendorPct": 0.0,
                 "sourceRows": 0,
             })
             aggregate["simulatedPacks"] += weight
             aggregate["sourceRows"] += 1
-            for field in ("completeBoosterPct", "exactMatchPct", "differentFinishPct", "differentVendorPct"):
+            for field in ("completeBoosterPct", "differentFinishPct", "differentVendorPct"):
                 aggregate[field] += float(row.get(field) or 0.0) * weight
+            if aggregate["priceMode"] == "direct":
+                aggregate["resolutionPct"] += float(row.get("exactMatchPct") or 0.0) * weight
+            else:
+                aggregate["resolutionPct"] += float(row.get("completeBoosterPct") or 0.0) * weight
 
         for aggregate in reliability.values():
             weight = aggregate["simulatedPacks"]
-            for field in ("completeBoosterPct", "exactMatchPct", "differentFinishPct", "differentVendorPct"):
+            for field in ("completeBoosterPct", "resolutionPct", "differentFinishPct", "differentVendorPct"):
                 aggregate[field] = round(aggregate[field] / weight, 2)
-            aggregate["nonExactPct"] = round(100.0 - aggregate["exactMatchPct"], 2)
+            if aggregate["priceMode"] == "direct":
+                aggregate["directExactPct"] = aggregate["resolutionPct"]
+                aggregate["nonExactPct"] = round(100.0 - aggregate["directExactPct"], 2)
+            else:
+                aggregate["reprintResolvedPct"] = aggregate["resolutionPct"]
+                aggregate["unresolvedPct"] = round(100.0 - aggregate["reprintResolvedPct"], 2)
+            del aggregate["resolutionPct"]
 
         with open(OUTPUT_DIR / "pricing_reliability.json", "w", encoding="utf-8") as f:
             json.dump({"vendors": reliability}, f, indent=2)

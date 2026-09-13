@@ -28,10 +28,12 @@ export interface PricingReliability {
   priceMode: PriceMode;
   simulatedPacks: number;
   completeBoosterPct: number;
-  exactMatchPct: number;
+  directExactPct?: number;
+  reprintResolvedPct?: number;
   differentFinishPct: number;
   differentVendorPct: number;
-  nonExactPct: number;
+  nonExactPct?: number;
+  unresolvedPct?: number;
   sourceRows: number;
 }
 
