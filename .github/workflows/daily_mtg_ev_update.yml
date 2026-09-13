@@ -45,6 +45,13 @@ jobs:
           sudo apt-get install -y mysql-client
           pip install mysql-connector-python requests tqdm numpy
 
+      - name: Prepare Isolated Pipeline Workspace
+        run: |
+          set -e
+          rm -rf ../mtgev-pipeline-workspace
+          mkdir -p ../mtgev-pipeline-workspace
+          rsync -a --exclude='.git' --exclude='node_modules' ./ ../mtgev-pipeline-workspace/
+
       - name: Execute Daily Update Pipeline & JSON Export
         env:
           DB_HOST: 127.0.0.1
@@ -56,7 +63,23 @@ jobs:
           AUDIT_OUTPUT_DIR: backend/audit_output
         run: |
           set -e
+          cd ../mtgev-pipeline-workspace
           python backend/daily_update.py
+
+      - name: Stage Validated Generated Data
+        run: |
+          set -e
+          rm -rf backend/audit_output
+          if [ -d ../mtgev-pipeline-workspace/backend/audit_output ]; then
+            cp -a ../mtgev-pipeline-workspace/backend/audit_output backend/audit_output
+          fi
+          mv public/data public/data.previous
+          if mv ../mtgev-pipeline-workspace/public/data public/data; then
+            rm -rf public/data.previous
+          else
+            mv public/data.previous public/data
+            exit 1
+          fi
 
       - name: Upload EV audit files
         if: ${{ inputs.audit_enabled == true }}
