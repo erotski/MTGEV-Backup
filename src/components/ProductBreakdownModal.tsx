@@ -37,7 +37,6 @@ interface ProductBreakdownModalProps {
   productMap?: Map<string, any> | Record<string, any>;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
   singleCardPrices?: any;
-  reprintMultiplier?: number;
 }
 
 export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
@@ -54,7 +53,6 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
   productMap,
   boosterEvMap,
   singleCardPrices,
-  reprintMultiplier = 1.0,
 }) => {
   if (!isOpen || !product) return null;
 
@@ -448,7 +446,6 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                     productMap={effectiveProductMap}
                     boosterEvMap={effectiveBoosterEvMap}
                     singleCardPrices={effectiveSingleCardPrices}
-                    reprintMultiplier={reprintMultiplier}
                     title="Product & Prize breakdown"
                     defaultCollapsed={false}
                     collapsible={false}
@@ -538,7 +535,6 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
                 productMap={effectiveProductMap}
                 boosterEvMap={effectiveBoosterEvMap}
                 singleCardPrices={effectiveSingleCardPrices}
-                reprintMultiplier={reprintMultiplier}
                 title="Product & Prize breakdown"
                 defaultCollapsed={false}
                 collapsible={false}

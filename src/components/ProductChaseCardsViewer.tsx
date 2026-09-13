@@ -1,14 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import {
-  getChaseCardsForProduct,
-  fetchLiveChaseCardsForSet,
-  getCardProductAvailability,
-  getCardImageUrl,
-  preloadChaseCardsForProducts,
-  applyMtgJsonPricesToCards,
-} from '../services/chaseCardsService';
+import { getCardProductAvailability, getCardImageUrl } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   Sparkles,
@@ -113,15 +106,8 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   deckDetail,
 }) => {
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
-  const [liveCards, setLiveCards] = useState<ChaseCard[]>([]);
-  const [loadingLive, setLoadingLive] = useState<boolean>(false);
   const [backendCards, setBackendCards] = useState<ChaseCard[] | null>(null);
   const [backendCardsLoaded, setBackendCardsLoaded] = useState<boolean>(false);
-  const [mtgJsonPrices, setMtgJsonPrices] = useState<any>(propPrices || null);
-  const [sealedProducts, setSealedProducts] = useState<any[] | null>(dataService.getSealedProductsSync());
-  const [allPreconDecks, setAllPreconDecks] = useState<Record<string, any> | null>(
-    propPreconDecks || dataService.getPreconDecksSync()
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -136,42 +122,6 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     });
     return () => { mounted = false; };
   }, [product, priceMode, vendor]);
-
-  // Auto-fetch MTGJSON single prices if not provided in props
-  useEffect(() => {
-    if (!mtgJsonPrices && !propPrices) {
-      dataService.getSingleCardPrices().then((p) => {
-        if (p) setMtgJsonPrices(p);
-      });
-    } else if (propPrices) {
-      setMtgJsonPrices(propPrices);
-    }
-  }, [propPrices]);
-
-  // Keep precon decks in sync when props update
-  useEffect(() => {
-    if (propPreconDecks) {
-      setAllPreconDecks(propPreconDecks);
-    }
-  }, [propPreconDecks]);
-
-  // Ensure sealed products and precon decks are loaded to resolve contained cards
-  useEffect(() => {
-    let isMounted = true;
-    if (!sealedProducts) {
-      dataService.getSealedProducts().then((prods) => {
-        if (isMounted && prods) setSealedProducts(prods);
-      });
-    }
-    if (!allPreconDecks && !propPreconDecks) {
-      dataService.getPreconDecks().then((decks) => {
-        if (isMounted && decks) setAllPreconDecks(decks);
-      });
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Determine if this is a fixed preconstructed / non-booster product
   const isFixedProduct = useMemo(() => {
@@ -203,103 +153,12 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     );
   }, [product]);
 
-  // Retrieve curated chase cards specifically for this product
+  // Product TOP 5 data is authoritative only when supplied by the backend snapshot.
   const curatedCards = useMemo(() => {
-    if (backendCardsLoaded) return backendCards || [];
-    // If deckDetail with cards was passed directly (precon deck viewer)
-    if (deckDetail?.cards && Array.isArray(deckDetail.cards) && deckDetail.cards.length > 0) {
-      const isFoil = (product.displayName || '').toLowerCase().includes('foil') || Boolean(deckDetail.isFoil);
-      const mapped: ChaseCard[] = deckDetail.cards.map((c: any, idx: number) => {
-        const pNorm = c.price ?? c.marketPrice ?? 0;
-        const pFoil = isFoil || c.foil ? c.priceFoil : undefined;
-        return {
-          uuid: c.uuid || `deck-card-${idx}-${c.name}`,
-          name: c.name,
-          scryfallId: c.scryfallId || '',
-          setCode: c.set || setCode || 'SLD',
-          rarity: (c.rarity as any) || 'rare',
-          number: c.number || String(idx + 1),
-          priceNormal: pNorm,
-          priceFoil: pFoil,
-          price: Math.max(pNorm, pFoil || 0),
-          finish: isFoil || c.foil ? 'foil' : 'nonfoil',
-          cardType: c.type || 'Single',
-          productType: 'deck',
-          imageUrl: c.imageUrl,
-        };
-      });
-      if (mtgJsonPrices) {
-        applyMtgJsonPricesToCards(
-          mapped,
-          mtgJsonPrices,
-          setCode,
-          priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
-          vendor
-        );
-      }
-      return mapped.sort((a, b) => (b.price || 0) - (a.price || 0));
-    }
+    return backendCardsLoaded ? backendCards || [] : [];
+  }, [backendCards, backendCardsLoaded]);
 
-    return getChaseCardsForProduct(
-      product,
-      setCode,
-      undefined,
-      mtgJsonPrices,
-      allPreconDecks || propPreconDecks,
-      sealedProducts || (allProducts.length > 0 ? allProducts : null),
-      priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
-      vendor
-    );
-  }, [product, setCode, priceMode, vendor, backendCards, backendCardsLoaded, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts, allProducts, deckDetail]);
-
-  // Only query Scryfall API as fallback for booster pack products
-  useEffect(() => {
-    let isMounted = true;
-
-    // Do NOT fetch random set chase cards for fixed non-booster products (Secret Lair, Decks, Bundles)
-    if (!isFixedProduct && curatedCards.length === 0 && setCode) {
-      setLoadingLive(true);
-      fetchLiveChaseCardsForSet(
-        setCode,
-        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
-        vendor
-      )
-        .then((cards) => {
-          if (isMounted) {
-            setLiveCards(cards);
-          }
-        })
-        .catch((err) => {
-          console.warn('Could not load live Scryfall chase cards:', err);
-        })
-        .finally(() => {
-          if (isMounted) setLoadingLive(false);
-        });
-    } else {
-      setLiveCards([]);
-      setLoadingLive(false);
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [curatedCards.length, setCode, isFixedProduct, priceMode]);
-
-  // Preload and cache top 5 chase cards for all products in the database
-  useEffect(() => {
-    if (allProducts && allProducts.length > 0) {
-      preloadChaseCardsForProducts(
-        allProducts,
-        setCode,
-        mtgJsonPrices,
-        allPreconDecks || propPreconDecks,
-        sealedProducts || allProducts,
-        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
-        vendor
-      );
-    }
-  }, [allProducts, setCode, priceMode, vendor, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts]);
-
-  const chaseCards = curatedCards.length > 0 ? curatedCards : (isFixedProduct ? [] : liveCards);
+  const chaseCards = curatedCards;
 
   // Filter to the top 5 most valuable chase cards for this product
   const topChaseCards = useMemo(() => {
@@ -368,14 +227,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
       </div>
 
       {/* Grid of Top 5 Chase Cards */}
-      {loadingLive ? (
-        <div className="text-center py-8 space-y-2">
-          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-mono">
-            Fetching card images & set metadata from Scryfall API...
-          </p>
-        </div>
-      ) : topChaseCards.length === 0 ? (
+      {topChaseCards.length === 0 ? (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-center space-y-2">
           <Package className="w-8 h-8 text-slate-400 mx-auto" />
           <h5 className="text-sm font-bold text-slate-800">No Cards Available</h5>

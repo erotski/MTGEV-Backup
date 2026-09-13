@@ -35,7 +35,6 @@ export interface ProductBreakdownTableProps {
   vendor?: Vendor;
   priceMode?: PriceMode;
   evBasis?: EvBasis;
-  reprintMultiplier?: number;
   auditResult?: RecursiveProductBreakdownResult | null;
   className?: string;
   theme?: 'dark' | 'light';
@@ -55,7 +54,6 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   vendor = 'all_cheapest',
   priceMode = 'direct',
   evBasis = 'avg',
-  reprintMultiplier = 1.0,
   auditResult: passedAuditResult,
   className = '',
   theme = 'dark',
@@ -218,42 +216,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         matchedBooster = setBoosters.find((b) => b.boosterName.toLowerCase() === pkCode);
       }
 
-      if (!matchedBooster) {
-        if (pkCode.includes('elemental')) {
-          matchedBooster = {
-            boosterName: 'fin-elementals',
-            evAverage: 120.0,
-            evMid90: 100.0,
-            evMin: 60.0,
-            evMax: 200.0,
-          } as any;
-        } else if (pkCode.includes('sample')) {
-          const fullCollector = setBoosters.find((b) => b.boosterName.toLowerCase().includes('collector'));
-          if (fullCollector) {
-            matchedBooster = {
-              ...fullCollector,
-              evAverage: Number((fullCollector.evAverage * 0.2).toFixed(2)),
-              evMid90: Number((fullCollector.evMid90 * 0.2).toFixed(2)),
-              evMin: Number((fullCollector.evMin * 0.2).toFixed(2)),
-              evMax: Number((fullCollector.evMax * 0.2).toFixed(2)),
-            };
-          }
-        } else if (pkCode === 'default' || pkCode === 'booster') {
-          matchedBooster = setBoosters[0];
-        }
-      }
-
       let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
       let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
       let unitEvMin = matchedBooster ? matchedBooster.evMin : 0;
       let unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
-
-      if (matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint' && priceMode === 'cheapest_reprint') {
-        unitEvAvg = Number((unitEvAvg * reprintMultiplier).toFixed(2));
-        unitEvMid90 = Number((unitEvMid90 * reprintMultiplier).toFixed(2));
-        unitEvMin = Number((unitEvMin * reprintMultiplier).toFixed(2));
-        unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
-      }
 
       const effectiveUnitEv =
         evBasis === 'min'
@@ -274,7 +240,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         unitEvMax,
       };
     },
-    [effectiveBoosterEvMap, vendor, priceMode, reprintMultiplier, evBasis]
+    [effectiveBoosterEvMap, vendor, priceMode, evBasis]
   );
 
   // Helper to resolve card prices and EV
@@ -356,7 +322,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
             fromIndex.foilPrice ||
             fromIndex.prices?.usd_foil ||
             fromIndex.prices?.tcgplayer_foil ||
-            (fromIndex.price ? Number((fromIndex.price * 1.5).toFixed(2)) : 0);
+            0;
           unitEv = fromIndex.foilEv || unitPrice;
         } else {
           unitPrice = fromIndex.price || fromIndex.prices?.usd || fromIndex.prices?.tcgplayer || 0;
@@ -364,51 +330,37 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         }
         prices = {
           tcgplayer: unitPrice,
-          cardkingdom: Number((unitPrice * 1.12).toFixed(2)),
-          cardmarket: Number((unitPrice * 0.92).toFixed(2)),
-          cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
+          cardkingdom: 0,
+          cardmarket: 0,
+          cardmarketEur: 0,
           all: unitPrice,
         };
       } else if (cd.prices && cd.prices.tcgplayer) {
         unitPrice = isFoil
-          ? Number(cd.prices.tcgplayer_foil || cd.prices.usd_foil || (Number(cd.prices.tcgplayer) * 1.5).toFixed(2))
+          ? Number(cd.prices.tcgplayer_foil || cd.prices.usd_foil || 0)
           : Number(cd.prices.tcgplayer);
-        unitEv = Number((unitPrice * 1.04).toFixed(2));
+        unitEv = unitPrice;
         prices = cd.prices;
       } else if (cd.price) {
         unitPrice = isFoil
-          ? Number(cd.foilPrice || (cd.foil ? cd.price : (cd.price * 1.5).toFixed(2)))
+          ? Number(cd.foilPrice || (cd.foil ? cd.price : 0))
           : Number(cd.price);
-        unitEv = Number((unitPrice * 1.04).toFixed(2));
+        unitEv = unitPrice;
         prices = {
           tcgplayer: unitPrice,
-          cardkingdom: Number((unitPrice * 1.12).toFixed(2)),
-          cardmarket: Number((unitPrice * 0.92).toFixed(2)),
-          cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
+          cardkingdom: 0,
+          cardmarket: 0,
+          cardmarketEur: 0,
           all: unitPrice,
         };
       }
 
       const resolvedVendorPrice = resolveCardPrice({ prices, ...fromIndex, ...cd }, vendor, isFoil);
       if (resolvedVendorPrice > 0) {
-        unitEv = Number((resolvedVendorPrice * reprintMultiplier).toFixed(2));
+        unitEv = Number(resolvedVendorPrice.toFixed(2));
       }
 
       if (unitPrice === 0 && unitEv === 0) {
-        // Fallback estimation so cards don't display as $0.00
-        const parentMkt = parentProduct?.marketPrice || parentProduct?.estimatedEv || 0;
-        const parentCards = parentProduct?.cardCount || 5;
-        const estFallback = parentMkt > 0 ? Math.max(1.5, Number((parentMkt / parentCards).toFixed(2))) : (isFoil ? 4.5 : 2.0);
-        unitPrice = isFoil ? Number((estFallback * 1.35).toFixed(2)) : estFallback;
-        unitEv = unitPrice;
-        prices = {
-          tcgplayer: unitPrice,
-          cardkingdom: Number((unitPrice * 1.12).toFixed(2)),
-          cardmarket: Number((unitPrice * 0.92).toFixed(2)),
-          cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
-          all: unitPrice,
-        };
-        isEstimated = true;
       }
 
       return {
@@ -425,7 +377,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         isEstimated,
       };
     },
-    [effectiveSingleCardPrices, vendor, reprintMultiplier]
+    [effectiveSingleCardPrices, vendor]
   );
 
   // Compute product contents EV
@@ -451,11 +403,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       const pUid = prod.id || prod.uuid || '';
       const directArb = effectiveArbitrageMap[pUid];
       if (directArb && directArb.totalEvAvg > 0) {
-        return Number((directArb.totalEvAvg * reprintMultiplier * mult).toFixed(2));
+        return Number((directArb.totalEvAvg * mult).toFixed(2));
       }
       return 0;
     },
-    [effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, reprintMultiplier, evBasis]
+    [effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, evBasis]
   );
 
   // Resolve audit if not passed directly
@@ -484,7 +436,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     ((a.boxName || a.displayName || '').toLowerCase().trim() === (product.displayName || product.name || '').toLowerCase().trim())
   );
   const rawMarketPrice = product.marketPrice || (arb ? arb.marketPrice : 0) || product.price || 0;
-  const rawTotalEv = audit.totalEv > 0 ? audit.totalEv : (arb ? arb.totalEvAvg * reprintMultiplier : 0);
+  const rawTotalEv = audit.totalEv > 0 ? audit.totalEv : (arb ? arb.totalEvAvg : 0);
 
   const isDark = theme === 'dark';
 
@@ -514,9 +466,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     audit.variableItems.reduce((acc, v) => acc + v.slotEv, 0)
   ).toFixed(2));
 
-  const totalEv = rawTotalEv > 0 ? rawTotalEv : (subtotalEvSum > 0 ? subtotalEvSum : (rawMarketPrice > 0 ? rawMarketPrice : 0));
+  const totalEv = rawTotalEv > 0 ? rawTotalEv : subtotalEvSum;
   const displayedTotalEv = totalEv > 0 ? totalEv : subtotalEvSum;
-  const marketPrice = rawMarketPrice > 0 ? rawMarketPrice : (displayedTotalEv > 0 ? displayedTotalEv : 0);
+  const marketPrice = rawMarketPrice > 0 ? rawMarketPrice : 0;
   const netSpread = displayedTotalEv > 0 && marketPrice > 0 ? Number((displayedTotalEv - marketPrice).toFixed(2)) : 0;
   const roiPct = marketPrice > 0 ? Number(((netSpread / marketPrice) * 100).toFixed(1)) : 0;
   const arbRatio = marketPrice > 0 && displayedTotalEv > 0 ? displayedTotalEv / marketPrice : 0;
@@ -727,8 +679,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
           ((a.boxName || a.displayName || '').toLowerCase().trim() === (s.name || '').toLowerCase().trim())
         );
 
-      const resolvedMarket = childProd?.marketPrice || childArb?.marketPrice || s.unitEv || (childProd as any)?.price || 0;
-      const resolvedEv = childProd?.estimatedEv || childArb?.totalEvAvg || s.unitEv || resolvedMarket || 0;
+      const resolvedMarket = childProd?.marketPrice || childArb?.marketPrice || 0;
+      const resolvedEv = childProd?.estimatedEv || childArb?.totalEvAvg || s.unitEv || 0;
 
       // Check if this sealed item is a precon deck or Secret Lair Drop
       const matchedDeck = (!childProd || childProd.rawCategory === 'deck')
@@ -744,8 +696,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
           displayName: matchedDeck.deckName,
           packagingType: 'starter_deck' as any,
           boosterName: 'default' as any,
-          marketPrice: resolvedMarket || 39.99,
-          estimatedEv: resolvedEv || 39.99,
+          marketPrice: resolvedMarket,
+          estimatedEv: resolvedEv,
           packsCount: 0,
           cardCount: matchedDeck.cardCount || matchedDeck.cards?.length || 5,
           rawCategory: 'deck',
@@ -1178,9 +1130,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-mono">
                             <span>TCG: ${res?.prices?.tcgplayer?.toFixed(2) || res?.price?.toFixed(2) || '0.00'}</span>
                             <span>•</span>
-                            <span>CK: ${res?.prices?.cardkingdom?.toFixed(2) || ((res?.price || 0) * 1.12).toFixed(2)}</span>
+                            <span>CK: ${res?.prices?.cardkingdom?.toFixed(2) || '0.00'}</span>
                             <span>•</span>
-                            <span>CM: €{res?.prices?.cardmarketEur?.toFixed(2) || ((res?.price || 0) * 0.85).toFixed(2)}</span>
+                            <span>CM: €{res?.prices?.cardmarketEur?.toFixed(2) || '0.00'}</span>
                           </div>
                         </div>
 
@@ -1250,9 +1202,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       }, 0);
                     }
                     if (!resolvedDeckSinglesEv) {
-                      resolvedDeckSinglesEv = dk.unitSinglesEv || (item.marketPrice ? item.marketPrice / (itemContents.deck?.length || 1) : 39.99);
+                      resolvedDeckSinglesEv = dk.unitSinglesEv || 0;
                     }
-                    const deckEv = resolvedDeckSinglesEv * reprintMultiplier;
+                    const deckEv = resolvedDeckSinglesEv;
                     const cardCountVal = matchedDeck?.cardCount || matchedDeck?.totalCards || (item.cardCount && itemContents?.deck?.length ? Math.round(item.cardCount / itemContents.deck.length) : undefined);
 
                     return (
@@ -1358,7 +1310,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                 singleCardPrices?.byName?.[normName];
                               let price = 0;
                               if (found) {
-                                price = ((cd.foil || cd.isFoil ? found.foilPrice : found.price) || found.price || 0) * reprintMultiplier;
+                                price = (cd.foil || cd.isFoil ? found.foilPrice : found.price) || 0;
                               }
                               return { ...cd, price };
                             });
@@ -1374,7 +1326,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                               const matched = preconDecks ? findMatchingPreconDeck(preconDecks, dk.name, dk.set || item.setCode, item.id || item.uuid) : undefined;
                               return {
                                 ...dk,
-                                ev: (matched?.totalSinglesEv || 0) * reprintMultiplier,
+                                ev: matched?.totalSinglesEv || 0,
                                 cardCount: matched?.cardCount || matched?.totalCards
                               };
                             });
@@ -2301,7 +2253,6 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
           productMap={effectiveProductMap}
           boosterEvMap={effectiveBoosterEvMap}
           singleCardPrices={effectiveSingleCardPrices}
-          reprintMultiplier={reprintMultiplier}
         />
       )}
     </div>

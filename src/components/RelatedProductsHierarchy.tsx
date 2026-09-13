@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
-import { resolveCardPrice, normalizeVendor, findBoosterEv } from '../utils/vendorUtils';
+import { resolveCardPrice, findBoosterEv } from '../utils/vendorUtils';
 import { getCanonicalProductMetrics } from '../utils/productUtils';
 import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
 import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
@@ -61,7 +61,6 @@ interface RelatedProductsHierarchyProps {
   preconDecks?: Record<string, any>;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
   singleCardPrices?: any;
-  reprintMultiplier?: number;
   onSelectProduct?: (productId: string, boosterName: string, product?: CatalogPackProduct) => void;
   onPriceModeChange?: (mode: PriceMode) => void;
   onVendorChange?: (vendor: Vendor) => void;
@@ -81,14 +80,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   preconDecks,
   boosterEvMap,
   singleCardPrices,
-  reprintMultiplier: propReprintMultiplier,
   onSelectProduct,
   onPriceModeChange,
   onVendorChange,
   onEvBasisChange,
 }) => {
-  // Price & EV scaling based on priceMode & vendor
-  const reprintMultiplier = propReprintMultiplier ?? (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
   const cleanProductName = (name: string) => {
     if (!name) return '';
     let cleaned = name;
@@ -579,37 +575,29 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   };
 
   // Price & EV scaling based on priceMode & vendor
-  const normVendor = normalizeVendor(vendor);
-  const vendorEvMultiplier =
-    normVendor === 'cardmarket' ? 0.868 :
-    normVendor === 'cardkingdom' ? 1.15 :
-    normVendor === 'manapool' ? 0.98 :
-    1.0;
-
   const rawProducts = dbSealedProducts;
 
-  // Dynamically scale EV for active PriceMode & Vendor; marketPrice remains authentic TCGplayer price
+  // Preserve backend-generated product values; market price and EV are not interchangeable.
   const setProducts = useMemo(() => {
     return rawProducts.map((p) => {
-      const scaledEv = Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2));
       const scaledPrice = Number((p.marketPrice || 0).toFixed(2));
 
       const scaledContains = p.contains?.map((item) => ({
         ...item,
         marketPrice: Number((item.marketPrice || 0).toFixed(2)),
-        estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+        estimatedEv: Number((item.estimatedEv || 0).toFixed(2)),
       }));
 
       const scaledContainedIn = p.containedIn?.map((item) => ({
         ...item,
         marketPrice: Number((item.marketPrice || 0).toFixed(2)),
-        estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
+        estimatedEv: Number((item.estimatedEv || 0).toFixed(2)),
       }));
 
       return {
         ...p,
         marketPrice: scaledPrice,
-        estimatedEv: scaledEv,
+        estimatedEv: Number((p.estimatedEv || 0).toFixed(2)),
         contains: scaledContains,
         containedIn: scaledContainedIn,
         contents: p.contents || p.rawContents,
@@ -618,7 +606,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         subtype: p.subtype || (p as any).rawSubtype,
       };
     });
-  }, [rawProducts, reprintMultiplier, vendorEvMultiplier]);
+  }, [rawProducts]);
 
   // Active selected product for deep containment inspection
   const [selectedProductId, setSelectedProductId] = useState<string>(
@@ -1644,7 +1632,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   preconDecks={preconDecks}
                   boosterEvMap={boosterEvMap}
                   singleCardPrices={singleCardPrices}
-                  reprintMultiplier={reprintMultiplier}
                   title="Product & Prize breakdown"
                   collapsible={true}
                   defaultCollapsed={false}

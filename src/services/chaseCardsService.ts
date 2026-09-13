@@ -3,9 +3,6 @@ import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { dataService } from './dataService';
 import { findMatchingPreconDeck } from '../utils/productUtils';
 
-// In-memory cache for dynamically fetched chase cards from Scryfall
-const dynamicChaseCardsCache: Record<string, ChaseCard[]> = {};
-
 // In-memory cache for top 5 chase cards per product (indexed by product ID / name)
 const productChaseCardsCache = new Map<string, ChaseCard[]>();
 
@@ -1096,12 +1093,12 @@ function findContainedCards(
 export function getChaseCardsForProduct(
   product: CatalogPackProduct,
   setCode: string,
-  fallbackSetCards?: ChaseCard[],
-  singlePrices?: any,
-  preconDecksParam?: Record<string, any> | null,
-  sealedProductsParam?: any[] | null,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
+  fallbackSetCards: ChaseCard[] | undefined = undefined,
+  singlePrices: any = undefined,
+  preconDecksParam: Record<string, any> | null | undefined = undefined,
+  sealedProductsParam: any[] | null | undefined = undefined,
+  priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+  vendor: string = 'all_cheapest'
 ): ChaseCard[] {
   if (!product) return [];
 
@@ -1253,7 +1250,6 @@ export function getChaseCardsForProduct(
   // 4. Resolve Set Booster Pool for booster-containing products
   const setPool =
     CURATED_CHASE_CARDS[upperCode] ||
-    dynamicChaseCardsCache[`${upperCode}:${priceMode}`] ||
     fallbackSetCards ||
     [];
 
@@ -1400,144 +1396,6 @@ export function applyMtgJsonPricesToCards(
       c.imageUrl = `https://cards.scryfall.io/normal/front/${c.scryfallId[0]}/${c.scryfallId[1]}/${c.scryfallId}.jpg`;
     }
   });
-}
-
-/**
- * Iterate all products in the database to compute and cache their top 5 chase cards.
- */
-export function preloadChaseCardsForProducts(
-  products: CatalogPackProduct[],
-  setCode: string,
-  singlePrices?: any,
-  preconDecksParam?: Record<string, any> | null,
-  sealedProductsParam?: any[] | null,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
-): void {
-  if (!Array.isArray(products) || products.length === 0) return;
-  for (const prod of products) {
-    try {
-      getChaseCardsForProduct(prod, setCode, undefined, singlePrices, preconDecksParam, sealedProductsParam, priceMode, vendor);
-    } catch {
-      // safe fallback
-    }
-  }
-}
-
-/**
- * Fetch Live Chase Cards from Scryfall API for ANY Set
- * Results are cached in memory so subsequent inspections are instantaneous.
- * PRICE DETAILS ARE QUERIED STRICTLY FROM MTGJSON DATA, NEVER FROM SCRYFALL.
- */
-export async function fetchLiveChaseCardsForSet(
-  setCode: string,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
-): Promise<ChaseCard[]> {
-  const upperCode = (setCode || '').toUpperCase().trim();
-  if (!upperCode) return [];
-  const cacheKey = `${upperCode}:${priceMode}`;
-
-  // Check cache first
-  if (dynamicChaseCardsCache[cacheKey] && dynamicChaseCardsCache[cacheKey].length > 0) {
-    return dynamicChaseCardsCache[cacheKey];
-  }
-
-  // Load authentic MTGJSON vendor pricing feed
-  const singlePrices = await dataService.getSingleCardPrices();
-
-  // If we already have curated cards, populate cache and return with MTGJSON prices
-  if (CURATED_CHASE_CARDS[upperCode]) {
-    const curatedWithPrice = CURATED_CHASE_CARDS[upperCode].map((c) => {
-      const pNorm = c.priceNormal ?? c.price ?? 0;
-      const pFoil = c.priceFoil ?? 0;
-      return {
-        ...c,
-        priceNormal: pNorm,
-        priceFoil: pFoil || undefined,
-        price: Math.max(pNorm, pFoil),
-      };
-    });
-    applyMtgJsonPricesToCards(curatedWithPrice, singlePrices, upperCode, priceMode, vendor);
-    dynamicChaseCardsCache[cacheKey] = curatedWithPrice;
-    return curatedWithPrice;
-  }
-
-  try {
-    // Scryfall is queried strictly for card metadata, collector numbers, and high-res artwork
-    const url = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}+is:booster&order=rarity&dir=desc`;
-    let res = await fetch(url, {
-      headers: {
-        'User-Agent': 'MTG-EV-Studio/1.0',
-        Accept: 'application/json',
-      },
-    });
-
-    if (!res.ok) {
-      // Fallback query without is:booster filter
-      const fallbackUrl = `https://api.scryfall.com/cards/search?q=e:${upperCode.toLowerCase()}&order=rarity&dir=desc`;
-      res = await fetch(fallbackUrl, {
-        headers: {
-          'User-Agent': 'MTG-EV-Studio/1.0',
-          Accept: 'application/json',
-        },
-      });
-      if (!res.ok) return [];
-    }
-
-    const data = await res.json();
-    if (!data.data || !Array.isArray(data.data)) {
-      return [];
-    }
-
-    const cards: ChaseCard[] = data.data.slice(0, 25).map((card: any) => {
-      const cardKey = (card.name || '').toLowerCase().trim();
-      const priceRec =
-        singlePrices?.byUuid?.[card.id] ||
-        singlePrices?.byNameSet?.[`${cardKey}_${upperCode.toLowerCase()}`] ||
-        singlePrices?.byName?.[cardKey];
-
-      // PRICING DETAILS ARE STRICTLY QUERIED FROM MTGJSON, NOT SCRYFALL
-      const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
-      const priceNorm = priceMode === 'cheapest_reprint'
-        ? priceRec?.prices?.all_cheapest ?? priceRec?.prices?.all ?? priceRec?.priceNormal ?? 0
-        : priceRec?.prices?.[vendorKey] ?? (vendorKey === 'tcgplayer' ? priceRec?.price : undefined) ?? 0;
-      const priceFoil = priceMode === 'cheapest_reprint'
-        ? priceRec?.prices?.all_cheapestFoil ?? priceRec?.priceFoil
-        : priceRec?.prices?.tcgplayerFoil ?? priceRec?.priceFoil ?? (priceRec?.foil ? priceRec?.price : undefined);
-      const cardPrice = Math.max(priceNorm || 0, priceFoil || 0);
-
-      const img =
-        card.image_uris?.normal ||
-        card.card_faces?.[0]?.image_uris?.normal ||
-        `https://cards.scryfall.io/normal/front/${card.id.charAt(0)}/${card.id.charAt(1)}/${card.id}.jpg`;
-
-      return {
-        uuid: card.id,
-        name: card.name,
-        scryfallId: card.id,
-        setCode: upperCode,
-        rarity: (card.rarity as any) || 'rare',
-        number: card.collector_number || '',
-        priceNormal: priceNorm,
-        priceFoil: priceFoil,
-        price: cardPrice,
-        finish: card.finishes?.includes('foil') ? 'foil' : 'nonfoil',
-        imageUrl: img,
-        cardType: card.type_line,
-        productType: 'all',
-        pullOddsDesc: `${card.rarity === 'mythic' ? 'Mythic' : 'Rare'} Slot`,
-      };
-    });
-
-    cards.sort((a, b) => (b.price || 0) - (a.price || 0));
-
-    dynamicChaseCardsCache[cacheKey] = cards;
-    return cards;
-  } catch (err) {
-    console.warn(`Could not fetch chase card metadata for set ${upperCode}:`, err);
-    return [];
-  }
 }
 
 /**

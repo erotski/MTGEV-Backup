@@ -27,8 +27,6 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
-import { normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
-import { simulateCompositeQuantiles } from '../utils/evScore';
 
 const CURVE_VENDORS = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'] as const;
 type CurveVendor = (typeof CURVE_VENDORS)[number];
@@ -185,67 +183,11 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             vendorSimulations[v] = qArr;
           }
         });
-      } else {
-        // Dynamic client-side convolution — STRICT EMPIRICAL ONLY (No synthetic fallback ratios)
+      } else if (isSingleBoosterLeaf) {
         vendorsToSim.forEach((v) => {
-          let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
-          
-          if (effectivePackItems.length > 0) {
-            let missingEmpiricalQuantiles = false;
-            effectivePackItems.forEach((item) => {
-              const count = item.count || 1;
-              const setCode = item.set || activeBooster?.setCode || '';
-              const code = item.code || item.packName || activeBooster?.boosterName || '';
-              let rec: BoosterEVRecord | undefined;
-              if (boosterEvMap) {
-                rec = (boosterEvMap[setCode.toUpperCase()] || []).find((b) =>
-                  normalizeBoosterCode(b.boosterName) === normalizeBoosterCode(code) &&
-                  b.priceMode === priceMode &&
-                  b.vendor === v
-                );
-              } else if (allSetBoosters && allSetBoosters.length > 0) {
-                const normCode = normalizeBoosterCode(code);
-                rec = allSetBoosters.find(b => 
-                  normalizeBoosterCode(b.boosterName) === normCode &&
-                  (b.priceMode || 'direct') === priceMode &&
-                  normalizeVendor(b.vendor) === normalizeVendor(v)
-                );
-              }
-              if (!rec) {
-                missingEmpiricalQuantiles = true;
-                return;
-              }
-
-              let itemQuantiles = rec?.quantiles;
-              if (!itemQuantiles || itemQuantiles.length < 100) {
-                missingEmpiricalQuantiles = true;
-              }
-
-              if (itemQuantiles) {
-                simItems.push({ count, quantiles: itemQuantiles });
-              }
-            });
-
-            if (!missingEmpiricalQuantiles && simItems.length > 0) {
-              if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
-                vendorSimulations[v] = [...simItems[0].quantiles];
-              } else {
-                const simRes = simulateCompositeQuantiles(simItems, 5000);
-                if (simRes) vendorSimulations[v] = simRes;
-              }
-            }
-          } else {
-            // Single booster empirical lookup
-            const rec = vendorRecords[v];
-            let itemQuantiles = rec?.quantiles;
-            if (itemQuantiles && itemQuantiles.length >= 100) {
-              if (scale === 1) {
-                vendorSimulations[v] = [...itemQuantiles];
-              } else {
-                const simRes = simulateCompositeQuantiles([{ count: scale, quantiles: itemQuantiles }], 5000);
-                if (simRes) vendorSimulations[v] = simRes;
-              }
-            }
+          const itemQuantiles = vendorRecords[v]?.quantiles;
+          if (itemQuantiles && itemQuantiles.length >= 100) {
+            vendorSimulations[v] = [...itemQuantiles];
           }
         });
       }

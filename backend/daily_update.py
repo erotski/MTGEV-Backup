@@ -8,6 +8,7 @@ import argparse
 import importlib.util
 import json
 import logging
+import math
 import subprocess
 import sys
 import time
@@ -60,12 +61,12 @@ def update_telemetry_file(run_record: dict):
         if TELEMETRY_JSON.exists():
             with open(TELEMETRY_JSON, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        
+
         runs = data.get("runs", [])
         runs.insert(0, run_record)
         data["runs"] = runs[:15]  # Keep last 15 runs
         data["lastUpdated"] = datetime.now(timezone.utc).isoformat()
-        
+
         # Save back
         TELEMETRY_JSON.parent.mkdir(parents=True, exist_ok=True)
         with open(TELEMETRY_JSON, "w", encoding="utf-8") as f:
@@ -95,7 +96,7 @@ def run_script(script_name: str, description: str) -> tuple[bool, float, int, st
     duration = round(time.time() - t0, 2)
     stdout_msg = result.stdout or ""
     stderr_msg = result.stderr or ""
-    
+
     # Print output to stdout for loggers
     if stdout_msg:
         print(stdout_msg, flush=True)
@@ -125,6 +126,78 @@ def validate_output_bundle() -> tuple[bool, str]:
                 json.load(handle)
         except (OSError, json.JSONDecodeError) as error:
             return False, f"Invalid JSON in {path}: {error}"
+    return True, ""
+
+
+def validate_output_semantics() -> tuple[bool, str]:
+    """Validate the core shape and numeric invariants of published snapshots."""
+    data_dir = Path(__file__).parent.parent / "public" / "data"
+
+    def load_required(filename: str):
+        with (data_dir / filename).open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def finite(value) -> bool:
+        return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+    def validate_quantiles(values, label: str) -> str | None:
+        if not isinstance(values, list) or len(values) != 100:
+            return f"{label} must contain exactly 100 buckets"
+        if not all(finite(value) for value in values):
+            return f"{label} contains a non-finite bucket"
+        if any(values[index] > values[index + 1] + 1e-6 for index in range(99)):
+            return f"{label} is not monotonic"
+        return None
+
+    booster_evs = load_required("booster_ev.json")
+    if not isinstance(booster_evs, list):
+        return False, "booster_ev.json must contain an array"
+    for index, record in enumerate(booster_evs):
+        if not isinstance(record, dict):
+            return False, f"booster_ev.json[{index}] must be an object"
+        if not record.get("setCode") or not record.get("boosterName"):
+            return False, f"booster_ev.json[{index}] is missing setCode or boosterName"
+        if not record.get("vendor") or not record.get("priceMode"):
+            return False, f"booster_ev.json[{index}] is missing vendor or priceMode"
+        if "quantiles" in record:
+            error = validate_quantiles(record["quantiles"], f"booster_ev.json[{index}].quantiles")
+            if error:
+                return False, error
+        for field in ("evAverage", "evMid90", "evMin", "evMax", "evMin5", "evMax5"):
+            if field in record and record[field] is not None:
+                value = record[field]
+                if isinstance(value, str):
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        value = None
+                if value is None or not finite(value):
+                    return False, f"booster_ev.json[{index}].{field} is not numeric"
+
+    sealed_products = load_required("sealed_products.json")
+    if not isinstance(sealed_products, list):
+        return False, "sealed_products.json must contain an array"
+    product_ids = set()
+    for index, product in enumerate(sealed_products):
+        if not isinstance(product, dict):
+            return False, f"sealed_products.json[{index}] must be an object"
+        product_id = product.get("id") or product.get("uuid")
+        if not product_id:
+            return False, f"sealed_products.json[{index}] is missing id/uuid"
+        if product_id in product_ids:
+            return False, f"sealed_products.json contains duplicate id {product_id}"
+        product_ids.add(product_id)
+        for field in ("totalEvAvg", "totalEvMid90", "totalEvMin", "totalEvMin5", "totalEvMax5", "totalEvMax"):
+            if field in product and product[field] is not None and not finite(product[field]):
+                return False, f"sealed_products.json[{index}].{field} is not finite"
+        quantiles_by_vendor = product.get("quantilesByVendor") or {}
+        if not isinstance(quantiles_by_vendor, dict):
+            return False, f"sealed_products.json[{index}].quantilesByVendor must be an object"
+        for vendor, values in quantiles_by_vendor.items():
+            error = validate_quantiles(values, f"sealed_products.json[{index}].quantilesByVendor.{vendor}")
+            if error:
+                return False, error
+
     return True, ""
 
 
@@ -170,6 +243,18 @@ def run_all() -> bool:
                 "errorTrace": output_error,
             })
             log.error("Output bundle validation failed. Aborting before publication: %s", output_error)
+
+    if not failures:
+        semantics_valid, semantics_error = validate_output_semantics()
+        if not semantics_valid:
+            failures.append("output_semantics")
+            error_records.append({
+                "stage": "output_semantics",
+                "exitCode": 1,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "errorTrace": semantics_error,
+            })
+            log.error("Output semantic validation failed. Aborting before publication: %s", semantics_error)
 
     total_duration = round(time.time() - overall_t0, 2)
     overall_status = "failed" if failures else "success"

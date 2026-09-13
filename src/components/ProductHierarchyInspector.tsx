@@ -105,7 +105,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
   const [internalPriceMode, setInternalPriceMode] = useState<PriceMode>('direct');
   const priceMode = externalPriceMode || internalPriceMode;
   const onPriceModeChange = externalOnPriceModeChange || setInternalPriceMode;
-  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
 
   const [sealedProducts, setSealedProducts] = useState<SealedProductItem[]>([]);
   const [arbitrageMap, setArbitrageMap] = useState<Record<string, BoxArbitrageRecord>>({});
@@ -288,7 +287,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           fromIndex.foilPrice ||
           fromIndex.prices?.usd_foil ||
           fromIndex.prices?.tcgplayer_foil ||
-          (fromIndex.price ? Number((fromIndex.price * 1.5).toFixed(2)) : 0);
+          0;
         unitEv = fromIndex.foilEv || unitPrice;
       } else {
         unitPrice = fromIndex.price || fromIndex.prices?.usd || fromIndex.prices?.tcgplayer || 0;
@@ -296,27 +295,27 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       }
       prices = {
         tcgplayer: unitPrice,
-        cardkingdom: Number((unitPrice * 1.12).toFixed(2)),
-        cardmarket: Number((unitPrice * 0.92).toFixed(2)),
-        cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
+        cardkingdom: 0,
+        cardmarket: 0,
+        cardmarketEur: 0,
         all: unitPrice,
       };
     } else if (cd.prices && cd.prices.tcgplayer) {
       unitPrice = isFoil
-        ? Number(cd.prices.tcgplayer_foil || cd.prices.usd_foil || (Number(cd.prices.tcgplayer) * 1.5).toFixed(2))
+        ? Number(cd.prices.tcgplayer_foil || cd.prices.usd_foil || 0)
         : Number(cd.prices.tcgplayer);
-      unitEv = Number((unitPrice * 1.04).toFixed(2));
+      unitEv = unitPrice;
       prices = cd.prices;
     } else if (cd.price) {
       unitPrice = isFoil
-        ? Number(cd.foilPrice || (cd.foil ? cd.price : (cd.price * 1.5).toFixed(2)))
+        ? Number(cd.foilPrice || (cd.foil ? cd.price : 0))
         : Number(cd.price);
-      unitEv = Number((unitPrice * 1.04).toFixed(2));
+      unitEv = unitPrice;
       prices = {
         tcgplayer: unitPrice,
-        cardkingdom: Number((unitPrice * 1.12).toFixed(2)),
-        cardmarket: Number((unitPrice * 0.92).toFixed(2)),
-        cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
+        cardkingdom: 0,
+        cardmarket: 0,
+        cardmarketEur: 0,
         all: unitPrice,
       };
     } else {
@@ -336,7 +335,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     // Resolve EV according to chosen vendor without artificial fee deductions
     const resolvedVendorPrice = resolveCardPrice({ prices, ...fromIndex, ...cd }, vendor, isFoil);
     if (resolvedVendorPrice > 0) {
-      unitEv = Number((resolvedVendorPrice * reprintMultiplier).toFixed(2));
+      unitEv = Number(resolvedVendorPrice.toFixed(2));
     }
 
     return {
@@ -376,44 +375,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       );
     }
 
-    // Common alias fallback (e.g. 'draft' vs 'default', 'collector-sample', 'fin-elementals')
-    if (!matchedBooster) {
-      if (pkCode.includes('elemental')) {
-        matchedBooster = {
-          boosterName: 'fin-elementals',
-          evAverage: 120.0,
-          evMid90: 100.0,
-          evMin: 60.0,
-          evMax: 200.0,
-        } as any;
-      } else if (pkCode.includes('sample')) {
-        const fullCollector = setBoosters.find((b) => b.boosterName.toLowerCase().includes('collector'));
-        if (fullCollector) {
-          // Sample packs typically have 2 cards vs 15 cards (~15-20% value)
-          matchedBooster = {
-            ...fullCollector,
-            evAverage: Number((fullCollector.evAverage * 0.2).toFixed(2)),
-            evMid90: Number((fullCollector.evMid90 * 0.2).toFixed(2)),
-            evMin: Number((fullCollector.evMin * 0.2).toFixed(2)),
-            evMax: Number((fullCollector.evMax * 0.2).toFixed(2)),
-          };
-        }
-      } else if (pkCode === 'default' || pkCode === 'booster') {
-        matchedBooster = setBoosters[0];
-      }
-    }
-
     let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
     let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
     let unitEvMin = matchedBooster ? matchedBooster.evMin : 0;
     let unitEvMax = matchedBooster ? matchedBooster.evMax : 0;
-
-    if (matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint' && priceMode === 'cheapest_reprint') {
-      unitEvAvg = Number((unitEvAvg * reprintMultiplier).toFixed(2));
-      unitEvMid90 = Number((unitEvMid90 * reprintMultiplier).toFixed(2));
-      unitEvMin = Number((unitEvMin * reprintMultiplier).toFixed(2));
-      unitEvMax = Number((unitEvMax * reprintMultiplier).toFixed(2));
-    }
 
     return {
       setCode: pkSet,
@@ -441,128 +406,9 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       if (canonical.estimatedEv > 0) {
         return Number((canonical.estimatedEv * multiplier).toFixed(2));
       }
-      const uid = prod.id || prod.uuid || '';
-      const directArb = arbitrageMap[uid];
-      if (directArb && directArb.totalEvAvg > 0) {
-        return Number((directArb.totalEvAvg * reprintMultiplier * multiplier).toFixed(2));
-      }
-      if (!prod.contents) return 0;
-
-      let total = 0;
-
-      // 1. Contained Packs
-      if (prod.contents.pack) {
-        prod.contents.pack.forEach((pk) => {
-          const count = (pk.count || 1) * multiplier;
-          const res = resolvePack(pk, prod.setCode);
-          total += count * res.unitEvAvg;
-        });
-      }
-
-      // 2. Standalone Cards
-      if (prod.contents.card) {
-        prod.contents.card.forEach((cd) => {
-          const count = (cd.count || 1) * multiplier;
-          const res = resolveCard(cd, prod.setCode, prod);
-          total += count * res.ev;
-        });
-      }
-
-      // 3. Preconstructed Decks
-      if (prod.contents.deck) {
-        prod.contents.deck.forEach((dk) => {
-          const count = multiplier;
-          const matchedDeck = findPreconDeck(preconDecks, dk.name, dk.set || prod.setCode);
-          let deckEv = matchedDeck?.totalSinglesEv || 0;
-          if (matchedDeck?.cards && matchedDeck.cards.length > 0) {
-            const isFoil = Boolean(
-              (dk as any).foil ||
-              (dk as any).isFoil ||
-              matchedDeck?.isFoil ||
-              matchedDeck?.foil ||
-              (dk.name || '').toLowerCase().includes('foil') ||
-              (matchedDeck?.deckName || '').toLowerCase().includes('foil') ||
-              ((prod.displayName || (prod as any).name || '').toLowerCase().includes('foil') &&
-               !(prod.displayName || (prod as any).name || '').toLowerCase().includes('non-foil'))
-            );
-            const cardSum = matchedDeck.cards.reduce((sum: number, c: any) => {
-              const cardFoil = Boolean(c.foil || c.isFoil || isFoil);
-              let price = c.price || 0;
-              if (cardFoil) {
-                const fromIdx =
-                  (c.uuid && singleCardPrices?.byUuid?.[c.uuid]) ||
-                  singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}___${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
-                  singleCardPrices?.byNameSet?.[`${(c.name || '').toLowerCase()}_${(c.set || dk.set || prod.setCode).toLowerCase()}`] ||
-                  singleCardPrices?.byName?.[(c.name || '').toLowerCase()];
-                if (fromIdx?.foilPrice) price = fromIdx.foilPrice;
-                else if (c.foilPrice) price = c.foilPrice;
-                else if (price > 0 && !c.foil) price = Number((price * 1.5).toFixed(2));
-              }
-              const cardPrice = Number((price * reprintMultiplier).toFixed(2));
-              return sum + cardPrice * (c.count || 1);
-            }, 0);
-            if (cardSum > 0) {
-              deckEv = cardSum;
-            } else if (deckEv > 0 && priceMode === 'cheapest_reprint') {
-              deckEv = Number((deckEv * reprintMultiplier).toFixed(2));
-            }
-          }
-          total += count * deckEv;
-        });
-      }
-
-      // 4. Variable Slots
-      if (prod.contents.variable) {
-        prod.contents.variable.forEach((vSlot: any) => {
-          const configs = vSlot.configs || [];
-          const totalWeight = configs.reduce(
-            (sum: number, c: any) => sum + (c.variable_config?.[0]?.chance || 1),
-            0
-          );
-          configs.forEach((cfg: any) => {
-            const vc = cfg.variable_config?.[0] || { chance: 1, weight: totalWeight || 1 };
-            const chance = vc.chance || 1;
-            const weight = vc.weight || totalWeight || 1;
-            const prob = weight > 0 ? chance / weight : 0;
-
-            let cfgEv = 0;
-            if (cfg.card) {
-              cfg.card.forEach((cd: any) => {
-                const res = resolveCard(cd, prod.setCode, prod);
-                cfgEv += (cd.count || 1) * res.ev;
-              });
-            }
-            if (cfg.pack) {
-              cfg.pack.forEach((pk: any) => {
-                const res = resolvePack(pk, prod.setCode);
-                cfgEv += (pk.count || 1) * res.unitEvAvg;
-              });
-            }
-            if (cfg.deck) {
-              cfg.deck.forEach((dk: any) => {
-                const matched = findPreconDeck(preconDecks, dk.name, dk.set || prod.setCode);
-                cfgEv += (matched?.totalSinglesEv || 0) * reprintMultiplier;
-              });
-            }
-            total += prob * cfgEv * multiplier;
-          });
-        });
-      }
-
-      // 5. Sealed Subproducts (recursive)
-      if (prod.contents.sealed) {
-        prod.contents.sealed.forEach((sub) => {
-          const subCount = (sub.count || 1) * multiplier;
-          const childProd = sub.uuid ? productMap[sub.uuid] : null;
-          if (childProd) {
-            total += computeProductContentsEv(childProd, subCount);
-          }
-        });
-      }
-
-      return Number(total.toFixed(2));
+      return 0;
     },
-    [arbitrageMap, preconDecks, productMap, singleCardPrices, boosterEvMap, vendor, priceMode, reprintMultiplier]
+    [arbitrageMap, preconDecks, productMap, singleCardPrices, boosterEvMap, vendor, priceMode]
   );
 
   // Filter products
@@ -721,7 +567,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
         let unitEv = 0;
         if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = Number((childArb.totalEvAvg * reprintMultiplier).toFixed(2));
+          unitEv = Number(childArb.totalEvAvg.toFixed(2));
         } else if (childProd) {
           unitEv = computeProductContentsEv(childProd);
         }
@@ -812,11 +658,10 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
             } else if (c.prices?.usd_foil) {
               price = Number(c.prices.usd_foil);
             } else if (!c.foil && price > 0) {
-              price = Number((price * 1.5).toFixed(2));
             }
           }
           const cCount = c.count || 1;
-          const adjustedPrice = Number((price * reprintMultiplier).toFixed(2));
+          const adjustedPrice = Number(price.toFixed(2));
           return {
             ...c,
             foil: cardFoil,
@@ -829,7 +674,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
         let singlesEv = matchedDeck?.totalSinglesEv || 0;
         if (priceMode === 'cheapest_reprint' && singlesEv > 0) {
-          singlesEv = Number((singlesEv * reprintMultiplier).toFixed(2));
         }
         if (cards.length > 0) {
           const calculatedCardSum = Number(
@@ -942,7 +786,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
           if (cfg.deck) {
             cfg.deck.forEach((dk: any) => {
               const matched = findPreconDeck(preconDecks, dk.name, dk.set || selectedProduct.setCode);
-              const dEv = (matched?.totalSinglesEv || 0) * reprintMultiplier;
+              const dEv = matched?.totalSinglesEv || 0;
               configEv += dEv;
               items.push({
                 type: 'deck',
@@ -1013,7 +857,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     const calculatedTotalEv = Number((totalPackEv + totalCardsEv + totalSealedEv + totalDeckEv + totalVariableEv).toFixed(2));
     const statedMarketPrice = selectedProduct.marketPrice || 0;
     const hasCalculatedEv = (arb && arb.totalEvAvg > 0) || calculatedTotalEv > 0;
-    const finalEv = arb && arb.totalEvAvg > 0 ? Number((arb.totalEvAvg * reprintMultiplier).toFixed(2)) : calculatedTotalEv;
+    const finalEv = arb && arb.totalEvAvg > 0 ? Number(arb.totalEvAvg.toFixed(2)) : calculatedTotalEv;
     const netSpread = hasCalculatedEv ? Number((finalEv - statedMarketPrice).toFixed(2)) : 0;
     const roiPct = (hasCalculatedEv && statedMarketPrice > 0) ? Number(((netSpread / statedMarketPrice) * 100).toFixed(1)) : 0;
 
@@ -1058,7 +902,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       netSpread,
       roiPct,
     };
-  }, [selectedProduct, arbitrageMap, productMap, preconDecks, boosterEvMap, singleCardPrices, computeProductContentsEv, vendor, priceMode, reprintMultiplier]);
+  }, [selectedProduct, arbitrageMap, productMap, preconDecks, boosterEvMap, singleCardPrices, computeProductContentsEv, vendor, priceMode]);
 
   // Recursive Tree Node Renderer for Product Contents
   const renderProductTree = (
@@ -1370,9 +1214,9 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-mono">
                             <span>TCG: ${res?.prices?.tcgplayer?.toFixed(2) || res?.price?.toFixed(2) || '0.00'}</span>
                             <span>•</span>
-                            <span>CK: ${res?.prices?.cardkingdom?.toFixed(2) || ((res?.price || 0) * 1.12).toFixed(2)}</span>
+                            <span>CK: ${res?.prices?.cardkingdom?.toFixed(2) || '0.00'}</span>
                             <span>•</span>
-                            <span>CM: €{res?.prices?.cardmarketEur?.toFixed(2) || ((res?.price || 0) * 0.85).toFixed(2)}</span>
+                            <span>CM: €{res?.prices?.cardmarketEur?.toFixed(2) || '0.00'}</span>
                             {res?.isEstimated && (
                               <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                                 allocated share
@@ -1464,7 +1308,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                         } else if (c.prices?.usd_foil) {
                           price = Number(c.prices.usd_foil);
                         } else if (!c.foil && price > 0) {
-                          price = Number((price * 1.5).toFixed(2));
                         }
                       }
                       return {
@@ -2102,7 +1945,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                         </div>
                         {arb && (
                           <div className="font-mono text-[10px] text-amber-600 font-bold">
-                            EV: ${Number((arb.totalEvAvg || 0) * reprintMultiplier).toFixed(2)}
+                            EV: ${Number(arb.totalEvAvg || 0).toFixed(2)}
                           </div>
                         )}
                       </div>
@@ -2195,7 +2038,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
                         packagingType: p.category as any,
                         boosterName: 'default' as any,
                         marketPrice: p.marketPrice || 0,
-                        estimatedEv: (matchedDeck?.totalSinglesEv || arb?.totalEvAvg || (p.marketPrice ? p.marketPrice * 1.15 : 0)) * reprintMultiplier,
+                        estimatedEv: matchedDeck?.totalSinglesEv || arb?.totalEvAvg || 0,
                         packsCount: arb?.packCount || (p.contents?.pack ? p.contents.pack.reduce((sum, pk) => sum + (pk.count || 1), 0) : 0),
                         cardCount: p.cardCount || matchedDeck?.cardCount || 0,
                         rawCategory: p.category,
@@ -2546,7 +2389,6 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
         productMap={productMap}
         boosterEvMap={boosterEvMap}
         singleCardPrices={singleCardPrices}
-        reprintMultiplier={reprintMultiplier}
       />
     </div>
   );

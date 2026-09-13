@@ -4,6 +4,8 @@ This document describes the current backend pipeline, data ownership, known fall
 
 It is an inventory and review plan. It does not imply that every listed fallback is currently safe to remove.
 
+The corresponding frontend and supporting-layer review is documented in [`FRONTEND_REVIEW.md`](../FRONTEND_REVIEW.md). Keep both maps aligned when changing generated JSON contracts, vendor semantics, provenance fields, or ownership of EV calculations.
+
 ## 1. Project Purpose
 
 The backend answers:
@@ -72,6 +74,8 @@ Required output files currently include:
 - `public/data/product_chase_cards.json`
 - `public/data/pricing_reliability.json`
 
+The runner also writes `pipeline_execution_logs.json` and `latest_pipeline_run.json` for telemetry, but `validate_output_bundle()` currently checks only the seven files above. Treat that as a validation gap: telemetry files should be included in the required bundle once their schema is defined.
+
 ## 4. Backend Files
 
 ### `config.py`
@@ -109,7 +113,7 @@ Review status:
 
 - Active and important.
 - The unused `importlib.util` import should be removed during cleanup.
-- The runner currently validates JSON syntax and file presence, but not deep schema or cross-file consistency.
+- The runner validates JSON syntax, required fields, numeric finiteness, product identity uniqueness, and 100-bucket monotonicity for booster and composite outputs. Cross-file schema validation remains a follow-up.
 
 ### `download.py`
 
@@ -450,6 +454,10 @@ Neighboring vendor and finish borrowing are intentional for all card-price resol
 2. Verify arbitrary booster buckets against audit samples.
 3. Validate `product_chase_cards.json` for representative products.
 4. Add deep output schema validation.
+5. Record source-data versions, workflow commit SHA, simulation iteration counts, and audit settings in the published run metadata.
+6. Add deterministic test controls or an explicit reproducibility policy for Monte Carlo stages.
+7. Verify that a failed or empty vendor evaluation cannot publish stale or partially updated EV fields.
+8. Verify fallback vendor selection is intentional and visible in telemetry; do not silently treat `all_cheapest`, `tcgplayer`, or the first available vendor as equivalent.
 
 ### Phase 2: Establish backend ownership
 
@@ -457,6 +465,7 @@ Neighboring vendor and finish borrowing are intentional for all card-price resol
 2. Make `populate_booster_ev_to_db.py` the only booster distribution producer.
 3. Make `export_product_chase_cards.py` the only product TOP 5 producer.
 4. Remove browser-side synthetic EV fallbacks where backend data exists.
+5. Make `validate_pricing_and_ev.py` and `validate_composite_data.py` share one schema and vendor/price-mode contract.
 
 ### Phase 3: Remove duplicated logic
 
@@ -464,6 +473,7 @@ Neighboring vendor and finish borrowing are intentional for all card-price resol
 2. Move shared recursive product resolution into one backend module.
 3. Remove or isolate `src/utils/productUtils.ts` browser-side valuation logic.
 4. Consolidate validation scripts.
+5. Remove legacy `all` aliases only after generated-data compatibility has been checked.
 
 ### Phase 4: Performance
 
@@ -512,7 +522,39 @@ For each file, record:
 - Safe deletion or refactor candidates.
 - Focused tests required before changing it.
 
-## 10. Workflow Regeneration Runbook
+## 10. Audit Completion Register
+
+Use this register to distinguish a known risk from a completed fix. A phase is complete only when its acceptance evidence is attached to the relevant pull request or workflow run.
+
+| Priority | Area | Current state | Required fix or evidence |
+|---|---|---|---|
+| P0 | Publication safety | Implemented in the workflow; generated data is staged in an isolated workspace and swapped after the runner succeeds. | Confirm a failed run leaves the previous `public/data/` snapshot unchanged, and confirm `data-sync` contains data only. |
+| P0 | Output completeness | `daily_update.py` now checks core booster/composite shapes, finite metrics, unique product IDs, and monotonic 100-bucket curves. Cross-file schemas and telemetry are not yet checked. | Extend schema validation to telemetry, deck provenance, chase cards, vendor/mode completeness, and cross-file product references. |
+| P0 | Composite correctness | Composite evaluation is backend-owned, but the independent validator is not part of the daily stage list. | Run `validate_composite_data.py` in CI or document why it remains manual; fail on malformed or incomplete composite quantiles. |
+| P1 | Price resolution | Neighbor borrowing is intentional and now represented by provenance. | Verify direct versus cheapest-reprint metrics separately, and publish counts for exact, finish fallback, vendor fallback, unresolved, and complete results. |
+| P1 | Fallback vendor policy | Some validation and display paths choose `all_cheapest`, then `tcgplayer`, then another available vendor. | Replace implicit selection with an explicit policy parameter or emit a warning and provenance whenever a requested vendor is unavailable. |
+| P1 | Reproducibility | Booster and composite simulations use large Monte Carlo samples; run metadata does not currently record a seed or source snapshot. | Record source URLs/versions, commit SHA, iteration count, audit flag, and seed policy in `latest_pipeline_run.json`. |
+| P1 | Stale-data protection | The runner stops before publication on stage failure, but the required-output list excludes telemetry files. | Require telemetry files after they are written and test that missing/empty outputs cannot replace the previous snapshot. |
+| P1 | Deployment operations | Repository publication and Vercel deployment are separate workflow actions with different credentials. | Document `contents: write`, Vercel secret requirements, branch behavior, and the expected result of a data publish when deployment fails. |
+| P2 | Test coverage | There are focused bucket/provenance tests, but no complete backend test command or coverage threshold. | Add deterministic unit tests for resolver statuses, fallback policy, recursive products, schema validation, and representative exporter fixtures. |
+| P2 | Architecture duplication | `ev_engine.py`, `composite_evaluator.py`, and frontend `productUtils.ts` still overlap. | Establish one backend recursive product-resolution contract, migrate callers, then remove browser valuation logic. |
+| P2 | Performance | Booster and composite simulations retain many samples and repeatedly parse large datasets. | Measure runtime and memory per stage, cache immutable inputs, and optimize only after correctness evidence is captured. |
+| P3 | Cleanup | `sync_all_from_sqlite.py`, prototype tests, legacy ingestion scripts, and unused imports remain candidates. | Use reference search and history review, deleting only after replacement tests and workflows are verified. |
+
+### Minimum local pre-push checks
+
+These checks do not require MySQL and should pass before a backend change is pushed:
+
+```text
+python backend/daily_update.py --dry-run
+python -m pytest backend/test_ev_statistics.py backend/test_pipeline_bucket_contract.py
+npm.cmd run build
+git diff --check
+```
+
+The full regeneration remains a GitHub Actions operation because it requires MySQL, MTGJSON downloads, current price feeds, and deployment credentials.
+
+## 11. Workflow Regeneration Runbook
 
 The authoritative regeneration path is GitHub Actions. Local machines do not need MySQL for the production run; the workflow provisions a temporary MySQL 8 service.
 

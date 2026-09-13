@@ -46,19 +46,6 @@ interface BoosterDetailExplorerProps {
   onClearInitialProductId?: () => void;
 }
 
-const getBoosterPackMarketPrice = (setCode: string, boosterName: string): number => {
-  const isCollector = boosterName.toLowerCase().includes('collector');
-  if (setCode === 'MH3') return isCollector ? 39.99 : 7.99;
-  if (setCode === 'BLB') return isCollector ? 26.99 : 4.49;
-  if (setCode === 'OTJ') return isCollector ? 24.99 : 4.25;
-  if (setCode === 'MOM') return isCollector ? 28.50 : 4.85;
-  if (setCode === 'WOE') return isCollector ? 22.99 : 4.50;
-  if (setCode === 'LCI') return isCollector ? 25.00 : 4.50;
-  if (setCode === 'FDN') return isCollector ? 29.99 : 4.49;
-  if (setCode === 'FIN') return isCollector ? 42.99 : 6.99;
-  return isCollector ? 28.00 : 4.99;
-};
-
 export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   selectedSetCode,
   onSelectSetCode,
@@ -524,7 +511,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return activeProduct.packagingType === 'box_set' || cat === 'box_set';
   }, [activeProduct]);
 
-  const packMarketPrice = Number(getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play').toFixed(2));
+  const packMarketPrice = Number(activeProduct?.marketPrice || 0);
 
   // Product level scaled metrics from authoritative breakdown
   const productPacksCount =
@@ -602,12 +589,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       return activeProduct.evScore;
     }
 
-    // 3. Empirical quantiles by vendor (scaled by reprintMultiplier if in Cheapest Reprint mode)
+    // 3. Empirical quantiles by vendor from the backend snapshot
     const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
     const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey];
     if (rawQuantiles && rawQuantiles.length >= 100) {
-      const reprintMult = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
-      const quantiles = reprintMult !== 1.0 ? rawQuantiles.map((q) => q * reprintMult) : rawQuantiles;
       const score = calculateEvScore(
         productMarketPrice,
         productEstimatedEv,
@@ -615,7 +600,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         productMid90Ev,
         productMax5,
         false,
-        quantiles,
+        rawQuantiles,
         productPacksCount
       );
       if (score != null) return score;
