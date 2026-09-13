@@ -53,9 +53,10 @@ The workflow creates a temporary MySQL database named `test_for_cards`. It does 
 4. `sync_live_sealed_prices.py`
 5. `populate_booster_ev_to_db.py`
 6. `export_app_data.py`
-7. `export_product_chase_cards.py`
-8. `composite_evaluator.py`
-9. `validate_pricing_and_ev.py`
+7. `load_deck_tables.py`
+8. `export_product_chase_cards.py`
+9. `composite_evaluator.py`
+10. `validate_pricing_and_ev.py`
 
 The runner now fails fast on any stage failure and validates the required JSON output bundle before the GitHub workflow can publish data.
 
@@ -294,14 +295,26 @@ Important behavior:
 
 - Direct and cheapest-reprint modes are generated.
 - Named vendors and aggregate vendors are generated.
-- Optional `deckCards`/`decks` tables are tolerated when absent.
+- Optional `deckCards`/`decks` tables are tolerated when absent; the exporter falls back to card lists in `precon_decks.json` so deck-referenced products do not lose all deck candidates.
 - Scryfall is not required for the price calculation.
 
 Review status:
 
 - New active stage.
-- Needs a GitHub workflow run to verify the temporary database schema and output size.
+- Needs a GitHub workflow run to verify deck candidate coverage and output size. The temporary MTGJSON schema currently omits `deckCards`/`decks` in some runs, so local precon data is the supported fallback for candidate discovery.
 - Should eventually share a backend card-candidate resolver with EV calculations.
+
+### `load_deck_tables.py`
+
+Purpose:
+
+- Creates the temporary `decks` and `deckCards` tables when the MTGJSON SQL dump does not provide them.
+- Loads the current published `precon_decks.json` snapshot into those tables before chase-card export.
+
+Review status:
+
+- Active pipeline stage that establishes the relational deck contract.
+- The snapshot remains the current source because the repository has no upstream deck-bundle downloader yet; replacing it with a fresh deck download is a follow-up improvement.
 
 ### `sync_all_from_sqlite.py`
 

@@ -65,8 +65,28 @@ def load_deck_candidates(cursor):
             key = ((row["deckName"] or "").strip().lower(), (row["deckCode"] or "").upper())
             decks.setdefault(key, set()).add((row["cardUuid"], bool(row["isFoil"])))
     except mysql.connector.Error as error:
-        print(f"  WARN Deck tables unavailable; continuing with booster/card contents only: {error}")
+        print(f"  INFO Deck tables unavailable; using precon_decks.json for deck candidates: {error}")
     return decks
+
+
+def load_local_deck_candidates():
+    raw = load_json("precon_decks.json")
+    deck_data = raw.get("decks", raw) if isinstance(raw, dict) else {}
+    candidates = {}
+    for deck in deck_data.values():
+        if not isinstance(deck, dict):
+            continue
+        name = (deck.get("deckName") or deck.get("name") or "").strip().lower()
+        code = (deck.get("setCode") or deck.get("set") or "").strip().upper()
+        cards = deck.get("cards") or deck.get("fullDecklist") or []
+        if not name:
+            continue
+        key = (name, code)
+        for card in cards:
+            uuid = card.get("uuid")
+            if uuid:
+                candidates.setdefault(key, set()).add((uuid, bool(card.get("foil") or card.get("isFoil"))))
+    return candidates
 
 
 def load_card_metadata(cursor, uuids):
@@ -158,6 +178,8 @@ def export_product_chase_cards():
     try:
         booster_candidates = load_booster_candidates(cursor)
         deck_candidates = load_deck_candidates(cursor)
+        if not deck_candidates:
+            deck_candidates = load_local_deck_candidates()
         all_uuids = {uuid for values in booster_candidates.values() for uuid, _ in values}
         all_uuids.update(uuid for values in deck_candidates.values() for uuid, _ in values)
         metadata = load_card_metadata(cursor, all_uuids)
