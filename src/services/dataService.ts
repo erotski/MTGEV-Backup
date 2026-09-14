@@ -1,5 +1,6 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability, PipelineRunRecord } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
+import { getCanonicalProductMetrics } from '../utils/productUtils';
 import { 
   loadScryfallHierarchy, 
   getChildSets, 
@@ -121,6 +122,7 @@ class DataService {
     byName: Record<string, any>;
     totalIndexed: number;
   }> | null = null;
+  private snapshotIntegrityReport: SnapshotIntegrityReport | null = null;
   private isLoadedFromPipeline = false;
 
   public getSingleCardPricesSync(): {
@@ -166,6 +168,97 @@ class DataService {
     } catch {
       return null;
     }
+  }
+
+  public async getSnapshotIntegrityReport(): Promise<SnapshotIntegrityReport> {
+    if (this.snapshotIntegrityReport) {
+      return this.snapshotIntegrityReport;
+    }
+
+    const warnings: string[] = [];
+    const metadata = await this.getLatestPipelineRun();
+
+    if (!metadata) {
+      warnings.push('No /data/latest_pipeline_run.json snapshot metadata found.');
+    }
+
+    const [sets, sealedProducts, boosterEv] = await Promise.all([
+      this.getSets().catch(() => ({ sets: [] as SetOption[], isLive: false })),
+      this.getSealedProducts().catch(() => []),
+      this.getBoosterEVs().catch(() => ({})),
+    ]);
+
+    if (!sets.sets || sets.sets.length === 0) {
+      warnings.push('Sets snapshot did not load or is empty.');
+    }
+    if (!Array.isArray(sealedProducts) || sealedProducts.length === 0) {
+      warnings.push('Sealed products snapshot did not load or is empty.');
+    }
+    if (!boosterEv || Object.keys(boosterEv).length === 0) {
+      warnings.push('Booster EV snapshot did not load or is empty.');
+    }
+
+    const report: SnapshotIntegrityReport = {
+      ok: warnings.length === 0,
+      warnings,
+      metadata,
+    };
+    this.snapshotIntegrityReport = report;
+    if (warnings.length > 0) {
+      console.warn('Snapshot integrity warnings:', warnings);
+    }
+    return report;
+  }
+
+  public async getProductMetrics(
+    productId: string,
+    vendor: string = 'all_cheapest',
+    priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+    evBasis: 'avg' | 'mid90' | 'min' | 'max' | string = 'avg'
+  ) {
+    if (!productId) {
+      return null;
+    }
+
+    const [products, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, latestRun] = await Promise.all([
+      this.getSealedProducts(),
+      this.getArbitrageRecords(),
+      this.getBoosterEVs(),
+      this.getPreconDecks(),
+      this.getSingleCardPrices(),
+      this.getLatestPipelineRun(),
+    ]);
+
+    const product = products.find((item: any) => (
+      (item.id && item.id === productId) ||
+      (item.uuid && item.uuid === productId) ||
+      (item.productUuid && item.productUuid === productId)
+    ));
+
+    if (!product) {
+      return null;
+    }
+
+    const productMap = Object.fromEntries(products.map((item: any) => [String(item.id || item.uuid || item.productUuid || ''), item]));
+    const metrics = getCanonicalProductMetrics(
+      product,
+      productMap,
+      Object.fromEntries((arbitrageRecords || []).map((record: any) => [String(record.productUuid || ''), record])),
+      boosterEvMap || {},
+      preconDecks || {},
+      singleCardPrices || { byUuid: {}, byName: {}, byNameSet: {} },
+      vendor,
+      priceMode,
+      evBasis
+    );
+
+    return {
+      ...metrics,
+      source: latestRun ? 'live_pipeline' : 'empty',
+      pipelineRunId: latestRun?.pipelineRunId || latestRun?.id || 'unavailable',
+      schemaVersion: latestRun?.schemaVersion ?? null,
+      generatedAt: latestRun?.generatedAt || latestRun?.timestamp || null,
+    };
   }
 
   /**

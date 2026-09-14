@@ -44,6 +44,15 @@ export interface PipelineRunRecord {
   durationSeconds?: number;
   stages?: Array<Record<string, any>>;
   errors?: Array<Record<string, any>>;
+  schemaVersion?: number | string;
+  pipelineRunId?: string;
+  generatedAt?: string;
+}
+
+export interface SnapshotIntegrityReport {
+  ok: boolean;
+  warnings: string[];
+  metadata: PipelineRunRecord | null;
 }
 
 export interface ProductContentsCard {

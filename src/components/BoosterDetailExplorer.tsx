@@ -142,6 +142,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [preconDecks, setPreconDecks] = useState<Record<string, PreconstructedDeckDetail>>({});
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
   const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
+  const [snapshotWarnings, setSnapshotWarnings] = useState<string[]>([]);
+  const [gatewayMetrics, setGatewayMetrics] = useState<any>(null);
 
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
@@ -173,6 +175,32 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [activeBoosterName, setActiveBoosterName] = useState<string>(
     setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      dataService.getSnapshotIntegrityReport(),
+      activeProduct && (activeProduct.id || activeProduct.uuid)
+        ? dataService.getProductMetrics(activeProduct.id || activeProduct.uuid || '', vendor, priceMode, evBasis)
+        : Promise.resolve(null),
+    ]).then(([report, metrics]) => {
+      if (!isMounted) return;
+      setSnapshotWarnings(report.warnings || []);
+      setGatewayMetrics(metrics);
+      if (report.metadata?.pipelineRunId || report.metadata?.id) {
+        setPipelineRunId(report.metadata.pipelineRunId || report.metadata.id || 'unavailable');
+      }
+    }).catch(() => {
+      if (!isMounted) return;
+      setSnapshotWarnings([]);
+      setGatewayMetrics(null);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeProduct, vendor, priceMode, evBasis]);
 
   // Global lookup map of all sealed products by UUID/ID
   const productMap = useMemo(() => {
@@ -460,6 +488,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Derive authoritative canonical metrics
   const canonicalMetrics = useMemo(() => {
+    if (gatewayMetrics) {
+      return gatewayMetrics;
+    }
     if (!activeRawProduct && !activeProduct) return null;
     return getCanonicalProductMetrics(
       activeRawProduct || activeProduct,
@@ -472,7 +503,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       priceMode,
       evBasis
     );
-  }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
+  }, [gatewayMetrics, activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
 
   const productFixedBaseEv = canonicalMetrics?.fixedBaseEv ?? (productAudit?.totalFixedEv || 0);
   const productVariableEv = canonicalMetrics?.variableEv ?? (productAudit?.totalVariableEv || 0);
@@ -1051,6 +1082,32 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       {/* 2. Active Selected Product Detailed Stats Grid */}
       {activeBooster && (
         <div className="space-y-6">
+          {snapshotWarnings.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs">
+              <div className="font-bold uppercase tracking-wider mb-1">Snapshot warnings</div>
+              <ul className="list-disc pl-5 space-y-1">
+                {snapshotWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {(gatewayMetrics?.pipelineRunId || pipelineRunId) && (
+            <div className="bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl p-3 text-xs flex flex-wrap items-center gap-3">
+              <span className="font-bold uppercase tracking-wider text-slate-500">Data source</span>
+              <span className="font-mono text-slate-800">{gatewayMetrics?.source || 'live_pipeline'}</span>
+              <span className="font-bold uppercase tracking-wider text-slate-500">Pipeline</span>
+              <span className="font-mono text-slate-800">{gatewayMetrics?.pipelineRunId || pipelineRunId}</span>
+              {gatewayMetrics?.generatedAt && (
+                <>
+                  <span className="font-bold uppercase tracking-wider text-slate-500">Generated</span>
+                  <span className="font-mono text-slate-800">{new Date(gatewayMetrics.generatedAt).toISOString()}</span>
+                </>
+              )}
+            </div>
+          )}
+
           {/* EV Score & Market Price Banner */}
           <div
             id="product-ev-score-banner"

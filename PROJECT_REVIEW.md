@@ -381,9 +381,9 @@ Statuses:
 | DEV-04 | Frontend fallback removal | P0 | DONE | Synthetic multipliers, invented card prices, market-price-as-EV, and browser simulations removed from active paths. | `npm.cmd run lint` and `npm.cmd run build` pass; no active multiplier references remain. |
 | DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`; curated Special Chases remain editorial. | Viewer renders backend snapshot and shows explicit empty state when missing. |
 | DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. |
-| DEV-07 | Snapshot identity | P0 | NEXT | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Frontend rejects or warns when snapshots come from different pipeline runs. |
-| DEV-08 | Frontend data gateway | P0 | NEXT | Add `dataService.getProductMetrics(productId, vendor, priceMode, evBasis)`. | Main product views display values from one gateway and expose `source`/`pipelineRunId`. |
-| DEV-09 | Frontend contract validation | P1 | NEXT | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | Invalid snapshots produce structured warnings and an Admin Portal diagnostic. |
+| DEV-07 | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Frontend rejects or warns when snapshots come from different pipeline runs. |
+| DEV-08 | Frontend data gateway | P0 | IN PROGRESS | Add `dataService.getProductMetrics(productId, vendor, priceMode, evBasis)`. | Main product views display values from one gateway and expose `source`/`pipelineRunId`. |
+| DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | Invalid snapshots produce structured warnings and an Admin Portal diagnostic. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |
 | DEV-11 | Recursive EV consolidation | P1 | IN PROGRESS | Reduce `productUtils.ts` and view helpers to structural breakdown; remove duplicate product valuation. | No component computes authoritative EV when a backend record exists. |
 | DEV-12 | Reproducibility | P1 | NEXT | Record source versions, commit SHA, sample count, audit flag, and seed policy. | `latest_pipeline_run.json` contains reproducibility metadata. |
@@ -396,6 +396,7 @@ Statuses:
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
 | DEV-20 | Jumpstart collation | P0 | NEXT | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | A reviewed Jumpstart inventory identifies each set/booster/sheet mix; representative audit files show fixed land/content counts, correct variance, and agreement with MTGJSON configuration. |
 | DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation, but no active curve integrity issues were found in the GitHub Actions review. The website should continue to be checked against the latest snapshot when broader backend-to-frontend validation is required. | GitHub Actions review found no curve mismatches; future backend-to-frontend validation should compare snapshot identity, selected record key, quantile source, endpoint values, and no-data reason. |
+| DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it in the product detail and breakdown views without silent empty states or stale vendor-mode mismatches. | Representative products show the expected `product_chase_cards.json` cards for the selected vendor and price mode, and any missing record surfaces a clear diagnostic rather than an empty card grid. |
 
 ### Frontend single-source-of-truth validation
 
@@ -458,6 +459,17 @@ Status: `PARTIALLY_FIXED`. The GitHub Actions curve checks did not reveal a curr
 6. Run the check once with `audit_enabled=false` and once with `audit_enabled=true`; the published curve must be identical for the same source data.
 7. Treat missing quantiles as an explicit data-contract failure with the selected key, not as a generic “No data available” message.
 8. Keep cross-layer validation in mind whenever future backend or frontend data refactors occur; the current status is “no issue found,” not “no further checks needed.”
+
+#### DEV-22: Chase-card visibility
+
+Status: `IN PROGRESS`. The product TOP 5 chase cards are still not appearing for some products even though the backend export path exists. This is a real issue rather than an accepted empty state, and it should be tracked as a product-data contract bug until the mismatch is resolved.
+
+1. Confirm the exact key mapping between `sealed_products.json` and `product_chase_cards.json` for a representative product list.
+2. Verify that the selected product resolves to the same canonical ID or UUID on both backend and frontend paths.
+3. Validate the vendor and price mode key format, such as `direct:tcgplayer`, `direct:cardmarket`, or `cheapest_reprint:all_cheapest`, before treating the record as missing.
+4. Add a diagnostic warning when a product has a valid backend record but no frontend entry for the current vendor/mode combination.
+5. Add a regression test for a known product with chase data to prevent silent empty-grid regressions.
+6. Keep the empty-state message truthful and explicit; it should explain that the selected product has no chase-card record, not merely that “no cards are available.”
 
 ### Vendor add/remove procedure
 
