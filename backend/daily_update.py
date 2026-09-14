@@ -38,6 +38,9 @@ REQUIRED_OUTPUTS = (
     "single_card_prices.json",
     "product_chase_cards.json",
     "pricing_reliability.json",
+    "precon_decks.json",
+    "pipeline_execution_logs.json",
+    "latest_pipeline_run.json",
 )
 
 SCRIPTS = [
@@ -140,6 +143,14 @@ def validate_output_semantics() -> tuple[bool, str]:
     def finite(value) -> bool:
         return isinstance(value, (int, float)) and math.isfinite(float(value))
 
+    def numeric(value):
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return None
+        return float(value) if finite(value) else None
+
     def validate_quantiles(values, label: str) -> str | None:
         if not isinstance(values, list) or len(values) != 100:
             return f"{label} must contain exactly 100 buckets"
@@ -163,14 +174,15 @@ def validate_output_semantics() -> tuple[bool, str]:
             error = validate_quantiles(record["quantiles"], f"booster_ev.json[{index}].quantiles")
             if error:
                 return False, error
+            minimum = numeric(record.get("evMin"))
+            maximum = numeric(record.get("evMax"))
+            if minimum is not None and abs(record["quantiles"][0] - minimum) > 0.01:
+                return False, f"booster_ev.json[{index}] minimum endpoint does not match evMin"
+            if maximum is not None and abs(record["quantiles"][-1] - maximum) > 0.01:
+                return False, f"booster_ev.json[{index}] maximum endpoint does not match evMax"
         for field in ("evAverage", "evMid90", "evMin", "evMax", "evMin5", "evMax5"):
             if field in record and record[field] is not None:
-                value = record[field]
-                if isinstance(value, str):
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        value = None
+                value = numeric(record[field])
                 if value is None or not finite(value):
                     return False, f"booster_ev.json[{index}].{field} is not numeric"
 
@@ -197,6 +209,40 @@ def validate_output_semantics() -> tuple[bool, str]:
             error = validate_quantiles(values, f"sealed_products.json[{index}].quantilesByVendor.{vendor}")
             if error:
                 return False, error
+
+    product_ids = {
+        product.get("id") or product.get("uuid")
+        for product in sealed_products
+        if isinstance(product, dict) and (product.get("id") or product.get("uuid"))
+    }
+    chase_cards = load_required("product_chase_cards.json")
+    if not isinstance(chase_cards, dict):
+        return False, "product_chase_cards.json must contain an object"
+    unknown_chase_products = sorted(set(chase_cards) - product_ids)
+    if unknown_chase_products:
+        return False, f"product_chase_cards.json contains unknown product id {unknown_chase_products[0]}"
+    for product_id, modes in chase_cards.items():
+        if not isinstance(modes, dict):
+            return False, f"product_chase_cards.json[{product_id}] must be an object"
+        for mode_key, cards in modes.items():
+            if not isinstance(cards, list) or len(cards) > 5:
+                return False, f"product_chase_cards.json[{product_id}].{mode_key} must contain at most 5 cards"
+
+    pricing_reliability = load_required("pricing_reliability.json")
+    if not isinstance(pricing_reliability, dict):
+        return False, "pricing_reliability.json must contain an object"
+
+    precon_decks = load_required("precon_decks.json")
+    if not isinstance(precon_decks, dict):
+        return False, "precon_decks.json must contain an object"
+
+    pipeline_logs = load_required("pipeline_execution_logs.json")
+    if not isinstance(pipeline_logs, dict) or not isinstance(pipeline_logs.get("runs"), list):
+        return False, "pipeline_execution_logs.json must contain a runs array"
+
+    latest_run = load_required("latest_pipeline_run.json")
+    if not isinstance(latest_run, dict) or latest_run.get("status") not in {"success", "failed"}:
+        return False, "latest_pipeline_run.json must contain a valid status"
 
     return True, ""
 

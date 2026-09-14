@@ -81,6 +81,22 @@ jobs:
             exit 1
           fi
 
+      - name: Report EV audit output
+        run: |
+          if [ -d backend/audit_output ]; then
+            echo "Audit directory contents:"
+            find backend/audit_output -maxdepth 1 -type f -print | sort
+          else
+            echo "No backend/audit_output directory was produced. audit_enabled=${{ inputs.audit_enabled }}"
+          fi
+
+      - name: Verify EV audit output exists
+        if: ${{ inputs.audit_enabled == true }}
+        run: |
+          set -e
+          test -d backend/audit_output
+          test -n "$(find backend/audit_output -maxdepth 1 -type f -name '*.json' -print -quit)"
+
       - name: Upload EV audit files
         if: ${{ inputs.audit_enabled == true }}
         uses: actions/upload-artifact@v4

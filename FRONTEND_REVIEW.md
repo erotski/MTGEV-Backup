@@ -76,6 +76,8 @@ Authoritative frontend data files:
 - `pricing_reliability.json`: vendor reliability telemetry.
 - `latest_pipeline_run.json`: latest pipeline status for operations views.
 
+The root `public/data/` directory is authoritative. `backend/public/data/` is not used by the pipeline or frontend and should remain absent. Audit sample JSON files are temporary GitHub Actions artifacts, not repository data files.
+
 ## 4. Catalog and Metadata Layers
 
 ### `src/ecommerceBoosterData.ts`
@@ -185,7 +187,7 @@ Review status:
 `src/services/chaseCardsService.ts`
 
 - Provides card image URL helpers, metadata enrichment, curated Special Chases, Scryfall discovery, and legacy product candidate functions.
-- The legacy product candidate functions currently have no active callers and are cleanup candidates. The product-wide preload function has been removed.
+- The legacy product candidate functions and product-wide preload path have been removed. Product TOP 5 data now comes from the backend snapshot.
 
 Ownership policy:
 
@@ -314,7 +316,7 @@ Disallowed fallbacks:
 2. Keep `ProductChaseCardsViewer` backend-only for product TOP 5 data.
 3. Move curated Special Chases behind an explicit editorial boundary.
 4. Reduce `chaseCardsService.ts` to image and metadata helpers plus the editorial catalog.
-5. Delete the now-unused product candidate, live-set discovery, and product-wide preload functions after the frontend build passes.
+5. Keep Scryfall usage limited to active image/metadata helpers and the editorial catalog.
 
 ### Phase 4: Improve frontend performance
 

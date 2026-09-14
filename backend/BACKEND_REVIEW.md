@@ -6,6 +6,8 @@ It is an inventory and review plan. It does not imply that every listed fallback
 
 The corresponding frontend and supporting-layer review is documented in [`FRONTEND_REVIEW.md`](../FRONTEND_REVIEW.md). Keep both maps aligned when changing generated JSON contracts, vendor semantics, provenance fields, or ownership of EV calculations.
 
+Generated application data belongs only under the repository root `public/data/`. `backend/public/data/` is not a pipeline input or output location and should not be recreated. Audit samples are workflow-run artifacts under `backend/audit_output/`; they are uploaded to GitHub Actions and are not committed to the repository.
+
 ## 1. Project Purpose
 
 The backend answers:
@@ -74,7 +76,7 @@ Required output files currently include:
 - `public/data/product_chase_cards.json`
 - `public/data/pricing_reliability.json`
 
-The runner also writes `pipeline_execution_logs.json` and `latest_pipeline_run.json` for telemetry, but `validate_output_bundle()` currently checks only the seven files above. Treat that as a validation gap: telemetry files should be included in the required bundle once their schema is defined.
+The runner also writes `precon_decks.json`, `pipeline_execution_logs.json`, and `latest_pipeline_run.json`; these are now part of the required bundle and receive semantic validation alongside chase cards and pricing reliability.
 
 ## 4. Backend Files
 
@@ -113,7 +115,7 @@ Review status:
 
 - Active and important.
 - The unused `importlib.util` import should be removed during cleanup.
-- The runner validates JSON syntax, required fields, numeric finiteness, product identity uniqueness, and 100-bucket monotonicity for booster and composite outputs. Cross-file schema validation remains a follow-up.
+- The runner validates JSON syntax, required fields, numeric finiteness, product identity uniqueness, 100-bucket monotonicity, and booster endpoint agreement with `evMin`/`evMax`. Cross-file schema validation remains a follow-up.
 
 ### `download.py`
 
@@ -186,9 +188,9 @@ Bucket contract:
 1. Simulate pack totals.
 2. Round each valid pack total to cents.
 3. Sort the valid samples.
-4. Divide them into 100 equal percentile groups.
-5. Average each group.
-6. Round each bucket to cents.
+4. Preserve the exact minimum and maximum samples as curve points 1 and 100.
+5. Divide the samples between those endpoints into 98 equal empirical groups.
+6. Average each interior group and round all 100 points to cents.
 
 The shared implementation is in `ev_statistics.py`.
 
@@ -529,7 +531,7 @@ Use this register to distinguish a known risk from a completed fix. A phase is c
 | Priority | Area | Current state | Required fix or evidence |
 |---|---|---|---|
 | P0 | Publication safety | Implemented in the workflow; generated data is staged in an isolated workspace and swapped after the runner succeeds. | Confirm a failed run leaves the previous `public/data/` snapshot unchanged, and confirm `data-sync` contains data only. |
-| P0 | Output completeness | `daily_update.py` now checks core booster/composite shapes, finite metrics, unique product IDs, and monotonic 100-bucket curves. Cross-file schemas and telemetry are not yet checked. | Extend schema validation to telemetry, deck provenance, chase cards, vendor/mode completeness, and cross-file product references. |
+| P0 | Output completeness | `daily_update.py` checks core booster/composite shapes, finite metrics, unique product IDs, endpoint-aware 100-point curves, chase-card product references, deck snapshots, pricing reliability, and pipeline telemetry. | Extend validation further only when new generated contracts are added. |
 | P0 | Composite correctness | Composite evaluation is backend-owned, but the independent validator is not part of the daily stage list. | Run `validate_composite_data.py` in CI or document why it remains manual; fail on malformed or incomplete composite quantiles. |
 | P1 | Price resolution | Neighbor borrowing is intentional and now represented by provenance. | Verify direct versus cheapest-reprint metrics separately, and publish counts for exact, finish fallback, vendor fallback, unresolved, and complete results. |
 | P1 | Fallback vendor policy | Some validation and display paths choose `all_cheapest`, then `tcgplayer`, then another available vendor. | Replace implicit selection with an explicit policy parameter or emit a warning and provenance whenever a requested vendor is unavailable. |
