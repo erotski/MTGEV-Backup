@@ -37,6 +37,15 @@ export interface PricingReliability {
   sourceRows: number;
 }
 
+export interface PipelineRunRecord {
+  id?: string;
+  timestamp?: string;
+  status?: 'success' | 'failed' | string;
+  durationSeconds?: number;
+  stages?: Array<Record<string, any>>;
+  errors?: Array<Record<string, any>>;
+}
+
 export interface ProductContentsCard {
   foil?: boolean;
   name: string;

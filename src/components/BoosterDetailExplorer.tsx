@@ -99,10 +99,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     });
   }, [sortedSets, setSearchQuery]);
 
-  // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
-  // active priceMode, then pick the row for the exact selected vendor (falling back to the
-  // 'all' consensus row) - mirrors backend/ev_engine.py's get_pack_ev priority so both the
-  // Booster EV explorer and the Product Overview/Admin pages agree on the same numbers.
+  // Group by boosterName and keep only the requested vendor/mode. Missing records must remain
+  // unavailable instead of silently switching to an aggregate or unrelated vendor.
   const exactModeBoosters = rawSetBoosters.filter((b) => b.priceMode === priceMode);
   const sourceBoosters = exactModeBoosters;
 
@@ -113,13 +111,14 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   });
 
   const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
-    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all_cheapest') || rows[0];
+    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor);
+    if (!base) return null;
     return {
       ...base,
       priceMode,
       vendor,
     };
-  });
+  }).filter((booster): booster is BoosterEVRecord => Boolean(booster));
 
   // Catalog products for this set, with EV scaled by active priceMode and vendor (marketPrice untouched)
   const setCatalogProducts = useMemo(() => {
@@ -142,6 +141,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [arbitrageRecords, setArbitrageRecords] = useState<Record<string, any>>({});
   const [preconDecks, setPreconDecks] = useState<Record<string, PreconstructedDeckDetail>>({});
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
+  const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
 
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
@@ -203,7 +203,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       dataService.getArbitrageRecords(),
       dataService.getPreconDecks(),
       dataService.getSingleCardPrices(),
-    ]).then(([rawProds, rawArb, rawPrecon, rawSingle]) => {
+      dataService.getLatestPipelineRun(),
+    ]).then(([rawProds, rawArb, rawPrecon, rawSingle, latestRun]) => {
       if (!isMounted) return;
       if (Array.isArray(rawProds)) setAllRawProducts(rawProds);
       if (Array.isArray(rawArb)) {
@@ -216,6 +217,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
       if (rawPrecon) setPreconDecks(rawPrecon);
       if (rawSingle) setSingleCardPrices(rawSingle);
+      if (latestRun?.id) setPipelineRunId(latestRun.id);
     }).catch(() => {});
 
     return () => { isMounted = false; };
@@ -1299,6 +1301,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               cardCount={productTotalCards}
               packItems={flatPackItems}
               quantilesByVendor={activeProduct?.quantilesByVendor}
+              pipelineRunId={pipelineRunId}
             />
           )}
 

@@ -1,4 +1,4 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability, PipelineRunRecord } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
 import { 
   loadScryfallHierarchy, 
@@ -155,6 +155,17 @@ class DataService {
     this.productChaseCardsCache = await this.productChaseCardsPromise;
     this.productChaseCardsPromise = null;
     return this.productChaseCardsCache;
+  }
+
+  public async getLatestPipelineRun(): Promise<PipelineRunRecord | null> {
+    try {
+      const response = await fetch('/data/latest_pipeline_run.json', { cache: 'no-cache' });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data && typeof data === 'object' ? data as PipelineRunRecord : null;
+    } catch {
+      return null;
+    }
   }
 
   /**

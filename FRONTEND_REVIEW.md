@@ -1,5 +1,7 @@
 # MTGEV Frontend Review Map
 
+The project-wide guide is [`PROJECT_REVIEW.md`](PROJECT_REVIEW.md). This document contains the frontend-specific detail.
+
 This document describes the React application structure, data ownership, runtime boundaries, known fallback paths, and the recommended frontend cleanup order.
 
 The frontend should primarily load and display immutable JSON snapshots produced by the backend pipeline. It may calculate presentation-only values, but it must not invent card prices, sealed-product EV, vendor prices, or probability distributions when authoritative backend data is unavailable.
@@ -260,6 +262,7 @@ Purpose:
 Review risks:
 
 - Compatibility aliases such as `all` should be removed after generated data is verified.
+- UI labels should call `tcgplayer`, `cardmarket`, `cardkingdom`, and `manapool` vendors or marketplaces, and call `all_cheapest`/`all_average` aggregate modes.
 - Missing named vendors must remain unavailable rather than being silently replaced by another vendor.
 
 ## 7. Fallback and Synthetic Logic Inventory

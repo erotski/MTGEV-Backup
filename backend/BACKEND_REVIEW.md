@@ -1,5 +1,7 @@
 # MTGEV Backend Review Map
 
+The project-wide guide is [`PROJECT_REVIEW.md`](../PROJECT_REVIEW.md). This document contains the backend-specific detail.
+
 This document describes the current backend pipeline, data ownership, known fallback paths, generated outputs, and the recommended cleanup order.
 
 It is an inventory and review plan. It does not imply that every listed fallback is currently safe to remove.
@@ -406,7 +408,7 @@ direct
 cheapest_reprint
 ```
 
-`all_cheapest` is the global cheapest resolution. `all_average` is the average of named vendors and excludes `all_cheapest`.
+The first four keys are named marketplace sources. `all_cheapest` and `all_average` are aggregate calculation modes stored in the vendor field for compatibility with generated JSON; they are not marketplaces. `all_cheapest` selects the lowest usable configured named-vendor price for each resolution. `all_average` averages usable configured named-vendor prices and excludes `all_cheapest`; missing vendors are not treated as zero.
 
 Legacy `all` references still exist in a few compatibility paths and should be removed gradually after generated data has been regenerated and verified.
 
