@@ -49,6 +49,7 @@ def run_validation():
 
     # 1. Monotonicity & Quantile Structure Check
     monotonic_errors = 0
+    endpoint_errors = 0
     vendor_completeness_errors = 0
     for p in evaluated_prods:
         qv = p.get("quantilesByVendor", {})
@@ -58,6 +59,8 @@ def run_validation():
             if q[i] > q[i + 1] + 1e-4:
                 monotonic_errors += 1
                 break
+        if q and q[0] > q[-1] + 1e-4:
+            endpoint_errors += 1
 
         # Check vendor completeness
         qv = p.get("quantilesByVendor", {})
@@ -69,6 +72,13 @@ def run_validation():
         passed_checks += 1
     else:
         print(f"✘ [FAIL] Monotonicity: {monotonic_errors} products had non-monotonic quantile buckets.")
+        failed_checks += 1
+
+    if endpoint_errors == 0:
+        print("✔ [PASS] Endpoints: Curve point 1 is no greater than curve point 100 for all evaluated products.")
+        passed_checks += 1
+    else:
+        print(f"✘ [FAIL] Endpoints: {endpoint_errors} products had invalid minimum/maximum ordering.")
         failed_checks += 1
 
     if vendor_completeness_errors == 0:
