@@ -176,32 +176,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
   );
 
-  useEffect(() => {
-    let isMounted = true;
-
-    Promise.all([
-      dataService.getSnapshotIntegrityReport(),
-      activeProduct && (activeProduct.id || activeProduct.uuid)
-        ? dataService.getProductMetrics(activeProduct.id || activeProduct.uuid || '', vendor, priceMode, evBasis)
-        : Promise.resolve(null),
-    ]).then(([report, metrics]) => {
-      if (!isMounted) return;
-      setSnapshotWarnings(report.warnings || []);
-      setGatewayMetrics(metrics);
-      if (report.metadata?.pipelineRunId || report.metadata?.id) {
-        setPipelineRunId(report.metadata.pipelineRunId || report.metadata.id || 'unavailable');
-      }
-    }).catch(() => {
-      if (!isMounted) return;
-      setSnapshotWarnings([]);
-      setGatewayMetrics(null);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [activeProduct, vendor, priceMode, evBasis]);
-
   // Global lookup map of all sealed products by UUID/ID
   const productMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -433,6 +407,32 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       setCatalogProducts[0]
     );
   }, [selectedProductOverride, selectedSetCode, dbProducts, selectedProductId, setCatalogProducts]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      dataService.getSnapshotIntegrityReport(),
+      activeProduct && (activeProduct.id || activeProduct.uuid)
+        ? dataService.getProductMetrics(activeProduct.id || activeProduct.uuid || '', vendor, priceMode, evBasis)
+        : Promise.resolve(null),
+    ]).then(([report, metrics]) => {
+      if (!isMounted) return;
+      setSnapshotWarnings(report.warnings || []);
+      setGatewayMetrics(metrics);
+      if (report.metadata?.pipelineRunId || report.metadata?.id) {
+        setPipelineRunId(report.metadata.pipelineRunId || report.metadata.id || 'unavailable');
+      }
+    }).catch(() => {
+      if (!isMounted) return;
+      setSnapshotWarnings([]);
+      setGatewayMetrics(null);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeProduct, vendor, priceMode, evBasis]);
 
   // Lookup raw product with full contents metadata
   const activeRawProduct = useMemo(() => {
