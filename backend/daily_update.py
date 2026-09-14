@@ -39,6 +39,9 @@ REQUIRED_OUTPUTS = (
     "product_chase_cards.json",
     "pricing_reliability.json",
     "precon_decks.json",
+)
+
+TELEMETRY_OUTPUTS = (
     "pipeline_execution_logs.json",
     "latest_pipeline_run.json",
 )
@@ -236,14 +239,26 @@ def validate_output_semantics() -> tuple[bool, str]:
     if not isinstance(precon_decks, dict):
         return False, "precon_decks.json must contain an object"
 
-    pipeline_logs = load_required("pipeline_execution_logs.json")
-    if not isinstance(pipeline_logs, dict) or not isinstance(pipeline_logs.get("runs"), list):
-        return False, "pipeline_execution_logs.json must contain a runs array"
+    return True, ""
 
-    latest_run = load_required("latest_pipeline_run.json")
-    if not isinstance(latest_run, dict) or latest_run.get("status") not in {"success", "failed"}:
-        return False, "latest_pipeline_run.json must contain a valid status"
 
+def validate_telemetry_outputs() -> tuple[bool, str]:
+    """Validate runner-owned telemetry after the current run has been written."""
+    data_dir = Path(__file__).parent.parent / "public" / "data"
+    for filename in TELEMETRY_OUTPUTS:
+        path = data_dir / filename
+        if not path.exists() or path.stat().st_size == 0:
+            return False, f"Missing or empty telemetry output: {path}"
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError) as error:
+            return False, f"Invalid JSON in {path}: {error}"
+        if filename == "pipeline_execution_logs.json":
+            if not isinstance(payload, dict) or not isinstance(payload.get("runs"), list):
+                return False, "pipeline_execution_logs.json must contain a runs array"
+        elif not isinstance(payload, dict) or payload.get("status") not in {"success", "failed"}:
+            return False, "latest_pipeline_run.json must contain a valid status"
     return True, ""
 
 
@@ -316,6 +331,20 @@ def run_all() -> bool:
     }
     update_telemetry_file(run_record)
     write_latest_run_file(run_record)
+
+    telemetry_valid, telemetry_error = validate_telemetry_outputs()
+    if not telemetry_valid:
+        failures.append("telemetry_outputs")
+        log.error("Telemetry validation failed after run record write: %s", telemetry_error)
+        run_record["status"] = "failed"
+        run_record["errors"].append({
+            "stage": "telemetry_outputs",
+            "exitCode": 1,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "errorTrace": telemetry_error,
+        })
+        update_telemetry_file(run_record)
+        write_latest_run_file(run_record)
 
     if failures:
         log.error("Completed with failures: %s", ", ".join(failures))
