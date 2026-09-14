@@ -233,6 +233,7 @@ These do not require MySQL:
 py -3.12 -m py_compile backend\daily_update.py
 py -3.12 backend\daily_update.py --dry-run
 py -3.12 -m unittest backend.test_ev_statistics backend.test_pipeline_bucket_contract
+py -3.12 backend\inventory_jumpstart.py
 ```
 
 ### Full data regeneration
@@ -256,6 +257,32 @@ npm.cmd run build
 py -3.12 -m py_compile backend\daily_update.py
 py -3.12 backend\daily_update.py --dry-run
 ```
+
+## 7. Planned improvements and known gaps
+
+### Product inspection should expose fixed-vs-variable content details
+
+The inspection layer currently focuses on resulting EV and high-level product breakdowns, but it does not yet make the underlying collation semantics legible to reviewers. For products such as Jumpstart, the critical distinction is not just the total card count or pack value; it is whether the product contains fixed sheets, variable sheets, or a mixed structure with rare/mythic randomness.
+
+This should be treated as a documented project improvement rather than a one-off bug fix. The system should make the fixed/variable structure visible wherever a product or booster is inspected or opened in the UI and exported metadata.
+
+Suggested follow-up:
+
+1. Add a backend-exported inspection contract for each product/booster entry, including:
+   - `fixed_by_default` or equivalent boolean flag
+   - `variable_sheets` list
+   - `fixed_sheets` list
+   - `sheet_count`, `card_count`, and source metadata
+   - a `collation_source` or `source_provenance` marker that distinguishes MTGJSON-native, override-based, and inferred data
+2. Surface this in the inspection views next to the pack breakdown or product details, for example:
+   - `Fixed: 20 sheets`
+   - `Variable: rareMythicBlack, rareMythicBlue, ...`
+   - `Collation status: mixed` / `deterministic`
+3. Add a validator that compares exported product metadata against the canonical MTGJSON sheet definition and the reviewed override file so drift is caught before publication.
+4. Keep the override layer explicit and reviewable, rather than hiding it in downstream rendering logic. The user should be able to see that a product is using a temporary collation override and which sheet names are affected.
+5. Document the inspection metadata contract in the backend review and schema documentation, so product reviewers know exactly which fields are intentionally authoritative versus inferred.
+
+This is especially important for Jumpstart and any other product families where fixed sheets and variable sheets coexist in the same product. The inspection layer should make that distinction obvious to both data reviewers and product users.
 
 ## 7. Completed Improvements
 
@@ -341,6 +368,7 @@ This is the master development list. The backend and frontend review documents c
 Statuses:
 
 - `DONE`: implemented and locally or operationally verified.
+- `PARTIALLY_FIXED`: no active issue remains in the current validated path, but a broader follow-up or cross-layer validation remains advisable.
 - `IN PROGRESS`: active work with a known remaining slice.
 - `NEXT`: ready to start after prerequisites.
 - `BLOCKED`: requires an external dependency such as GitHub Actions, MySQL, or an upstream data source.
@@ -366,8 +394,8 @@ Statuses:
 | DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | Reference search, workflow review, and focused validation pass. |
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
-| DEV-20 | Jumpstart collation | P0 | NEXT | Interpret MTGJSON Jumpstart `fixed` content correctly: fixed card counts are deterministic, while only wildcard/variable slots are sampled. | Representative Jumpstart audit files show fixed land/content counts, correct variance, and agreement with MTGJSON configuration. |
-| DEV-21 | Curve snapshot integrity | P0 | NEXT | Prove that the website renders the same vendor/mode/product quantiles published by the latest pipeline snapshot. | A diagnostics view or automated browser test reports snapshot identity, selected record key, quantile source, endpoint values, and no-data reason. |
+| DEV-20 | Jumpstart collation | P0 | NEXT | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | A reviewed Jumpstart inventory identifies each set/booster/sheet mix; representative audit files show fixed land/content counts, correct variance, and agreement with MTGJSON configuration. |
+| DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation, but no active curve integrity issues were found in the GitHub Actions review. The website should continue to be checked against the latest snapshot when broader backend-to-frontend validation is required. | GitHub Actions review found no curve mismatches; future backend-to-frontend validation should compare snapshot identity, selected record key, quantile source, endpoint values, and no-data reason. |
 
 ### Frontend single-source-of-truth validation
 
@@ -408,15 +436,19 @@ Recommended representative fixtures:
 
 #### DEV-20: Jumpstart collation
 
-1. Inspect the raw MTGJSON `setBoosterContentWeights`/booster configuration rows for Jumpstart and locate the `fixed` field and its exact meaning.
-2. Extend the backend configuration loader to preserve `fixed` through `load_booster_config_from_db`.
-3. During simulation, treat fixed entries as deterministic card selections/counts rather than weighted random draws.
-4. Keep wildcard rare/mythic or other explicitly variable sheets random.
-5. Model the usual 10 land cards as fixed when the source configuration says so; do not infer this solely from the booster name.
-6. Add a deterministic Jumpstart fixture test and an audit assertion that fixed portions do not create artificial variance.
-7. Regenerate Jumpstart outputs in GitHub Actions and compare EV/variance against the raw MTGJSON configuration.
+1. Enumerate all current Jumpstart set codes from `public/data/booster_ev.json` and the raw MTGJSON JSON source.
+2. Review each Jumpstart sheet mix and classify sheets as `fixed`, `variable`, or `unknown`.
+3. Add reviewed corrections to a centralized `public/data/booster_collation_overrides.json` file rather than modifying the MySQL dump.
+4. Apply that overlay in `load_booster_config_from_db` after the normal MySQL load.
+5. During simulation, treat fixed entries as deterministic card selections/counts rather than weighted random draws.
+6. Keep wildcard rare/mythic or other explicitly variable sheets random.
+7. Model the usual 10 land cards as fixed only when the MTGJSON source or reviewed override says so; do not infer this solely from the booster name.
+8. Add a deterministic Jumpstart fixture test and an audit assertion that fixed portions do not create artificial variance.
+9. Regenerate Jumpstart outputs in GitHub Actions and compare EV/variance against the raw MTGJSON configuration.
 
 #### DEV-21: Curve snapshot integrity
+
+Status: `PARTIALLY_FIXED`. The GitHub Actions curve checks did not reveal a current issue, so this item is no longer treated as an active bug. It should remain on the validation watchlist for broader backend-to-frontend checks when new data or UI changes are introduced.
 
 1. Add a development diagnostics record showing: product ID, set, booster, vendor, price mode, source file, snapshot timestamp/run ID, quantile length, first point, last point, and no-data reason.
 2. Compare the selected frontend record against `sealed_products.json` and `booster_ev.json` for the same key.
@@ -425,6 +457,7 @@ Recommended representative fixtures:
 5. Verify that the website is serving the current root `public/data` snapshot after the `data-sync` publication and Vercel deployment.
 6. Run the check once with `audit_enabled=false` and once with `audit_enabled=true`; the published curve must be identical for the same source data.
 7. Treat missing quantiles as an explicit data-contract failure with the selected key, not as a generic “No data available” message.
+8. Keep cross-layer validation in mind whenever future backend or frontend data refactors occur; the current status is “no issue found,” not “no further checks needed.”
 
 ### Vendor add/remove procedure
 

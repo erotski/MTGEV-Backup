@@ -29,6 +29,13 @@ IGNORED_SHEET_KEYWORDS = (
     'checklist',
 )
 
+COLLATION_OVERRIDE_PATH = (
+  Path(__file__).resolve().parents[1]
+  / 'public'
+  / 'data'
+  / 'booster_collation_overrides.json'
+)
+
 
 def is_ignored_sheet(sheet_name: str) -> bool:
   s_lower = sheet_name.lower()
@@ -47,6 +54,7 @@ class DatabaseBoosterEVEngine:
     self.card_cache = {}
     self.price_cache = {}
     self.lowest_cache = {}
+    self.collation_overrides = self._load_collation_overrides()
     self.price_resolver = PriceResolver(
       self.card_cache, self.price_cache, self.lowest_cache
     )
@@ -55,6 +63,26 @@ class DatabaseBoosterEVEngine:
     self.cursor = self.conn.cursor(dictionary=True)
 
     self._init_database_schema()
+
+  @staticmethod
+  def _load_collation_overrides():
+    if not COLLATION_OVERRIDE_PATH.exists():
+      return {}
+    try:
+      with COLLATION_OVERRIDE_PATH.open('r', encoding='utf-8') as handle:
+        document = json.load(handle)
+      return document.get('entries', {})
+    except (OSError, json.JSONDecodeError) as exc:
+      print(f'   -> Could not load collation overrides: {exc}')
+      return {}
+
+  def _sheet_fixed_override(self, set_code: str, booster_name: str, sheet_name: str):
+    entry = self.collation_overrides.get(
+      f'{set_code.upper()}:{booster_name.lower()}'
+    )
+    if not entry or not entry.get('fixedByDefault', False):
+      return None
+    return sheet_name not in set(entry.get('variableSheets', []))
 
   def _init_database_schema(self):
     """Creates the target MySQL table with indexes for high-speed querying."""
@@ -275,11 +303,14 @@ class DatabaseBoosterEVEngine:
     )
     card_rows = self.cursor.fetchall()
 
-    sheets = defaultdict(lambda: {'cards': {}, 'foil': False})
+    sheets = defaultdict(lambda: {'cards': {}, 'foil': False, 'fixed': False})
     for row in card_rows:
       s_name = row['sheetName']
       sheets[s_name]['cards'][row['cardUuid']] = float(row['cardWeight'])
       sheets[s_name]['foil'] = sheet_meta.get(s_name, False)
+      fixed_override = self._sheet_fixed_override(set_code, booster_name, s_name)
+      if fixed_override is not None:
+        sheets[s_name]['fixed'] = fixed_override
 
     return {'boosters': boosters_list, 'sheets': dict(sheets)}
 
@@ -325,6 +356,13 @@ class DatabaseBoosterEVEngine:
       if total_w == 0:
         continue
       w_list /= total_w
+
+      fixed_indices = None
+      if sheet.get('fixed', False):
+        fixed_counts = np.rint(np.array(list(cards.values()), dtype=np.float64)).astype(int)
+        fixed_indices = np.repeat(np.arange(len(u_list)), fixed_counts)
+        if len(fixed_indices) == 0:
+          fixed_indices = np.arange(len(u_list))
 
       req_finish = 'foil' if sheet.get('foil', False) else 'normal'
 
@@ -381,6 +419,8 @@ class DatabaseBoosterEVEngine:
       sheet_data[sheet_name] = {
           'uuids': u_list,
           'weights': w_list,
+          'fixed': sheet.get('fixed', False),
+          'fixed_indices': fixed_indices,
           'matrix': matrix,
           'status': status_matrix,
       }
@@ -434,9 +474,12 @@ class DatabaseBoosterEVEngine:
           continue
 
         s_info = sheet_data[sheet_name]
-        picked_indices = np.random.choice(
-            len(s_info['uuids']), size=pick_count, p=s_info['weights']
-        )
+        if s_info['fixed']:
+          picked_indices = np.resize(s_info['fixed_indices'], pick_count)
+        else:
+          picked_indices = np.random.choice(
+              len(s_info['uuids']), size=pick_count, p=s_info['weights']
+          )
 
         for mode in modes:
           for v in all_vendors_list:

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "source": "Reviewed from local MTGJSON v5 Jumpstart definitions dated 2026-09-14",
+  "entries": {
+    "BRO:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": ["rareMythicBlack", "rareMythicBlue", "rareMythicGreen", "rareMythicRed", "rareMythicWhite"]
+    },
+    "DMU:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": ["rareMythicBlack", "rareMythicBlue", "rareMythicGreen", "rareMythicRed", "rareMythicWhite"]
+    },
+    "J22:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": []
+    },
+    "J25:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": []
+    },
+    "JMP:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": []
+    },
+    "LTR:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": ["blackRare", "blueRare", "greenRare", "redRare", "whiteRare"]
+    },
+    "MOM:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": ["rareMythicBlack", "rareMythicBlue", "rareMythicGreen", "rareMythicRed", "rareMythicWhite"]
+    },
+    "MSH:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": []
+    },
+    "ONE:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": ["rareMythicBlack", "rareMythicBlue", "rareMythicGreen", "rareMythicRed", "rareMythicWhite"]
+    },
+    "TLE:jumpstart": {
+      "fixedByDefault": true,
+      "variableSheets": []
+    }
+  }
+}

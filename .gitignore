@@ -12,4 +12,3 @@ __pycache__/
 incoming_zips/*.zip
 *.zip
 backend/audit_output/
-
