@@ -67,6 +67,8 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
+  const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
+  const [pipelineGeneratedAt, setPipelineGeneratedAt] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -82,6 +84,13 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         }
       }).catch(() => {});
     }, 300);
+
+    // Same provenance gateway as dataService.getProductMetrics(), surfaced once for the whole table
+    dataService.getLatestPipelineRun().then((run) => {
+      if (!isMounted || !run) return;
+      setPipelineRunId(run.pipelineRunId || run.id || 'unavailable');
+      setPipelineGeneratedAt(run.generatedAt || run.timestamp || null);
+    }).catch(() => {});
 
     return () => {
       isMounted = false;
@@ -225,30 +234,36 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         evBasis
       );
 
-      const adjustedBoxPrice = r.marketPrice;
-      const adjustedBoxEv = metrics.estimatedEv;
-      const adjustedBoxMin = metrics.minEv;
-      const adjustedBoxMid90 = metrics.mid90Ev;
-      const adjustedBoxMax = metrics.maxEv;
+      const adjustedTotalPrice = r.marketPrice;
+      const adjustedTotalEv = metrics.estimatedEv;
+      const adjustedTotalMin = metrics.minEv;
+      const adjustedTotalMid90 = metrics.mid90Ev;
+      const adjustedTotalMax = metrics.maxEv;
       const effectiveEv = metrics.effectiveEv;
       const profitUsd = metrics.netSpread;
       const roiPct = metrics.roiPct;
       const pCount = metrics.packsCount;
       const cCount = metrics.cardCount;
       const boosterName = metrics.primaryBoosterName;
+      const fixedBaseEv = metrics.fixedBaseEv || 0;
 
-      const adjustedPackEv = pCount > 0 ? Number((adjustedBoxEv / pCount).toFixed(2)) : 0;
-      const adjustedPackMin = pCount > 0 ? Number((adjustedBoxMin / pCount).toFixed(2)) : 0;
-      const adjustedPackMid90 = pCount > 0 ? Number((adjustedBoxMid90 / pCount).toFixed(2)) : 0;
-      const adjustedPackMax = pCount > 0 ? Number((adjustedBoxMax / pCount).toFixed(2)) : 0;
+      // Unit EV covers only the per-pack (variable) contribution. A fixed base
+      // (e.g. an included promo card or precon deck) is never divided across
+      // packs, matching the Total EV / Unit EV definitions in PROJECT_REVIEW.md.
+      const toUnitEv = (totalForBasis: number) =>
+        pCount > 0 ? Number((Math.max(0, totalForBasis - fixedBaseEv) / pCount).toFixed(2)) : 0;
+      const adjustedUnitEv = toUnitEv(adjustedTotalEv);
+      const adjustedUnitMin = toUnitEv(adjustedTotalMin);
+      const adjustedUnitMid90 = toUnitEv(adjustedTotalMid90);
+      const adjustedUnitMax = toUnitEv(adjustedTotalMax);
 
       const isPrecon = (r.category || '').toLowerCase().includes('deck') || pCount === 0;
       const evScore = calculateEvScore(
-        adjustedBoxPrice,
-        adjustedBoxEv,
-        adjustedBoxMin,
-        adjustedBoxMid90,
-        adjustedBoxMax,
+        adjustedTotalPrice,
+        adjustedTotalEv,
+        adjustedTotalMin,
+        adjustedTotalMid90,
+        adjustedTotalMax,
         isPrecon
       );
 
@@ -257,15 +272,15 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         boosterName,
         packCount: pCount,
         cardCount: cCount,
-        marketPrice: adjustedBoxPrice,
-        unitEvMin: adjustedPackMin,
-        unitEvAvg: adjustedPackEv,
-        unitEvMid90: adjustedPackMid90,
-        unitEvMax: adjustedPackMax,
-        totalEvMin: adjustedBoxMin,
-        totalEvAvg: adjustedBoxEv,
-        totalEvMid90: adjustedBoxMid90,
-        totalEvMax: adjustedBoxMax,
+        marketPrice: adjustedTotalPrice,
+        unitEvMin: adjustedUnitMin,
+        unitEvAvg: adjustedUnitEv,
+        unitEvMid90: adjustedUnitMid90,
+        unitEvMax: adjustedUnitMax,
+        totalEvMin: adjustedTotalMin,
+        totalEvAvg: adjustedTotalEv,
+        totalEvMid90: adjustedTotalMid90,
+        totalEvMax: adjustedTotalMax,
         effectiveEv,
         evScore,
         profitUsd,
@@ -838,6 +853,12 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                 </strong>
               </span>
             )}
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs"
+              title={pipelineGeneratedAt ? `Pipeline run generated at ${pipelineGeneratedAt}` : 'Pipeline run identity unavailable'}
+            >
+              Run: <strong className="text-slate-900 font-mono">{pipelineRunId}</strong>
+            </span>
           </div>
         </div>
 
