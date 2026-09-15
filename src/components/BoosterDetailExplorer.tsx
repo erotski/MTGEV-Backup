@@ -76,7 +76,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
       if (dateA !== dateB) return dateB - dateA;
-      return a.name.localeCompare(b.name);
+      return String(a.name || '').localeCompare(String(b.name || ''));
     });
   }, [availableSets]);
 
@@ -87,14 +87,16 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     }
     const q = setSearchQuery.toLowerCase().trim();
     return sortedSets.filter((s) => {
+      const setName = String(s.name || '');
+      const setCode = String(s.code || '');
       const matchesSelf =
-        s.name.toLowerCase().includes(q) ||
-        s.code.toLowerCase().includes(q) ||
-        (s.block && s.block.toLowerCase().includes(q));
+        setName.toLowerCase().includes(q) ||
+        setCode.toLowerCase().includes(q) ||
+        String(s.block || '').toLowerCase().includes(q);
 
       // Also match if a child commander set code or name matches query
-      const childCodes = getChildCommanderSetCodes(s.code);
-      const matchesChild = childCodes.some((cc) => cc.toLowerCase().includes(q));
+      const childCodes = getChildCommanderSetCodes(setCode);
+      const matchesChild = childCodes.some((cc) => String(cc || '').toLowerCase().includes(q));
       return matchesSelf || matchesChild;
     });
   }, [sortedSets, setSearchQuery]);

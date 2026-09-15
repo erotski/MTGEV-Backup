@@ -139,7 +139,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
           const setBoosterRecords: BoosterEVRecord[] = 
             boosterMap[setCode.toUpperCase()] ||
-            boosterMap[setCode.toLowerCase()] ||
+            boosterMap[String(setCode || '').toLowerCase()] ||
             boosterMap[setCode] ||
             [];
 
@@ -391,8 +391,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === prodId ||
           p.uuid === prodId ||
-          (p.uuid && p.uuid.toLowerCase() === prodId.toLowerCase()) ||
-          (p.id && p.id.toLowerCase() === prodId.toLowerCase())
+          (p.uuid && p.uuid.toLowerCase() === String(prodId || '').toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === String(prodId || '').toLowerCase())
       );
       onSelectProduct(prodId, boosterName || found?.boosterName || 'play', found);
     }
@@ -405,8 +405,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === target ||
           p.uuid === target ||
-          (p.uuid && p.uuid.toLowerCase() === target.toLowerCase()) ||
-          (p.id && p.id.toLowerCase() === target.toLowerCase())
+          (p.uuid && p.uuid.toLowerCase() === String(target || '').toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === String(target || '').toLowerCase())
       );
       if (match) return match;
     }
@@ -714,8 +714,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === propSelectedProductId ||
           p.uuid === propSelectedProductId ||
-          (p.uuid && p.uuid.toLowerCase() === propSelectedProductId.toLowerCase()) ||
-          (p.id && p.id.toLowerCase() === propSelectedProductId.toLowerCase())
+          (p.uuid && p.uuid.toLowerCase() === String(propSelectedProductId || '').toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === String(propSelectedProductId || '').toLowerCase())
       );
       if (match) {
         setSelectedProductId(match.id);

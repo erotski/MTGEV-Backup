@@ -48,7 +48,7 @@ export const VENDOR_OPTIONS: VendorOption[] = [
 
 export function normalizeVendor(vendor?: string | null): Vendor {
   if (!vendor) return 'all_cheapest';
-  const v = vendor.toLowerCase().trim();
+  const v = String(vendor || '').toLowerCase().trim();
   if (v === 'all_cheapest' || v === 'all') return 'all_cheapest';
   if (v === 'all_average' || v === 'average' || v === 'all_avg') return 'all_average';
   if (v === 'tcgplayer' || v === 'tcg') return 'tcgplayer';
@@ -114,7 +114,7 @@ export function resolveCardPrice(
  */
 export function normalizeBoosterCode(rawName?: string): string {
   if (!rawName) return 'play';
-  const n = rawName.toLowerCase().trim();
+  const n = String(rawName || '').toLowerCase().trim();
   if (n.includes('collector') && n.includes('sample')) return 'collector-sample';
   if (n.includes('collector')) return 'collector';
   if (n.includes('play')) return 'play';
