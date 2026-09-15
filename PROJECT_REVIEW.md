@@ -381,7 +381,8 @@ Statuses:
 | DEV-04 | Frontend fallback removal | P0 | DONE | Synthetic multipliers, invented card prices, market-price-as-EV, and browser simulations removed from active paths. | `npm.cmd run lint` and `npm.cmd run build` pass; no active multiplier references remain. |
 | DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`; curated Special Chases remain editorial. | Viewer renders backend snapshot and shows explicit empty state when missing. |
 | DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. |
-| DEV-07 | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Frontend rejects or warns when snapshots come from different pipeline runs. |
+| 
+ | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Frontend rejects or warns when snapshots come from different pipeline runs. |
 | DEV-08 | Frontend data gateway | P0 | IN PROGRESS | Add `dataService.getProductMetrics(productId, vendor, priceMode, evBasis)`. | Main product views display values from one gateway and expose `source`/`pipelineRunId`. |
 | DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | Invalid snapshots produce structured warnings and an Admin Portal diagnostic. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |

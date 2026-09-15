@@ -108,16 +108,52 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
   const [backendCards, setBackendCards] = useState<ChaseCard[] | null>(null);
   const [backendCardsLoaded, setBackendCardsLoaded] = useState<boolean>(false);
+  const [missingRecordReason, setMissingRecordReason] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    const productId = product.id || (product as any).uuid;
-    if (!productId) return () => { mounted = false; };
+    const productId = product.id || (product as any).uuid || (product as any).productUuid;
+    if (!productId) {
+      setBackendCards([]);
+      setBackendCardsLoaded(true);
+      setMissingRecordReason('This product has no resolvable identifier for chase-card lookup.');
+      return () => { mounted = false; };
+    }
+
+    const normaliseKey = (value?: string) => (value ? String(value).trim().toLowerCase() : '');
+    const productKeyCandidates = Array.from(new Set([
+      product.id,
+      (product as any).uuid,
+      (product as any).productUuid,
+    ].filter(Boolean))) as string[];
+
     dataService.getProductChaseCards().then((data) => {
       if (!mounted) return;
       const mode = priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct';
-      const cards = data[productId]?.[`${mode}:${vendor}`];
-      setBackendCards(Array.isArray(cards) ? cards : []);
+      const match = productKeyCandidates
+        .map((candidate) => ({ candidate, record: data[candidate] }))
+        .find(({ record }) => record && typeof record === 'object');
+
+      const fallbackMatch = Object.entries(data || {}).find(([key, record]) => (
+        record && typeof record === 'object' &&
+        productKeyCandidates.some((candidate) => normaliseKey(candidate) === normaliseKey(key))
+      ));
+
+      const record = match?.record || fallbackMatch?.[1] || {};
+      const cards = Array.isArray(record[`${mode}:${vendor}`]) ? record[`${mode}:${vendor}`] : [];
+
+      setBackendCards(cards);
+      if (!cards.length) {
+        if (!Object.keys(data || {}).length) {
+          setMissingRecordReason('No chase-card snapshot is loaded for this product. The generated product_chase_cards.json file may be missing or stale in the current public/data snapshot.');
+        } else if (match || fallbackMatch) {
+          setMissingRecordReason(`No chase-card record exists for ${vendor} / ${mode} in the loaded snapshot for this product.`);
+        } else {
+          setMissingRecordReason(`No matching product key was found in the loaded chase-card snapshot for ${productId}. This often means the data is from a different pipeline run or branch.`);
+        }
+      } else {
+        setMissingRecordReason(null);
+      }
       setBackendCardsLoaded(true);
     });
     return () => { mounted = false; };
@@ -232,7 +268,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
           <Package className="w-8 h-8 text-slate-400 mx-auto" />
           <h5 className="text-sm font-bold text-slate-800">No Cards Available</h5>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Unable to retrieve card values for {product.displayName}.
+            {missingRecordReason || `Unable to retrieve card values for ${product.displayName}.`}
           </p>
         </div>
       ) : (

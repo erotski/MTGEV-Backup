@@ -149,6 +149,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [selectedProductId, setSelectedProductId] = useState<string>(
     initialProductId || setCatalogProducts[0]?.id || ''
   );
+  const [activeBoosterName, setActiveBoosterName] = useState<string>(
+    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
+  );
 
   useEffect(() => {
     if (initialProductId) {
@@ -171,10 +174,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }
   }, [initialProductId, setCatalogProducts, dbProducts, onClearInitialProductId]);
-
-  const [activeBoosterName, setActiveBoosterName] = useState<string>(
-    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
-  );
 
   // Global lookup map of all sealed products by UUID/ID
   const productMap = useMemo(() => {
