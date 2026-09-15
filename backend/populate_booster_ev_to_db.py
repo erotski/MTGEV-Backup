@@ -29,6 +29,11 @@ IGNORED_SHEET_KEYWORDS = (
     'checklist',
 )
 
+# Only these named vendors may become a per-vendor booster_ev_results row.
+# Any other provider string discovered from AllPricesToday (typos, aggregate
+# or reserved labels such as "all") must never be treated as a real seller.
+NAMED_VENDORS = {'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'}
+
 COLLATION_OVERRIDE_PATH = (
   Path(__file__).resolve().parents[1]
   / 'public'
@@ -339,7 +344,7 @@ class DatabaseBoosterEVEngine:
     sellers = set()
     for u in all_uuids:
       sellers.update(self.price_cache.get(u, {}).keys())
-    sellers = sorted([s for s in sellers if s])
+    sellers = sorted(s for s in sellers if s in NAMED_VENDORS)
     if not sellers:
       print(f'   -> No named vendor price data for {set_code} {booster_name}; skipping simulation')
       return None
@@ -531,7 +536,7 @@ class DatabaseBoosterEVEngine:
     # Remove pre-migration aggregate rows so legacy `all` records cannot
     # compete with the canonical all_cheapest rows during export.
     self.cursor.execute(
-      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all_cheapest'",
+      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all'",
       (set_code, booster_name),
     )
 
