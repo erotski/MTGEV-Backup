@@ -60,6 +60,11 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   initialProductId,
   onClearInitialProductId,
 }) => {
+  const debugMode = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('debug') || ''
+    : '';
+  const showRelatedProducts = debugMode !== 'booster-only';
+  const showCurves = debugMode !== 'no-curves';
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor
@@ -1051,7 +1056,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       </div>
 
       {/* 1. Related Products & Containment Hierarchy Selector (Primary Product Catalog for Set) */}
-      {activeBooster && (
+      {activeBooster && showRelatedProducts && (
         <RelatedProductsHierarchy
           setCode={selectedSetCode}
           setName={currentSet?.name || activeBooster.setName || selectedSetCode}
@@ -1342,7 +1347,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           </div>
 
           {/* Graphical Product Price Quantile Distribution Curve */}
-          {activeBooster && (
+          {activeBooster && showCurves && (
             <PackDistributionCurve
               productTitle={activeProduct?.displayName || `${currentSet?.name || selectedSetCode} ${activeBooster.fullBoosterName || activeBooster.boosterName}`}
               activeBooster={activeBooster}
