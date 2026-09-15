@@ -203,8 +203,7 @@ def export_all():
         cursor.execute("""
             SELECT set_code, booster_name, ev_average, ev_mid90, ev_min, ev_max, exact_match_pct, updated_at
             FROM booster_ev_results
-            WHERE price_mode = 'direct' AND vendor IN ('all_cheapest', 'all') AND ev_average > 0
-            ORDER BY CASE WHEN vendor = 'all_cheapest' THEN 1 ELSE 0 END;
+            WHERE price_mode = 'direct' AND vendor = 'all_cheapest' AND ev_average > 0;
         """)
         ev_rows = cursor.fetchall()
         ev_by_set = {}
@@ -431,7 +430,7 @@ def export_all():
             if pack_count <= 0:
                 if contents and isinstance(contents, dict) and contents.get("card"):
                     cards = contents["card"]
-                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all_cheapest", cd.get("prices", {}).get("all", 0.0))) for cd in cards)
+                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all_cheapest", 0.0)) for cd in cards)
                     if singles_ev > 0:
                         a.pop('spCategory', None)
                         a.pop('spSubtype', None)
@@ -584,7 +583,7 @@ def export_all():
                     is_foil = cd.get("foil", False) or ('foil' in finishes and 'nonfoil' not in finishes)
                     resolved_p = resolve_card_prices(u, finishes, is_foil)
 
-                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all_cheapest") or resolved_p.get("all") or resolved_p.get("cardkingdom") or 0.0
+                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all_cheapest") or resolved_p.get("cardkingdom") or 0.0
                     if p_val > 0:
                         card_entry = {
                             "name": cname,
@@ -603,6 +602,21 @@ def export_all():
                             by_name_set[f"{cname.lower()}___{cset}"] = card_entry
                             by_name_set[f"{cname.lower()}_{cset}"] = card_entry
                         updated_count += 1
+
+        # Normalize the legacy "all" vendor-price alias to the canonical
+        # "all_cheapest" key across every indexed record, including entries
+        # seeded by one-off ingestion scripts that this loop never re-touches.
+        normalized_count = 0
+        for indexed in (by_uuid, by_name, by_name_set):
+            for entry in indexed.values():
+                prices = entry.get("prices")
+                if not isinstance(prices, dict) or "all" not in prices:
+                    continue
+                prices.setdefault("all_cheapest", prices["all"])
+                del prices["all"]
+                normalized_count += 1
+        if normalized_count:
+            print(f"  ✔ Normalized {normalized_count} legacy 'all' vendor price keys to 'all_cheapest'")
 
         existing_single_prices["byUuid"] = by_uuid
         existing_single_prices["byName"] = by_name

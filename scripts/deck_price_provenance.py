@@ -71,8 +71,8 @@ def resolve_fixed_card_prices(all_prices_data, card_uuid, want_foil=False):
 
     values = [prices[vendor] for vendor in VENDORS if prices.get(vendor, 0) > 0]
     if values:
-        prices["all"] = round(sum(values) / len(values), 2)
-        prices["all_average"] = prices["all"]
+        prices["all_cheapest"] = round(min(values), 2)
+        prices["all_average"] = round(sum(values) / len(values), 2)
         provenance["all_average"] = {
             "status": "exact" if all(provenance[v]["status"] == "exact" for v in VENDORS) else "vendor_fallback",
             "requestedVendor": "all_average",

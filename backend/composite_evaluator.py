@@ -89,8 +89,6 @@ def build_booster_lookup(booster_ev_list):
         sc = (b.get("setCode") or "").upper()
         bn = (b.get("boosterName") or "").lower()
         v = (b.get("vendor") or "all_cheapest").lower()
-        if v == "all":
-            v = "all_cheapest"
         pm = (b.get("priceMode") or "direct").lower()
         q = b.get("quantiles")
         avg = float(b.get("evAverage") or 0.0)
@@ -338,7 +336,6 @@ def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, ven
             booster_entry = (
                 booster_lookup.get((pk_set, pk_code, vendor, "direct")) or
                 booster_lookup.get((pk_set, pk_code, "all_cheapest", "direct")) or
-                booster_lookup.get((pk_set, pk_code, "all", "direct")) or
                 booster_lookup.get((pk_set, "play", vendor, "direct")) or
                 booster_lookup.get((pk_set, "default", vendor, "direct"))
             )
@@ -599,7 +596,6 @@ def run_composite_evaluator(target_set=None):
                 booster_entry = (
                     booster_lookup.get((p_set, p_code, v, "direct")) or
                     booster_lookup.get((p_set, p_code, "all_cheapest", "direct")) or
-                    booster_lookup.get((p_set, p_code, "all", "direct")) or
                     booster_lookup.get((p_set, "play", v, "direct")) or
                     booster_lookup.get((p_set, "default", v, "direct"))
                 )

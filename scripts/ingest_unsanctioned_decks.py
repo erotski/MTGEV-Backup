@@ -72,7 +72,8 @@ def main():
 
         valid_vals = [v for k, v in res.items() if k in ["tcgplayer", "cardkingdom", "cardmarket"] and v and v > 0]
         if valid_vals:
-            res["all"] = round(sum(valid_vals) / len(valid_vals), 2)
+            res["all_cheapest"] = round(min(valid_vals), 2)
+            res["all_average"] = round(sum(valid_vals) / len(valid_vals), 2)
         return res
 
     # Load precon_decks.json
@@ -124,7 +125,7 @@ def main():
             is_foil = c.get("isFoil", False) or ('foil' in c.get('finishes', []) and 'nonfoil' not in c.get('finishes', []))
 
             vendor_prices = resolve_card_prices(c_uuid, want_foil=is_foil)
-            unit_price = vendor_prices.get("all")
+            unit_price = vendor_prices.get("all_cheapest")
             if unit_price is None:
                 continue
             unit_price = round(unit_price, 2)

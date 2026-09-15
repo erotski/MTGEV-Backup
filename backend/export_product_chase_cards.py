@@ -104,10 +104,7 @@ def load_card_metadata(cursor, uuids):
 
 def price_for(record, vendor, mode, is_foil):
     prices = record.get("prices") or {}
-    if mode == "cheapest_reprint":
-        normal = prices.get("all_cheapest") or prices.get("all") or 0
-    else:
-        normal = prices.get(vendor) or 0
+    normal = prices.get(vendor) or 0
     if is_foil:
         foil_key = f"{vendor}Foil"
         normal = prices.get(foil_key) or record.get("priceFoil") or normal
