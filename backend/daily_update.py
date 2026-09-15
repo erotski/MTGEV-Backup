@@ -9,6 +9,7 @@ import importlib.util
 import json
 import logging
 import math
+import os
 import subprocess
 import sys
 import time
@@ -45,6 +46,20 @@ TELEMETRY_OUTPUTS = (
     "pipeline_execution_logs.json",
     "latest_pipeline_run.json",
 )
+
+
+def get_quick_test_limit():
+    """Optional cap on sets/products processed by the heaviest stages, read
+    from QUICK_TEST_LIMIT so short test runs can skip most of the full
+    30-45 minute simulation without changing the required output contract."""
+    raw = os.environ.get("QUICK_TEST_LIMIT")
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None
+    return value if value > 0 else None
 
 SCRIPTS = [
     ("download.py",                      "Download mtgjson data + sync MySQL"),
@@ -264,6 +279,9 @@ def validate_telemetry_outputs() -> tuple[bool, str]:
 
 def run_all() -> bool:
     start_dt = datetime.now(timezone.utc)
+    quick_test_limit = get_quick_test_limit()
+    if quick_test_limit:
+        log.info("Quick test mode: limiting heavy stages to %d sets/products.", quick_test_limit)
     log.info("═══ Daily update started at %s ═══", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
     failures = []
     stage_records = []
@@ -326,6 +344,7 @@ def run_all() -> bool:
         "trigger": "scheduled_pipeline",
         "status": overall_status,
         "durationSeconds": total_duration,
+        "quickTestLimit": quick_test_limit,
         "stages": stage_records,
         "errors": error_records
     }
@@ -385,7 +404,14 @@ if __name__ == "__main__":
         "--dry-run", action="store_true",
         help="Check that all scripts exist and are valid Python without running them",
     )
+    parser.add_argument(
+        "--quick-test-limit", type=int, default=None,
+        help="Limit the heaviest stages (booster simulation, live price sync) to N sets/products for a fast test run",
+    )
     args = parser.parse_args()
+
+    if args.quick_test_limit:
+        os.environ["QUICK_TEST_LIMIT"] = str(args.quick_test_limit)
 
     if args.schedule:
         print_schedule_instructions()

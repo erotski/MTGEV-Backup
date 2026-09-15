@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      quick_test_limit:
+        description: 'Quick test mode: limit booster simulation & live price sync to N sets/products (blank = full run). Never publishes to data-sync or Vercel.'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   update-ev-data:
@@ -61,6 +66,7 @@ jobs:
           DB_NAME: test_for_cards
           AUDIT_ENABLED: ${{ inputs.audit_enabled }}
           AUDIT_OUTPUT_DIR: backend/audit_output
+          QUICK_TEST_LIMIT: ${{ inputs.quick_test_limit }}
         run: |
           set -e
           cd ../mtgev-pipeline-workspace
@@ -114,6 +120,7 @@ jobs:
           retention-days: 7
 
       - name: Trigger Vercel Production Deploy
+        if: ${{ !inputs.quick_test_limit }}
         uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -124,6 +131,7 @@ jobs:
           working-directory: ./
 
       - name: Commit & Push Updated Datasets to Dedicated Data Branch
+        if: ${{ !inputs.quick_test_limit }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"

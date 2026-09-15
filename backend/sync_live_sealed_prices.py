@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import mysql.connector
 import requests
@@ -74,6 +75,10 @@ def sync_all_sealed_prices():
         products.append(p)
       except Exception:
         pass
+
+  quick_test_limit = int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None
+  if quick_test_limit:
+    products = products[:quick_test_limit]
 
   print('=' * 70)
   print(

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+import os
 from pathlib import Path
 import time
 import mysql.connector
@@ -640,7 +641,7 @@ class DatabaseBoosterEVEngine:
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
-def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None):
+def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None, quick_test_limit: int = None):
   db_config = DB_CONFIG
 
   engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size, audit_config=audit_config)
@@ -662,8 +663,13 @@ def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_con
   engine.cursor.execute(query, tuple(params) if params else None)
   all_boosters = engine.cursor.fetchall()
 
+  if quick_test_limit:
+    all_boosters = all_boosters[:quick_test_limit]
+
   print('=' * 65)
   print(f'Starting Booster EV Engine -> MySQL `booster_ev_results` [Sample Size: {sample_size:,} packs]')
+  if quick_test_limit:
+    print(f'Quick test mode: limited to {len(all_boosters)} booster configurations')
   print(f'Total Paper Booster Configurations: {len(all_boosters)}')
   print(f'Database Target: {db_config["database"]}.booster_ev_results')
   print('=' * 65 + '\n')
@@ -719,6 +725,7 @@ if __name__ == '__main__':
   parser.add_argument('--audit-vendor', type=str, default='all_cheapest', help='Vendor for --audit-set')
   parser.add_argument('--audit-price-mode', type=str, default='direct', choices=['direct', 'cheapest_reprint'])
   parser.add_argument('--audit-output', type=str, default='backend/audit/booster_samples.json')
+  parser.add_argument('--limit', type=int, default=None, help='Only simulate the first N booster configurations (quick test runs)')
   args = parser.parse_args()
   audit_config = {
       'enabled': AUDIT_ENABLED or bool(args.audit_set),
@@ -726,4 +733,5 @@ if __name__ == '__main__':
   }
   if args.audit_output and args.audit_set:
     audit_config['output_dir'] = str(Path(args.audit_output).parent)
-  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config)
+  quick_test_limit = args.limit or (int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None)
+  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config, quick_test_limit=quick_test_limit)
