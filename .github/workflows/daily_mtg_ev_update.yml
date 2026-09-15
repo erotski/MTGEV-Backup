@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
