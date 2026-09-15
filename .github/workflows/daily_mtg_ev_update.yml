@@ -119,17 +119,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Trigger Vercel Production Deploy
-        if: ${{ !inputs.quick_test_limit }}
-        uses: amondnet/vercel-action@v20
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: '--prod --archive=tgz'
-          working-directory: ./
-
       - name: Commit & Push Updated Datasets to Dedicated Data Branch
         if: ${{ !inputs.quick_test_limit }}
         run: |
@@ -143,3 +132,7 @@ jobs:
             git commit -m "Auto-update MTG booster EV & market prices [skip ci]"
             git push origin data-sync --force
           fi
+          # Vercel's Git integration Production Branch is set to `data-sync` (not `main`),
+          # so this push alone triggers the production deploy. Do not also run a separate
+          # CLI/token deploy here — a prior version raced two deploy triggers against each
+          # other and could leave production pinned to a stale build. See PROJECT_REVIEW.md DEV-27.

@@ -148,7 +148,7 @@ export function findBoosterEv(
   const vNorm = normalizeVendor(vendor);
 
   const matchesCode = (rBoosterName: string) => {
-    const rLower = rBoosterName.toLowerCase().trim();
+    const rLower = (rBoosterName || '').toLowerCase().trim();
     return rLower === rawTarget || normalizeBoosterCode(rLower) === normTarget;
   };
 

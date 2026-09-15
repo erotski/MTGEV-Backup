@@ -12,3 +12,21 @@ __pycache__/
 incoming_zips/*.zip
 *.zip
 backend/audit_output/
+
+# Pipeline-generated output (regenerated every run; authoritative copy lives on the
+# `data-sync` branch, which is Vercel's Production Branch). Committing these to `main`
+# caused a real production incident: main's copy went stale and Vercel's Git
+# integration deployed it, silently overriding fresher CLI/data-sync deploys. See
+# PROJECT_REVIEW.md DEV-27. Hand-maintained config (booster_collation_overrides.json,
+# product_overrides.json) and non-pipeline static data (precon_decks.json,
+# booster_slots.json, scryfall_set_hierarchy.json) are NOT ignored and must stay tracked.
+public/data/sets.json
+public/data/sealed_products.json
+public/data/booster_ev.json
+public/data/arbitrage_leaderboard.json
+public/data/single_card_prices.json
+public/data/pricing_reliability.json
+public/data/product_chase_cards.json
+public/data/pipeline_execution_logs.json
+public/data/latest_pipeline_run.json
+public/data/mtg.sqlite

@@ -366,12 +366,12 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
     if (!matchedBooster) {
       matchedBooster = setBoosters.find(
-        (b) => b.boosterName.toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
+        (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
       );
     }
     if (!matchedBooster) {
       matchedBooster = setBoosters.find(
-        (b) => b.boosterName.toLowerCase() === pkCode
+        (b) => (b.boosterName || '').toLowerCase() === pkCode
       );
     }
 

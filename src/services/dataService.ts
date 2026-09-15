@@ -447,13 +447,18 @@ class DataService {
             const grouped: Record<string, BoosterEVRecord[]> = {};
             rawEv.forEach((item: any) => {
               const setCode = item.setCode || item.set_code;
+              const boosterName = item.boosterName || item.booster_name;
+              if (!setCode || !boosterName) {
+                console.warn('Skipping malformed booster EV record:', item);
+                return;
+              }
               if (!grouped[setCode]) grouped[setCode] = [];
               grouped[setCode].push({
                 id: item.id || 0,
                 setCode: setCode,
                 setName: item.setName || setCode,
-                boosterName: item.boosterName || item.booster_name,
-                fullBoosterName: `${item.boosterName} Booster`,
+                boosterName,
+                fullBoosterName: `${boosterName} Booster`,
                 priceMode: item.priceMode || item.price_mode || 'direct',
                 vendor: item.vendor === 'all' ? 'all_cheapest' : (item.vendor || 'all_cheapest'),
                 evAverage: Number(item.evAverage || item.ev_average || 0),

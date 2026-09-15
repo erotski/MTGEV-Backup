@@ -167,11 +167,11 @@ export function resolveBoosterPackEv(
 
   if (!matchedBooster) {
     matchedBooster = setBoosters.find(
-      (b) => b.boosterName.toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
+      (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
     );
   }
   if (!matchedBooster) {
-    matchedBooster = setBoosters.find((b) => b.boosterName.toLowerCase() === pkCode);
+    matchedBooster = setBoosters.find((b) => (b.boosterName || '').toLowerCase() === pkCode);
   }
 
   let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;

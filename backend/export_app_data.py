@@ -27,7 +27,7 @@ def export_all():
 
 
     # 1. Export Sets List
-    print("▶ 1. Exporting sets.json...")
+    print(">> 1. Exporting sets.json...")
     try:
         cursor.execute("""
             SELECT DISTINCT 
@@ -55,7 +55,7 @@ def export_all():
         print(f"  ✘ Error exporting sets: {e}")
 
     # 2. Export Sealed Products with True Market Prices
-    print("▶ 2. Exporting sealed_products.json...")
+    print(">> 2. Exporting sealed_products.json...")
     try:
         cursor.execute("""
             SELECT 
@@ -87,7 +87,7 @@ def export_all():
         print(f"  ✘ Error exporting sealed products: {e}")
 
     # 3. Export Booster EV Simulation Results
-    print("▶ 3. Exporting booster_ev.json...")
+    print(">> 3. Exporting booster_ev.json...")
     ev_results = []
     try:
         cursor.execute("""
@@ -128,7 +128,7 @@ def export_all():
         print(f"  ✘ Error exporting booster EV results: {e}")
 
     # 3b. Export weighted booster pricing reliability by named vendor.
-    print("▶ 3b. Exporting pricing_reliability.json...")
+    print(">> 3b. Exporting pricing_reliability.json...")
     try:
         named_vendors = {"tcgplayer", "cardmarket", "cardkingdom", "manapool"}
         reliability = {}
@@ -178,7 +178,7 @@ def export_all():
         print(f"  ✘ Error exporting pricing reliability: {e}")
 
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
-    print("▶ 4. Exporting arbitrage_leaderboard.json...")
+    print(">> 4. Exporting arbitrage_leaderboard.json...")
     try:
         # Pre-load quantiles from existing sealed_products.json if available
         sp_quantiles_lookup = {}
@@ -552,7 +552,7 @@ def export_all():
         print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
 
     # 5. Export / Update single_card_prices.json with genuine DB prices
-    print("\n▶ 5. Exporting single_card_prices.json from MTGJSON prices table...")
+    print("\n>> 5. Exporting single_card_prices.json from MTGJSON prices table...")
     try:
         single_prices_file = OUTPUT_DIR / "single_card_prices.json"
         existing_single_prices = {"byUuid": {}, "byName": {}, "byNameSet": {}}

@@ -21,6 +21,12 @@ TELEMETRY_JSON = Path(__file__).parent.parent / "public" / "data" / "pipeline_ex
 LATEST_RUN_JSON = Path(__file__).parent.parent / "public" / "data" / "latest_pipeline_run.json"
 INTERVAL_SECONDS = 24 * 60 * 60  # 1 day
 
+# Windows consoles default to cp1252, which can't encode arbitrary Unicode; make the
+# console stream tolerant so a stray symbol in a log message can never crash the run.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(errors="replace")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -107,12 +113,18 @@ def write_latest_run_file(run_record: dict):
 
 def run_script(script_name: str, description: str) -> tuple[bool, float, int, str, list[str]]:
     path = Path(__file__).parent / script_name
-    log.info("▶  %s — %s", script_name, description)
+    log.info(">>  %s - %s", script_name, description)
     t0 = time.time()
+    # Force UTF-8 for the child's own stdout/stderr so stray Unicode symbols in its
+    # print()/log output never crash on a Windows console defaulting to cp1252.
+    child_env = dict(os.environ, PYTHONIOENCODING="utf-8")
     result = subprocess.run(
         [sys.executable, str(path)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=child_env,
     )
     duration = round(time.time() - t0, 2)
     stdout_msg = result.stdout or ""
@@ -125,11 +137,11 @@ def run_script(script_name: str, description: str) -> tuple[bool, float, int, st
         print(stderr_msg, file=sys.stderr, flush=True)
 
     if result.returncode == 0:
-        log.info("✔  %s finished successfully (%.2fs)", script_name, duration)
+        log.info("OK    %s finished successfully (%.2fs)", script_name, duration)
         summary = [line.strip() for line in stdout_msg.splitlines() if line.strip()][-8:]
         return True, duration, 0, "", summary
     else:
-        log.error("✘  %s exited with code %d (%.2fs)", script_name, result.returncode, duration)
+        log.error("FAIL  %s exited with code %d (%.2fs)", script_name, result.returncode, duration)
         err_snippet = (stderr_msg.strip() or stdout_msg.strip())[-1000:]
         summary = [line.strip() for line in (stdout_msg + "\n" + stderr_msg).splitlines() if line.strip()][-8:]
         return False, duration, result.returncode, err_snippet, summary
@@ -282,7 +294,7 @@ def run_all() -> bool:
     quick_test_limit = get_quick_test_limit()
     if quick_test_limit:
         log.info("Quick test mode: limiting heavy stages to %d sets/products.", quick_test_limit)
-    log.info("═══ Daily update started at %s ═══", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
+    log.info("=== Daily update started at %s ===", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
     failures = []
     stage_records = []
     error_records = []
@@ -369,7 +381,7 @@ def run_all() -> bool:
         log.error("Completed with failures: %s", ", ".join(failures))
         return False
     else:
-        log.info("═══ All scripts completed successfully (%.2fs) ═══", total_duration)
+        log.info("=== All scripts completed successfully (%.2fs) ===", total_duration)
         return True
 
 
@@ -428,6 +440,8 @@ if __name__ == "__main__":
             result = subprocess.run(
                 [sys.executable, "-m", "py_compile", str(path)],
                 capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+                env=dict(os.environ, PYTHONIOENCODING="utf-8"),
             )
             if result.returncode == 0:
                 log.info("OK       %s — %s", script, description)
