@@ -56,8 +56,11 @@ def sync_all_sealed_prices():
 
   raw_products = cursor.fetchall()
   products = []
+  quick_test_set = os.environ.get('QUICK_TEST_SET', '').strip().upper()
 
   for p in raw_products:
+    if quick_test_set and (p.get('setCode') or '').upper() != quick_test_set:
+      continue
     ident_raw = p.get('identifiers')
     tcg_id = None
     if ident_raw:

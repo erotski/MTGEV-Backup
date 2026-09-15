@@ -6,7 +6,7 @@ import time
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
-from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG
+from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG, QUICK_TEST_SET
 from price_resolver import PriceResolver
 
 
@@ -734,4 +734,5 @@ if __name__ == '__main__':
   if args.audit_output and args.audit_set:
     audit_config['output_dir'] = str(Path(args.audit_output).parent)
   quick_test_limit = args.limit or (int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None)
-  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config, quick_test_limit=quick_test_limit)
+  target_set = args.set or QUICK_TEST_SET
+  run_full_pipeline(sample_size=args.sample_size, target_set=target_set, audit_config=audit_config, quick_test_limit=quick_test_limit)

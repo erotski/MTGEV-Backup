@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: ''
+      quick_test_set:
+        description: 'Optional set code for quick test mode (for example MKM). Leave blank to use the first N records.'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   update-ev-data:
@@ -69,6 +74,7 @@ jobs:
           AUDIT_ENABLED: ${{ inputs.audit_enabled }}
           AUDIT_OUTPUT_DIR: backend/audit_output
           QUICK_TEST_LIMIT: ${{ inputs.quick_test_limit }}
+          QUICK_TEST_SET: ${{ inputs.quick_test_set }}
         run: |
           set -e
           cd ../mtgev-pipeline-workspace
@@ -122,7 +128,7 @@ jobs:
           retention-days: 7
 
       - name: Commit & Push Updated Datasets to Dedicated Data Branch
-        if: ${{ !inputs.quick_test_limit }}
+        if: ${{ !inputs.quick_test_limit && !inputs.quick_test_set }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"

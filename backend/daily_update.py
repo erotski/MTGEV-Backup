@@ -67,6 +67,11 @@ def get_quick_test_limit():
         return None
     return value if value > 0 else None
 
+
+def get_quick_test_set():
+    raw = os.environ.get("QUICK_TEST_SET", "").strip().upper()
+    return raw or None
+
 SCRIPTS = [
     ("download.py",                      "Download mtgjson data + sync MySQL"),
     ("download_prices_today.py",         "Stream AllPricesToday.sql into MySQL"),
@@ -292,6 +297,9 @@ def validate_telemetry_outputs() -> tuple[bool, str]:
 def run_all() -> bool:
     start_dt = datetime.now(timezone.utc)
     quick_test_limit = get_quick_test_limit()
+    quick_test_set = get_quick_test_set()
+    if quick_test_set:
+        log.info("Quick test mode: restricting heavy stages to set %s.", quick_test_set)
     if quick_test_limit:
         log.info("Quick test mode: limiting heavy stages to %d sets/products.", quick_test_limit)
     log.info("=== Daily update started at %s ===", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
@@ -357,6 +365,7 @@ def run_all() -> bool:
         "status": overall_status,
         "durationSeconds": total_duration,
         "quickTestLimit": quick_test_limit,
+        "quickTestSet": quick_test_set,
         "stages": stage_records,
         "errors": error_records
     }
