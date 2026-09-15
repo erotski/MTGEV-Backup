@@ -240,9 +240,9 @@ export function resolveSingleCardEv(
 
   const priceIdx =
     (cd.uuid && cardPricesByUuid[cd.uuid]) ||
-    cardPricesByNameSet[`${rawName.toLowerCase()}___${cardSet.toLowerCase()}`] ||
-    cardPricesByNameSet[`${rawName.toLowerCase()}_${cardSet.toLowerCase()}`] ||
-    cardPricesByName[rawName.toLowerCase()];
+    cardPricesByNameSet[`${String(rawName || '').toLowerCase()}___${cardSet.toLowerCase()}`] ||
+    cardPricesByNameSet[`${String(rawName || '').toLowerCase()}_${cardSet.toLowerCase()}`] ||
+    cardPricesByName[String(rawName || '').toLowerCase()];
 
   let rawPrice = 0;
   let isEstimated = false;
