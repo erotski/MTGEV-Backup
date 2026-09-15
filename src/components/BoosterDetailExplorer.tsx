@@ -167,8 +167,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         (p) =>
           p.id === initialProductId ||
           p.uuid === initialProductId ||
-          (p.uuid && p.uuid.toLowerCase() === initialProductId.toLowerCase()) ||
-          (p.id && p.id.toLowerCase() === initialProductId.toLowerCase())
+          (p.uuid && String(p.uuid).toLowerCase() === String(initialProductId || '').toLowerCase()) ||
+          (p.id && String(p.id).toLowerCase() === String(initialProductId || '').toLowerCase())
       );
       if (matched) {
         setSelectedProductOverride(matched);
@@ -312,8 +312,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               (p) =>
                 p.id === targetId ||
                 p.uuid === targetId ||
-                (p.uuid && p.uuid.toLowerCase() === targetId.toLowerCase()) ||
-                (p.id && p.id.toLowerCase() === targetId.toLowerCase())
+                (p.uuid && String(p.uuid).toLowerCase() === String(targetId || '').toLowerCase()) ||
+                (p.id && String(p.id).toLowerCase() === String(targetId || '').toLowerCase())
             )
           : null;
 
@@ -387,8 +387,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         !selectedProductId ||
         selectedProductOverride.id === selectedProductId ||
         selectedProductOverride.uuid === selectedProductId ||
-        (selectedProductOverride.uuid && selectedProductId && selectedProductOverride.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
-        (selectedProductOverride.id && selectedProductId && selectedProductOverride.id.toLowerCase() === selectedProductId.toLowerCase());
+        (selectedProductOverride.uuid && selectedProductId && String(selectedProductOverride.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
+        (selectedProductOverride.id && selectedProductId && String(selectedProductOverride.id).toLowerCase() === String(selectedProductId || '').toLowerCase());
       if (related.includes(overrideSet) && isIdMatch) {
         return selectedProductOverride;
       }
@@ -397,8 +397,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       (p) =>
         p.id === selectedProductId ||
         p.uuid === selectedProductId ||
-        (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
-        (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
+        (p.uuid && selectedProductId && String(p.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
+        (p.id && selectedProductId && String(p.id).toLowerCase() === String(selectedProductId || '').toLowerCase())
     );
     if (dbMatch) return dbMatch;
     return (
@@ -406,8 +406,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         (p) =>
           p.id === selectedProductId ||
           p.uuid === selectedProductId ||
-          (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
-          (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
+          (p.uuid && selectedProductId && String(p.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
+          (p.id && selectedProductId && String(p.id).toLowerCase() === String(selectedProductId || '').toLowerCase())
       ) ||
       dbProducts[0] ||
       setCatalogProducts[0]

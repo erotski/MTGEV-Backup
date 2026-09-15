@@ -220,7 +220,7 @@ export const BoosterSlotViewer: React.FC<BoosterSlotViewerProps> = ({
 
     activeVariation.sheets.forEach((sheet) => {
       totalCardsPerPack += sheet.sheetPicks;
-      const lower = sheet.sheetName.toLowerCase();
+      const lower = (sheet.sheetName || '').toLowerCase();
       const meta = dbBooster?.sheets?.[sheet.sheetCode];
 
       if (lower.includes('rare') || lower.includes('mythic') || lower.includes('mul')) {
@@ -245,8 +245,8 @@ export const BoosterSlotViewer: React.FC<BoosterSlotViewerProps> = ({
     const q = optionFilter.toLowerCase().trim();
     return activeVariations.filter((v, idx) => {
       const optNum = String(v.boosterIndex ?? idx);
-      const matchSheet = v.sheets.some((s) => s.sheetName.toLowerCase().includes(q));
-      return optNum === q || v.name.toLowerCase().includes(q) || matchSheet;
+      const matchSheet = v.sheets.some((s) => (s.sheetName || '').toLowerCase().includes(q));
+      return optNum === q || (v.name || '').toLowerCase().includes(q) || matchSheet;
     });
   }, [activeVariations, optionFilter]);
 
@@ -507,10 +507,10 @@ export const BoosterSlotViewer: React.FC<BoosterSlotViewerProps> = ({
               <tbody className="divide-y divide-slate-200 bg-white font-mono">
                 {/* Aggregate all unique database sheet names */}
                 {Array.from<string>(
-                  new Set(activeVariations.flatMap((v) => v.sheets.map((s) => s.sheetName)))
+                  new Set(activeVariations.flatMap((v) => v.sheets.map((s) => s.sheetName || 'Unknown Sheet')))
                 ).map((sheetName, sIdx) => {
                   const meta = dbBooster?.sheets?.[sheetName];
-                  const isFoil = meta?.foil ?? sheetName.toLowerCase().includes('foil');
+                  const isFoil = meta?.foil ?? (sheetName || '').toLowerCase().includes('foil');
 
                   return (
                     <tr key={sIdx} className="hover:bg-slate-50 transition">
@@ -584,7 +584,7 @@ export const BoosterSlotViewer: React.FC<BoosterSlotViewerProps> = ({
           {/* Card Pack Strip Horizontal Scroller / Responsive Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2.5">
             {expandedPackCards.map((card, cIdx) => {
-              const isFoil = card.meta?.foil ?? card.sheet.sheetName.toLowerCase().includes('foil');
+              const isFoil = card.meta?.foil ?? (card.sheet.sheetName || '').toLowerCase().includes('foil');
 
               return (
                 <div
