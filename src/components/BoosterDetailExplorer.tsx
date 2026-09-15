@@ -701,9 +701,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         const rawType = sc.setType || '';
         const formattedType =
           rawType === 'memorabilia'
-            ? sc.name.toLowerCase().includes('scene box')
+            ? (sc.name || '').toLowerCase().includes('scene box')
               ? 'Scene Box'
-              : sc.name.toLowerCase().includes('art')
+              : (sc.name || '').toLowerCase().includes('art')
               ? 'Art Series'
               : 'Memorabilia'
             : rawType === 'masterpiece'

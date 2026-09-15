@@ -898,7 +898,7 @@ export function resolveRecursiveProductAudit(
         const matchedDeck = findMatchingPreconDeck(preconDecks, sub.name, sub.set || parentSet);
         if (matchedDeck) {
           const sSet = (sub.set || matchedDeck.set || parentSet).toLowerCase();
-          const isFoil = Boolean(matchedDeck.isFoil || sub.name.toLowerCase().includes('foil'));
+          const isFoil = Boolean(matchedDeck.isFoil || (sub.name || '').toLowerCase().includes('foil'));
           childProd = {
             id: matchedDeck.deckName,
             uuid: matchedDeck.deckName,
