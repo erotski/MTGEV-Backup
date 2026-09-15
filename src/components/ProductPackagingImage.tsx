@@ -392,8 +392,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           sub: 'Deck Box & Spindown',
         };
       case 'box_set': {
-        const isSldBundle = displayName.toLowerCase().includes('bundle') || displayName.toLowerCase().includes('superdrop');
-        const isSld = displayName.toLowerCase().includes('secret lair');
+        const isSldBundle = (displayName || '').toLowerCase().includes('bundle') || (displayName || '').toLowerCase().includes('superdrop');
+        const isSld = (displayName || '').toLowerCase().includes('secret lair');
         if (isSldBundle) {
           return {
             label: 'Secret Lair Bundle',
@@ -437,8 +437,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           sub: 'Cards & Supplies',
         };
       case 'starter_deck': {
-        const isCommander = displayName.toLowerCase().includes('commander');
-        const isSinglePrecon = !displayName.toLowerCase().includes('set of') && !displayName.toLowerCase().includes('4 decks') && !displayName.toLowerCase().includes('(4x)');
+        const isCommander = (displayName || '').toLowerCase().includes('commander');
+        const isSinglePrecon = !(displayName || '').toLowerCase().includes('set of') && !(displayName || '').toLowerCase().includes('4 decks') && !(displayName || '').toLowerCase().includes('(4x)');
         if (isCollector) {
           if (isSinglePrecon) {
             return {

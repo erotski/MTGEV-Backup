@@ -209,11 +209,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
 
       if (!matchedBooster) {
         matchedBooster = setBoosters.find(
-          (b) => b.boosterName.toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
+          (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
         );
       }
       if (!matchedBooster) {
-        matchedBooster = setBoosters.find((b) => b.boosterName.toLowerCase() === pkCode);
+        matchedBooster = setBoosters.find((b) => (b.boosterName || '').toLowerCase() === pkCode);
       }
 
       let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
@@ -747,8 +747,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         };
         setInspectedProduct(inspected);
       } else {
-        const isPack = s.name.toLowerCase().includes('pack') || s.name.toLowerCase().includes('booster');
-        const packCode = s.name.toLowerCase().includes('collector') ? 'collector' : 'play';
+        const isPack = (s.name || '').toLowerCase().includes('pack') || (s.name || '').toLowerCase().includes('booster');
+        const packCode = (s.name || '').toLowerCase().includes('collector') ? 'collector' : 'play';
         const inspected: CatalogPackProduct = {
           id: s.uuid || `sealed-${s.name}`,
           setCode: sSet,
