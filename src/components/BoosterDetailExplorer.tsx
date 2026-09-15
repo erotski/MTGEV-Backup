@@ -63,8 +63,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const debugMode = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('debug') || ''
     : '';
-  const showRelatedProducts = debugMode !== 'booster-only';
-  const showCurves = debugMode !== 'no-curves';
+  const showRelatedProducts = debugMode !== 'booster-only' && debugMode !== 'no-related';
+  const showCurves = debugMode !== 'booster-only' && debugMode !== 'no-curves';
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor

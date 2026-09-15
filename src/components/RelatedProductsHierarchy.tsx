@@ -185,11 +185,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             setDbSealedProducts([]);
           } else {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
-              const pName = sp.displayName || sp.name || 'Sealed Product';
+              const pName = String(sp.displayName || sp.name || 'Sealed Product');
               const pNameLower = pName.toLowerCase();
-              const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
-              const category = (sp.category || '').toLowerCase();
-              const subtype = (sp.subtype || '').toLowerCase();
+              const sCode = String(sp.setCode || sp.set_code || setCode || '').toUpperCase();
+              const category = String(sp.category || '').toLowerCase();
+              const subtype = String(sp.subtype || '').toLowerCase();
+              const contentsNote = String(sp.contents?.note || '');
 
               // Strictly database-driven packaging type assignment
               let packType: ProductPackagingType = 'other';
@@ -247,7 +248,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 badgeText = subtype === 'collector' ? 'Collector Case' : 'Master Case';
               } else if (category === 'bundle') {
                 badgeText = subtype === 'gift' ? 'Gift Bundle' : 'Bundle';
-              } else if (sp.contents?.note?.includes('1 of them is foil')) {
+              } else if (contentsNote.includes('1 of them is foil')) {
                 badgeText = '8 Cards (1 Foil)';
               } else if (sp.contents?.variable) {
                 badgeText = 'Variable Collation';
