@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: ''
+      publish_quick_test:
+        description: 'Publish a quick-test result to a Vercel preview branch (never production). Requires quick_test_set or quick_test_limit.'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   update-ev-data:
@@ -128,11 +133,21 @@ jobs:
           retention-days: 7
 
       - name: Commit & Push Updated Datasets to Dedicated Data Branch
-        if: ${{ !inputs.quick_test_limit && !inputs.quick_test_set }}
+        if: ${{ (!inputs.quick_test_limit && !inputs.quick_test_set) || inputs.publish_quick_test }}
+        env:
+          QUICK_TEST_LIMIT: ${{ inputs.quick_test_limit }}
+          QUICK_TEST_SET: ${{ inputs.quick_test_set }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B data-sync
+          if [ -n "${QUICK_TEST_SET}" ]; then
+            TARGET_BRANCH="quick-test-${QUICK_TEST_SET,,}"
+          elif [ -n "${QUICK_TEST_LIMIT}" ]; then
+            TARGET_BRANCH="quick-test-limit-${QUICK_TEST_LIMIT}"
+          else
+            TARGET_BRANCH="data-sync"
+          fi
+          git checkout -B "$TARGET_BRANCH"
           git add -f \
             public/data/sets.json \
             public/data/sealed_products.json \
@@ -148,9 +163,6 @@ jobs:
             echo "No data changes to commit."
           else
             git commit -m "Auto-update MTG booster EV & market prices [skip ci]"
-            git push origin data-sync --force
+            git push origin "$TARGET_BRANCH" --force
           fi
-          # Vercel's Git integration Production Branch is set to `data-sync` (not `main`),
-          # so this push alone triggers the production deploy. Do not also run a separate
-          # CLI/token deploy here — a prior version raced two deploy triggers against each
-          # other and could leave production pinned to a stale build. See PROJECT_REVIEW.md DEV-27.
+          # Full runs target production data-sync; quick tests target Vercel preview branches.
