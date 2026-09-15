@@ -129,7 +129,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const mode = priceMode || 'direct';
     const byVendor: Record<string, BoosterEVRecord | undefined> = {};
     const exactCandidates = list.filter(
-      (b) => (b.boosterName || '').toLowerCase().trim() === targetName && b.priceMode === mode
+      (b) => (b?.boosterName || '').toLowerCase().trim() === targetName && b?.priceMode === mode
     );
     CURVE_VENDORS.forEach((v) => {
       byVendor[v] = exactCandidates.find((b) => b.vendor === v);
@@ -153,8 +153,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const values = quantilesByVendor?.[selectedKey] || vendorRecords[selectedKey]?.quantiles;
     return {
       productTitle,
-      setCode: activeBooster.setCode,
-      boosterName: activeBooster.boosterName,
+      setCode: activeBooster?.setCode || '',
+      boosterName: activeBooster?.boosterName || '',
       vendor: selectedKey,
       priceMode,
       source: curveSource,
