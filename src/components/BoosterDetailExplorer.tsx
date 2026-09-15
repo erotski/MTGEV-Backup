@@ -443,8 +443,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       allRawProducts.find(
         (p) =>
           related.includes((p.setCode || '').toUpperCase()) &&
-          ((p.displayName || p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase() ||
-            (p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase())
+          ((p.displayName || p.name || '').toLowerCase() === (activeProduct.displayName || '').toLowerCase() ||
+            (p.name || '').toLowerCase() === (activeProduct.displayName || '').toLowerCase())
       ) || activeProduct
     );
   }, [activeProduct, productMap, allRawProducts, selectedSetCode]);
@@ -1011,7 +1011,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               {childSetsList.map((child) => (
                 <a
                   key={child.code}
-                  href={`https://scryfall.com/sets/${child.code.toLowerCase()}`}
+                  href={`https://scryfall.com/sets/${(child.code || '').toLowerCase()}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-50/90 hover:bg-indigo-50/60 hover:border-indigo-200 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2.5 transition group cursor-pointer"

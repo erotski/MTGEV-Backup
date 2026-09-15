@@ -1,19 +1,33 @@
 # MTGEV Project Guide
 
-This document is the project-wide map for MTGEV. It defines the major layers, ownership boundaries, operating restrictions, common workflows, completed improvements, and future development priorities.
+This is the **single consolidated reference** for the MTGEV codebase. It merges what were previously three separate documents (`PROJECT_REVIEW.md`, `backend/BACKEND_REVIEW.md`, `FRONTEND_REVIEW.md`) into one file so there is exactly one place to check for architecture, rules, restrictions, current status, and next steps.
 
-Detailed layer reviews are maintained separately:
+> **Note for AI coding agents:** This document is written to be read by both humans and AI agents working on this repository. Section 5 ("Restrictions") contains hard rules — treat every `Do not` / `Must not` statement as a constraint to check before making a change, not a suggestion. Section 12 ("Numbered Roadmap") is the current source of truth for what is done, in progress, or still broken. Read Section 5 and Section 12 before editing backend pricing/EV logic or frontend data-consuming components.
 
-- [`backend/BACKEND_REVIEW.md`](backend/BACKEND_REVIEW.md): data pipeline, MySQL processing, generated outputs, validation, and publication.
-- [`FRONTEND_REVIEW.md`](FRONTEND_REVIEW.md): React runtime, data loading, catalog metadata, UI ownership, and browser fallback policy.
+Update this document whenever a change crosses backend, frontend, generated-data, or deployment boundaries. Do not create new parallel `.md` review files — extend this one.
 
-Update this document when a change crosses backend, frontend, generated-data, or deployment boundaries.
+## Table of Contents
+
+1. [Project Purpose](#1-project-purpose)
+2. [Architecture](#2-architecture)
+3. [Repository Layers & Key Files](#3-repository-layers--key-files)
+4. [Definitions and Contracts](#4-definitions-and-contracts)
+5. [Restrictions (Hard Rules)](#5-restrictions-hard-rules)
+6. [Usage / Commands](#6-usage--commands)
+7. [Backend Detail](#7-backend-detail)
+8. [Frontend Detail](#8-frontend-detail)
+9. [Fallback and Synthetic Logic Inventory](#9-fallback-and-synthetic-logic-inventory)
+10. [Completed Improvements](#10-completed-improvements)
+11. [Outstanding Data-Quality Diagnostics](#11-outstanding-data-quality-diagnostics)
+12. [Numbered Roadmap](#12-numbered-roadmap)
+13. [Next 5 Steps](#13-next-5-steps)
+14. [Vendor Add/Remove Procedure](#14-vendor-addremove-procedure)
+15. [Change Management](#15-change-management)
+16. [Legacy Cleanup Candidates](#16-legacy-cleanup-candidates)
 
 ## 1. Project Purpose
 
-MTGEV compares sealed Magic: The Gathering product prices with the expected value of the cards and contents inside those products.
-
-The system answers questions such as:
+MTGEV compares sealed Magic: The Gathering product prices with the expected value of the cards and contents inside those products. It answers:
 
 - What is the expected singles value of a booster, box, bundle, case, deck, or composite product?
 - How does value change by vendor and price mode?
@@ -21,72 +35,76 @@ The system answers questions such as:
 - Which cards are the highest-value chase cards in a product?
 - How reliable and complete are the source prices used in the calculation?
 
-## 2. Generic Structure
+## 2. Architecture
 
 ```text
 GitHub Actions
-  -> temporary MySQL 8
-  -> MTGJSON and price downloads
-  -> price/reprint preparation
-  -> booster simulation
-  -> JSON export
-  -> deck and chase-card enrichment
-  -> composite-product evaluation
-  -> output validation
-  -> atomic public/data publication
-  -> Vercel deployment
+  -> temporary MySQL 8 service (ephemeral, recreated every run)
+  -> download MTGJSON AllPrintings + AllPricesToday
+  -> calculate lowest/reprint prices
+  -> sync live sealed product market prices
+  -> simulate booster EV (5,000 draws per booster/vendor/mode)
+  -> export JSON (sets, sealed products, booster EV, single-card prices, reliability)
+  -> load preconstructed decks
+  -> export product chase cards (direct MySQL price resolution)
+  -> evaluate composite products (10,000 MC samples)
+  -> validate output bundle + semantics + telemetry
+  -> stage & atomically publish public/data/
+  -> commit to data-sync branch
+  -> deploy to Vercel
 
 React frontend
-  -> dataService.ts
-  -> root public/data/*.json snapshots
-  -> catalog and hierarchy metadata
-  -> view components
+  -> App.tsx (global vendor/price-mode/EV-basis/set state)
+  -> dataService.ts (loads/caches generated JSON)
+  -> catalogProductLoader.ts + ecommerceBoosterData.ts (catalog metadata)
+  -> view components (BoosterDetailExplorer, ArbitrageLeaderboard, ProductChaseCardsViewer, ...)
 ```
 
-### Repository layers
+The workflow is `.github/workflows/daily_mtg_ev_update.yml`. It provisions a temporary MySQL database named `test_for_cards` that does **not** persist between runs — every run starts from a fresh MTGJSON import. The only persistent application data is the generated JSON committed to the `data-sync` branch.
+
+Deployment order (important, previously buggy): the pipeline **deploys to Vercel using the freshly staged `public/data/` working tree before switching branches to commit to `data-sync`**. Do not reorder this — deploying after the branch switch risks Vercel building from the wrong tree state.
+
+## 3. Repository Layers & Key Files
 
 | Layer | Main location | Responsibility |
 |---|---|---|
-| Pipeline orchestration | `backend/daily_update.py` | Runs required stages and records telemetry. |
+| Pipeline orchestration | `backend/daily_update.py` | Runs required stages, validates output, records telemetry, gates publication. |
 | Source ingestion | `backend/download.py`, `download_prices_today.py` | Loads MTGJSON and current price feeds into temporary MySQL. |
 | Price preparation | `backend/lowest_prices.py`, `price_resolver.py` | Resolves direct, reprint, vendor, finish, and aggregate prices. |
 | Booster simulation | `backend/populate_booster_ev_to_db.py`, `ev_statistics.py` | Simulates booster openings and produces empirical distributions. |
 | Product evaluation | `backend/composite_evaluator.py`, `ev_engine.py` | Evaluates nested, fixed, variable, and composite products. |
-| Deck/chase export | `backend/load_deck_tables.py`, `export_product_chase_cards.py` | Loads deck contracts and exports product TOP 5 cards. |
-| Validation | `backend/validate_pricing_and_ev.py`, `validate_composite_data.py`, `daily_update.py` | Checks output structure, EV consistency, quantiles, provenance, and references. |
+| Deck/chase export | `backend/load_deck_tables.py`, `export_product_chase_cards.py` | Loads deck contracts and exports product TOP 5 cards (resolves prices directly from MySQL). |
+| Validation | `backend/validate_pricing_and_ev.py`, `validate_composite_data.py`, `daily_update.py` | Checks output structure, EV consistency, quantiles, provenance, references. |
 | Published data | root `public/data/` | Authoritative immutable frontend snapshots. |
-| Frontend shell | `src/App.tsx`, `src/types.ts` | Global state, navigation, and shared contracts. |
+| Frontend shell | `src/App.tsx`, `src/types.ts` | Global state, navigation, shared contracts. |
 | Frontend data boundary | `src/services/dataService.ts` | Loads and caches generated JSON. |
 | Frontend views | `src/components/` | Displays backend data and presentation-only calculations. |
-| Catalog/assets | `src/ecommerceBoosterData.ts`, `catalogProductLoader.ts`, `productAssetMatcher.ts` | Product metadata, packaging, hierarchy, and images. |
-| Documentation | `PROJECT_REVIEW.md`, `BACKEND_REVIEW.md`, `FRONTEND_REVIEW.md` | Architecture, restrictions, and operating procedures. |
+| Catalog/assets | `src/ecommerceBoosterData.ts`, `catalogProductLoader.ts`, `productAssetMatcher.ts` | Product metadata, packaging, hierarchy, images. |
+| Documentation | `PROJECT_REVIEW.md` (this file) | Architecture, restrictions, roadmap, operating procedures. |
 
-## 3. Most Important Components
+### Most important individual files
 
-### Backend
+**Backend:**
+- `daily_update.py` — authoritative production sequence and publication gate; also the quick-test-limit entry point.
+- `populate_booster_ev_to_db.py` — booster price resolution and simulation; owns `NAMED_VENDORS` allowlist.
+- `ev_statistics.py` — single source for the 100-point endpoint-preserving curve contract.
+- `composite_evaluator.py` — backend composite quantile producer.
+- `price_resolver.py` — explicit card-price and provenance decisions.
+- `export_app_data.py` — generated application snapshot exporter; owns `single_card_prices.json` and its legacy-key normalization pass.
+- `export_product_chase_cards.py` — backend product chase-card producer; resolves prices directly from MySQL (`prices` + `lowest_prices` tables), not just `single_card_prices.json`.
+- `validate_pricing_and_ev.py` / `validate_composite_data.py` — pricing/EV/composite quality checks.
 
-- `daily_update.py`: authoritative production sequence and publication gate.
-- `populate_booster_ev_to_db.py`: booster price resolution and simulation.
-- `ev_statistics.py`: single source for the 100-point endpoint-preserving curve contract.
-- `composite_evaluator.py`: backend composite quantile producer.
-- `price_resolver.py`: explicit card-price and provenance decisions.
-- `export_app_data.py`: generated application snapshot exporter.
-- `export_product_chase_cards.py`: backend product chase-card producer.
-- `validate_pricing_and_ev.py`: pricing and EV quality checks.
-- `validate_composite_data.py`: composite distribution diagnostics.
-
-### Frontend
-
-- `App.tsx`: global vendor, price mode, EV basis, set, and tab state.
-- `dataService.ts`: JSON loading and caching boundary.
-- `productUtils.ts`: transitional structural breakdown helper; backend data remains authoritative for product EV.
-- `evScore.ts`: EV score calculation from empirical quantiles.
-- `BoosterDetailExplorer.tsx`: booster and product exploration.
-- `PackDistributionCurve.tsx`: curve rendering from backend quantiles.
-- `ProductChaseCardsViewer.tsx`: backend-generated product TOP 5 display.
-- `ArbitrageLeaderboard.tsx`: product overview and pricing reliability.
-- `ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`: contents and hierarchy presentation.
-- `SpecialChaseShowcase.tsx`: curated editorial showcase, separate from product TOP 5 data.
+**Frontend:**
+- `App.tsx` — global vendor, price mode, EV basis, set, and tab state.
+- `dataService.ts` — JSON loading/caching boundary; `getProductMetrics()` gateway.
+- `productUtils.ts` — transitional structural breakdown helper; backend data remains authoritative for product EV.
+- `evScore.ts` — EV score calculation from empirical quantiles.
+- `BoosterDetailExplorer.tsx` — booster and product exploration; state declaration order matters here (see Section 10 fix log).
+- `PackDistributionCurve.tsx` — curve rendering from backend quantiles only; never fabricates a flat/synthetic curve.
+- `ProductChaseCardsViewer.tsx` — backend-generated product TOP 5 display with explicit missing-data diagnostics.
+- `ArbitrageLeaderboard.tsx` — product overview and pricing reliability.
+- `ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx` — contents and hierarchy presentation.
+- `SpecialChaseShowcase.tsx` — curated editorial showcase, separate from product TOP 5 data.
 
 ## 4. Definitions and Contracts
 
@@ -103,7 +121,7 @@ Use these terms consistently in code, UI labels, logs, tests, and documentation.
 | **Direct mode** | Price resolution for the requested vendor, card identity, and finish where available. | A guaranteed exact listing when provenance says a neighbor was used. |
 | **Cheapest-reprint mode** | Cheapest available name/reprint resolution for the requested vendor context. | Exact native vendor-listing coverage. |
 | **Named vendor** | An actual marketplace price source: `tcgplayer`, `cardmarket`, `cardkingdom`, or `manapool`. | `all_cheapest` or `all_average`. |
-| **Aggregate mode** | A calculated comparison view derived from named-vendor prices. The generated-data schema stores it in the `vendor` field for compatibility. | A physical marketplace or independent price feed. |
+| **Aggregate mode** | A calculated comparison view derived from named-vendor prices. Stored in the `vendor` field for schema compatibility. | A physical marketplace or independent price feed. |
 | **`all_cheapest`** | The lowest usable price among configured named vendors for each resolved card/content context. | A vendor account, marketplace listing, or guarantee that every vendor has the card. |
 | **`all_average`** | The arithmetic average of usable configured named-vendor prices for the resolved context, excluding `all_cheapest`; missing vendors are not treated as zero. | A marketplace or a sealed-product market price. |
 | **Exact price** | A price resolved from the requested vendor and finish/card context. | Any successfully resolved price. |
@@ -116,7 +134,8 @@ Use these terms consistently in code, UI labels, logs, tests, and documentation.
 | **Audit artifact** | A temporary GitHub Actions JSON file containing sorted raw samples and derived bucket means. | A committed application dataset. |
 | **Published snapshot** | A generated JSON file in root `public/data/` produced by one pipeline run. | A mutable frontend cache or hand-edited fixture. |
 | **Pipeline run** | One complete backend regeneration attempt, including validation and publication decisions. | A local dry-run or frontend build. |
-| **Provenance** | Metadata describing where a value came from and whether it was exact, borrowed, reprinted, or unresolved. | A generic “live” label. |
+| **Quick-test run** | A pipeline run with `QUICK_TEST_LIMIT` set, simulating only N sets/products for fast validation. | A run whose output should ever be published — quick-test runs never publish to `data-sync` or Vercel. |
+| **Provenance** | Metadata describing where a value came from and whether it was exact, borrowed, reprinted, or unresolved. | A generic "live" label. |
 | **Curated editorial data** | Human-maintained showcase content such as Special Chases. | Backend-calculated product TOP 5 data. |
 | **Inferred metadata** | Metadata derived from names or heuristics when source fields are missing. | Authoritative product identity or valuation. |
 | **`main` branch** | Source code, workflows, documentation, and application changes. | The generated-data-only branch. |
@@ -131,10 +150,11 @@ Use these terms consistently in code, UI labels, logs, tests, and documentation.
 - Use **`unresolved`** or **`unpriced`** when no authoritative value exists.
 - Use **`published snapshot`** for root `public/data` files and **`audit artifact`** for temporary workflow downloads.
 - Use **`curated`** for editorial content and **`inferred`** for heuristic metadata.
+- Never write a literal `all` vendor key into any generated JSON. The only valid canonical vendor keys are listed below. `all` was a legacy alias that has been eliminated from every writer (see Section 10) — do not reintroduce it, even as a "compatibility" fallback, in new code.
 
 ### Vendors
 
-Canonical vendor keys:
+Canonical vendor keys (exactly these six, nothing else):
 
 ```text
 all_cheapest
@@ -145,7 +165,7 @@ cardkingdom
 manapool
 ```
 
-The first four keys are named marketplace sources. `all_cheapest` and `all_average` are aggregate calculation modes stored in the vendor field for compatibility with generated JSON; they are not marketplaces. `all_cheapest` selects the lowest usable configured named-vendor price for each resolution. `all_average` averages usable configured named-vendor prices and excludes `all_cheapest`.
+`tcgplayer`, `cardmarket`, `cardkingdom`, `manapool` are named marketplace sources — the only vendors ever discovered dynamically from price feeds (see `NAMED_VENDORS` allowlist in `populate_booster_ev_to_db.py` and `export_product_chase_cards.py`). `all_cheapest` and `all_average` are aggregate calculation modes; they are never sourced from a real seller string and must always be computed by the code, never copied from a raw provider field.
 
 ### Price modes
 
@@ -155,7 +175,7 @@ cheapest_reprint
 ```
 
 - `direct`: requested card/vendor/finish pricing where available, with explicit neighboring card-price provenance when borrowed.
-- `cheapest_reprint`: cheapest name/reprint resolution. Its reliability metric is resolution coverage, not exact native vendor-listing coverage.
+- `cheapest_reprint`: cheapest name/reprint resolution via the `lowest_prices` table. Its reliability metric is resolution coverage, not exact native vendor-listing coverage.
 
 ### Empirical curve
 
@@ -163,15 +183,15 @@ Every valid booster or composite curve contains exactly 100 points:
 
 ```text
 point 1       exact minimum sample
-points 2-99  98 equal empirical interior bucket means
+points 2-99   98 equal empirical interior bucket means
 point 100     exact maximum sample
 ```
 
-The raw samples are retained in audit artifacts when audit mode is enabled. Existing percentile indexes remain zero-based in code, so `quantiles[0]` is point 1 and `quantiles[99]` is point 100.
+Raw samples are retained in audit artifacts when audit mode is enabled. Percentile indexes are zero-based in code, so `quantiles[0]` is point 1 and `quantiles[99]` is point 100.
 
 ### Provenance
 
-Card prices may have explicit statuses such as:
+Card prices may have explicit statuses:
 
 ```text
 exact
@@ -185,15 +205,16 @@ unpriced
 
 A borrowed card price must remain distinguishable from an exact source price. Sealed-product market prices and product identity must not be invented or borrowed.
 
-## 5. Restrictions
+## 5. Restrictions (Hard Rules)
 
 ### Runtime restrictions
 
 - Do not run the full `backend/daily_update.py` locally unless a complete compatible MySQL/data environment is deliberately configured.
-- The authoritative full pipeline runs in GitHub Actions with temporary MySQL 8.
+- The authoritative full pipeline runs in GitHub Actions with a temporary MySQL 8 service.
 - Run manual workflows from `main`, not `data-sync`.
 - `data-sync` is for generated snapshots; source changes belong on `main`.
 - Never commit audit samples or local generated caches.
+- A quick-test run (`QUICK_TEST_LIMIT` set) must never publish to `data-sync` or deploy to Vercel — this is enforced with `if: ${{ !inputs.quick_test_limit }}` on those workflow steps. Do not remove that guard.
 
 ### Data restrictions
 
@@ -205,6 +226,8 @@ A borrowed card price must remain distinguishable from an exact source price. Se
 - Do not generate quantiles from averages or fixed percentage bands.
 - Missing vendor, card, finish, or quantile data must remain explicit and observable.
 - Neighboring card-price borrowing is allowed only with provenance.
+- Never write or read a literal `all` vendor key in generated JSON (`prices`, `quantilesByVendor`, DB `vendor` columns). Always use `all_cheapest`.
+- Any seller/provider string discovered from a raw price feed must be filtered through the `NAMED_VENDORS` allowlist before being treated as a vendor. Never trust an unfiltered provider string from `AllPricesToday`.
 
 ### Ownership restrictions
 
@@ -212,8 +235,9 @@ A borrowed card price must remain distinguishable from an exact source price. Se
 - Frontend owns loading, presentation, navigation, formatting, sorting, and image/metadata display.
 - Curated Special Chases are editorial content and must not become product valuation data.
 - Static catalog metadata must not override matching generated product values.
+- `export_product_chase_cards.py` must resolve candidate card prices directly from MySQL (`prices` + `lowest_prices`), not solely from `single_card_prices.json`, because that file only ever indexed `contents.card` singles and precon/deck-seeded cards — never regular booster-sheet cards. Do not revert to reading only `single_card_prices.json["byUuid"]`, or booster-sheet-sourced chase candidates will silently disappear again.
 
-## 6. Usage
+## 6. Usage / Commands
 
 ### Local frontend development
 
@@ -225,9 +249,7 @@ npm.cmd run dev
 
 The frontend reads the existing root `public/data/` snapshots. Use the Vite URL printed by the dev server for browser checks.
 
-### Local backend checks
-
-These do not require MySQL:
+### Local backend checks (no MySQL required)
 
 ```cmd
 py -3.12 -m py_compile backend\daily_update.py
@@ -236,14 +258,27 @@ py -3.12 -m unittest backend.test_ev_statistics backend.test_pipeline_bucket_con
 py -3.12 backend\inventory_jumpstart.py
 ```
 
-### Full data regeneration
+### Quick-test pipeline runs
 
-The full regeneration is GitHub-only:
+For fast iteration without a full 30-45 minute run, use `QUICK_TEST_LIMIT` (a positive integer, e.g. `50`):
+
+```cmd
+py -3.12 backend\daily_update.py --quick-test-limit 50
+```
+
+Or in GitHub Actions: **Run workflow** → set `quick_test_limit` to a number. This caps the two heaviest stages:
+
+- `populate_booster_ev_to_db.py` — limits the number of distinct set/booster configurations simulated.
+- `sync_live_sealed_prices.py` — limits the number of products synced against TCGplayer's live API.
+
+`download.py` and `download_prices_today.py` still import the full MTGJSON dataset regardless (~12 minutes fixed cost); quick-test mode mainly shrinks the simulation/sync stages. **Quick-test runs never publish** — see Section 5.
+
+### Full data regeneration (GitHub-only)
 
 1. Push the intended source commit to `main`.
 2. Open the daily workflow in GitHub Actions.
 3. Select **Run workflow**.
-4. Enable `audit_enabled` for curve verification.
+4. Enable `audit_enabled` for curve verification. Leave `quick_test_limit` blank for a real production run.
 5. Inspect `latest_pipeline_run.json`, reliability, provenance, chase cards, composite outputs, and the uploaded `ev-simulation-audit-<run number>` artifact.
 
 Audit artifacts are attached to the workflow run for a limited retention period. They are not committed to Git.
@@ -258,115 +293,256 @@ py -3.12 -m py_compile backend\daily_update.py
 py -3.12 backend\daily_update.py --dry-run
 ```
 
-## 7. Planned improvements and known gaps
+### Minimum backend pre-push checks (no MySQL)
 
-### Product inspection should expose fixed-vs-variable content details
+```text
+python backend/daily_update.py --dry-run
+python -m pytest backend/test_ev_statistics.py backend/test_pipeline_bucket_contract.py
+npm.cmd run build
+git diff --check
+```
 
-The inspection layer currently focuses on resulting EV and high-level product breakdowns, but it does not yet make the underlying collation semantics legible to reviewers. For products such as Jumpstart, the critical distinction is not just the total card count or pack value; it is whether the product contains fixed sheets, variable sheets, or a mixed structure with rare/mythic randomness.
+### Minimum frontend pre-push checks
 
-This should be treated as a documented project improvement rather than a one-off bug fix. The system should make the fixed/variable structure visible wherever a product or booster is inspected or opened in the UI and exported metadata.
+```text
+npm.cmd run lint
+npm.cmd run build
+git diff --check
+```
 
-Suggested follow-up:
+For valuation or data-boundary changes, also verify representative generated JSON records for: one single booster; one box or bundle; one case or nested sealed product; one preconstructed deck; one variable-content product; one product with a missing vendor or missing quantile record.
 
-1. Add a backend-exported inspection contract for each product/booster entry, including:
-   - `fixed_by_default` or equivalent boolean flag
-   - `variable_sheets` list
-   - `fixed_sheets` list
-   - `sheet_count`, `card_count`, and source metadata
-   - a `collation_source` or `source_provenance` marker that distinguishes MTGJSON-native, override-based, and inferred data
-2. Surface this in the inspection views next to the pack breakdown or product details, for example:
-   - `Fixed: 20 sheets`
-   - `Variable: rareMythicBlack, rareMythicBlue, ...`
-   - `Collation status: mixed` / `deterministic`
-3. Add a validator that compares exported product metadata against the canonical MTGJSON sheet definition and the reviewed override file so drift is caught before publication.
-4. Keep the override layer explicit and reviewable, rather than hiding it in downstream rendering logic. The user should be able to see that a product is using a temporary collation override and which sheet names are affected.
-5. Document the inspection metadata contract in the backend review and schema documentation, so product reviewers know exactly which fields are intentionally authoritative versus inferred.
+## 7. Backend Detail
 
-This is especially important for Jumpstart and any other product families where fixed sheets and variable sheets coexist in the same product. The inspection layer should make that distinction obvious to both data reviewers and product users.
+### Pipeline order
 
-## 7. Completed Improvements
+`backend/daily_update.py` runs these stages in order and stops on first failure (never publishes a partial dataset):
 
+1. `download.py`
+2. `download_prices_today.py`
+3. `lowest_prices.py`
+4. `sync_live_sealed_prices.py`
+5. `populate_booster_ev_to_db.py`
+6. `export_app_data.py`
+7. `load_deck_tables.py`
+8. `export_product_chase_cards.py`
+9. `composite_evaluator.py`
+10. `validate_pricing_and_ev.py`
+
+Required output files (`REQUIRED_OUTPUTS` in `daily_update.py`):
+
+```text
+sets.json, sealed_products.json, booster_ev.json, arbitrage_leaderboard.json,
+single_card_prices.json, product_chase_cards.json, pricing_reliability.json,
+precon_decks.json
+```
+
+Plus telemetry outputs (`TELEMETRY_OUTPUTS`), also required and semantically validated:
+
+```text
+pipeline_execution_logs.json, latest_pipeline_run.json
+```
+
+`daily_update.py` runs three validation passes before publication: `validate_output_bundle()` (file existence/JSON syntax), `validate_output_semantics()` (shape, numeric finiteness, unique product IDs, 100-bucket monotonicity, booster endpoint agreement with `evMin`/`evMax`, chase-card product-id cross-references), and `validate_telemetry_outputs()` (after the run record is written).
+
+### File-by-file notes
+
+**`config.py`** — Reads MySQL connection settings and audit settings from environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `AUDIT_ENABLED`, `AUDIT_OUTPUT_DIR`). Never commit the password; supply via GitHub Actions secrets or a local env var.
+
+**`daily_update.py`** — Orchestrates all stages, captures telemetry, validates before publication, supports `--dry-run`, `--schedule`, `--loop`, and `--quick-test-limit N`. Sets `QUICK_TEST_LIMIT` env var when the flag is used, which propagates to subprocess stages automatically (they inherit the parent environment).
+
+**`download.py` / `download_prices_today.py`** — Stream the full MTGJSON AllPrintings/AllPricesToday SQL dumps into the ephemeral MySQL service. Large, network-dependent, and not shrunk by quick-test mode.
+
+**`lowest_prices.py`** — Builds the `lowest_prices` table (per uuid, per seller, per finish minimum price) used for cheapest-reprint resolution. Required before correct reprint pricing.
+
+**`sync_live_sealed_prices.py`** — Syncs live TCGplayer market prices for sealed products via HTTP. Respects `QUICK_TEST_LIMIT` by truncating the product list.
+
+**`populate_booster_ev_to_db.py`** — Reads booster configs/sheets from MySQL, prefetches card metadata/prices, simulates 5,000 booster openings per booster/vendor/price-mode, stores summary stats + 100-bucket quantiles in MySQL `booster_ev_results`.
+- `NAMED_VENDORS = {'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'}` — sellers discovered from `AllPricesToday` are filtered through this allowlist before becoming a per-vendor simulation row. **This was a real bug source**: without the filter, a stray provider string (observed as literally `"all"` for Murders at Karlov Manor) got treated as a genuine vendor, producing a corrupted row and silently omitting the true `all_cheapest` record. Do not remove this filter.
+- The pre-migration cleanup `DELETE FROM booster_ev_results WHERE ... vendor = 'all'` must target the legacy `'all'` key, not `'all_cheapest'` — a prior version of this query had the values swapped, which deleted the correct canonical rows instead of the legacy ones.
+- Respects `QUICK_TEST_LIMIT` / `--limit N` by truncating the list of distinct set/booster configurations before simulation.
+- Bucket contract (shared with composite evaluation via `ev_statistics.py`): simulate pack totals → round to cents → sort → preserve exact min/max as points 1/100 → divide the rest into 98 equal empirical groups → average each group, round to cents.
+- Audit output: `backend/audit_output/<set>_<booster>_<price_mode>_<vendor>.json` (git-ignored, uploaded as a workflow artifact only when `audit_enabled=true`).
+- Known risk: memory-heavy simulation (retains all valid pack totals until statistics are calculated). `simulate_and_store()` mixes too many responsibilities (matrix building, simulation, statistics, persistence, audit writing) — highest-priority refactor target, not yet done.
+
+**`ev_statistics.py`** — Single source of truth for the empirical 100-bucket calculation. Must be used by both booster and composite calculations; must not be replaced by summary-statistic interpolation.
+
+**`ev_engine.py`** — Recursive product EV resolver used by sync/leaderboard code. Overlaps conceptually with `composite_evaluator.py` and frontend `productUtils.ts` — highest-priority duplication candidate, not yet consolidated. Retains an intentional `vendor == "all"` → `"all_cheapest"` input-argument normalization; this is caller-input aliasing (a caller might still pass the word `"all"`), distinct from the generated-data key bug fixed elsewhere — leave it.
+
+**`price_resolver.py`** — Owns direct vendor, global-cheapest, reprint, and named-vendor-average card-price resolution; preserves provenance statuses (`exact`, `finish_fallback`, `vendor_fallback`, `vendor_finish_fallback`, `reprint`, `ignored`, `unpriced`). Also retains an input-alias normalization (`target_vendor == 'all'` → `'all_cheapest'`) for the same caller-input reason as `ev_engine.py`.
+
+**`export_app_data.py`** — Exports MySQL data to `sets.json`, `sealed_products.json`, `booster_ev.json`, `pricing_reliability.json`, `arbitrage_leaderboard.json`, and `single_card_prices.json`.
+- Its `resolve_card_prices()` helper (used to build `single_card_prices.json` entries for `contents.card` singles) computes `all_cheapest` (min) and `all_average` (mean) directly — it never writes `all`.
+- Contains a **normalization pass** that runs after building `single_card_prices.json`, before writing it: for every entry across `byUuid`/`byName`/`byNameSet`, if a legacy `all` key exists, it is migrated to `all_cheapest` and removed. This exists to correct entries seeded by older one-off ingestion scripts (see below) without needing to manually rerun each one.
+- Important limitation still present: this file's `single_card_prices.json` export loop only prices cards found in `contents.card` (direct sealed-product singles) — it does **not** cover regular booster-sheet cards. That gap is why `export_product_chase_cards.py` now resolves its own prices directly from MySQL rather than depending on this file for booster-sourced candidates.
+
+**`export_product_chase_cards.py`** — Backend TOP 5 chase-card producer.
+- Candidates come from three sources: MySQL booster sheets (`setBoosterSheetCards`/`setBoosterSheets`/`setBoosterContents`), deck contents (`deckCards`/`decks`, falling back to `precon_decks.json` when those tables are absent), and direct/variable card references in `sealed_products.json` contents.
+- **Prices are resolved directly from MySQL** for every discovered candidate uuid: `load_direct_prices()` queries the `prices` table (direct mode), `load_reprint_prices()` queries `lowest_prices` (cheapest-reprint mode), both filtered through the same `NAMED_VENDORS` allowlist. `resolve_vendor_prices()` computes `all_cheapest`/`all_average` per card per mode.
+- Display metadata (name, scryfallId, imageUrl) is supplemented from `single_card_prices.json`'s `byUuid` index when available, but is no longer required for a card to be priced.
+- The export runs in two passes: resolve all products' candidates first (building one global uuid set), then bulk-query prices/metadata once, then build the per-product/per-vendor/per-mode TOP 5 lists.
+
+**`load_deck_tables.py`** — Creates temporary `decks`/`deckCards` tables when the MTGJSON dump omits them, loads the current `precon_decks.json` snapshot, enriches fixed deck cards with current price provenance, writes per-deck `pricingReliability` summaries.
+
+**`sync_all_from_sqlite.py`** — Legacy/alternative SQLite sync path. Likely obsolete for the GitHub MySQL pipeline; still a Section 16 cleanup candidate pending history review.
+
+**`validate_pricing_and_ev.py`** — Booster quantile skew audit, product contents-vs-EV consistency audit, ROI anomaly audit. Should be extended to validate `product_chase_cards.json` schema too.
+
+**`validate_composite_data.py`** — Composite quantile monotonicity, vendor completeness, archetype, and variable-product audits. Not currently listed in `daily_update.py`'s stage list — run manually or add it to CI.
+
+### Generated data ownership
+
+| Output | Producer | Consumer |
+|---|---|---|
+| `sets.json` | `export_app_data.py` | set navigation and hierarchy |
+| `sealed_products.json` | `export_app_data.py` + `composite_evaluator.py` | product explorer and leaderboard |
+| `booster_ev.json` | `export_app_data.py` from MySQL | booster explorer and composite evaluation |
+| `arbitrage_leaderboard.json` | `export_app_data.py` | Products Overview |
+| `single_card_prices.json` | `export_app_data.py` | card pricing lookups; supplementary chase-card artwork |
+| `product_chase_cards.json` | `export_product_chase_cards.py` | product TOP 5 chase viewer |
+| `pricing_reliability.json` | `export_app_data.py` | Products Overview vendor reliability indicator |
+| `pipeline_execution_logs.json` | `daily_update.py` | Admin Portal telemetry |
+| `latest_pipeline_run.json` | `daily_update.py` | Direct latest-run inspection, snapshot identity |
+
+`pricing_reliability.json` reports mode-specific reliability metrics. For `direct` records, `directExactPct` measures the share resolved from the requested vendor and exact card/finish match, while `nonExactPct` is the complementary share. For `cheapest_reprint` records, `reprintResolvedPct` measures the share resolved to a cheapest name/reprint price (including explicit neighboring sources); `unresolvedPct` is the complementary share.
+
+## 8. Frontend Detail
+
+### Runtime architecture
+
+```text
+App.tsx
+  -> dataService.ts
+  -> public/data/*.json
+  -> catalogProductLoader.ts + ecommerceBoosterData.ts
+  -> view components
+  -> backend-generated EV, provenance, and chase-card snapshots
+```
+
+The frontend never connects directly to MySQL. Its runtime inputs are generated JSON under `public/data/`, static catalog metadata, Scryfall hierarchy metadata, and image assets under `public/products/`.
+
+### Application shell
+
+- **`App.tsx`** — owns top-level tabs, selected set/product, vendor, price mode, EV basis. Loads sets/arbitrage/booster-EV/reliability through `dataService`. Initial arrays from `src/data.ts` are empty startup scaffolding, not a production data source.
+- **`types.ts`** — shared interfaces/unions for vendors, price modes, products, boosters, decks, chase cards, provenance. Changes here are cross-layer contract changes requiring backend JSON + frontend build validation.
+
+### Data loading and caching
+
+**`src/services/dataService.ts`** is the main frontend data boundary. Keep network loading/caching centralized here, not in view components.
+
+- `getProductChaseCards()` — fetches `product_chase_cards.json`.
+- `getLatestPipelineRun()` — fetches `latest_pipeline_run.json`.
+- `getSnapshotIntegrityReport()` — checks sets/sealed-products/booster-EV loaded and non-empty, surfaces warnings.
+- `getProductMetrics(productId, vendor, priceMode, evBasis)` — the single product-metrics gateway; wraps `getCanonicalProductMetrics()` and attaches `source`, `pipelineRunId`, `schemaVersion`, `generatedAt` from the latest run record. Currently consumed by `BoosterDetailExplorer.tsx`; broader adoption across other product views is still pending (see DEV-08).
+
+Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster_ev.json`, `arbitrage_leaderboard.json`, `single_card_prices.json`, `precon_decks.json`, `product_chase_cards.json`, `pricing_reliability.json`, `latest_pipeline_run.json`. Root `public/data/` is authoritative; `backend/public/data/` must remain absent.
+
+### Catalog and metadata layers
+
+- **`ecommerceBoosterData.ts`** — curated catalog products/booster variation interfaces. Curated market prices/EV must never override generated pipeline values for products with matching backend IDs.
+- **`catalogProductLoader.ts`** — merges curated + generated products, dedupes by ID/UUID. Title-based packaging inference is marked `metadataSource: 'inferred'`; generated records use `'pipeline'`.
+- **`setHierarchyUtils.ts`** — loads/resolves generated Scryfall set hierarchy; fallback mappings limited to offline/startup recovery.
+- **`productAssetMatcher.ts`** — matches products to WPN packaging assets; guessed matches must never affect product identity, market price, or EV.
+
+### View ownership
+
+- **`ArbitrageLeaderboard.tsx`** (Products Overview) — displays backend leaderboard + reliability; must not recompute product EV when a backend record exists.
+- **`BoosterDetailExplorer.tsx`** (Booster Explorer) — displays booster records/curves/slots/chase cards. `booster_ev.json` is authoritative. A missing vendor/mode record must render unavailable, never borrow an unrelated mode. **State declaration order matters**: `activeBoosterName` (and any other `useState` referenced by an effect's setter) must be declared before the effect that calls its setter — a prior ordering bug caused a production `ReferenceError: Cannot access 'X' before initialization` that blanked the whole page.
+- **`PackDistributionCurve.tsx`** — renders empirical 100-bucket curves from backend quantiles only. Returns an empty points array (triggering an explicit "missing data" UI) rather than fabricating a flat/synthetic curve when quantiles are absent.
+- **`BoosterSlotViewer.tsx`** — converts DB booster records into UI models; must not fabricate odds or pricing.
+- **`ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`** — recursive contents/fixed-cards/decks/nested-products display via `productUtils.ts`. `ProductHierarchyInspector` uses `getCanonicalProductMetrics` for EV instead of a second fallback resolver.
+- **`ProductChaseCardsViewer.tsx`** — loads `product_chase_cards.json` for the selected product/vendor/price-mode. Resolves the product's chase-card record by matching `id`/`uuid`/`productUuid` against the snapshot's keys (case-insensitive fallback), and surfaces a specific diagnostic message (missing snapshot vs. no record for this vendor/mode vs. no key match at all) instead of a generic empty state.
+- **`chaseCardsService.ts`** — reduced to image/metadata helpers and the curated Special Chases catalog; legacy product-candidate discovery functions removed.
+- **`SpecialChaseShowcase.tsx`** — curated/editorial, not equivalent to backend chase data; must be labeled as curated.
+- **`AdminPortal.tsx`** — pipeline logs, data health, admin controls; should eventually load `latest_pipeline_run.json` directly and distinguish stale/missing/failed/deployed states explicitly.
+
+### Valuation boundary
+
+**`productUtils.ts`** — recursive product contents breakdown (card/pack/deck/variable-slot/nested resolution). Still active and high-risk because it overlaps backend valuation; treat as a transitional structural display helper, not a second authoritative valuation engine.
+
+Required policy:
+- Use backend vendor/mode records when present.
+- Preserve explicit zero/unresolved values when records are missing.
+- Borrow neighboring card prices only when provenance is available from the backend.
+- Never derive sealed-product EV from sealed market price.
+- Never construct vendor prices by multiplying another vendor price.
+- Never construct probability distributions from averages or fixed ratios.
+
+**`evScore.ts`** — `calculateEvScore()` returns `null` when empirical quantiles are unavailable; never derives quantiles in the browser.
+
+**`vendorUtils.ts`** — normalizes vendor names/booster codes, finds booster EV records, resolves display-level pricing. `normalizeVendor()` maps a caller-supplied `"all"` string to `"all_cheapest"` as input aliasing (not a data-key issue); missing named vendors must remain unavailable, never silently replaced.
+
+## 9. Fallback and Synthetic Logic Inventory
+
+### Backend
+
+Fallback categories requiring explicit policy and observability:
+- Vendor substitution during random booster card-slot pricing when a requested vendor row is missing (intentional booster-only borrowing).
+- Finish substitution during random booster card-slot pricing between normal, foil, and etched (intentional booster-only borrowing).
+- Product market-price estimates when contents are unresolved.
+- Generic product-title packaging inference.
+- Synthetic EV multipliers for sample/prerelease/unknown booster types.
+- Curated hardcoded chase-card prices (editorial only, never product valuation).
+- Scryfall set/card discovery when local candidates are unavailable (artwork only).
+
+Recommended rule: any card-price lookup may produce an explicit borrowed-data result when a documented neighboring price is available. Non-card domains — sealed-product market prices, metadata, and product identity — must remain exact or unresolved; they must not borrow or invent a value.
+
+### Frontend
+
+Fallbacks requiring explicit policy:
+- Empty initial arrays in `src/data.ts` (startup scaffolding only).
+- Static catalog products when generated products are unavailable.
+- Title-based packaging inference (marked `inferred`).
+- Scryfall hierarchy fallback mappings (offline/startup recovery only).
+- Curated Special Chases and Scryfall discovery (artwork/editorial only).
+- Vendor input aliases (`"all"` → `"all_cheapest"`) and missing-vendor display behavior.
+- Default card-count/pack-count metadata.
+
+Allowed fallbacks: image URL construction from an existing Scryfall ID; display-only formatting/sorting; explicit neighboring card-price provenance from backend data; offline hierarchy recovery when generated hierarchy data is unavailable.
+
+Disallowed fallbacks: sealed market price used as singles EV; static product price used as generated EV; vendor prices generated by percentage multipliers; reprint prices generated by a global discount multiplier; quantiles generated in the browser from summary values; curated chase prices used as product valuation.
+
+## 10. Completed Improvements
+
+Long-standing:
 - Replaced synthetic frontend EV curves with backend-owned empirical data.
 - Removed browser-side composite Monte Carlo simulation.
 - Removed frontend vendor/reprint percentage multipliers.
 - Removed fabricated card, foil, and sealed-product EV fallbacks.
 - Added endpoint-preserving 100-point empirical curves.
-- Added booster endpoint validation against `evMin` and `evMax`.
-- Added cross-file output validation for products, chase cards, decks, reliability, and telemetry.
+- Added booster endpoint validation against `evMin`/`evMax`.
+- Added cross-file output validation for products, chase cards, decks, reliability, telemetry.
 - Added backend-generated product chase-card output.
 - Added deck card-price provenance and reliability telemetry.
 - Added atomic generated-data publication in the workflow.
 - Added audit artifact reporting and existence checks.
-- Added frontend and backend architecture review documents.
 
-## 8. Optimization Opportunities
+Most recent session (2026-09-15):
+- **Fixed a production-breaking runtime crash**: `BoosterDetailExplorer.tsx` referenced `setActiveBoosterName` in an effect before the corresponding `useState` was declared (temporal dead zone), causing a blank white page in production. Fixed by reordering the declaration.
+- **Fixed workflow deployment ordering**: Vercel deploy now runs from the staged `public/data/` working tree before the `data-sync` branch switch; added a "verify deployable generated data bundle" step that fails the workflow if `product_chase_cards.json` / `latest_pipeline_run.json` / `pipeline_execution_logs.json` are missing or empty.
+- **Fixed the legacy `all` vendor key** across the entire generated-data path: four one-off ingestion scripts (`ingest_mtgjson_precons.py`, `ingest_sld_decks.py`, `ingest_unsanctioned_decks.py`, `deck_price_provenance.py`) and one JS script (`ingest_final_fantasy_commander.cjs`) were writing `all` instead of `all_cheapest` (and `deck_price_provenance.py` incorrectly equated `all`/`all_average`, the same value). Fixed all writers to emit `all_cheapest` (as true minimum) and `all_average` (as true mean) separately. Added a normalization pass in `export_app_data.py` that migrates any already-persisted legacy `all` key to `all_cheapest` across the full `single_card_prices.json` index. Removed every remaining `all`-key read in generated-data consumers (`export_product_chase_cards.py`, `composite_evaluator.py`, `validate_composite_data.py`, `validate_pricing_and_ev.py`).
+- **Fixed the real architectural cause of empty chase cards**: `export_product_chase_cards.py` previously depended entirely on `single_card_prices.json` for pricing, but that file only ever indexed `contents.card` singles and precon/deck-seeded cards — never regular booster-sheet cards, which are the majority of real chase-card candidates. Rewrote the exporter to resolve prices directly from MySQL (`prices` + `lowest_prices` tables) for every discovered candidate uuid, mirroring the same tables `populate_booster_ev_to_db.py` already uses successfully.
+- **Fixed the Murders at Karlov Manor Play Booster curve bug**: an unfiltered seller-discovery step in `populate_booster_ev_to_db.py` allowed a stray provider string (observed as literally `"all"`) to be treated as a real named vendor, and a backwards `DELETE ... WHERE vendor = 'all_cheapest'` cleanup query deleted the correct canonical row instead of the legacy one. Added a `NAMED_VENDORS` allowlist and fixed the DELETE to target `'all'`.
+- **Added quick-test pipeline mode**: `QUICK_TEST_LIMIT` env var / `--quick-test-limit` CLI flag caps `populate_booster_ev_to_db.py` and `sync_live_sealed_prices.py` to N sets/products for fast iteration, with a hard workflow guard preventing quick-test output from ever being published.
+- **Consolidated documentation**: merged `PROJECT_REVIEW.md`, `backend/BACKEND_REVIEW.md`, and `FRONTEND_REVIEW.md` into this single file.
 
-Prioritize measured improvements over speculative refactors:
+## 11. Outstanding Data-Quality Diagnostics
 
-1. Measure stage runtime and memory for booster simulation and composite evaluation.
-2. Split `simulate_and_store()` into simulation, statistics, audit, and persistence responsibilities.
-3. Consolidate recursive product resolution between `ev_engine.py` and `composite_evaluator.py`.
-4. Reduce frontend recursive valuation to structural breakdown only.
-5. Load product chase data for the selected product rather than preloading unrelated product data.
-6. Cache immutable JSON indexes at the data-service boundary.
-7. Consider splitting large generated JSON files only after startup cost is measured.
-8. Add reproducibility metadata: source versions, commit SHA, sample count, audit flag, and seed policy.
+The most recent full pipeline run's `validate_pricing_and_ev.py` stage surfaced three categories of findings that have **not yet been triaged**. These are diagnostics, not confirmed bugs — but they must be investigated before the dataset can be considered fully trustworthy, per the "Known diagnostic warnings" principle: a workflow completing successfully does not by itself mean the data is fully correct.
 
-## 9. Future Development
+| Category | Count (last observed run) | Meaning | Status |
+|---|---:|---|---|
+| Booster Quantile Outlier Skews | 452 records | Quantile mean deviates >35% or <70% from the analytical `evAverage` for that booster/vendor/mode. | Not yet triaged. |
+| Product Contents vs EV Mismatches | 752 records | A sealed product's stored total EV does not reconcile with the EV implied by walking its `contents` (packs/cards/decks/variable slots). | Not yet triaged. |
+| Extreme ROI Pricing Anomalies | 569 records | Product ROI (EV vs. market price) is an extreme outlier, e.g. -99%+ or implausibly high. | Not yet triaged; at least one observed case (a Secret Lair bundle) may be a genuine low-EV curated product rather than a bug. |
 
-- Add a formal JSON schema layer for every generated output.
-- Add deterministic resolver fixtures and backend test coverage.
-- Add a fresh upstream preconstructed-deck bundle downloader.
-- Replace compatibility `all` aliases after generated data has migrated.
-- Move database schema creation into explicit migrations/setup.
-- Decide whether `sync_all_from_sqlite.py` remains supported.
-- Replace prototype composite tests with deterministic automated tests.
-- Add workflow status and latest-run diagnostics to the Admin Portal.
-- Add artifact retention/download instructions to project documentation.
-- Introduce a data-quality dashboard for missing prices, fallback rates, and unresolved products.
+Next action for each: extend `validate_pricing_and_ev.py`'s output (or a follow-up script) to dump the top N offending records per category with enough context (product ID, set, vendor, price mode, contents summary) to distinguish real bugs from expected outliers (e.g., intentionally low-value curated bundles).
 
-## 10. Legacy Cleanup Candidates
+## 12. Numbered Roadmap
 
-Delete only after reference and history checks:
-
-- `src/data.ts` empty startup exports after imports are migrated.
-- `scripts/ingest-wpn.ts` if the JavaScript importer is the only supported path.
-- Unreferenced ingestion scripts.
-- `sync_all_from_sqlite.py` if no SQLite workflow remains.
-- `test_composite_evaluation.py` after deterministic tests replace it.
-- `update_overrides.py` if no operational workflow uses it.
-- Empty or stray root files such as `new_file.txt`.
-- Local `dist/` when it is not intentionally deployed.
-
-## 11. Change Management
-
-For changes affecting generated data or valuation semantics:
-
-1. Update the owning backend/frontend review document.
-2. Update tests and validators first.
-3. Make the smallest implementation change.
-4. Run local checks that do not require MySQL.
-5. Run GitHub Actions with audit enabled when curves or source data change.
-6. Inspect generated artifacts before deployment.
-7. Commit source changes separately from generated data changes.
-8. Record any intentional fallback or compatibility behavior.
-
-Keep commits focused. A useful sequence is:
-
-```text
-backend-first migration
-frontend cleanup
-validation/workflow hardening
-legacy file deletion
-performance refactor
-```
-
-## 12. Numbered Project Roadmap
-
-This is the master development list. The backend and frontend review documents contain implementation detail; this section tracks cross-project work and acceptance evidence.
+This is the master development list — the source of truth for what is done, in progress, or still broken.
 
 Statuses:
-
 - `DONE`: implemented and locally or operationally verified.
 - `PARTIALLY_FIXED`: no active issue remains in the current validated path, but a broader follow-up or cross-layer validation remains advisable.
 - `IN PROGRESS`: active work with a known remaining slice.
@@ -379,11 +555,10 @@ Statuses:
 | DEV-02 | Empirical curves | P0 | DONE | Curves contain 100 points: exact minimum, 98 interior means, exact maximum. | Bucket tests, audit samples, monotonicity, and endpoint checks pass. |
 | DEV-03 | Publication safety | P0 | DONE | Generated data is staged and published atomically. | Failed workflow preserves the previous root `public/data/` snapshot. |
 | DEV-04 | Frontend fallback removal | P0 | DONE | Synthetic multipliers, invented card prices, market-price-as-EV, and browser simulations removed from active paths. | `npm.cmd run lint` and `npm.cmd run build` pass; no active multiplier references remain. |
-| DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`; curated Special Chases remain editorial. | Viewer renders backend snapshot and shows explicit empty state when missing. |
-| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. |
-| 
- | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Frontend rejects or warns when snapshots come from different pipeline runs. |
-| DEV-08 | Frontend data gateway | P0 | IN PROGRESS | Add `dataService.getProductMetrics(productId, vendor, priceMode, evBasis)`. | Main product views display values from one gateway and expose `source`/`pipelineRunId`. |
+| DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`, resolved directly from MySQL price tables; curated Special Chases remain editorial. | Viewer renders backend snapshot with explicit diagnostics when missing; exporter rewritten to price booster-sheet candidates, not just `single_card_prices.json` entries. |
+| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. Outstanding: triage the 452/752/569 diagnostic findings in Section 11. |
+| DEV-07 | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | `latest_pipeline_run.json` confirmed live with real run id/timestamp/status/stages. Still missing: a shared `sourceCommit` field and frontend rejection/warning when snapshots disagree on run identity. |
+| DEV-08 | Frontend data gateway | P0 | IN PROGRESS | Add `dataService.getProductMetrics(productId, vendor, priceMode, evBasis)`. | Implemented and consumed by `BoosterDetailExplorer.tsx`, exposing `source`/`pipelineRunId`. Still needed: adoption across other product views (breakdown table, hierarchy inspector, leaderboard). |
 | DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | Invalid snapshots produce structured warnings and an Admin Portal diagnostic. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |
 | DEV-11 | Recursive EV consolidation | P1 | IN PROGRESS | Reduce `productUtils.ts` and view helpers to structural breakdown; remove duplicate product valuation. | No component computes authoritative EV when a backend record exists. |
@@ -396,20 +571,19 @@ Statuses:
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
 | DEV-20 | Jumpstart collation | P0 | NEXT | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | A reviewed Jumpstart inventory identifies each set/booster/sheet mix; representative audit files show fixed land/content counts, correct variance, and agreement with MTGJSON configuration. |
-| DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation, but no active curve integrity issues were found in the GitHub Actions review. The website should continue to be checked against the latest snapshot when broader backend-to-frontend validation is required. | GitHub Actions review found no curve mismatches; future backend-to-frontend validation should compare snapshot identity, selected record key, quantile source, endpoint values, and no-data reason. |
-| DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it in the product detail and breakdown views without silent empty states or stale vendor-mode mismatches. | Representative products show the expected `product_chase_cards.json` cards for the selected vendor and price mode, and any missing record surfaces a clear diagnostic rather than an empty card grid. |
+| DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation. | GitHub Actions review found no frontend curve-selection mismatches. Note: a separate, real curve-integrity bug was found and fixed at the backend vendor-discovery layer — see DEV-23. |
+| DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Root cause (booster-sheet cards never priced, legacy `all` key) found and fixed in source (see DEV-05, DEV-23). Pending: a full non-quick-test pipeline run to confirm chase-card coverage improves broadly, not just for spot-checked products. |
+| DEV-23 | Booster vendor discovery integrity | P0 | IN PROGRESS | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | `NAMED_VENDORS` allowlist added to `populate_booster_ev_to_db.py` and `export_product_chase_cards.py`; DELETE query fixed to target `'all'` instead of `'all_cheapest'`. Pending: full pipeline run confirming MKM (and any other affected sets) now produce a real `all_cheapest` row. |
+| DEV-24 | Quick-test pipeline mode | P0 | DONE | Add an optional fast test-run mode that limits the two heaviest stages to N sets/products, never publishing. | `QUICK_TEST_LIMIT` implemented in `daily_update.py`, `populate_booster_ev_to_db.py`, `sync_live_sealed_prices.py`; workflow input added; publish/deploy steps gated off in quick-test mode. Validated via `--dry-run`; not yet exercised in a real GitHub Actions run. |
+| DEV-25 | Validator diagnostic triage | P1 | NEXT | Investigate the 452/752/569 findings from `validate_pricing_and_ev.py` (see Section 11) and classify each as a real bug or an expected outlier. | A documented triage pass with counts reduced to only genuinely-expected outliers, or follow-up fixes filed for confirmed bugs. |
 
 ### Frontend single-source-of-truth validation
 
 The frontend validation path should prove this chain:
 
 ```text
-GitHub pipeline
-  -> generated public/data snapshots
-  -> dataService validation and cache
-  -> one product metrics gateway
-  -> view components
-  -> displayed value
+GitHub pipeline -> generated public/data snapshots -> dataService validation and cache
+  -> one product metrics gateway -> view components -> displayed value
 ```
 
 For each representative product, validate:
@@ -425,18 +599,9 @@ For each representative product, validate:
 9. All loaded files share the same `pipelineRunId` and `schemaVersion`.
 10. Missing values produce an explicit unavailable state, never a synthetic estimate.
 
-Recommended representative fixtures:
+Recommended representative fixtures: one single booster; one booster box or bundle; one nested case; one preconstructed deck; one variable-content product; one product with a missing vendor or quantile record.
 
-- one single booster;
-- one booster box or bundle;
-- one nested case;
-- one preconstructed deck;
-- one variable-content product;
-- one product with a missing vendor or quantile record.
-
-### Immediate issue investigation order
-
-#### DEV-20: Jumpstart collation
+### DEV-20 investigation order: Jumpstart collation
 
 1. Enumerate all current Jumpstart set codes from `public/data/booster_ev.json` and the raw MTGJSON JSON source.
 2. Review each Jumpstart sheet mix and classify sheets as `fixed`, `variable`, or `unknown`.
@@ -448,38 +613,22 @@ Recommended representative fixtures:
 8. Add a deterministic Jumpstart fixture test and an audit assertion that fixed portions do not create artificial variance.
 9. Regenerate Jumpstart outputs in GitHub Actions and compare EV/variance against the raw MTGJSON configuration.
 
-#### DEV-21: Curve snapshot integrity
+## 13. Next 5 Steps
 
-Status: `PARTIALLY_FIXED`. The GitHub Actions curve checks did not reveal a current issue, so this item is no longer treated as an active bug. It should remain on the validation watchlist for broader backend-to-frontend checks when new data or UI changes are introduced.
+1. **Run a full (non-quick-test) pipeline with `audit_enabled=true`** to validate everything fixed this session end-to-end: the legacy `all`-key elimination, the MySQL-direct chase-card price resolution, and the MKM vendor-discovery fix. Confirm `product_chase_cards.json` coverage improves substantially beyond the previous ~1,689/4,127 products, and confirm MKM Play Booster (and other previously-`all`-tagged boosters) now produce a proper `all_cheapest` curve.
+2. **Triage the DEV-25 validator diagnostics** (452 quantile skews / 752 contents-vs-EV mismatches / 569 ROI anomalies). Extend `validate_pricing_and_ev.py` to dump enough per-record context to separate real bugs from expected outliers, and file follow-up fixes for anything confirmed.
+3. **Close out DEV-07 snapshot identity**: add a shared `sourceCommit` (git SHA) field to `latest_pipeline_run.json`, and make the frontend `getSnapshotIntegrityReport()` actually warn (not just log) when loaded files disagree on `pipelineRunId`/`schemaVersion`.
+4. **Expand DEV-08 gateway adoption**: migrate `ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, and `ArbitrageLeaderboard.tsx` to consume `dataService.getProductMetrics()` instead of calling `getCanonicalProductMetrics()` directly, so there is exactly one product-metrics code path exposing `source`/`pipelineRunId` everywhere.
+5. **Start DEV-20 Jumpstart collation** using the investigation order above — it is the last remaining P0 `NEXT` item and has a fully specified plan already.
 
-1. Add a development diagnostics record showing: product ID, set, booster, vendor, price mode, source file, snapshot timestamp/run ID, quantile length, first point, last point, and no-data reason.
-2. Compare the selected frontend record against `sealed_products.json` and `booster_ev.json` for the same key.
-3. Verify that `vendor` and `priceMode` normalization does not silently select `all_cheapest`, `tcgplayer`, or another row when the requested record is absent.
-4. Verify that `activeProduct.quantilesByVendor` is used for composite products and the exact `booster_ev.json` record is used for a single booster.
-5. Verify that the website is serving the current root `public/data` snapshot after the `data-sync` publication and Vercel deployment.
-6. Run the check once with `audit_enabled=false` and once with `audit_enabled=true`; the published curve must be identical for the same source data.
-7. Treat missing quantiles as an explicit data-contract failure with the selected key, not as a generic “No data available” message.
-8. Keep cross-layer validation in mind whenever future backend or frontend data refactors occur; the current status is “no issue found,” not “no further checks needed.”
+## 14. Vendor Add/Remove Procedure
 
-#### DEV-22: Chase-card visibility
+Vendor changes are cross-layer contract changes, not simple UI edits. Vendor definitions live in: `price_resolver.py`, `populate_booster_ev_to_db.py`, `composite_evaluator.py`, `export_product_chase_cards.py`, `load_deck_tables.py`, `ev_engine.py`, `vendorUtils.ts`, `types.ts`, `PackDistributionCurve.tsx`, `AdminPortal.tsx`, and this document.
 
-Status: `IN PROGRESS`. The product TOP 5 chase cards are still not appearing for some products even though the backend export path exists. This is a real issue rather than an accepted empty state, and it should be tracked as a product-data contract bug until the mismatch is resolved.
-
-1. Confirm the exact key mapping between `sealed_products.json` and `product_chase_cards.json` for a representative product list.
-2. Verify that the selected product resolves to the same canonical ID or UUID on both backend and frontend paths.
-3. Validate the vendor and price mode key format, such as `direct:tcgplayer`, `direct:cardmarket`, or `cheapest_reprint:all_cheapest`, before treating the record as missing.
-4. Add a diagnostic warning when a product has a valid backend record but no frontend entry for the current vendor/mode combination.
-5. Add a regression test for a known product with chase data to prevent silent empty-grid regressions.
-6. Keep the empty-state message truthful and explicit; it should explain that the selected product has no chase-card record, not merely that “no cards are available.”
-
-### Vendor add/remove procedure
-
-Vendor changes are cross-layer contract changes, not simple UI edits. The current codebase has vendor definitions in several places, including `price_resolver.py`, `populate_booster_ev_to_db.py`, `composite_evaluator.py`, `export_product_chase_cards.py`, `load_deck_tables.py`, `ev_engine.py`, `vendorUtils.ts`, `types.ts`, `PackDistributionCurve.tsx`, `AdminPortal.tsx`, and the review documents.
-
-#### Adding a vendor
+### Adding a vendor
 
 1. Confirm the upstream price feed exposes the vendor, finish keys, currency, and product/card identifiers.
-2. Add the vendor to one canonical backend vendor registry.
+2. Add the vendor to the canonical `NAMED_VENDORS` allowlist (`populate_booster_ev_to_db.py` and `export_product_chase_cards.py`) and any other backend vendor registry.
 3. Update price ingestion and resolver logic.
 4. Include it in booster simulation matrices and seller discovery rules.
 5. Include it in composite fixed-card and variable-slot resolution.
@@ -489,19 +638,52 @@ Vendor changes are cross-layer contract changes, not simple UI edits. The curren
 9. Add representative tests for exact, finish fallback, vendor fallback, reprint, and unpriced cases.
 10. Regenerate data through GitHub Actions and verify the new vendor appears consistently in `booster_ev.json`, `sealed_products.json`, `pricing_reliability.json`, `product_chase_cards.json`, and deck provenance.
 
-#### Removing a vendor
+### Removing a vendor
 
 1. Confirm no active price feed, generated snapshot, workflow, or UI depends on the vendor.
 2. Decide whether historical generated data remains readable; preserve a compatibility alias only if required.
-3. Remove it from the canonical registry, resolver loops, exporter lists, validation expectations, and frontend controls.
+3. Remove it from the `NAMED_VENDORS` allowlist, resolver loops, exporter lists, validation expectations, and frontend controls.
 4. Remove or migrate stored provenance records using that vendor.
 5. Regenerate all snapshots and verify no records or UI controls reference the removed key.
 6. Remove compatibility code only after one successful GitHub workflow and deployment.
 
-#### Required vendor invariants
+### Required vendor invariants
 
 - Named vendors must never be silently replaced by another named vendor.
-- `all_cheapest` and `all_average` must be recomputed from the current named-vendor registry.
+- `all_cheapest` and `all_average` must be recomputed from the current named-vendor registry — never sourced from a raw provider string.
 - A missing vendor must be represented as unavailable or an explicit fallback status.
 - Reliability metrics must distinguish direct exactness from cheapest-reprint resolution.
 - Every generated vendor record must use one canonical key and one documented price mode.
+- Any provider string discovered dynamically from a price feed must pass through the `NAMED_VENDORS` allowlist before being trusted as a vendor.
+
+## 15. Change Management
+
+For changes affecting generated data or valuation semantics:
+
+1. Update this document.
+2. Update tests and validators first.
+3. Make the smallest implementation change.
+4. Run local checks that do not require MySQL.
+5. Run GitHub Actions with audit enabled when curves or source data change (use `quick_test_limit` first for a fast smoke test, then a full run).
+6. Inspect generated artifacts before deployment.
+7. Commit source changes separately from generated data changes.
+8. Record any intentional fallback or compatibility behavior.
+
+Keep commits focused. A useful sequence: backend-first migration → frontend cleanup → validation/workflow hardening → legacy file deletion → performance refactor.
+
+## 16. Legacy Cleanup Candidates
+
+Delete only after reference and history checks:
+
+- `src/data.ts` empty startup exports after imports are migrated.
+- `scripts/ingest-wpn.ts` if the JavaScript importer is the only supported path.
+- Unreferenced ingestion scripts.
+- `sync_all_from_sqlite.py` if no SQLite workflow remains.
+- `test_composite_evaluation.py` after deterministic tests replace it.
+- `update_overrides.py` if no operational workflow uses it.
+- Empty or stray root files such as `new_file.txt`.
+- Local `dist/` when it is not intentionally deployed.
+- The uncalled synthetic product factory in `RelatedProductsHierarchy.tsx` (after final reference validation).
+- Obsolete product candidate functions in `chaseCardsService.ts`.
+
+Do not delete yet: `types.ts`, `ecommerceBoosterData.ts`, `ev_engine.py`, `productUtils.ts`, `chaseCardsService.ts`, `dataService.ts`, `setHierarchyUtils.ts`, generated JSON files required by the frontend.

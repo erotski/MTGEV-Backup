@@ -440,10 +440,10 @@ def export_all():
                         a['packCount'] = 0
                         a['cardCount'] = len(cards)
                         a['unitEvMin'] = 0.0
-                        a['unitEvAvg'] = "0.00"
-                        a['unitEvMid90'] = "0.00"
+                        a['unitEvAvg'] = 0.0
+                        a['unitEvMid90'] = 0.0
                         a['unitEvMax'] = 0.0
-                        a['completePct'] = "100.00"
+                        a['completePct'] = 100.0
                         a['updatedAt'] = ""
                         a['contents'] = contents
                         a['totalEvMin'] = round(singles_ev, 2)
@@ -510,10 +510,10 @@ def export_all():
             a['boosterName'] = matched_booster
             a['packCount'] = pack_count
             a['unitEvMin'] = pack_min
-            a['unitEvAvg'] = str(pack_ev)
-            a['unitEvMid90'] = str(pack_mid)
+            a['unitEvAvg'] = pack_ev
+            a['unitEvMid90'] = pack_mid
             a['unitEvMax'] = pack_max
-            a['completePct'] = str(ev_info.get("exact_match_pct", "100.00"))
+            a['completePct'] = float(ev_info.get("exact_match_pct", 100.0) or 100.0)
             a['updatedAt'] = str(ev_info.get("updated_at") or "")
             a['contents'] = contents
             a['totalEvMin'] = box_ev_min

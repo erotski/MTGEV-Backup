@@ -8,6 +8,7 @@ import { BoosterDetailExplorer } from './components/BoosterDetailExplorer';
 import { SpecialChaseShowcase } from './components/SpecialChaseShowcase';
 import { AdminPortal } from './components/AdminPortal';
 import { GlobalControlFooter } from './components/GlobalControlFooter';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database, Award } from 'lucide-react';
 
 export default function App() {
@@ -164,57 +165,65 @@ export default function App() {
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         {/* View Switcher */}
         {activeTab === 'arbitrage' && (
-          <ArbitrageLeaderboard
-            records={arbitrageRecords}
-            onSelectSet={handleSelectSetFromArbitrage}
-            priceMode={priceMode}
-            onPriceModeChange={setPriceMode}
-            vendor={vendor}
-            onVendorChange={setVendor}
-            evBasis={evBasis}
-            onEvBasisChange={setEvBasis}
-            boosterEvMap={boosterEvMap}
-            pricingReliability={pricingReliability}
-          />
+          <ErrorBoundary label="Products Overview">
+            <ArbitrageLeaderboard
+              records={arbitrageRecords}
+              onSelectSet={handleSelectSetFromArbitrage}
+              priceMode={priceMode}
+              onPriceModeChange={setPriceMode}
+              vendor={vendor}
+              onVendorChange={setVendor}
+              evBasis={evBasis}
+              onEvBasisChange={setEvBasis}
+              boosterEvMap={boosterEvMap}
+              pricingReliability={pricingReliability}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'explorer' && (
-          <BoosterDetailExplorer
-            selectedSetCode={selectedSetCode}
-            onSelectSetCode={setSelectedSetCode}
-            availableSets={availableSets}
-            boosterRecords={allBoosterRecords}
-            priceMode={priceMode}
-            onPriceModeChange={setPriceMode}
-            vendor={vendor}
-            onVendorChange={setVendor}
-            evBasis={evBasis}
-            onEvBasisChange={setEvBasis}
-            initialProductId={initialProductId}
-            onClearInitialProductId={() => setInitialProductId('')}
-          />
+          <ErrorBoundary label="Booster EV & Chase Cards">
+            <BoosterDetailExplorer
+              selectedSetCode={selectedSetCode}
+              onSelectSetCode={setSelectedSetCode}
+              availableSets={availableSets}
+              boosterRecords={allBoosterRecords}
+              priceMode={priceMode}
+              onPriceModeChange={setPriceMode}
+              vendor={vendor}
+              onVendorChange={setVendor}
+              evBasis={evBasis}
+              onEvBasisChange={setEvBasis}
+              initialProductId={initialProductId}
+              onClearInitialProductId={() => setInitialProductId('')}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'admin' && (
-          <AdminPortal
-            onNavigateToExplorer={handleNavigateToExplorerFromAdmin}
-            vendor={vendor}
-            onVendorChange={setVendor}
-            priceMode={priceMode}
-            onPriceModeChange={setPriceMode}
-          />
+          <ErrorBoundary label="Admin Portal">
+            <AdminPortal
+              onNavigateToExplorer={handleNavigateToExplorerFromAdmin}
+              vendor={vendor}
+              onVendorChange={setVendor}
+              priceMode={priceMode}
+              onPriceModeChange={setPriceMode}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'chase' && (
-          <SpecialChaseShowcase
-            onSelectProduct={(setCode, productId) => {
-              setSelectedSetCode(resolveToMainSetCode(setCode));
-              setInitialProductId(productId);
-              setActiveTab('explorer');
-            }}
-            vendor={vendor}
-            priceMode={priceMode}
-          />
+          <ErrorBoundary label="Special Chases">
+            <SpecialChaseShowcase
+              onSelectProduct={(setCode, productId) => {
+                setSelectedSetCode(resolveToMainSetCode(setCode));
+                setInitialProductId(productId);
+                setActiveTab('explorer');
+              }}
+              vendor={vendor}
+              priceMode={priceMode}
+            />
+          </ErrorBoundary>
         )}
       </main>
 

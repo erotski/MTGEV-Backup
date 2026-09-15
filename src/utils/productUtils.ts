@@ -970,12 +970,12 @@ export function resolveRecursiveProductAudit(
             ? Number((childAudit.totalMaxEv / count).toFixed(2))
             : 0;
         } else if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = Number(childArb.totalEvAvg.toFixed(2));
-          unitMin = Number((childArb.unitEvMin || 0).toFixed(2));
-          unitMin5 = Number((childArb.unitEvMin5 || 0).toFixed(2));
-          unitMid90 = Number((childArb.unitEvMid90 || 0).toFixed(2));
-          unitMax5 = Number((childArb.unitEvMax5 || 0).toFixed(2));
-          unitMax = Number((childArb.unitEvMax || 0).toFixed(2));
+          unitEv = Number(Number(childArb.totalEvAvg).toFixed(2));
+          unitMin = Number(Number(childArb.unitEvMin || 0).toFixed(2));
+          unitMin5 = Number(Number(childArb.unitEvMin5 || 0).toFixed(2));
+          unitMid90 = Number(Number(childArb.unitEvMid90 || 0).toFixed(2));
+          unitMax5 = Number(Number(childArb.unitEvMax5 || 0).toFixed(2));
+          unitMax = Number(Number(childArb.unitEvMax || 0).toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
