@@ -660,6 +660,17 @@ def run_composite_evaluator(target_set=None):
         p["totalEvMin"] = primary_stats["min"]
         p["totalEvMax"] = primary_stats["max"]
         p["quantilesByVendor"] = quantiles_by_vendor
+        p["metricsByVendor"] = {
+            vendor: {
+                "mean": stats["mean"],
+                "median": stats["median"],
+                "p05": stats["p05"],
+                "p95": stats["p95"],
+                "min": stats["min"],
+                "max": stats["max"],
+            }
+            for vendor, stats in vendor_stats.items()
+        }
         p["breakevenPercentile"] = breakeven_p
         p["evScore"] = ev_score
         

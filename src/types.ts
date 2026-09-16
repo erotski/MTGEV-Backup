@@ -37,6 +37,31 @@ export interface PricingReliability {
   sourceRows: number;
 }
 
+export interface ProductMetricsRecord {
+  productUuid: string;
+  boxName?: string;
+  setCode?: string;
+  setName?: string;
+  category?: string;
+  marketPrice: number;
+  totalEvMin: number;
+  totalEvAvg: number;
+  totalEvMid90: number;
+  totalEvMax: number;
+  effectiveEv: number;
+  effectiveEvByBasis?: Record<string, number>;
+  profitUsd: number;
+  profitUsdByBasis?: Record<string, number>;
+  roiPct: number;
+  roiPctByBasis?: Record<string, number>;
+  evScore?: number | null;
+  packCount: number;
+  cardCount: number;
+  vendor: Vendor | string;
+  priceMode: PriceMode;
+  provenance: Record<string, any>;
+}
+
 export interface PipelineRunRecord {
   id?: string;
   timestamp?: string;

@@ -1,4 +1,4 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord, ProductMetricsRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
 import { getCanonicalProductMetrics } from '../utils/productUtils';
 import { 
@@ -140,6 +140,17 @@ class DataService {
 
   public getBoosterEvsSync(): Record<string, BoosterEVRecord[]> | null {
     return this.boosterEvCache;
+  }
+
+  public async getProductMetricsSnapshot(): Promise<ProductMetricsRecord[]> {
+    try {
+      const response = await fetch('/data/product_metrics.json', { cache: 'no-cache' });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data) ? data as ProductMetricsRecord[] : [];
+    } catch {
+      return [];
+    }
   }
 
   public async getProductChaseCards(): Promise<Record<string, any>> {

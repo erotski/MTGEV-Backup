@@ -42,6 +42,7 @@ REQUIRED_OUTPUTS = (
     "sealed_products.json",
     "booster_ev.json",
     "arbitrage_leaderboard.json",
+    "product_metrics.json",
     "single_card_prices.json",
     "product_chase_cards.json",
     "pricing_reliability.json",
@@ -82,6 +83,8 @@ SCRIPTS = [
     ("load_deck_tables.py",               "Load preconstructed decks into MySQL"),
     ("export_product_chase_cards.py", "Export vendor-aware product TOP 5 chase cards"),
     ("composite_evaluator.py",           "Evaluate composite products & quantiles (10,000 MC samples)"),
+    ("export_product_metrics.py",        "Export complete-product metrics by vendor"),
+    ("test_product_metrics_contract.py", "Validate complete-product metrics contract"),
     ("validate_pricing_and_ev.py",       "Run automated quality and pricing/EV validation audit")
 ]
 
@@ -228,6 +231,7 @@ def validate_output_semantics() -> tuple[bool, str]:
     for index, product in enumerate(sealed_products):
         if not isinstance(product, dict):
             return False, f"sealed_products.json[{index}] must be an object"
+
         product_id = product.get("id") or product.get("uuid")
         if not product_id:
             return False, f"sealed_products.json[{index}] is missing id/uuid"
@@ -244,6 +248,36 @@ def validate_output_semantics() -> tuple[bool, str]:
             error = validate_quantiles(values, f"sealed_products.json[{index}].quantilesByVendor.{vendor}")
             if error:
                 return False, error
+
+    product_metrics = load_required("product_metrics.json")
+    if not isinstance(product_metrics, list):
+        return False, "product_metrics.json must contain an array"
+    metric_keys = {
+        "productUuid", "marketPrice", "totalEvMin", "totalEvAvg", "totalEvMid90",
+        "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount",
+        "vendor", "priceMode", "provenance", "effectiveEvByBasis", "profitUsdByBasis", "roiPctByBasis",
+    }
+    metric_identity_keys = set()
+    for index, metric in enumerate(product_metrics):
+        if not isinstance(metric, dict):
+            return False, f"product_metrics.json[{index}] must be an object"
+        missing = metric_keys - metric.keys()
+        if missing:
+            return False, f"product_metrics.json[{index}] is missing {sorted(missing)}"
+        if not metric.get("productUuid") or not metric.get("vendor") or not metric.get("priceMode"):
+            return False, f"product_metrics.json[{index}] is missing product identity or vendor/mode"
+        for field in ("marketPrice", "totalEvMin", "totalEvAvg", "totalEvMid90", "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount"):
+            if not isinstance(metric[field], (int, float)):
+                return False, f"product_metrics.json[{index}].{field} is not numeric"
+        provenance = metric["provenance"]
+        if not isinstance(provenance, dict) or provenance.get("source") != "pipeline" or not provenance.get("schemaVersion"):
+            return False, f"product_metrics.json[{index}] has invalid provenance"
+        if metric["productUuid"] not in product_ids:
+            return False, f"product_metrics.json[{index}] references unknown product {metric['productUuid']}"
+        metric_key = (metric["productUuid"], metric["vendor"], metric["priceMode"])
+        if metric_key in metric_identity_keys:
+            return False, f"product_metrics.json contains duplicate metric key {metric_key}"
+        metric_identity_keys.add(metric_key)
 
     product_ids = {
         product.get("id") or product.get("uuid")

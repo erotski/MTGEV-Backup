@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
-import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, EvBasis, PricingReliability } from './types';
+import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, ProductMetricsRecord, EvBasis, PricingReliability } from './types';
 import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
 import { ArbitrageLeaderboard } from './components/ArbitrageLeaderboard';
@@ -10,6 +10,18 @@ import { AdminPortal } from './components/AdminPortal';
 import { GlobalControlFooter } from './components/GlobalControlFooter';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database, Award } from 'lucide-react';
+
+function getLatestReleasedSet(sets: SetOption[]): SetOption | undefined {
+  const today = new Date().toISOString().slice(0, 10);
+  const releasedMainSets = sets.filter((set) => {
+    if (set.isCommanderSubSet || !set.releaseDate) return false;
+    return set.releaseDate.slice(0, 10) <= today;
+  });
+
+  return releasedMainSets.sort((a, b) =>
+    b.releaseDate.localeCompare(a.releaseDate)
+  )[0] || sets.find((set) => !set.isCommanderSubSet) || sets[0];
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'arbitrage' | 'explorer' | 'chase' | 'admin'>('arbitrage');
@@ -24,6 +36,7 @@ export default function App() {
   const [arbitrageRecords, setArbitrageRecords] = useState<BoxArbitrageRecord[]>(INITIAL_BOX_ARBITRAGE);
   const [boosterEvMap, setBoosterEvMap] = useState<Record<string, BoosterEVRecord[]>>(INITIAL_BOOSTER_EV_DATA);
   const [pricingReliability, setPricingReliability] = useState<Record<string, PricingReliability>>({});
+  const [productMetrics, setProductMetrics] = useState<ProductMetricsRecord[]>([]);
   const [isLiveDatabase, setIsLiveDatabase] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -31,23 +44,18 @@ export default function App() {
     async function loadPipelineData() {
       try {
         setIsLoading(true);
-        const [setsRes, arbsRes, evRes, reliabilityRes] = await Promise.all([
+        const [setsRes, arbsRes, evRes, reliabilityRes, productMetricsRes] = await Promise.all([
           dataService.getSets(),
           dataService.getArbitrageRecords(),
           dataService.getBoosterEVs(),
           dataService.getPricingReliability(),
+          dataService.getProductMetricsSnapshot(),
         ]);
 
         if (setsRes.sets && setsRes.sets.length > 0) {
           setAvailableSets(setsRes.sets);
           setIsLiveDatabase(setsRes.isLive);
-          setSelectedSetCode((prev) => {
-            const resolved = resolveToMainSetCode(prev);
-            const exists = setsRes.sets.some((s) => s.code === resolved);
-            if (exists) return resolved;
-            const firstMain = setsRes.sets.find((s) => !s.isCommanderSubSet);
-            return firstMain ? firstMain.code : setsRes.sets[0].code;
-          });
+          setSelectedSetCode(getLatestReleasedSet(setsRes.sets)?.code || 'MH3');
         }
         if (arbsRes && arbsRes.length > 0) {
           setArbitrageRecords(arbsRes);
@@ -57,6 +65,9 @@ export default function App() {
         }
         if (reliabilityRes && Object.keys(reliabilityRes).length > 0) {
           setPricingReliability(reliabilityRes);
+        }
+        if (productMetricsRes && productMetricsRes.length > 0) {
+          setProductMetrics(productMetricsRes);
         }
       } catch (err) {
         console.warn('Error loading dynamic pipeline data:', err);
@@ -177,6 +188,7 @@ export default function App() {
               onEvBasisChange={setEvBasis}
               boosterEvMap={boosterEvMap}
               pricingReliability={pricingReliability}
+              productMetrics={productMetrics}
             />
           </ErrorBoundary>
         )}
@@ -194,6 +206,7 @@ export default function App() {
               onVendorChange={setVendor}
               evBasis={evBasis}
               onEvBasisChange={setEvBasis}
+              productMetrics={productMetrics}
               initialProductId={initialProductId}
               onClearInitialProductId={() => setInitialProductId('')}
             />

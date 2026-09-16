@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, EvBasis, PricingReliability } from '../types';
+import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, ProductMetricsRecord, EvBasis, PricingReliability } from '../types';
 import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
-import { calculateEvScore, getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
-import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
-import { getCanonicalProductMetrics, findMatchingPreconDeck } from '../utils/productUtils';
+import { getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
+import { findMatchingPreconDeck } from '../utils/productUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -41,6 +40,7 @@ interface ArbitrageLeaderboardProps {
   onEvBasisChange?: (basis: EvBasis) => void;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
   pricingReliability?: Record<string, PricingReliability>;
+  productMetrics?: ProductMetricsRecord[];
 }
 
 export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
@@ -54,6 +54,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   onEvBasisChange,
   boosterEvMap,
   pricingReliability = {},
+  productMetrics = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
@@ -186,108 +187,36 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     return 0;
   };
 
-  // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
+  // Products Overview displays backend-owned complete-product metrics only.
   const adjustedRecords = useMemo(() => {
-    // Fast path: if default options (direct, all) are selected, records in arbitrage_leaderboard.json
-    // are already the canonical metrics. We only need to adjust effectiveEv/profitUsd/roiPct per evBasis.
-    const isDefaultPricing = priceMode === 'direct' && (vendor === 'all' || vendor === 'all_cheapest');
-    if (isDefaultPricing) {
-      return records.map((r) => {
-        let effectiveEv = r.totalEvAvg || 0;
-        if (evBasis === 'min') effectiveEv = r.totalEvMin || 0;
-        else if (evBasis === 'mid90') effectiveEv = r.totalEvMid90 || effectiveEv;
-        else if (evBasis === 'max') effectiveEv = r.totalEvMax || 0;
-
-        const profitUsd = Number((effectiveEv - (r.marketPrice || 0)).toFixed(2));
-        const roiPct = (r.marketPrice || 0) > 0 ? Number(((profitUsd / r.marketPrice) * 100).toFixed(2)) : 0;
-        const isPrecon = (r.category || '').toLowerCase().includes('deck') || (r.packCount === 0);
-        const evScore = calculateEvScore(
-          r.marketPrice,
-          r.totalEvAvg,
-          r.totalEvMin,
-          r.totalEvMid90,
-          r.totalEvMax,
-          isPrecon
-        );
-
-        return {
-          ...r,
-          effectiveEv,
-          profitUsd,
-          roiPct,
-          evScore,
-        };
-      });
-    }
-
-    return records.map((r) => {
-      // Single canonical source of truth for containment, breakdown, and EV calculation
-      const metrics = getCanonicalProductMetrics(
-        r,
-        recordByUuid,
-        recordByUuidObj,
-        boosterEvMap || {},
-        preconDecks,
-        singleCardPrices,
-        vendor,
-        priceMode,
-        evBasis
-      );
-
-      const adjustedTotalPrice = r.marketPrice;
-      const adjustedTotalEv = metrics.estimatedEv;
-      const adjustedTotalMin = metrics.minEv;
-      const adjustedTotalMid90 = metrics.mid90Ev;
-      const adjustedTotalMax = metrics.maxEv;
-      const effectiveEv = metrics.effectiveEv;
-      const profitUsd = metrics.netSpread;
-      const roiPct = metrics.roiPct;
-      const pCount = metrics.packsCount;
-      const cCount = metrics.cardCount;
-      const boosterName = metrics.primaryBoosterName;
-      const fixedBaseEv = metrics.fixedBaseEv || 0;
-
-      // Unit EV covers only the per-pack (variable) contribution. A fixed base
-      // (e.g. an included promo card or precon deck) is never divided across
-      // packs, matching the Total EV / Unit EV definitions in PROJECT_REVIEW.md.
-      const toUnitEv = (totalForBasis: number) =>
-        pCount > 0 ? Number((Math.max(0, totalForBasis - fixedBaseEv) / pCount).toFixed(2)) : 0;
-      const adjustedUnitEv = toUnitEv(adjustedTotalEv);
-      const adjustedUnitMin = toUnitEv(adjustedTotalMin);
-      const adjustedUnitMid90 = toUnitEv(adjustedTotalMid90);
-      const adjustedUnitMax = toUnitEv(adjustedTotalMax);
-
-      const isPrecon = (r.category || '').toLowerCase().includes('deck') || pCount === 0;
-      const evScore = calculateEvScore(
-        adjustedTotalPrice,
-        adjustedTotalEv,
-        adjustedTotalMin,
-        adjustedTotalMid90,
-        adjustedTotalMax,
-        isPrecon
-      );
-
-      return {
-        ...r,
-        boosterName,
-        packCount: pCount,
-        cardCount: cCount,
-        marketPrice: adjustedTotalPrice,
-        unitEvMin: adjustedUnitMin,
-        unitEvAvg: adjustedUnitEv,
-        unitEvMid90: adjustedUnitMid90,
-        unitEvMax: adjustedUnitMax,
-        totalEvMin: adjustedTotalMin,
-        totalEvAvg: adjustedTotalEv,
-        totalEvMid90: adjustedTotalMid90,
-        totalEvMax: adjustedTotalMax,
+    const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+    const metricsByProduct = new Map(
+      productMetrics
+        .filter((metric) => metric.vendor === selectedVendor && metric.priceMode === priceMode)
+        .map((metric) => [metric.productUuid, metric])
+    );
+    return records.flatMap((record) => {
+      const metric = metricsByProduct.get(record.productUuid || record.id || '');
+      if (!metric) return [];
+      const effectiveEv = metric.effectiveEvByBasis?.[evBasis] ?? metric.effectiveEv;
+      const profitUsd = metric.profitUsdByBasis?.[evBasis] ?? metric.profitUsd;
+      const roiPct = metric.roiPctByBasis?.[evBasis] ?? metric.roiPct;
+      return [{
+        ...record,
+        marketPrice: metric.marketPrice,
+        packCount: metric.packCount,
+        cardCount: metric.cardCount,
+        totalEvMin: metric.totalEvMin,
+        totalEvAvg: metric.totalEvAvg,
+        totalEvMid90: metric.totalEvMid90,
+        totalEvMax: metric.totalEvMax,
         effectiveEv,
-        evScore,
         profitUsd,
         roiPct,
-      };
+        evScore: metric.evScore ?? undefined,
+      }];
     });
-  }, [records, priceMode, vendor, evBasis, boosterEvMap, recordByUuid, recordByUuidObj, preconDecks, singleCardPrices]);
+  }, [records, productMetrics, vendor, priceMode, evBasis]);
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;
