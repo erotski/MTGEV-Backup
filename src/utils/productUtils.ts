@@ -1497,7 +1497,7 @@ export function getCanonicalProductMetrics(
     maxEv,
     effectiveEv,
     cardCount,
-    packsCount: packsCount > 0 ? packsCount : 1,
+    packsCount,
     primaryBoosterName,
     auditResult: audit,
     netSpread,

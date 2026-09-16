@@ -1211,7 +1211,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                       <th className="p-3">Simulated EV</th>
                       <th className="p-3">Margin ($)</th>
                       <th className="p-3">EV ROI (%)</th>
-                      <th className="p-3">Pack Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -1297,17 +1296,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                               </span>
                             ) : (
                               <span className="text-slate-400 font-normal text-[11px]">N/A</span>
-                            )}
-                          </td>
-                          <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
-                            {p.packsCount > 0 && p.marketPrice > 0 ? (
-                              `$${(p.marketPrice / p.packsCount).toFixed(2)}/pack`
-                            ) : p.cardCount === 1 && p.marketPrice > 0 ? (
-                              `$${p.marketPrice.toFixed(2)}/card`
-                            ) : p.cardCount && p.cardCount > 1 && p.marketPrice > 0 ? (
-                              `$${(p.marketPrice / p.cardCount).toFixed(2)}/card`
-                            ) : (
-                              <span className="text-slate-400 text-[11px]">—</span>
                             )}
                           </td>
                         </tr>

@@ -573,7 +573,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const productPacksCount =
     productAudit && productAudit.totalPacks > 0
       ? productAudit.totalPacks
-      : activeProduct?.packsCount || 1;
+      : activeProduct?.packsCount ?? (activeBooster ? 1 : 0);
 
   const productTotalCards =
     productAudit && productAudit.totalCards > 0
