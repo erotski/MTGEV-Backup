@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { getCardProductAvailability, getCardImageUrl } from '../services/chaseCardsService';
+import { getCardProductAvailability, getScryfallImageUrl } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   Sparkles,
@@ -16,9 +16,77 @@ import {
   X,
   Package,
   Layers,
+  RotateCw,
 } from 'lucide-react';
 
 const lower = (value: unknown) => String(value ?? '').toLowerCase();
+
+interface FlippableCardImageProps {
+  card: ChaseCard;
+  version?: 'normal' | 'large';
+}
+
+const FlippableCardImage = ({ card, version = 'normal' }: FlippableCardImageProps) => {
+  const [showBack, setShowBack] = useState(false);
+  const frontUrl = getScryfallImageUrl(card.scryfallId, version);
+  const backUrl = getScryfallImageUrl(card.scryfallCardBackId, version, 'back');
+
+  if (!frontUrl) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-100 text-slate-400">
+        <Sparkles className="w-6 h-6 text-slate-300 mb-1" />
+        <span className="text-[10px] font-medium">{card.name}</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="absolute inset-0" style={{ perspective: '1000px' }}>
+        <div
+          className="relative w-full h-full transition-transform duration-500"
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          }}
+        >
+          <img
+            src={frontUrl}
+            alt={`${card.name} front`}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ backfaceVisibility: 'hidden' }}
+          />
+          {backUrl && (
+            <img
+              src={backUrl}
+              alt={`${card.name} back`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            />
+          )}
+        </div>
+      </div>
+      {backUrl && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            setShowBack((current) => !current);
+          }}
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-950/85 text-white text-[9px] font-bold shadow-sm hover:bg-slate-950 transition cursor-pointer"
+          aria-label={`Show ${showBack ? 'front' : 'back'} face of ${card.name}`}
+        >
+          <RotateCw className="w-3 h-3" />
+          {showBack ? 'Front' : 'Back'}
+        </button>
+      )}
+    </>
+  );
+};
 
 interface ProductChaseCardsViewerProps {
   product: CatalogPackProduct;
@@ -282,7 +350,6 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
               ? card.priceFoil
               : undefined;
 
-            const cardImg = getCardImageUrl(card, 'normal');
             const isEtched = card.finish === 'etched';
             const isCardFoil = isEtched || card.finish === 'foil' || lower(product.displayName).includes('foil');
 
@@ -295,26 +362,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 <div>
                   {/* Card Art */}
                   <div className="aspect-[5/7] w-full rounded-lg overflow-hidden bg-slate-200 relative mb-2 border border-slate-200 shadow-2xs">
-                    {cardImg ? (
-                      <img
-                        src={cardImg}
-                        alt={card.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          if (card.scryfallId && !target.src.includes('api.scryfall.com')) {
-                            target.src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-100 text-slate-400">
-                        <Sparkles className="w-6 h-6 text-slate-300 mb-1" />
-                        <span className="text-[10px] font-medium">{card.name}</span>
-                      </div>
-                    )}
+                    <FlippableCardImage card={card} />
 
                     {/* Rainbow Flat Surface Holographic Foil Sheen */}
                     {isCardFoil && (
@@ -444,25 +492,9 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
             {(() => {
               const isEtchedZoom = zoomedCard.finish === 'etched';
                   const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil');
-              const zoomImg = getCardImageUrl(zoomedCard, 'large');
-
               return (
                 <div className="aspect-[5/7] w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-lg relative">
-                  <img
-                    src={zoomImg}
-                    alt={zoomedCard.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (zoomedCard.scryfallId && !target.src.includes('api.scryfall.com')) {
-                        target.src = `https://api.scryfall.com/cards/${zoomedCard.scryfallId}?format=image&version=large`;
-                      } else if (zoomedCard.number) {
-                        target.src = `https://api.scryfall.com/cards/${(zoomedCard.setCode || setCode || 'sld').toLowerCase()}/${zoomedCard.number}?format=image&version=large`;
-                      }
-                    }}
-                  />
+                  <FlippableCardImage card={zoomedCard} version="large" />
 
                   {/* Rainbow Holographic Foil Sheen */}
                   {isFoilZoom && (
@@ -518,7 +550,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Market Price:</span>
                 <span className="font-mono font-black text-emerald-600">
-                  ${zoomedCard.priceNormal.toFixed(2)}
+                  ${(zoomedCard.priceNormal ?? zoomedCard.price ?? 0).toFixed(2)}
                 </span>
               </div>
               {zoomedCard.priceFoil && (

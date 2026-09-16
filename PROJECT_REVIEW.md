@@ -229,6 +229,7 @@ A borrowed card price must remain distinguishable from an exact source price. Se
 - Do not apply synthetic reprint multipliers.
 - Do not generate quantiles from averages or fixed percentage bands.
 - Missing vendor, card, finish, or quantile data must remain explicit and observable.
+- Chase-card artwork may use only UUID-derived Scryfall image URLs. Do not use card name, set code, or collector number as an image lookup fallback.
 - Neighboring card-price borrowing is allowed only with provenance.
 - Never write or read a literal `all` vendor key in generated JSON (`prices`, `quantilesByVendor`, DB `vendor` columns). Always use `all_cheapest`.
 - Any seller/provider string discovered from a raw price feed must be filtered through the `NAMED_VENDORS` allowlist before being treated as a vendor. Never trust an unfiltered provider string from `AllPricesToday`.
@@ -350,6 +351,26 @@ pipeline_execution_logs.json, latest_pipeline_run.json
 
 `daily_update.py` runs three validation passes before publication: `validate_output_bundle()` (file existence/JSON syntax), `validate_output_semantics()` (shape, numeric finiteness, unique product IDs, 100-bucket monotonicity, booster endpoint agreement with `evMin`/`evMax`, chase-card product-id cross-references), and `validate_telemetry_outputs()` (after the run record is written).
 
+### Important MySQL tables and columns
+
+The temporary MySQL database is imported from MTGJSON's `AllPrintings.sql` and extended by pipeline stages. Do not assume fields from MTGJSON's JSON representation are flattened into `cards`; join normalized tables by UUID.
+
+| Table | Important columns | Purpose |
+|---|---|---|
+| `cards` | `uuid`, `name`, `setCode`, `number`, `rarity`, `types`, `finishes`, `layout`, `isOnlineOnly` | Printed-card identity and display metadata. |
+| `cardIdentifiers` | `uuid`, `scryfallId`, `scryfallIllustrationId`, `scryfallCardBackId` | External identifiers and front/back artwork identity; join with `cards.uuid`. |
+| `prices` | `uuid`, `provider`, `finish`, `price`, `source`, `priceType` | Direct printed-card vendor prices. |
+| `lowest_prices` | `uuid`, `seller`, `cardfinish`, `price` | Precomputed cheapest-reprint prices. |
+| `setBoosterContents` | `setCode`, `boosterName`, `sheetName` | Booster-to-sheet configuration. |
+| `setBoosterSheets` | `setCode`, `boosterName`, `sheetName`, `sheetIsFoil` | Booster sheet metadata. |
+| `setBoosterSheetCards` | `setCode`, `boosterName`, `sheetName`, `cardUuid` | Cards eligible for each booster sheet. |
+| `sealedProducts` | `uuid`, `setCode`, `name`, `category`, `subtype`, `cardCount`, `contents` | Sealed-product identity and structured contents. |
+| `sealedproducts_prices` | `sealedproduct_uuid`, `market_price`, `purchase_url`, `fetched_at` | Synced sealed-product market prices. |
+| `booster_ev_results` | `set_code`, `booster_name`, `price_mode`, `vendor`, EV summaries, `quantiles` | Pipeline-generated booster simulation results. |
+| `decks` / `deckCards` | deck identity; `deckId`, `cardUuid`, `count`, `isFoil` | Temporary normalized preconstructed-deck contents. |
+
+For Scryfall artwork, use `cardIdentifiers.scryfallId` for the front face. `scryfallIllustrationId` is metadata identifying shared artwork, not the card-image CDN identifier. A nonstandard `scryfallCardBackId` identifies a back face; the standard card-back UUID is not treated as a second face.
+
 ### File-by-file notes
 
 **`config.py`** — Reads MySQL connection settings and audit settings from environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `AUDIT_ENABLED`, `AUDIT_OUTPUT_DIR`). Never commit the password; supply via GitHub Actions secrets or a local env var.
@@ -384,7 +405,7 @@ pipeline_execution_logs.json, latest_pipeline_run.json
 **`export_product_chase_cards.py`** — Backend TOP 5 chase-card producer.
 - Candidates come from three sources: MySQL booster sheets (`setBoosterSheetCards`/`setBoosterSheets`/`setBoosterContents`), deck contents (`deckCards`/`decks`, falling back to `precon_decks.json` when those tables are absent), and direct/variable card references in `sealed_products.json` contents.
 - **Prices are resolved directly from MySQL** for every discovered candidate uuid: `load_direct_prices()` queries the `prices` table (direct mode), filtered through the `NAMED_VENDORS` allowlist. `resolve_vendor_prices()` computes `all_cheapest`/`all_average`. Product TOP 5 output intentionally contains direct-price records only; it does not emit `cheapest_reprint` lists.
-- Display metadata (`name`, `setCode`, collector `number`, `scryfallId`, rarity, and type) comes directly from the MySQL `cards` table. The exporter builds the artwork URL solely from `scryfallId`; missing Scryfall UUIDs remain explicit and must not trigger a collector-number or set-code image lookup. `single_card_prices.json` is only a compatibility supplement.
+- Display metadata joins `cards.uuid` to `cardIdentifiers.uuid`. `cards` supplies `name`, `setCode`, collector `number`, rarity, and types; `cardIdentifiers` supplies `scryfallId`, `scryfallIllustrationId`, and `scryfallCardBackId`. The exporter does not supplement missing metadata from another snapshot and builds artwork URLs solely from Scryfall UUIDs. The standard card-back UUID `0aeebaf5-8c7d-4636-9e82-8c27447861f7` is discarded; any other `scryfallCardBackId` enables the frontend's animated face toggle.
 - The export runs in two passes: resolve all products' candidates first (building one global uuid set), then bulk-query prices/metadata once, then build the per-product/per-vendor/per-mode TOP 5 lists.
 
 **`load_deck_tables.py`** — Creates temporary `decks`/`deckCards` tables when the MTGJSON dump omits them, loads the current `precon_decks.json` snapshot, enriches fixed deck cards with current price provenance, writes per-deck `pricingReliability` summaries.

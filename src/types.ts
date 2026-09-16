@@ -162,6 +162,8 @@ export interface ChaseCard {
   uuid: string;
   name: string;
   scryfallId: string;
+  scryfallIllustrationId?: string;
+  scryfallCardBackId?: string;
   setCode: string;
   rarity: 'common' | 'uncommon' | 'rare' | 'mythic' | 'special';
   number: string;
@@ -170,6 +172,7 @@ export interface ChaseCard {
   price?: number;
   finish: string;
   imageUrl?: string;
+  backImageUrl?: string;
   cardType?: string;
   productType?: 'all' | 'collector' | 'play' | 'draft' | 'deck' | string;
   deckName?: string;

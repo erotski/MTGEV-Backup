@@ -4,8 +4,7 @@ Card candidates come from MySQL booster sheets, sealed-product contents, and
 preconstructed deck contents. Prices are resolved directly from MySQL for
 every discovered candidate uuid, the same tables the booster EV simulation
 uses, so booster-sheet cards are actually priced instead of silently
-skipped. Scryfall artwork is supplemented from single_card_prices.json when
-available.
+skipped. Scryfall artwork identifiers come from MySQL cardIdentifiers.
 """
 import json
 from pathlib import Path
@@ -21,6 +20,7 @@ VENDORS = ("all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdo
 MODES = ("direct",)
 NAMED_VENDORS = ("tcgplayer", "cardmarket", "cardkingdom", "manapool")
 EUR_USD_RATE = 1.09
+STANDARD_CARD_BACK_ID = "0aeebaf5-8c7d-4636-9e82-8c27447861f7"
 
 
 def load_json(name):
@@ -102,9 +102,12 @@ def load_card_metadata(cursor, uuids):
         placeholders = ",".join(["%s"] * len(batch))
         cursor.execute(
             f"""
-            SELECT uuid, name, setCode, number, scryfallId, rarity, types
-            FROM cards
-            WHERE uuid IN ({placeholders})
+            SELECT c.uuid, c.name, c.setCode, c.number, c.rarity, c.types,
+                   ci.scryfallId, ci.scryfallIllustrationId,
+                   ci.scryfallCardBackId
+            FROM cards c
+            LEFT JOIN cardIdentifiers ci ON ci.uuid = c.uuid
+            WHERE c.uuid IN ({placeholders})
             """,
             batch,
         )
@@ -112,14 +115,21 @@ def load_card_metadata(cursor, uuids):
     return metadata
 
 
-def build_scryfall_image_url(scryfall_id):
+def build_scryfall_image_url(scryfall_id, face="front"):
     scryfall_id = str(scryfall_id or "").strip()
     if len(scryfall_id) < 2:
         return ""
     return (
-        f"https://cards.scryfall.io/normal/front/{scryfall_id[0]}/"
+        f"https://cards.scryfall.io/normal/{face}/{scryfall_id[0]}/"
         f"{scryfall_id[1]}/{scryfall_id}.jpg"
     )
+
+
+def normalize_card_back_id(card_back_id):
+    card_back_id = str(card_back_id or "").strip()
+    if card_back_id.lower() == STANDARD_CARD_BACK_ID:
+        return ""
+    return card_back_id
 
 
 def load_direct_prices(cursor, uuids):
@@ -145,31 +155,6 @@ def load_direct_prices(cursor, uuids):
         for row in cursor.fetchall():
             seller = (row.get("seller") or "").lower()
             finish = (row.get("finish") or "").strip().replace("nonfoil", "normal").lower()
-            if seller not in NAMED_VENDORS or not finish:
-                continue
-            prices.setdefault(row["uuid"], {}).setdefault(seller, {})[finish] = float(row["price"])
-    return prices
-
-
-def load_reprint_prices(cursor, uuids):
-    """Cheapest-reprint-mode named-vendor prices from the precomputed
-    lowest_prices table, keyed directly by uuid."""
-    prices = {}
-    uuid_list = list(uuids)
-    for start in range(0, len(uuid_list), 1000):
-        batch = uuid_list[start:start + 1000]
-        placeholders = ",".join(["%s"] * len(batch))
-        cursor.execute(
-            f"""
-            SELECT uuid, seller, cardfinish, price
-            FROM lowest_prices
-            WHERE uuid IN ({placeholders}) AND price > 0
-            """,
-            batch,
-        )
-        for row in cursor.fetchall():
-            seller = (row.get("seller") or "").lower()
-            finish = (row.get("cardfinish") or "").strip().replace("nonfoil", "normal").lower()
             if seller not in NAMED_VENDORS or not finish:
                 continue
             prices.setdefault(row["uuid"], {}).setdefault(seller, {})[finish] = float(row["price"])
@@ -237,7 +222,6 @@ def resolve_product(product, products_by_id, booster_candidates, deck_candidates
 
 
 def export_product_chase_cards():
-    display_metadata = (load_json("single_card_prices.json") or {}).get("byUuid", {})
     products = load_json("sealed_products.json")
     products_by_id = {p.get("id") or p.get("uuid"): p for p in products if p.get("id") or p.get("uuid")}
 
@@ -283,19 +267,22 @@ def export_product_chase_cards():
                         if price <= 0:
                             continue
                         meta = metadata.get(uuid, {})
-                        display = display_metadata.get(uuid, {})
-                        scryfall_id = meta.get("scryfallId") or display.get("scryfallId", "")
+                        scryfall_id = meta.get("scryfallId") or ""
+                        card_back_id = normalize_card_back_id(meta.get("scryfallCardBackId"))
                         cards.append({
                             "uuid": uuid,
-                            "name": meta.get("name") or display.get("name") or "",
-                            "setCode": (meta.get("setCode") or display.get("set") or "").upper(),
-                            "number": str(meta.get("number") or display.get("number") or ""),
-                            "rarity": meta.get("rarity") or display.get("rarity") or "",
-                            "cardType": meta.get("types") or display.get("cardType") or "",
+                            "name": meta.get("name") or "",
+                            "setCode": (meta.get("setCode") or "").upper(),
+                            "number": str(meta.get("number") or ""),
+                            "rarity": meta.get("rarity") or "",
+                            "cardType": meta.get("types") or "",
                             "finish": "foil" if is_foil else "nonfoil",
                             "price": round(price, 2),
                             "scryfallId": scryfall_id,
-                            "imageUrl": build_scryfall_image_url(scryfall_id) or display.get("imageUrl", ""),
+                            "scryfallIllustrationId": meta.get("scryfallIllustrationId") or "",
+                            "scryfallCardBackId": card_back_id,
+                            "imageUrl": build_scryfall_image_url(scryfall_id),
+                            "backImageUrl": build_scryfall_image_url(card_back_id, "back"),
                         })
                     cards.sort(key=lambda card: card["price"], reverse=True)
                     product_result[f"{mode}:{vendor}"] = cards[:5]

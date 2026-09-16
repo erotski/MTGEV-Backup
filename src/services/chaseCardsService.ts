@@ -17,6 +17,15 @@ export function getCardImageUrl(
   return '';
 }
 
+export function getScryfallImageUrl(
+  scryfallId: string | undefined,
+  version: 'normal' | 'large' = 'normal',
+  face: 'front' | 'back' = 'front'
+): string {
+  if (!scryfallId || scryfallId.length < 3) return '';
+  return `https://cards.scryfall.io/${version}/${face}/${scryfallId.charAt(0)}/${scryfallId.charAt(1)}/${scryfallId}.jpg`;
+}
+
 /**
  * Curated Pre-compiled Chase Cards for Top Sets and Products
  * Ensures immediate display with zero latency and high-resolution Scryfall artwork.
