@@ -1100,8 +1100,8 @@ export function getChaseCardsForProduct(
   singlePrices?: any,
   preconDecksParam?: Record<string, any> | null,
   sealedProductsParam?: any[] | null,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
+  priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+  vendor: string = 'all_cheapest'
 ): ChaseCard[] {
   if (!product) return [];
 
@@ -1349,8 +1349,8 @@ export function applyMtgJsonPricesToCards(
   cards: ChaseCard[],
   singlePrices: any,
   setCode: string,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
+  priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+  vendor: string = 'all_cheapest'
 ) {
   if (!singlePrices) return;
   const upperCode = (setCode || '').toLowerCase().trim();
@@ -1411,8 +1411,8 @@ export function preloadChaseCardsForProducts(
   singlePrices?: any,
   preconDecksParam?: Record<string, any> | null,
   sealedProductsParam?: any[] | null,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
+  priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+  vendor: string = 'all_cheapest'
 ): void {
   if (!Array.isArray(products) || products.length === 0) return;
   for (const prod of products) {
@@ -1431,8 +1431,8 @@ export function preloadChaseCardsForProducts(
  */
 export async function fetchLiveChaseCardsForSet(
   setCode: string,
-  priceMode: 'direct' | 'cheapest_reprint',
-  vendor: string
+  priceMode: 'direct' | 'cheapest_reprint' = 'direct',
+  vendor: string = 'all_cheapest'
 ): Promise<ChaseCard[]> {
   const upperCode = (setCode || '').toUpperCase().trim();
   if (!upperCode) return [];
