@@ -4,6 +4,7 @@ Executes in GitHub Actions or locally to generate static JSON files inside publi
 """
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import mysql.connector
 from config import DB_CONFIG
@@ -548,6 +549,39 @@ def export_all():
         with open(OUTPUT_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
             json.dump(valid_arbs, f, indent=2, default=str)
         print(f"  ✔ Exported {len(valid_arbs)} product arbitrage opportunities")
+
+        product_metrics = []
+        generated_at = datetime.now(timezone.utc).isoformat()
+        for record in valid_arbs:
+            product_metrics.append({
+                "productUuid": record.get("productUuid") or record.get("id"),
+                "boxName": record.get("boxName"),
+                "setCode": record.get("setCode"),
+                "setName": record.get("setName"),
+                "category": record.get("category"),
+                "marketPrice": float(record.get("marketPrice") or 0),
+                "totalEvMin": float(record.get("totalEvMin") or 0),
+                "totalEvAvg": float(record.get("totalEvAvg") or 0),
+                "totalEvMid90": float(record.get("totalEvMid90") or 0),
+                "totalEvMax": float(record.get("totalEvMax") or 0),
+                "effectiveEv": float(record.get("totalEvAvg") or 0),
+                "profitUsd": float(record.get("profitUsd") or 0),
+                "roiPct": float(record.get("roiPct") or 0),
+                "evScore": float(record.get("evScore")) if record.get("evScore") is not None else None,
+                "packCount": int(record.get("packCount") or 0),
+                "cardCount": int(record.get("cardCount") or 0),
+                "vendor": record.get("vendor"),
+                "priceMode": record.get("priceMode"),
+                "provenance": {
+                    "source": "pipeline",
+                    "generatedAt": generated_at,
+                    "schemaVersion": 1,
+                },
+            })
+
+        with open(OUTPUT_DIR / "product_metrics.json", "w", encoding="utf-8") as f:
+            json.dump(product_metrics, f, indent=2, allow_nan=False)
+        print(f"  ✔ Exported {len(product_metrics)} complete-product metric records")
     except Exception as e:
         print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
 

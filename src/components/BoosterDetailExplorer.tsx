@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, EvBasis } from '../types';
+import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, ProductMetricsRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
 import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
@@ -42,6 +42,7 @@ interface BoosterDetailExplorerProps {
   onVendorChange: (vendor: Vendor) => void;
   evBasis?: EvBasis;
   onEvBasisChange?: (basis: EvBasis) => void;
+  productMetrics?: ProductMetricsRecord[];
   initialProductId?: string;
   onClearInitialProductId?: () => void;
 }
@@ -57,6 +58,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   onVendorChange,
   evBasis = 'avg',
   onEvBasisChange,
+  productMetrics = [],
   initialProductId,
   onClearInitialProductId,
 }) => {
@@ -417,15 +419,15 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([
-      dataService.getSnapshotIntegrityReport(),
-      activeProduct && (activeProduct.id || activeProduct.uuid)
-        ? dataService.getProductMetrics(activeProduct.id || activeProduct.uuid || '', vendor, priceMode, evBasis)
-        : Promise.resolve(null),
-    ]).then(([report, metrics]) => {
+    dataService.getSnapshotIntegrityReport().then((report) => {
       if (!isMounted) return;
       setSnapshotWarnings(report.warnings || []);
-      setGatewayMetrics(metrics);
+      const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+      const productId = activeProduct?.id || activeProduct?.uuid;
+      const metrics = productMetrics.find((item) =>
+        item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
+      );
+      setGatewayMetrics(metrics || null);
       if (report.metadata?.pipelineRunId || report.metadata?.id) {
         setPipelineRunId(report.metadata.pipelineRunId || report.metadata.id || 'unavailable');
       }
@@ -438,7 +440,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [activeProduct, vendor, priceMode, evBasis]);
+  }, [activeProduct, productMetrics, vendor, priceMode, evBasis]);
 
   // Lookup raw product with full contents metadata
   const activeRawProduct = useMemo(() => {
@@ -495,7 +497,22 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // Derive authoritative canonical metrics
   const canonicalMetrics = useMemo(() => {
     if (gatewayMetrics) {
-      return gatewayMetrics;
+      return {
+        estimatedEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,
+        fixedBaseEv: 0,
+        variableEv: gatewayMetrics.totalEvAvg,
+        minEv: gatewayMetrics.totalEvMin,
+        min5Ev: gatewayMetrics.totalEvMin,
+        mid90Ev: gatewayMetrics.totalEvMid90,
+        max5Ev: gatewayMetrics.totalEvMax,
+        maxEv: gatewayMetrics.totalEvMax,
+        marketPrice: gatewayMetrics.marketPrice,
+        effectiveEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,
+        packsCount: gatewayMetrics.packCount,
+        cardCount: gatewayMetrics.cardCount,
+        netSpread: gatewayMetrics.profitUsdByBasis?.[evBasis] ?? gatewayMetrics.profitUsd,
+        roiPct: gatewayMetrics.roiPctByBasis?.[evBasis] ?? gatewayMetrics.roiPct,
+      };
     }
     if (!activeRawProduct && !activeProduct) return null;
     return getCanonicalProductMetrics(

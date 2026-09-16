@@ -24,6 +24,7 @@ public/data/sets.json
 public/data/sealed_products.json
 public/data/booster_ev.json
 public/data/arbitrage_leaderboard.json
+public/data/product_metrics.json
 public/data/single_card_prices.json
 public/data/pricing_reliability.json
 public/data/product_chase_cards.json
