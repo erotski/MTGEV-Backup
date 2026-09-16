@@ -25,6 +25,8 @@ import {
   Search,
 } from 'lucide-react';
 
+const lower = (value: unknown) => String(value ?? '').toLowerCase();
+
 export interface ProductBreakdownTableProps {
   product: any;
   arbitrageMap?: Record<string, any>;
@@ -269,8 +271,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       }
 
       const name = cd.name || 'Promo Card';
-      const normName = name.toLowerCase().trim();
-      const setCode = (cd.set || parentSetCode || '').toLowerCase();
+      const normName = lower(name).trim();
+      const setCode = lower(cd.set || parentSetCode);
       const uuid = cd.uuid || '';
 
       let isFoil = false;
@@ -281,8 +283,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       } else if (Array.isArray(cd.finishes) && cd.finishes.length === 1 && cd.finishes[0] === 'foil') {
         isFoil = true;
       } else if (parentProduct) {
-        const pName = (parentProduct.displayName || parentProduct.name || '').toLowerCase();
-        const pSub = (parentProduct.subtype || '').toLowerCase();
+        const pName = lower(parentProduct.displayName || parentProduct.name);
+        const pSub = lower(parentProduct.subtype);
         if ((pName.includes('foil') || pSub.includes('foil')) && !pName.includes('non-foil') && !pName.includes('non foil')) {
           isFoil = true;
         }
@@ -433,7 +435,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   const uid = product.id || product.uuid || product.productUuid || '';
   const arb = effectiveArbitrageMap[uid] || Object.values(effectiveArbitrageMap).find((a: any) =>
     (a.productUuid && a.productUuid === uid) ||
-    ((a.boxName || a.displayName || '').toLowerCase().trim() === (product.displayName || product.name || '').toLowerCase().trim())
+    (lower(a.boxName || a.displayName).trim() === lower(product.displayName || product.name).trim())
   );
   const rawMarketPrice = product.marketPrice || (arb ? arb.marketPrice : 0) || product.price || 0;
   const rawTotalEv = audit.totalEv > 0 ? audit.totalEv : (arb ? arb.totalEvAvg : 0);
@@ -479,7 +481,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     const pId = p.id || p.uuid || p.productUuid || '';
     const matchedDeck =
       effectivePreconDecks[pId] ||
-      effectivePreconDecks[(p.displayName || p.name || '').toLowerCase()] ||
+      effectivePreconDecks[lower(p.displayName || p.name)] ||
       findMatchingPreconDeck(effectivePreconDecks, p.displayName || p.name, p.setCode);
     return {
       id: pId,
@@ -505,7 +507,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   const handleInspectPack = useCallback(
     (p: { packName?: string; code?: string; set?: string; count?: number; unitEv?: number; cardsPerPack?: number }) => {
       const packCode = (p.code || 'play').toLowerCase();
-      const packSet = (p.set || product?.setCode || 'hob').toLowerCase();
+      const packSet = lower(p.set || product?.setCode || 'hob');
       const displayName = p.packName || `${packSet.toUpperCase()} ${packCode.replace(/-/g, ' ')} Booster Pack`;
 
       let matchedCatalogProd: any = null;
@@ -513,9 +515,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         if (productMap instanceof Map) {
           for (const item of productMap.values()) {
             if (
-              (item.setCode || '').toLowerCase() === packSet &&
-              ((item.subtype || '').toLowerCase() === packCode ||
-                (item.displayName || '').toLowerCase().includes(packCode))
+              lower(item.setCode) === packSet &&
+              (lower(item.subtype) === packCode ||
+                lower(item.displayName).includes(packCode))
             ) {
               matchedCatalogProd = item;
               break;
@@ -524,9 +526,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         } else {
           for (const item of Object.values(productMap)) {
             if (
-              ((item as any).setCode || '').toLowerCase() === packSet &&
-              (((item as any).subtype || '').toLowerCase() === packCode ||
-                ((item as any).displayName || '').toLowerCase().includes(packCode))
+              lower((item as any).setCode) === packSet &&
+              (lower((item as any).subtype) === packCode ||
+                lower((item as any).displayName).includes(packCode))
             ) {
               matchedCatalogProd = item;
               break;
@@ -663,7 +665,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     (s: { name: string; set?: string; uuid?: string; unitEv?: number; count?: number; childBreakdown?: any }) => {
       let childProd = s.uuid ? getProductFromMap(s.uuid) : null;
       if (!childProd && s.name) {
-        const sNorm = s.name.toLowerCase().trim();
+        const sNorm = lower(s.name).trim();
         const sClean = sNorm.replace(/^secret lair drop\s+/i, '').trim();
         const values = effectiveProductMap instanceof Map ? Array.from(effectiveProductMap.values()) : Object.values(effectiveProductMap);
         childProd = values.find((p: any) => {
@@ -676,7 +678,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       const childArb = (s.uuid && effectiveArbitrageMap[s.uuid]) ||
         Object.values(effectiveArbitrageMap).find((a: any) =>
           (a.productUuid && a.productUuid === s.uuid) ||
-          ((a.boxName || a.displayName || '').toLowerCase().trim() === (s.name || '').toLowerCase().trim())
+          (lower(a.boxName || a.displayName).trim() === lower(s.name).trim())
         );
 
       const resolvedMarket = childProd?.marketPrice || childArb?.marketPrice || 0;
@@ -688,7 +690,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         : null;
 
       if (matchedDeck) {
-        const isFoil = Boolean(matchedDeck.isFoil || s.name.toLowerCase().includes('foil'));
+        const isFoil = Boolean(matchedDeck.isFoil || lower(s.name).includes('foil'));
         const inspected: CatalogPackProduct = {
           id: matchedDeck.deckName,
           setCode: sSet,

@@ -44,9 +44,9 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   const [activeVariationIdx, setActiveVariationIdx] = useState<number>(0);
   const [foundVariations, setFoundVariations] = useState<string[]>([]);
 
-  const cleanCode = (setCode || '').toLowerCase().trim();
-  const cleanType = (packagingType || 'pack').toLowerCase().trim();
-  const cleanName = (displayName || '').toLowerCase().trim();
+  const cleanCode = String(setCode || '').toLowerCase().trim();
+  const cleanType = String(packagingType || 'pack').toLowerCase().trim();
+  const cleanName = String(displayName || '').toLowerCase().trim();
   const isCollector = cleanName.includes('collector') || cleanType.includes('collector');
   const isGift = cleanName.includes('gift');
   const isJumpstart = cleanName.includes('jumpstart');
@@ -281,9 +281,9 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   // Dynamic packaging styles and themes for procedural fallback
   const getPackagingTheme = () => {
-    const isGift = (displayName || '').toLowerCase().includes('gift');
-    const isCommander = (displayName || '').toLowerCase().includes('commander');
-    const isBlister = (displayName || '').toLowerCase().includes('blister') || (displayName || '').toLowerCase().includes('3-pack');
+    const isGift = cleanName.includes('gift');
+    const isCommander = cleanName.includes('commander');
+    const isBlister = cleanName.includes('blister') || cleanName.includes('3-pack');
 
     switch (packagingType) {
       case 'case':
@@ -392,8 +392,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           sub: 'Deck Box & Spindown',
         };
       case 'box_set': {
-        const isSldBundle = (displayName || '').toLowerCase().includes('bundle') || (displayName || '').toLowerCase().includes('superdrop');
-        const isSld = (displayName || '').toLowerCase().includes('secret lair');
+        const isSldBundle = cleanName.includes('bundle') || cleanName.includes('superdrop');
+        const isSld = cleanName.includes('secret lair');
         if (isSldBundle) {
           return {
             label: 'Secret Lair Bundle',
@@ -437,8 +437,8 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
           sub: 'Cards & Supplies',
         };
       case 'starter_deck': {
-        const isCommander = (displayName || '').toLowerCase().includes('commander');
-        const isSinglePrecon = !(displayName || '').toLowerCase().includes('set of') && !(displayName || '').toLowerCase().includes('4 decks') && !(displayName || '').toLowerCase().includes('(4x)');
+        const isCommander = cleanName.includes('commander');
+        const isSinglePrecon = !cleanName.includes('set of') && !cleanName.includes('4 decks') && !cleanName.includes('(4x)');
         if (isCollector) {
           if (isSinglePrecon) {
             return {
@@ -671,9 +671,9 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
 
   // 2. Fallback: For single booster packs, use the authentic blank white MTG foil pack wrapper template
   if (packagingType === 'pack') {
-    const isCollectorPack = (displayName || '').toLowerCase().includes('collector');
+    const isCollectorPack = cleanName.includes('collector');
     const inferredPackType = (() => {
-      const nameLower = (displayName || '').toLowerCase();
+      const nameLower = cleanName;
       if (nameLower.includes('collector')) return 'COLLECTOR BOOSTER';
       if (nameLower.includes('jumpstart')) return 'JUMPSTART BOOSTER';
       if (nameLower.includes('set booster')) return 'SET BOOSTER';
@@ -764,7 +764,7 @@ export const ProductPackagingImage: React.FC<ProductPackagingImageProps> = ({
   if (packagingType === 'box') {
     const resolvedSetName = cleanPureSetName(setName || displayName, setCode);
     const inferredProductType = (() => {
-      const nameLower = (displayName || '').toLowerCase();
+      const nameLower = cleanName;
       if (nameLower.includes('collector')) return 'collector';
       if (nameLower.includes('play')) return 'play';
       if (nameLower.includes('draft')) return 'draft';

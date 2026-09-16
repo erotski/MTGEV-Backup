@@ -18,6 +18,8 @@ import {
   Layers,
 } from 'lucide-react';
 
+const lower = (value: unknown) => String(value ?? '').toLowerCase();
+
 interface ProductChaseCardsViewerProps {
   product: CatalogPackProduct;
   setCode: string;
@@ -44,11 +46,11 @@ const getMatchingProductsForCard = (card: ChaseCard, allProducts: CatalogPackPro
 
   if (isDeckCard) {
     allProducts.forEach(p => {
-      const isPDeck = p.packagingType === 'starter_deck' || p.rawCategory === 'deck' || p.category === 'deck' || (p.displayName || '').toLowerCase().includes('deck') || (p.displayName || '').toLowerCase().includes('commander');
+      const isPDeck = p.packagingType === 'starter_deck' || p.rawCategory === 'deck' || p.category === 'deck' || lower(p.displayName).includes('deck') || lower(p.displayName).includes('commander');
       if (isPDeck) {
         if (card.deckName) {
-          const dn = card.deckName.toLowerCase().replace(/['"’]/g, '');
-          const pn = (p.displayName || '').toLowerCase().replace(/['"’]/g, '');
+          const dn = lower(card.deckName).replace(/['"’]/g, '');
+          const pn = lower(p.displayName).replace(/['"’]/g, '');
           if (pn.includes(dn) || dn.includes(pn)) {
             matches.push(p);
           } else {
@@ -61,22 +63,22 @@ const getMatchingProductsForCard = (card: ChaseCard, allProducts: CatalogPackPro
     });
   } else if (isCollectorOnly) {
     allProducts.forEach(p => {
-      const pn = (p.displayName || '').toLowerCase();
-      if (pn.includes('collector') || (p.boosterName || '').toLowerCase().includes('collector')) {
+      const pn = lower(p.displayName);
+      if (pn.includes('collector') || lower(p.boosterName).includes('collector')) {
         matches.push(p);
       }
     });
   } else if (isPromo) {
     allProducts.forEach(p => {
-      const pn = (p.displayName || '').toLowerCase();
+      const pn = lower(p.displayName);
       if (pn.includes('bundle') || pn.includes('promo') || pn.includes('gift') || pn.includes('prerelease')) {
         matches.push(p);
       }
     });
   } else {
     allProducts.forEach(p => {
-      const pn = (p.displayName || '').toLowerCase();
-      const rawCat = (p.rawCategory || p.category || '').toLowerCase();
+      const pn = lower(p.displayName);
+      const rawCat = lower(p.rawCategory || p.category);
       const isBooster = p.packagingType === 'box' || p.packagingType === 'pack' || rawCat.includes('booster') || pn.includes('booster') || pn.includes('bundle') || pn.includes('gift');
       if (isBooster) {
         matches.push(p);
@@ -161,10 +163,10 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
   // Determine if this is a fixed preconstructed / non-booster product
   const isFixedProduct = useMemo(() => {
-    const pName = (product.displayName || '').toLowerCase();
-    const pkg = (product.packagingType || '').toLowerCase();
-    const rawCat = ((product as any).rawCategory || (product as any).category || '').toLowerCase();
-    const rawSub = ((product as any).rawSubtype || (product as any).subtype || '').toLowerCase();
+    const pName = lower(product.displayName);
+    const pkg = lower(product.packagingType);
+    const rawCat = lower((product as any).rawCategory || (product as any).category);
+    const rawSub = lower((product as any).rawSubtype || (product as any).subtype);
     const hasFixedContents = Boolean(
       (product as any).contents?.sealed ||
       (product as any).rawContents?.sealed ||
@@ -210,7 +212,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
   // Helper for rarity styling
   const getRarityBadge = (rarity: string) => {
-    switch (rarity.toLowerCase()) {
+    switch (lower(rarity)) {
       case 'mythic':
         return 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-600 shadow-2xs';
       case 'rare':
@@ -224,11 +226,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     }
   };
 
-  const isCollector = (product.displayName || '').toLowerCase().includes('collector');
+  const isCollector = lower(product.displayName).includes('collector');
   const isDeck =
     product.packagingType === 'starter_deck' ||
-    (product.displayName || '').toLowerCase().includes('commander deck');
-  const isSecretLair = (product.displayName || '').toLowerCase().includes('secret lair');
+    lower(product.displayName).includes('commander deck');
+  const isSecretLair = lower(product.displayName).includes('secret lair');
 
   return (
     <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5 ${className}`}>
@@ -282,7 +284,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
             const cardImg = getCardImageUrl(card, 'normal');
             const isEtched = card.finish === 'etched';
-            const isCardFoil = isEtched || card.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
+            const isCardFoil = isEtched || card.finish === 'foil' || lower(product.displayName).includes('foil');
 
             return (
               <div
@@ -443,7 +445,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
             {(() => {
               const isEtchedZoom = zoomedCard.finish === 'etched';
-              const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
+                  const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil');
               const zoomImg = getCardImageUrl(zoomedCard, 'large');
 
               return (
@@ -508,7 +510,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 <span className="font-medium">
                   {zoomedCard.finish === 'etched' ? (
                     <span className="text-purple-700 font-bold">✧★✧ Etched Foil</span>
-                  ) : zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil') ? (
+                  ) : zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil') ? (
                     <span className="text-amber-600 font-bold">★ Traditional Foil</span>
                   ) : (
                     <span className="text-slate-600">Non-foil</span>
