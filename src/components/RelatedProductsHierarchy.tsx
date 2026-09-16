@@ -85,6 +85,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   onVendorChange,
   onEvBasisChange,
 }) => {
+  const lower = (value: unknown) => String(value ?? '').toLowerCase();
+
   const cleanProductName = (name: string) => {
     if (!name) return '';
     let cleaned = name;
@@ -139,7 +141,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
           const setBoosterRecords: BoosterEVRecord[] = 
             boosterMap[setCode.toUpperCase()] ||
-            boosterMap[String(setCode || '').toLowerCase()] ||
+            boosterMap[lower(setCode)] ||
             boosterMap[setCode] ||
             [];
 
@@ -157,7 +159,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 if (child) {
                   total += sCount * resolveRecursivePacks(child, new Set(visited));
                 } else {
-                  const sName = (s.name || '').toLowerCase();
+                  const sName = lower(s.name);
                   if (sName.includes('pack') || sName.includes('booster')) total += sCount * 1;
                   else if (sName.includes('box')) total += sCount * 36;
                   else total += sCount;
@@ -186,10 +188,10 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           } else {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
               const pName = String(sp.displayName || sp.name || 'Sealed Product');
-              const pNameLower = pName.toLowerCase();
+              const pNameLower = lower(pName);
               const sCode = String(sp.setCode || sp.set_code || setCode || '').toUpperCase();
-              const category = String(sp.category || '').toLowerCase();
-              const subtype = String(sp.subtype || '').toLowerCase();
+              const category = lower(sp.category);
+              const subtype = lower(sp.subtype);
               const contentsNote = String(sp.contents?.note || '');
 
               // Strictly database-driven packaging type assignment
@@ -287,7 +289,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               }
 
               return {
-                id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
+                id: sp.uuid || sp.id || `db-${sCode}-${lower(pName).replace(/\s+/g, '-')}`,
                 rawCategory: category,
                 rawSubtype: subtype,
                 setCode: sCode,
@@ -392,8 +394,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === prodId ||
           p.uuid === prodId ||
-          (p.uuid && String(p.uuid).toLowerCase() === String(prodId || '').toLowerCase()) ||
-          (p.id && String(p.id).toLowerCase() === String(prodId || '').toLowerCase())
+          (p.uuid && lower(p.uuid) === lower(prodId)) ||
+          (p.id && lower(p.id) === lower(prodId))
       );
       onSelectProduct(prodId, boosterName || found?.boosterName || 'play', found);
     }
@@ -406,8 +408,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === target ||
           p.uuid === target ||
-          (p.uuid && String(p.uuid).toLowerCase() === String(target || '').toLowerCase()) ||
-          (p.id && String(p.id).toLowerCase() === String(target || '').toLowerCase())
+          (p.uuid && lower(p.uuid) === lower(target)) ||
+          (p.id && lower(p.id) === lower(target))
       );
       if (match) return match;
     }
@@ -464,7 +466,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   };
 
   const getPackagingBadge = (prod: CatalogPackProduct) => {
-    const name = (prod.displayName || '').toLowerCase();
+    const name = lower(prod.displayName);
     const isCollector = name.includes('collector') || prod.boosterName === 'collector' || prod.rawSubtype === 'collector';
     const isGift = name.includes('gift') || prod.rawSubtype === 'gift';
     const isBlister = name.includes('blister') || name.includes('3-pack');
@@ -607,7 +609,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     };
 
     const normalizeCat = (p: CatalogPackProduct): string => {
-      const raw = (p.rawCategory || '').toLowerCase();
+      const raw = lower(p.rawCategory);
       if (raw && categoryConfigs[raw]) return raw;
       if (p.packagingType === 'box') return 'booster_box';
       if (p.packagingType === 'pack') return 'booster_pack';
@@ -715,8 +717,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === propSelectedProductId ||
           p.uuid === propSelectedProductId ||
-          (p.uuid && String(p.uuid).toLowerCase() === String(propSelectedProductId || '').toLowerCase()) ||
-          (p.id && String(p.id).toLowerCase() === String(propSelectedProductId || '').toLowerCase())
+          (p.uuid && lower(p.uuid) === lower(propSelectedProductId)) ||
+          (p.id && lower(p.id) === lower(propSelectedProductId))
       );
       if (match) {
         setSelectedProductId(match.id);
@@ -730,11 +732,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const filteredProducts = useMemo(() => {
     let prods = displayedProducts;
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
+      const q = lower(searchQuery).trim();
       prods = prods.filter((p) =>
-        (p.displayName || '').toLowerCase().includes(q) ||
-        (p.packagingType || '').toLowerCase().includes(q) ||
-        (p.boosterName || '').toLowerCase().includes(q)
+        lower(p.displayName).includes(q) ||
+        lower(p.packagingType).includes(q) ||
+        lower(p.boosterName).includes(q)
       );
     }
     return prods;
@@ -1382,7 +1384,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           {(() => {
             const isDeck =
               activeProduct.packagingType === 'starter_deck' ||
-              (activeProduct.displayName || '').toLowerCase().includes('commander deck') ||
+              lower(activeProduct.displayName).includes('commander deck') ||
               activeProduct.rawCategory === 'deck';
 
             return (
