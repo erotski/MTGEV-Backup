@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
+import { BoosterEVRecord, ProductMetricsRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { resolveCardPrice, findBoosterEv } from '../utils/vendorUtils';
-import { getCanonicalProductMetrics } from '../utils/productUtils';
 import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
 import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
 import {
@@ -61,6 +60,7 @@ interface RelatedProductsHierarchyProps {
   preconDecks?: Record<string, any>;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
   singleCardPrices?: any;
+  productMetrics?: ProductMetricsRecord[];
   onSelectProduct?: (productId: string, boosterName: string, product?: CatalogPackProduct) => void;
   onPriceModeChange?: (mode: PriceMode) => void;
   onVendorChange?: (vendor: Vendor) => void;
@@ -80,6 +80,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   preconDecks,
   boosterEvMap,
   singleCardPrices,
+  productMetrics = [],
   onSelectProduct,
   onPriceModeChange,
   onVendorChange,
@@ -220,24 +221,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'other';
               }
 
-              // Single canonical source of truth for containment, breakdown, and EV calculation
-              const metrics = getCanonicalProductMetrics(
-                sp,
-                rawProductMap,
-                arbitrageMap,
-                boosterMap,
-                rawPrecon,
-                rawSingle,
-                vendor,
-                priceMode,
-                evBasis
+              const productId = sp.uuid || sp.id;
+              const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+              const metric = productMetrics.find((item) =>
+                item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
               );
-
-              const pCount = metrics.packsCount;
-              const determinedCardCount = metrics.cardCount;
-              const determinedBoosterName = metrics.primaryBoosterName;
-              const mPrice = metrics.marketPrice > 0 ? metrics.marketPrice : Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
-              const ev = metrics.effectiveEv;
+              const pCount = metric?.packCount ?? 0;
+              const determinedCardCount = metric?.cardCount ?? Number(sp.cardCount || 0);
+              const determinedBoosterName = sp.boosterName || 'play';
+              const mPrice = metric?.marketPrice ?? Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
+              const ev = metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0;
 
               let badgeText = 'Factory Sealed';
               if (category === 'box_set') {
@@ -261,31 +254,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               const matchedBooster = findBoosterEv(boosterMap, sCode, determinedBoosterName, priceMode, vendor);
               let quantiles = matchedBooster?.quantiles;
 
-              if (metrics.auditResult?.packItems && metrics.auditResult.packItems.length > 0) {
-                const composite = new Array(100).fill(metrics.auditResult.totalFixedEv || 0);
-                let valid = false;
-                metrics.auditResult.packItems.forEach((pi) => {
-                  const c = pi.count || 1;
-                  const itemBooster = findBoosterEv(boosterMap, pi.set || sCode, pi.code || pi.packName || '', priceMode, vendor);
-                  const modeMult = (priceMode === 'cheapest_reprint' && itemBooster && itemBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-                  if (itemBooster?.quantiles && itemBooster.quantiles.length >= 100) {
-                    valid = true;
-                    for (let i = 0; i < 100; i++) {
-                      composite[i] += c * itemBooster.quantiles[i] * modeMult;
-                    }
-                  } else {
-                    const avg = pi.unitEv || itemBooster?.evAverage || 0;
-                    for (let i = 0; i < 100; i++) {
-                      composite[i] += c * avg * modeMult;
-                    }
-                  }
-                });
-                if (valid) {
-                  quantiles = composite.map((v) => Number(v.toFixed(2)));
-                }
-              } else if (quantiles && pCount > 1) {
-                const modeMult = (priceMode === 'cheapest_reprint' && matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
-                quantiles = quantiles.map((q) => Number((q * pCount * modeMult).toFixed(2)));
+              const productQuantiles = sp.quantilesByVendor?.[selectedVendor];
+              if (productQuantiles && productQuantiles.length >= 100) {
+                quantiles = productQuantiles;
               }
 
               return {
@@ -301,9 +272,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 displayName: pName,
                 marketPrice: mPrice,
                 estimatedEv: ev,
-                estimatedEvMin: metrics.min5Ev || metrics.minEv,
-                estimatedEvMid90: metrics.mid90Ev,
-                estimatedEvMax: metrics.max5Ev || metrics.maxEv,
+                estimatedEvMin: metric?.totalEvMin ?? 0,
+                estimatedEvMid90: metric?.totalEvMid90 ?? 0,
+                estimatedEvMax: metric?.totalEvMax ?? 0,
                 quantiles: quantiles,
                 cardCount: determinedCardCount,
                 packsCount: pCount,

@@ -1090,6 +1090,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           preconDecks={preconDecks}
           boosterEvMap={boosterEvMap}
           singleCardPrices={singleCardPrices}
+          productMetrics={productMetrics}
           onSelectProduct={(prodId, bName, product) => {
             setSelectedProductId(prodId);
             if (product) {
