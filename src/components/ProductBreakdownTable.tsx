@@ -11,7 +11,8 @@ import {
 } from '../utils/productUtils';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
 import { ProductBreakdownModal } from './ProductBreakdownModal';
-import { CatalogPackProduct } from '../ecommerceBoosterData';
+import { CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
+import { ProductPackagingImage } from './ProductPackagingImage';
 import {
   Calculator,
   Sparkles,
@@ -198,6 +199,128 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     },
     [effectiveProductMap]
   );
+
+  const findProductByName = useCallback(
+    (name?: string, setCode?: string) => {
+      const targetName = lower(name).trim();
+      if (!targetName) return null;
+      const cleanTargetName = targetName.replace(/^secret lair drop\s+/i, '').trim();
+      const targetSet = lower(setCode).trim();
+      const values = effectiveProductMap instanceof Map ? Array.from(effectiveProductMap.values()) : Object.values(effectiveProductMap);
+      return values.find((p: any) => {
+        const productName = lower(p.displayName || p.name).trim();
+        const sameName = productName === targetName || productName === cleanTargetName;
+        const sameSet = !targetSet || lower(p.setCode || p.set).trim() === targetSet;
+        return sameName && sameSet;
+      }) || null;
+    },
+    [effectiveProductMap]
+  );
+
+  const getPreviewPackagingType = (item: any, kind: 'pack' | 'sealed' | 'deck'): ProductPackagingType => {
+    if (kind === 'pack') return 'pack';
+    if (kind === 'deck') return 'starter_deck';
+    const rawType = lower(item?.packagingType || item?.rawSubtype || item?.subtype || item?.category || item?.rawCategory);
+    const itemName = lower(item?.displayName || item?.name);
+    if (rawType.includes('bundle') || itemName.includes('bundle')) return 'bundle';
+    if (rawType.includes('case') || itemName.includes('case')) return 'case';
+    if (rawType.includes('deck') || itemName.includes('deck')) return 'starter_deck';
+    if (rawType.includes('pack') || itemName.includes('pack') || itemName.includes('booster')) return 'pack';
+    if (rawType.includes('box') || itemName.includes('box') || itemName.includes('display')) return 'box';
+    return 'other';
+  };
+
+  const renderProductPreview = (item: any, kind: 'pack' | 'sealed' | 'deck', label: string) => {
+    const matchedProduct = getProductFromMap(item?.uuid || item?.id || item?.productUuid) || findProductByName(label, item?.set);
+    const previewProduct = matchedProduct || item || {};
+    const previewSetCode = lower(previewProduct.setCode || previewProduct.set || item?.set || product?.setCode || '').trim();
+    const previewName = previewProduct.displayName || previewProduct.name || label;
+
+    return (
+      <span className="relative inline-flex shrink-0 items-center group/preview">
+        <ProductPackagingImage
+          productId={previewProduct.id || previewProduct.uuid || item?.uuid || label}
+          setCode={previewSetCode}
+          setName={previewProduct.setName || product?.setName || previewSetCode.toUpperCase()}
+          packagingType={getPreviewPackagingType(previewProduct, kind)}
+          imageUrl={previewProduct.imageUrl}
+          displayName={previewName}
+          cardCount={previewProduct.cardCount}
+          size="xs"
+          className="!w-6 !h-8 rounded-md border border-slate-700 bg-slate-950 shadow-sm"
+          allowZoom={false}
+        />
+        <span className="pointer-events-none absolute left-0 top-full z-50 hidden pt-2 group-hover/product-preview-row:block group-focus-within/product-preview-row:block group-hover/preview:block group-focus-within/preview:block">
+          <span className="block rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl ring-1 ring-black/40">
+            <ProductPackagingImage
+              productId={previewProduct.id || previewProduct.uuid || item?.uuid || label}
+              setCode={previewSetCode}
+              setName={previewProduct.setName || product?.setName || previewSetCode.toUpperCase()}
+              packagingType={getPreviewPackagingType(previewProduct, kind)}
+              imageUrl={previewProduct.imageUrl}
+              displayName={previewName}
+              cardCount={previewProduct.cardCount}
+              size="md"
+              className="rounded-lg bg-slate-900"
+              allowZoom={false}
+            />
+          </span>
+        </span>
+      </span>
+    );
+  };
+
+  const getBreakdownCardImageUrl = (card: any, version: 'small' | 'normal' = 'small') => {
+    if (card?.imageUrl && String(card.imageUrl).startsWith('http')) return card.imageUrl;
+    if (card?.scryfallId) {
+      return `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=${version}`;
+    }
+    const cardSet = lower(card?.set || card?.setCode || product?.setCode).trim();
+    if (cardSet && card?.number) {
+      return `https://api.scryfall.com/cards/${cardSet}/${card.number}?format=image&version=${version}`;
+    }
+    if (card?.name) {
+      const exactName = encodeURIComponent(card.name);
+      const setQuery = cardSet ? `&set=${encodeURIComponent(cardSet)}` : '';
+      return `https://api.scryfall.com/cards/named?exact=${exactName}${setQuery}&format=image&version=${version}`;
+    }
+    return '';
+  };
+
+  const renderCardPreview = (card: any) => {
+    const smallImageUrl = getBreakdownCardImageUrl(card, 'small');
+    const normalImageUrl = getBreakdownCardImageUrl(card, 'normal');
+    return (
+      <span className="relative inline-flex shrink-0 items-center group/card-preview">
+        <span className="flex h-8 w-6 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-950 shadow-sm">
+          {smallImageUrl ? (
+            <img
+              src={smallImageUrl}
+              alt={card.name}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
+          )}
+        </span>
+        {normalImageUrl && (
+          <span className="pointer-events-none absolute left-0 top-full z-50 hidden pt-2 group-hover/product-preview-row:block group-focus-within/product-preview-row:block group-hover/card-preview:block group-focus-within/card-preview:block">
+            <span className="block w-28 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1.5 shadow-2xl ring-1 ring-black/40">
+              <img
+                src={normalImageUrl}
+                alt={card.name}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="aspect-[5/7] w-full rounded-lg object-cover"
+              />
+            </span>
+          </span>
+        )}
+      </span>
+    );
+  };
 
   // Helper to resolve pack details and individual pack EV
   const resolvePack = useCallback(
@@ -1627,8 +1750,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       return (
                         <tr key={`audit-pack-${idx}`} className="hover:bg-slate-800/40">
                           <td className="py-2.5 pr-4 text-slate-200 font-medium">
-                            <span className="text-amber-400 mr-1.5">📦</span>
-                            {p.packName}
+                            <span className="inline-flex items-center gap-2 group/product-preview-row">
+                              {renderProductPreview(p, 'pack', p.packName)}
+                              <span>{p.packName}</span>
+                            </span>
                           </td>
                           <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                             <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px]">
@@ -1671,17 +1796,19 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                       return (
                         <tr key={`audit-card-${idx}`} className="hover:bg-slate-800/40">
                           <td className="py-2.5 pr-4 text-slate-200 font-medium">
-                            <span className="text-emerald-400 mr-1.5">✨</span>
-                            {c.name}
-                            {c.foil ? (
-                              <span className="ml-1.5 text-[10px] text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-400/15 border border-amber-400/30">
-                                ★ Foil
-                              </span>
-                            ) : (
-                              <span className="ml-1.5 text-[10px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700">
-                                Nonfoil
-                              </span>
-                            )}
+                            <span className="inline-flex items-center gap-2 group/product-preview-row">
+                              {renderCardPreview(c)}
+                              <span>{c.name}</span>
+                              {c.foil ? (
+                                <span className="text-[10px] text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-400/15 border border-amber-400/30">
+                                  ★ Foil
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700">
+                                  Nonfoil
+                                </span>
+                              )}
+                            </span>
                           </td>
                           <td className="py-2.5 px-4 text-slate-400 text-[11px]">
                             Singles / Promo • {c.set} {c.number ? `#${c.number}` : ''}
@@ -1729,7 +1856,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                         <React.Fragment key={`audit-sealed-${idx}`}>
                           <tr className={`hover:bg-slate-800/40 transition-colors ${isRowExpanded ? 'bg-slate-800/60' : ''}`}>
                             <td className="py-2.5 pr-4 text-slate-200 font-medium">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 group/product-preview-row">
                                 {hasChildBreakdown && (
                                   <button
                                     type="button"
@@ -1747,7 +1874,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                     )}
                                   </button>
                                 )}
-                                <span className="text-blue-400">🎁</span>
+                                {renderProductPreview(s, 'sealed', s.name)}
                                 <span>{s.name}</span>
                                 {hasChildBreakdown && (
                                   <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-400/30">
@@ -1820,8 +1947,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                           return (
                                             <tr key={`cp-${cidx}`} className="hover:bg-slate-800/30">
                                               <td className="py-2 text-slate-200 pl-2">
-                                                <span className="text-slate-500 mr-2">├─ 📦</span>
-                                                <span className="font-semibold">{cp.packName}</span>
+                                                <span className="inline-flex items-center gap-2 group/product-preview-row">
+                                                  <span className="text-slate-500">├─</span>
+                                                  {renderProductPreview(cp, 'pack', cp.packName)}
+                                                  <span className="font-semibold">{cp.packName}</span>
+                                                </span>
                                               </td>
                                               <td className="py-2 text-slate-400 text-[10px]">Booster Pack ({cp.set})</td>
                                               <td className="py-2 text-center text-indigo-300 font-bold">×{cp.count}</td>
@@ -1850,9 +1980,12 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                           return (
                                             <tr key={`cc-${cidx}`} className="hover:bg-slate-800/30">
                                               <td className="py-2 text-slate-200 pl-2">
-                                                <span className="text-slate-500 mr-2">├─ ✨</span>
-                                                <span className="font-semibold">{cc.name}</span>
-                                                {cc.foil && <span className="ml-1 text-[10px] text-amber-300 font-bold">★ Foil</span>}
+                                                <span className="inline-flex items-center gap-2 group/product-preview-row">
+                                                  <span className="text-slate-500">├─</span>
+                                                  {renderCardPreview(cc)}
+                                                  <span className="font-semibold">{cc.name}</span>
+                                                  {cc.foil && <span className="text-[10px] text-amber-300 font-bold">★ Foil</span>}
+                                                </span>
                                               </td>
                                               <td className="py-2 text-slate-400 text-[10px]">Promo / Single ({cc.set})</td>
                                               <td className="py-2 text-center text-indigo-300 font-bold">×{cc.count}</td>
@@ -1881,8 +2014,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                           return (
                                             <tr key={`cd-${cidx}`} className="hover:bg-slate-800/30">
                                               <td className="py-2 text-slate-200 pl-2">
-                                                <span className="text-slate-500 mr-2">├─ 🎴</span>
-                                                <span className="font-semibold">{cd.name}</span>
+                                                <span className="inline-flex items-center gap-2 group/product-preview-row">
+                                                  <span className="text-slate-500">├─</span>
+                                                  {renderProductPreview(cd, 'deck', cd.name)}
+                                                  <span className="font-semibold">{cd.name}</span>
+                                                </span>
                                               </td>
                                               <td className="py-2 text-slate-400 text-[10px]">Precon Deck ({cd.set})</td>
                                               <td className="py-2 text-center text-indigo-300 font-bold">×{cd.count}</td>
@@ -1911,8 +2047,11 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                           return (
                                             <tr key={`cs-${cidx}`} className="hover:bg-slate-800/30">
                                               <td className="py-2 text-slate-200 pl-2">
-                                                <span className="text-slate-500 mr-2">└─ 🎁</span>
-                                                <span className="font-semibold">{cs.name}</span>
+                                                <span className="inline-flex items-center gap-2 group/product-preview-row">
+                                                  <span className="text-slate-500">└─</span>
+                                                  {renderProductPreview(cs, 'sealed', cs.name)}
+                                                  <span className="font-semibold">{cs.name}</span>
+                                                </span>
                                               </td>
                                               <td className="py-2 text-slate-400 text-[10px]">Sub-Sealed Unit ({cs.set})</td>
                                               <td className="py-2 text-center text-indigo-300 font-bold">×{cs.count}</td>
@@ -1962,7 +2101,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                         <React.Fragment key={`audit-deck-${idx}`}>
                           <tr className={`hover:bg-slate-800/40 transition-colors ${isRowExpanded ? 'bg-slate-800/60' : ''}`}>
                             <td className="py-2.5 pr-4 text-slate-200 font-medium">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 group/product-preview-row">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -1978,7 +2117,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
                                     <ChevronRight className="w-3.5 h-3.5" />
                                   )}
                                 </button>
-                                <span className="text-purple-400">🎴</span>
+                                {renderProductPreview(d, 'deck', d.name)}
                                 <span>{d.name}</span>
                                 {d.isFoil ? (
                                   <span className="text-[10px] text-amber-300 font-bold px-1.5 py-0.2 rounded bg-amber-400/15 border border-amber-400/30">
