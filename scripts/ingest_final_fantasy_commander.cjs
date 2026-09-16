@@ -75,7 +75,7 @@ async function run() {
       prices: {
         tcgplayer: effectivePrice,
         cardmarket: parseFloat(c.prices?.eur || 0) || effectivePrice,
-        all_cheapest: effectivePrice,
+        all: effectivePrice,
       },
     };
 
@@ -173,7 +173,7 @@ async function run() {
           cardkingdom: Number((unitPrice * 1.15).toFixed(2)),
           cardmarket: Number((unitPrice * 0.9).toFixed(2)),
           cardmarketEur: Number((unitPrice * 0.85).toFixed(2)),
-          all_cheapest: unitPrice,
+          all: unitPrice,
         },
       });
     }

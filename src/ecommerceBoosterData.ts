@@ -87,7 +87,6 @@ export interface CatalogPackProduct {
   contents?: any;
   category?: string;
   subtype?: string;
-  metadataSource?: 'curated' | 'pipeline' | 'inferred';
   totalEvAvg?: number;
   totalEvMid90?: number;
   totalEvMin5?: number;

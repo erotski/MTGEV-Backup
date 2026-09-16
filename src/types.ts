@@ -23,63 +23,6 @@ export interface BoosterEVRecord {
   updatedAt: string;
 }
 
-export interface PricingReliability {
-  vendor: string;
-  priceMode: PriceMode;
-  simulatedPacks: number;
-  completeBoosterPct: number;
-  directExactPct?: number;
-  reprintResolvedPct?: number;
-  differentFinishPct: number;
-  differentVendorPct: number;
-  nonExactPct?: number;
-  unresolvedPct?: number;
-  sourceRows: number;
-}
-
-export interface ProductMetricsRecord {
-  productUuid: string;
-  boxName?: string;
-  setCode?: string;
-  setName?: string;
-  category?: string;
-  marketPrice: number;
-  totalEvMin: number;
-  totalEvAvg: number;
-  totalEvMid90: number;
-  totalEvMax: number;
-  effectiveEv: number;
-  effectiveEvByBasis?: Record<string, number>;
-  profitUsd: number;
-  profitUsdByBasis?: Record<string, number>;
-  roiPct: number;
-  roiPctByBasis?: Record<string, number>;
-  evScore?: number | null;
-  packCount: number;
-  cardCount: number;
-  vendor: Vendor | string;
-  priceMode: PriceMode;
-  provenance: Record<string, any>;
-}
-
-export interface PipelineRunRecord {
-  id?: string;
-  timestamp?: string;
-  status?: 'success' | 'failed' | string;
-  durationSeconds?: number;
-  stages?: Array<Record<string, any>>;
-  errors?: Array<Record<string, any>>;
-  schemaVersion?: number | string;
-  pipelineRunId?: string;
-  generatedAt?: string;
-}
-
-export interface SnapshotIntegrityReport {
-  ok: boolean;
-  warnings: string[];
-  metadata: PipelineRunRecord | null;
-}
-
 export interface ProductContentsCard {
   foil?: boolean;
   name: string;
@@ -201,13 +144,6 @@ export interface DeckCardItem {
     all_cheapest?: number;
     all_average?: number;
   };
-  priceProvenance?: Record<string, {
-    status: 'exact' | 'vendor_fallback' | 'finish_fallback' | 'vendor_finish_fallback' | 'reprint' | 'unpriced' | 'ignored';
-    requestedVendor?: string;
-    resolvedVendor?: string;
-    requestedFinish?: string;
-    resolvedFinish?: string;
-  }>;
 }
 
 export interface PreconstructedDeckDetail {
@@ -253,14 +189,6 @@ export interface PreconstructedDeckDetail {
   cards?: DeckCardItem[];
   fullDecklist?: DeckCardItem[];
   sealedProductUuids?: string[];
-  pricingReliability?: Record<string, {
-    expectedCards: number;
-    exactCards: number;
-    fallbackCards: number;
-    missingCards: number;
-    coveragePct: number;
-    status: 'exact' | 'fallback_used' | 'missing' | string;
-  }>;
 }
 
 export interface CustomSlot {

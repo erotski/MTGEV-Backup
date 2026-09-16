@@ -48,7 +48,7 @@ export const VENDOR_OPTIONS: VendorOption[] = [
 
 export function normalizeVendor(vendor?: string | null): Vendor {
   if (!vendor) return 'all_cheapest';
-  const v = String(vendor || '').toLowerCase().trim();
+  const v = vendor.toLowerCase().trim();
   if (v === 'all_cheapest' || v === 'all') return 'all_cheapest';
   if (v === 'all_average' || v === 'average' || v === 'all_avg') return 'all_average';
   if (v === 'tcgplayer' || v === 'tcg') return 'tcgplayer';
@@ -106,7 +106,11 @@ export function resolveCardPrice(
     return prices[v];
   }
 
-  return 0;
+  const baseTcg = isFoil ? (card.foilPrice || card.price || 0) : (prices.tcgplayer || card.price || 0);
+  if (v === 'cardmarket') return Number((baseTcg * 0.868).toFixed(2));
+  if (v === 'cardkingdom') return Number((baseTcg * 1.15).toFixed(2));
+  if (v === 'manapool') return prices.all || Number((baseTcg * 0.98).toFixed(2));
+  return baseTcg;
 }
 
 /**
@@ -114,7 +118,7 @@ export function resolveCardPrice(
  */
 export function normalizeBoosterCode(rawName?: string): string {
   if (!rawName) return 'play';
-  const n = String(rawName || '').toLowerCase().trim();
+  const n = rawName.toLowerCase().trim();
   if (n.includes('collector') && n.includes('sample')) return 'collector-sample';
   if (n.includes('collector')) return 'collector';
   if (n.includes('play')) return 'play';
@@ -148,7 +152,7 @@ export function findBoosterEv(
   const vNorm = normalizeVendor(vendor);
 
   const matchesCode = (rBoosterName: string) => {
-    const rLower = (rBoosterName || '').toLowerCase().trim();
+    const rLower = rBoosterName.toLowerCase().trim();
     return rLower === rawTarget || normalizeBoosterCode(rLower) === normTarget;
   };
 

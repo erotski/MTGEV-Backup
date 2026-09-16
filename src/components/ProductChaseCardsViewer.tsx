@@ -1,7 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { getCardProductAvailability, getCardImageUrl } from '../services/chaseCardsService';
+import {
+  getChaseCardsForProduct,
+  fetchLiveChaseCardsForSet,
+  getCardProductAvailability,
+  getCardImageUrl,
+  preloadChaseCardsForProducts,
+  applyMtgJsonPricesToCards,
+} from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   Sparkles,
@@ -17,8 +24,6 @@ import {
   Package,
   Layers,
 } from 'lucide-react';
-
-const lower = (value: unknown) => String(value ?? '').toLowerCase();
 
 interface ProductChaseCardsViewerProps {
   product: CatalogPackProduct;
@@ -46,11 +51,11 @@ const getMatchingProductsForCard = (card: ChaseCard, allProducts: CatalogPackPro
 
   if (isDeckCard) {
     allProducts.forEach(p => {
-      const isPDeck = p.packagingType === 'starter_deck' || p.rawCategory === 'deck' || p.category === 'deck' || lower(p.displayName).includes('deck') || lower(p.displayName).includes('commander');
+      const isPDeck = p.packagingType === 'starter_deck' || p.rawCategory === 'deck' || p.category === 'deck' || (p.displayName || '').toLowerCase().includes('deck') || (p.displayName || '').toLowerCase().includes('commander');
       if (isPDeck) {
         if (card.deckName) {
-          const dn = lower(card.deckName).replace(/['"’]/g, '');
-          const pn = lower(p.displayName).replace(/['"’]/g, '');
+          const dn = card.deckName.toLowerCase().replace(/['"’]/g, '');
+          const pn = (p.displayName || '').toLowerCase().replace(/['"’]/g, '');
           if (pn.includes(dn) || dn.includes(pn)) {
             matches.push(p);
           } else {
@@ -63,22 +68,22 @@ const getMatchingProductsForCard = (card: ChaseCard, allProducts: CatalogPackPro
     });
   } else if (isCollectorOnly) {
     allProducts.forEach(p => {
-      const pn = lower(p.displayName);
-      if (pn.includes('collector') || lower(p.boosterName).includes('collector')) {
+      const pn = (p.displayName || '').toLowerCase();
+      if (pn.includes('collector') || (p.boosterName || '').toLowerCase().includes('collector')) {
         matches.push(p);
       }
     });
   } else if (isPromo) {
     allProducts.forEach(p => {
-      const pn = lower(p.displayName);
+      const pn = (p.displayName || '').toLowerCase();
       if (pn.includes('bundle') || pn.includes('promo') || pn.includes('gift') || pn.includes('prerelease')) {
         matches.push(p);
       }
     });
   } else {
     allProducts.forEach(p => {
-      const pn = lower(p.displayName);
-      const rawCat = lower(p.rawCategory || p.category);
+      const pn = (p.displayName || '').toLowerCase();
+      const rawCat = (p.rawCategory || p.category || '').toLowerCase();
       const isBooster = p.packagingType === 'box' || p.packagingType === 'pack' || rawCat.includes('booster') || pn.includes('booster') || pn.includes('bundle') || pn.includes('gift');
       if (isBooster) {
         matches.push(p);
@@ -108,65 +113,72 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
   deckDetail,
 }) => {
   const [zoomedCard, setZoomedCard] = useState<ChaseCard | null>(null);
+  const [liveCards, setLiveCards] = useState<ChaseCard[]>([]);
+  const [loadingLive, setLoadingLive] = useState<boolean>(false);
   const [backendCards, setBackendCards] = useState<ChaseCard[] | null>(null);
   const [backendCardsLoaded, setBackendCardsLoaded] = useState<boolean>(false);
-  const [missingRecordReason, setMissingRecordReason] = useState<string | null>(null);
+  const [mtgJsonPrices, setMtgJsonPrices] = useState<any>(propPrices || null);
+  const [sealedProducts, setSealedProducts] = useState<any[] | null>(dataService.getSealedProductsSync());
+  const [allPreconDecks, setAllPreconDecks] = useState<Record<string, any> | null>(
+    propPreconDecks || dataService.getPreconDecksSync()
+  );
 
   useEffect(() => {
     let mounted = true;
-    const productId = product.id || (product as any).uuid || (product as any).productUuid;
-    if (!productId) {
-      setBackendCards([]);
-      setBackendCardsLoaded(true);
-      setMissingRecordReason('This product has no resolvable identifier for chase-card lookup.');
-      return () => { mounted = false; };
-    }
-
-    const normaliseKey = (value?: string) => (value ? String(value).trim().toLowerCase() : '');
-    const productKeyCandidates = Array.from(new Set([
-      product.id,
-      (product as any).uuid,
-      (product as any).productUuid,
-    ].filter(Boolean))) as string[];
-
+    const productId = product.id || (product as any).uuid;
+    if (!productId) return () => { mounted = false; };
     dataService.getProductChaseCards().then((data) => {
       if (!mounted) return;
-      const mode = 'direct';
-      const match = productKeyCandidates
-        .map((candidate) => ({ candidate, record: data[candidate] }))
-        .find(({ record }) => record && typeof record === 'object');
-
-      const fallbackMatch = Object.entries(data || {}).find(([key, record]) => (
-        record && typeof record === 'object' &&
-        productKeyCandidates.some((candidate) => normaliseKey(candidate) === normaliseKey(key))
-      ));
-
-      const record = match?.record || fallbackMatch?.[1] || {};
-      const cards = Array.isArray(record[`${mode}:${vendor}`]) ? record[`${mode}:${vendor}`] : [];
-
-      setBackendCards(cards);
-      if (!cards.length) {
-        if (!Object.keys(data || {}).length) {
-          setMissingRecordReason('No chase-card snapshot is loaded for this product. The generated product_chase_cards.json file may be missing or stale in the current public/data snapshot.');
-        } else if (match || fallbackMatch) {
-          setMissingRecordReason(`No chase-card record exists for ${vendor} / ${mode} in the loaded snapshot for this product.`);
-        } else {
-          setMissingRecordReason(`No matching product key was found in the loaded chase-card snapshot for ${productId}. This often means the data is from a different pipeline run or branch.`);
-        }
-      } else {
-        setMissingRecordReason(null);
-      }
+      const mode = priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct';
+      const cards = data[productId]?.[`${mode}:${vendor}`];
+      setBackendCards(Array.isArray(cards) ? cards : []);
       setBackendCardsLoaded(true);
     });
     return () => { mounted = false; };
   }, [product, priceMode, vendor]);
 
+  // Auto-fetch MTGJSON single prices if not provided in props
+  useEffect(() => {
+    if (!mtgJsonPrices && !propPrices) {
+      dataService.getSingleCardPrices().then((p) => {
+        if (p) setMtgJsonPrices(p);
+      });
+    } else if (propPrices) {
+      setMtgJsonPrices(propPrices);
+    }
+  }, [propPrices]);
+
+  // Keep precon decks in sync when props update
+  useEffect(() => {
+    if (propPreconDecks) {
+      setAllPreconDecks(propPreconDecks);
+    }
+  }, [propPreconDecks]);
+
+  // Ensure sealed products and precon decks are loaded to resolve contained cards
+  useEffect(() => {
+    let isMounted = true;
+    if (!sealedProducts) {
+      dataService.getSealedProducts().then((prods) => {
+        if (isMounted && prods) setSealedProducts(prods);
+      });
+    }
+    if (!allPreconDecks && !propPreconDecks) {
+      dataService.getPreconDecks().then((decks) => {
+        if (isMounted && decks) setAllPreconDecks(decks);
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Determine if this is a fixed preconstructed / non-booster product
   const isFixedProduct = useMemo(() => {
-    const pName = lower(product.displayName);
-    const pkg = lower(product.packagingType);
-    const rawCat = lower((product as any).rawCategory || (product as any).category);
-    const rawSub = lower((product as any).rawSubtype || (product as any).subtype);
+    const pName = (product.displayName || '').toLowerCase();
+    const pkg = (product.packagingType || '').toLowerCase();
+    const rawCat = ((product as any).rawCategory || (product as any).category || '').toLowerCase();
+    const rawSub = ((product as any).rawSubtype || (product as any).subtype || '').toLowerCase();
     const hasFixedContents = Boolean(
       (product as any).contents?.sealed ||
       (product as any).rawContents?.sealed ||
@@ -191,12 +203,103 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     );
   }, [product]);
 
-  // Product TOP 5 data is authoritative only when supplied by the backend snapshot.
+  // Retrieve curated chase cards specifically for this product
   const curatedCards = useMemo(() => {
-    return backendCardsLoaded ? backendCards || [] : [];
-  }, [backendCards, backendCardsLoaded]);
+    if (backendCardsLoaded) return backendCards || [];
+    // If deckDetail with cards was passed directly (precon deck viewer)
+    if (deckDetail?.cards && Array.isArray(deckDetail.cards) && deckDetail.cards.length > 0) {
+      const isFoil = (product.displayName || '').toLowerCase().includes('foil') || Boolean(deckDetail.isFoil);
+      const mapped: ChaseCard[] = deckDetail.cards.map((c: any, idx: number) => {
+        const pNorm = c.price ?? c.marketPrice ?? 0;
+        const pFoil = isFoil || c.foil ? c.priceFoil : undefined;
+        return {
+          uuid: c.uuid || `deck-card-${idx}-${c.name}`,
+          name: c.name,
+          scryfallId: c.scryfallId || '',
+          setCode: c.set || setCode || 'SLD',
+          rarity: (c.rarity as any) || 'rare',
+          number: c.number || String(idx + 1),
+          priceNormal: pNorm,
+          priceFoil: pFoil,
+          price: Math.max(pNorm, pFoil || 0),
+          finish: isFoil || c.foil ? 'foil' : 'nonfoil',
+          cardType: c.type || 'Single',
+          productType: 'deck',
+          imageUrl: c.imageUrl,
+        };
+      });
+      if (mtgJsonPrices) {
+        applyMtgJsonPricesToCards(
+          mapped,
+          mtgJsonPrices,
+          setCode,
+          priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+          vendor
+        );
+      }
+      return mapped.sort((a, b) => (b.price || 0) - (a.price || 0));
+    }
 
-  const chaseCards = curatedCards;
+    return getChaseCardsForProduct(
+      product,
+      setCode,
+      undefined,
+      mtgJsonPrices,
+      allPreconDecks || propPreconDecks,
+      sealedProducts || (allProducts.length > 0 ? allProducts : null),
+      priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+      vendor
+    );
+  }, [product, setCode, priceMode, vendor, backendCards, backendCardsLoaded, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts, allProducts, deckDetail]);
+
+  // Only query Scryfall API as fallback for booster pack products
+  useEffect(() => {
+    let isMounted = true;
+
+    // Do NOT fetch random set chase cards for fixed non-booster products (Secret Lair, Decks, Bundles)
+    if (!isFixedProduct && curatedCards.length === 0 && setCode) {
+      setLoadingLive(true);
+      fetchLiveChaseCardsForSet(
+        setCode,
+        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+        vendor
+      )
+        .then((cards) => {
+          if (isMounted) {
+            setLiveCards(cards);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load live Scryfall chase cards:', err);
+        })
+        .finally(() => {
+          if (isMounted) setLoadingLive(false);
+        });
+    } else {
+      setLiveCards([]);
+      setLoadingLive(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [curatedCards.length, setCode, isFixedProduct, priceMode]);
+
+  // Preload and cache top 5 chase cards for all products in the database
+  useEffect(() => {
+    if (allProducts && allProducts.length > 0) {
+      preloadChaseCardsForProducts(
+        allProducts,
+        setCode,
+        mtgJsonPrices,
+        allPreconDecks || propPreconDecks,
+        sealedProducts || allProducts,
+        priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct',
+        vendor
+      );
+    }
+  }, [allProducts, setCode, priceMode, vendor, mtgJsonPrices, allPreconDecks, propPreconDecks, sealedProducts]);
+
+  const chaseCards = curatedCards.length > 0 ? curatedCards : (isFixedProduct ? [] : liveCards);
 
   // Filter to the top 5 most valuable chase cards for this product
   const topChaseCards = useMemo(() => {
@@ -212,7 +315,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
   // Helper for rarity styling
   const getRarityBadge = (rarity: string) => {
-    switch (lower(rarity)) {
+    switch (rarity.toLowerCase()) {
       case 'mythic':
         return 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-600 shadow-2xs';
       case 'rare':
@@ -226,11 +329,11 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
     }
   };
 
-  const isCollector = lower(product.displayName).includes('collector');
+  const isCollector = (product.displayName || '').toLowerCase().includes('collector');
   const isDeck =
     product.packagingType === 'starter_deck' ||
-    lower(product.displayName).includes('commander deck');
-  const isSecretLair = lower(product.displayName).includes('secret lair');
+    (product.displayName || '').toLowerCase().includes('commander deck');
+  const isSecretLair = (product.displayName || '').toLowerCase().includes('secret lair');
 
   return (
     <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5 ${className}`}>
@@ -265,12 +368,19 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
       </div>
 
       {/* Grid of Top 5 Chase Cards */}
-      {topChaseCards.length === 0 ? (
+      {loadingLive ? (
+        <div className="text-center py-8 space-y-2">
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-slate-500 font-mono">
+            Fetching card images & set metadata from Scryfall API...
+          </p>
+        </div>
+      ) : topChaseCards.length === 0 ? (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-center space-y-2">
           <Package className="w-8 h-8 text-slate-400 mx-auto" />
           <h5 className="text-sm font-bold text-slate-800">No Cards Available</h5>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            {missingRecordReason || `Unable to retrieve card values for ${product.displayName}.`}
+            Unable to retrieve card values for {product.displayName}.
           </p>
         </div>
       ) : (
@@ -284,7 +394,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
             const cardImg = getCardImageUrl(card, 'normal');
             const isEtched = card.finish === 'etched';
-            const isCardFoil = isEtched || card.finish === 'foil' || lower(product.displayName).includes('foil');
+            const isCardFoil = isEtched || card.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
 
             return (
               <div
@@ -306,6 +416,8 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                           const target = e.target as HTMLImageElement;
                           if (card.scryfallId && !target.src.includes('api.scryfall.com')) {
                             target.src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
+                          } else if (card.number) {
+                            target.src = `https://api.scryfall.com/cards/${(card.setCode || setCode || 'sld').toLowerCase()}/${card.number}?format=image&version=normal`;
                           }
                         }}
                       />
@@ -443,7 +555,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
             {(() => {
               const isEtchedZoom = zoomedCard.finish === 'etched';
-                  const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil');
+              const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil');
               const zoomImg = getCardImageUrl(zoomedCard, 'large');
 
               return (
@@ -508,7 +620,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 <span className="font-medium">
                   {zoomedCard.finish === 'etched' ? (
                     <span className="text-purple-700 font-bold">✧★✧ Etched Foil</span>
-                  ) : zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil') ? (
+                  ) : zoomedCard.finish === 'foil' || (product.displayName || '').toLowerCase().includes('foil') ? (
                     <span className="text-amber-600 font-bold">★ Traditional Foil</span>
                   ) : (
                     <span className="text-slate-600">Non-foil</span>

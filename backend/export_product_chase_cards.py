@@ -1,11 +1,8 @@
 """Export backend-resolved TOP 5 product chase cards.
 
 Card candidates come from MySQL booster sheets, sealed-product contents, and
-preconstructed deck contents. Prices are resolved directly from MySQL for
-every discovered candidate uuid, the same tables the booster EV simulation
-uses, so booster-sheet cards are actually priced instead of silently
-skipped. Scryfall artwork is supplemented from single_card_prices.json when
-available.
+preconstructed deck contents. Prices come from local single_card_prices.json.
+Scryfall is represented only by existing image/scryfall metadata.
 """
 import json
 from pathlib import Path
@@ -18,9 +15,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "public" / "data"
 OUTPUT_PATH = DATA_DIR / "product_chase_cards.json"
 VENDORS = ("all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool")
-MODES = ("direct",)
-NAMED_VENDORS = ("tcgplayer", "cardmarket", "cardkingdom", "manapool")
-EUR_USD_RATE = 1.09
+MODES = ("direct", "cheapest_reprint")
 
 
 def load_json(name):
@@ -101,101 +96,38 @@ def load_card_metadata(cursor, uuids):
         batch = uuid_list[start:start + 1000]
         placeholders = ",".join(["%s"] * len(batch))
         cursor.execute(
-            f"""
-            SELECT uuid, name, setCode, number, scryfallId, rarity, types
-            FROM cards
-            WHERE uuid IN ({placeholders})
-            """,
-            batch,
+            f"SELECT uuid, name FROM cards WHERE uuid IN ({placeholders})", batch
         )
         metadata.update({row["uuid"]: row for row in cursor.fetchall()})
     return metadata
 
 
-def build_scryfall_image_url(scryfall_id):
-    scryfall_id = str(scryfall_id or "").strip()
-    if len(scryfall_id) < 2:
-        return ""
-    return (
-        f"https://cards.scryfall.io/normal/front/{scryfall_id[0]}/"
-        f"{scryfall_id[1]}/{scryfall_id}.jpg"
-    )
+def price_for(record, vendor, mode, is_foil):
+    prices = record.get("prices") or {}
+    if mode == "cheapest_reprint":
+        normal = prices.get("all_cheapest") or prices.get("all") or 0
+    else:
+        normal = prices.get(vendor) or 0
+    if is_foil:
+        foil_key = f"{vendor}Foil"
+        normal = prices.get(foil_key) or record.get("priceFoil") or normal
+    return float(normal or 0)
 
 
-def load_direct_prices(cursor, uuids):
-    """Direct-mode named-vendor prices resolved straight from MySQL for the
-    exact candidate uuids, so booster-sheet cards get priced too (not just
-    the cards already indexed in single_card_prices.json)."""
-    prices = {}
-    uuid_list = list(uuids)
-    for start in range(0, len(uuid_list), 1000):
-        batch = uuid_list[start:start + 1000]
-        placeholders = ",".join(["%s"] * len(batch))
-        cursor.execute(
-            f"""
-            SELECT uuid, provider AS seller, finish, price
-            FROM prices
-            WHERE uuid IN ({placeholders})
-              AND (source = 'paper' OR source IS NULL)
-              AND (priceType = 'retail' OR priceType IS NULL)
-              AND price > 0
-            """,
-            batch,
-        )
-        for row in cursor.fetchall():
-            seller = (row.get("seller") or "").lower()
-            finish = (row.get("finish") or "").strip().replace("nonfoil", "normal").lower()
-            if seller not in NAMED_VENDORS or not finish:
-                continue
-            prices.setdefault(row["uuid"], {}).setdefault(seller, {})[finish] = float(row["price"])
-    return prices
-
-
-def load_reprint_prices(cursor, uuids):
-    """Cheapest-reprint-mode named-vendor prices from the precomputed
-    lowest_prices table, keyed directly by uuid."""
-    prices = {}
-    uuid_list = list(uuids)
-    for start in range(0, len(uuid_list), 1000):
-        batch = uuid_list[start:start + 1000]
-        placeholders = ",".join(["%s"] * len(batch))
-        cursor.execute(
-            f"""
-            SELECT uuid, seller, cardfinish, price
-            FROM lowest_prices
-            WHERE uuid IN ({placeholders}) AND price > 0
-            """,
-            batch,
-        )
-        for row in cursor.fetchall():
-            seller = (row.get("seller") or "").lower()
-            finish = (row.get("cardfinish") or "").strip().replace("nonfoil", "normal").lower()
-            if seller not in NAMED_VENDORS or not finish:
-                continue
-            prices.setdefault(row["uuid"], {}).setdefault(seller, {})[finish] = float(row["price"])
-    return prices
-
-
-def resolve_vendor_prices(vendor_finish_map, is_foil):
-    """Convert {seller: {finish: price}} into vendor keys plus computed
-    all_cheapest/all_average aggregates for one card in one price mode."""
-    finish_key = "foil" if is_foil else "normal"
-    resolved = {}
-    for seller in NAMED_VENDORS:
-        val = (vendor_finish_map.get(seller) or {}).get(finish_key)
-        if val is None:
-            continue
-        if seller == "cardmarket":
-            resolved["cardmarketEur"] = round(val, 2)
-            resolved["cardmarket"] = round(val * EUR_USD_RATE, 2)
-        else:
-            resolved[seller] = round(val, 2)
-
-    valid_vals = [v for k, v in resolved.items() if k in NAMED_VENDORS and v > 0]
-    if valid_vals:
-        resolved["all_cheapest"] = round(min(valid_vals), 2)
-        resolved["all_average"] = round(sum(valid_vals) / len(valid_vals), 2)
-    return resolved
+def make_card(uuid, is_foil, metadata, prices, vendor, mode):
+    record = prices.get("byUuid", {}).get(uuid)
+    if not record:
+        return None
+    price = price_for(record, vendor, mode, is_foil)
+    return {
+        "uuid": uuid,
+        "name": record.get("name") or metadata.get(uuid, {}).get("name") or "",
+        "setCode": (record.get("set") or "").upper(),
+        "finish": "foil" if is_foil else "nonfoil",
+        "price": round(price, 2),
+        "scryfallId": record.get("scryfallId", ""),
+        "imageUrl": record.get("imageUrl", ""),
+    }
 
 
 def resolve_product(product, products_by_id, booster_candidates, deck_candidates, seen=None):
@@ -237,7 +169,7 @@ def resolve_product(product, products_by_id, booster_candidates, deck_candidates
 
 
 def export_product_chase_cards():
-    display_metadata = (load_json("single_card_prices.json") or {}).get("byUuid", {})
+    prices = load_json("single_card_prices.json")
     products = load_json("sealed_products.json")
     products_by_id = {p.get("id") or p.get("uuid"): p for p in products if p.get("id") or p.get("uuid")}
 
@@ -248,55 +180,24 @@ def export_product_chase_cards():
         deck_candidates = load_deck_candidates(cursor)
         if not deck_candidates:
             deck_candidates = load_local_deck_candidates()
+        all_uuids = {uuid for values in booster_candidates.values() for uuid, _ in values}
+        all_uuids.update(uuid for values in deck_candidates.values() for uuid, _ in values)
+        metadata = load_card_metadata(cursor, all_uuids)
 
-        # Resolve every product's candidates up front so the price/metadata
-        # queries below cover booster-sheet, deck, direct-card, and
-        # variable-slot cards together instead of only booster/deck uuids.
-        product_candidates = {}
-        all_uuids = set()
+        output = {}
         for product in products:
             product_id = product.get("id") or product.get("uuid")
             if not product_id:
                 continue
             candidates = resolve_product(product, products_by_id, booster_candidates, deck_candidates)
-            product_candidates[product_id] = candidates
-            all_uuids.update(uuid for uuid, _ in candidates)
-
-        metadata = load_card_metadata(cursor, all_uuids)
-        mode_prices = {"direct": load_direct_prices(cursor, all_uuids)}
-
-        output = {}
-        for product_id, candidates in product_candidates.items():
             product_result = {}
             for mode in MODES:
-                resolved_by_card = {}
-                for uuid, is_foil in candidates:
-                    vendor_finish_map = mode_prices[mode].get(uuid)
-                    if not vendor_finish_map:
-                        continue
-                    resolved_by_card[(uuid, is_foil)] = resolve_vendor_prices(vendor_finish_map, is_foil)
-
                 for vendor in VENDORS:
-                    cards = []
-                    for (uuid, is_foil), resolved in resolved_by_card.items():
-                        price = resolved.get(vendor) or 0.0
-                        if price <= 0:
-                            continue
-                        meta = metadata.get(uuid, {})
-                        display = display_metadata.get(uuid, {})
-                        scryfall_id = meta.get("scryfallId") or display.get("scryfallId", "")
-                        cards.append({
-                            "uuid": uuid,
-                            "name": meta.get("name") or display.get("name") or "",
-                            "setCode": (meta.get("setCode") or display.get("set") or "").upper(),
-                            "number": str(meta.get("number") or display.get("number") or ""),
-                            "rarity": meta.get("rarity") or display.get("rarity") or "",
-                            "cardType": meta.get("types") or display.get("cardType") or "",
-                            "finish": "foil" if is_foil else "nonfoil",
-                            "price": round(price, 2),
-                            "scryfallId": scryfall_id,
-                            "imageUrl": build_scryfall_image_url(scryfall_id) or display.get("imageUrl", ""),
-                        })
+                    cards = [
+                        card for uuid, is_foil in candidates
+                        if (card := make_card(uuid, is_foil, metadata, prices, vendor, mode))
+                        and card["price"] > 0
+                    ]
                     cards.sort(key=lambda card: card["price"], reverse=True)
                     product_result[f"{mode}:{vendor}"] = cards[:5]
             output[product_id] = product_result

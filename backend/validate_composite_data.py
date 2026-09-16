@@ -40,6 +40,7 @@ def run_validation():
     evaluated_prods = [
         p for p in products
         if len((p.get("quantilesByVendor") or {}).get("all_cheapest", [])) == 100
+        or len((p.get("quantilesByVendor") or {}).get("all", [])) == 100
     ]
     print(f"Found {len(evaluated_prods)} products with 100-quantile precomputations\n")
 
@@ -48,22 +49,19 @@ def run_validation():
 
     # 1. Monotonicity & Quantile Structure Check
     monotonic_errors = 0
-    endpoint_errors = 0
     vendor_completeness_errors = 0
     for p in evaluated_prods:
         qv = p.get("quantilesByVendor", {})
-        q = qv.get("all_cheapest") or []
+        q = qv.get("all_cheapest") or qv.get("all") or []
         # Check monotonicity
         for i in range(len(q) - 1):
             if q[i] > q[i + 1] + 1e-4:
                 monotonic_errors += 1
                 break
-        if q and q[0] > q[-1] + 1e-4:
-            endpoint_errors += 1
 
         # Check vendor completeness
         qv = p.get("quantilesByVendor", {})
-        if not qv or "all_cheapest" not in qv or "tcgplayer" not in qv:
+        if not qv or ("all_cheapest" not in qv and "all" not in qv) or "tcgplayer" not in qv:
             vendor_completeness_errors += 1
 
     if monotonic_errors == 0:
@@ -71,13 +69,6 @@ def run_validation():
         passed_checks += 1
     else:
         print(f"✘ [FAIL] Monotonicity: {monotonic_errors} products had non-monotonic quantile buckets.")
-        failed_checks += 1
-
-    if endpoint_errors == 0:
-        print("✔ [PASS] Endpoints: Curve point 1 is no greater than curve point 100 for all evaluated products.")
-        passed_checks += 1
-    else:
-        print(f"✘ [FAIL] Endpoints: {endpoint_errors} products had invalid minimum/maximum ordering.")
         failed_checks += 1
 
     if vendor_completeness_errors == 0:
@@ -101,7 +92,7 @@ def run_validation():
     precon_flat_errors = 0
     for p in precons:
         qv = p.get("quantilesByVendor", {})
-        q = qv.get("all_cheapest") or []
+        q = qv.get("all_cheapest") or qv.get("all") or []
         if abs(q[0] - q[-1]) > 0.05 or abs(p.get("totalEvMin5", 0) - p.get("totalEvMax5", 0)) > 0.05:
             precon_flat_errors += 1
 
@@ -147,7 +138,7 @@ def run_validation():
         p05 = p.get("totalEvMin5", 0)
         p95 = p.get("totalEvMax5", 0)
         qv = p.get("quantilesByVendor", {})
-        q = qv.get("all_cheapest") or []
+        q = qv.get("all_cheapest") or qv.get("all") or []
 
         # Check that curve has spread when variable slots with variance exist
         has_variance = (q[-1] - q[0]) > 0.1

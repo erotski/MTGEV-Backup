@@ -10,5 +10,4 @@ DB_CONFIG = {
 }
 
 AUDIT_ENABLED = os.getenv('AUDIT_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes', 'on')
-QUICK_TEST_SET = os.getenv('QUICK_TEST_SET', '').strip().upper() or None
 AUDIT_OUTPUT_DIR = os.getenv('AUDIT_OUTPUT_DIR', 'backend/audit_output')

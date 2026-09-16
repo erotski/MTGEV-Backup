@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, ProductMetricsRecord, EvBasis, PricingReliability } from '../types';
+import { BoxArbitrageRecord, PriceMode, ProductCategory, Vendor, BoosterEVRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
-import { getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
-import { findMatchingPreconDeck } from '../utils/productUtils';
+import { calculateEvScore, getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
+import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
+import { getCanonicalProductMetrics, findMatchingPreconDeck } from '../utils/productUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -39,8 +40,6 @@ interface ArbitrageLeaderboardProps {
   evBasis?: EvBasis;
   onEvBasisChange?: (basis: EvBasis) => void;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
-  pricingReliability?: Record<string, PricingReliability>;
-  productMetrics?: ProductMetricsRecord[];
 }
 
 export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
@@ -53,8 +52,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   evBasis: propEvBasis,
   onEvBasisChange,
   boosterEvMap,
-  pricingReliability = {},
-  productMetrics = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('all');
@@ -68,8 +65,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
-  const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
-  const [pipelineGeneratedAt, setPipelineGeneratedAt] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -85,13 +80,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
         }
       }).catch(() => {});
     }, 300);
-
-    // Same provenance gateway as dataService.getProductMetrics(), surfaced once for the whole table
-    dataService.getLatestPipelineRun().then((run) => {
-      if (!isMounted || !run) return;
-      setPipelineRunId(run.pipelineRunId || run.id || 'unavailable');
-      setPipelineGeneratedAt(run.generatedAt || run.timestamp || null);
-    }).catch(() => {});
 
     return () => {
       isMounted = false;
@@ -187,36 +175,102 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     return 0;
   };
 
-  // Products Overview displays backend-owned complete-product metrics only.
+  // Dynamically compute adjusted pricing and EV based on selected PriceMode, Vendor & EV Basis
   const adjustedRecords = useMemo(() => {
-    const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
-    const metricsByProduct = new Map(
-      productMetrics
-        .filter((metric) => metric.vendor === selectedVendor && metric.priceMode === priceMode)
-        .map((metric) => [metric.productUuid, metric])
-    );
-    return records.flatMap((record) => {
-      const metric = metricsByProduct.get(record.productUuid || record.id || '');
-      if (!metric) return [];
-      const effectiveEv = metric.effectiveEvByBasis?.[evBasis] ?? metric.effectiveEv;
-      const profitUsd = metric.profitUsdByBasis?.[evBasis] ?? metric.profitUsd;
-      const roiPct = metric.roiPctByBasis?.[evBasis] ?? metric.roiPct;
-      return [{
-        ...record,
-        marketPrice: metric.marketPrice,
-        packCount: metric.packCount,
-        cardCount: metric.cardCount,
-        totalEvMin: metric.totalEvMin,
-        totalEvAvg: metric.totalEvAvg,
-        totalEvMid90: metric.totalEvMid90,
-        totalEvMax: metric.totalEvMax,
+    // Fast path: if default options (direct, all) are selected, records in arbitrage_leaderboard.json
+    // are already the canonical metrics. We only need to adjust effectiveEv/profitUsd/roiPct per evBasis.
+    const isDefaultPricing = priceMode === 'direct' && (vendor === 'all' || vendor === 'all_cheapest');
+    if (isDefaultPricing) {
+      return records.map((r) => {
+        let effectiveEv = r.totalEvAvg || 0;
+        if (evBasis === 'min') effectiveEv = r.totalEvMin || 0;
+        else if (evBasis === 'mid90') effectiveEv = r.totalEvMid90 || effectiveEv;
+        else if (evBasis === 'max') effectiveEv = r.totalEvMax || 0;
+
+        const profitUsd = Number((effectiveEv - (r.marketPrice || 0)).toFixed(2));
+        const roiPct = (r.marketPrice || 0) > 0 ? Number(((profitUsd / r.marketPrice) * 100).toFixed(2)) : 0;
+        const isPrecon = (r.category || '').toLowerCase().includes('deck') || (r.packCount === 0);
+        const evScore = calculateEvScore(
+          r.marketPrice,
+          r.totalEvAvg,
+          r.totalEvMin,
+          r.totalEvMid90,
+          r.totalEvMax,
+          isPrecon
+        );
+
+        return {
+          ...r,
+          effectiveEv,
+          profitUsd,
+          roiPct,
+          evScore,
+        };
+      });
+    }
+
+    return records.map((r) => {
+      // Single canonical source of truth for containment, breakdown, and EV calculation
+      const metrics = getCanonicalProductMetrics(
+        r,
+        recordByUuid,
+        recordByUuidObj,
+        boosterEvMap || {},
+        preconDecks,
+        singleCardPrices,
+        vendor,
+        priceMode,
+        evBasis
+      );
+
+      const adjustedBoxPrice = r.marketPrice;
+      const adjustedBoxEv = metrics.estimatedEv;
+      const adjustedBoxMin = metrics.minEv;
+      const adjustedBoxMid90 = metrics.mid90Ev;
+      const adjustedBoxMax = metrics.maxEv;
+      const effectiveEv = metrics.effectiveEv;
+      const profitUsd = metrics.netSpread;
+      const roiPct = metrics.roiPct;
+      const pCount = metrics.packsCount;
+      const cCount = metrics.cardCount;
+      const boosterName = metrics.primaryBoosterName;
+
+      const adjustedPackEv = pCount > 0 ? Number((adjustedBoxEv / pCount).toFixed(2)) : 0;
+      const adjustedPackMin = pCount > 0 ? Number((adjustedBoxMin / pCount).toFixed(2)) : 0;
+      const adjustedPackMid90 = pCount > 0 ? Number((adjustedBoxMid90 / pCount).toFixed(2)) : 0;
+      const adjustedPackMax = pCount > 0 ? Number((adjustedBoxMax / pCount).toFixed(2)) : 0;
+
+      const isPrecon = (r.category || '').toLowerCase().includes('deck') || pCount === 0;
+      const evScore = calculateEvScore(
+        adjustedBoxPrice,
+        adjustedBoxEv,
+        adjustedBoxMin,
+        adjustedBoxMid90,
+        adjustedBoxMax,
+        isPrecon
+      );
+
+      return {
+        ...r,
+        boosterName,
+        packCount: pCount,
+        cardCount: cCount,
+        marketPrice: adjustedBoxPrice,
+        unitEvMin: adjustedPackMin,
+        unitEvAvg: adjustedPackEv,
+        unitEvMid90: adjustedPackMid90,
+        unitEvMax: adjustedPackMax,
+        totalEvMin: adjustedBoxMin,
+        totalEvAvg: adjustedBoxEv,
+        totalEvMid90: adjustedBoxMid90,
+        totalEvMax: adjustedBoxMax,
         effectiveEv,
+        evScore,
         profitUsd,
         roiPct,
-        evScore: metric.evScore ?? undefined,
-      }];
+      };
     });
-  }, [records, productMetrics, vendor, priceMode, evBasis]);
+  }, [records, priceMode, vendor, evBasis, boosterEvMap, recordByUuid, recordByUuidObj, preconDecks, singleCardPrices]);
 
   const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
     if (category === 'all') return true;
@@ -770,24 +824,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
               Vendor: <strong className="text-slate-900 capitalize">{vendor.replace(/_/g, ' ')}</strong>
             </span>
-            {pricingReliability[`${vendor}:${priceMode}`] && !vendor.startsWith('all_') && (
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs"
-                title="Booster card-slot telemetry only; fixed products and decks are not included."
-              >
-                Reliability: <strong className="text-slate-900">
-                  {priceMode === 'direct'
-                    ? `${(pricingReliability[`${vendor}:${priceMode}`].directExactPct ?? 0).toFixed(1)}% exact`
-                    : `${(pricingReliability[`${vendor}:${priceMode}`].reprintResolvedPct ?? 0).toFixed(1)}% resolved`}
-                </strong>
-              </span>
-            )}
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs"
-              title={pipelineGeneratedAt ? `Pipeline run generated at ${pipelineGeneratedAt}` : 'Pipeline run identity unavailable'}
-            >
-              Run: <strong className="text-slate-900 font-mono">{pipelineRunId}</strong>
-            </span>
           </div>
         </div>
 
@@ -1011,9 +1047,9 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                       <button
                         id={`btn-explore-set-${box.setCode}`}
                         onClick={() => onSelectSet(box.setCode, box.productUuid || box.id)}
-                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg transition cursor-pointer flex items-center gap-1 justify-center"
+                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg transition cursor-pointer"
                       >
-                        Details <ChevronRight className="w-3.5 h-3.5" />
+                        Explore Set
                       </button>
                     </td>
                   </tr>

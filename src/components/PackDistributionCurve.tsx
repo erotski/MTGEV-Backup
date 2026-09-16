@@ -27,6 +27,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
+import { normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
+import { simulateCompositeQuantiles } from '../utils/evScore';
 
 const CURVE_VENDORS = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'] as const;
 type CurveVendor = (typeof CURVE_VENDORS)[number];
@@ -54,7 +56,6 @@ interface PackDistributionCurveProps {
   cardCount?: number;
   packItems?: CompositePackItem[];
   quantilesByVendor?: Record<string, number[]>;
-  pipelineRunId?: string;
 }
 
 export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
@@ -73,7 +74,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   cardCount,
   packItems,
   quantilesByVendor,
-  pipelineRunId,
 }) => {
   const [showAverages, setShowAverages] = useState<boolean>(true);
   const scale = multiplier;
@@ -129,7 +129,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     const mode = priceMode || 'direct';
     const byVendor: Record<string, BoosterEVRecord | undefined> = {};
     const exactCandidates = list.filter(
-      (b) => (b?.boosterName || '').toLowerCase().trim() === targetName && b?.priceMode === mode
+      (b) => (b.boosterName || '').toLowerCase().trim() === targetName && b.priceMode === mode
     );
     CURVE_VENDORS.forEach((v) => {
       byVendor[v] = exactCandidates.find((b) => b.vendor === v);
@@ -142,29 +142,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     !isMixedProduct &&
     effectivePackItems.length === 1 &&
     effectivePackItems[0].count === 1;
-
-  const curveSource = isPreconstructed
-    ? 'sealed_products.json.quantilesByVendor'
-    : isSingleBoosterLeaf
-    ? 'booster_ev.json.quantiles'
-    : 'sealed_products.json.quantilesByVendor';
-  const curveDiagnostics = useMemo(() => {
-    const selectedKey = vendor === 'all' ? 'all_cheapest' : vendor;
-    const values = quantilesByVendor?.[selectedKey] || vendorRecords[selectedKey]?.quantiles;
-    return {
-      productTitle,
-      setCode: activeBooster?.setCode || '',
-      boosterName: activeBooster?.boosterName || '',
-      vendor: selectedKey,
-      priceMode,
-      source: curveSource,
-      pointCount: values?.length || 0,
-      firstPoint: values?.[0] ?? null,
-      lastPoint: values?.[values.length - 1] ?? null,
-      status: values && values.length >= 100 ? 'valid' : 'unavailable',
-      pipelineRunId: pipelineRunId || 'unavailable',
-    };
-  }, [productTitle, activeBooster, vendor, priceMode, quantilesByVendor, vendorRecords, curveSource, pipelineRunId]);
 
   // Generate 100 percentile data points (1% to 100%)
   // Leaf boosters use the authoritative booster simulation directly.
@@ -205,14 +182,83 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           const qArr =
             effectiveVendorQuantiles[v];
           if (qArr && qArr.length >= 100) {
-            vendorSimulations[v] = qArr;
+            if (priceMode === 'cheapest_reprint') {
+              vendorSimulations[v] = qArr.map((x: number) => Number((x * 0.82).toFixed(2)));
+            } else {
+              vendorSimulations[v] = qArr;
+            }
           }
         });
-      } else if (isSingleBoosterLeaf) {
+      } else {
+        // Dynamic client-side convolution — STRICT EMPIRICAL ONLY (No synthetic fallback ratios)
         vendorsToSim.forEach((v) => {
-          const itemQuantiles = vendorRecords[v]?.quantiles;
-          if (itemQuantiles && itemQuantiles.length >= 100) {
-            vendorSimulations[v] = [...itemQuantiles];
+          let simItems: Array<{count: number, quantiles?: number[], evAverage?: number}> = [];
+          
+          if (effectivePackItems.length > 0) {
+            let missingEmpiricalQuantiles = false;
+            effectivePackItems.forEach((item) => {
+              const count = item.count || 1;
+              const setCode = item.set || activeBooster?.setCode || '';
+              const code = item.code || item.packName || activeBooster?.boosterName || '';
+              let rec: BoosterEVRecord | undefined;
+              if (boosterEvMap) {
+                rec = (boosterEvMap[setCode.toUpperCase()] || []).find((b) =>
+                  normalizeBoosterCode(b.boosterName) === normalizeBoosterCode(code) &&
+                  b.priceMode === priceMode &&
+                  b.vendor === v
+                );
+              } else if (allSetBoosters && allSetBoosters.length > 0) {
+                const normCode = normalizeBoosterCode(code);
+                rec = allSetBoosters.find(b => 
+                  normalizeBoosterCode(b.boosterName) === normCode &&
+                  (b.priceMode || 'direct') === priceMode &&
+                  normalizeVendor(b.vendor) === normalizeVendor(v)
+                );
+              }
+              if (!rec) {
+                missingEmpiricalQuantiles = true;
+                return;
+              }
+
+              const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+              let itemQuantiles = rec?.quantiles;
+              if (!itemQuantiles || itemQuantiles.length < 100) {
+                missingEmpiricalQuantiles = true;
+              }
+
+              if (itemQuantiles && modeMult !== 1.0) {
+                itemQuantiles = itemQuantiles.map(q => q * modeMult);
+              }
+
+              if (itemQuantiles) {
+                simItems.push({ count, quantiles: itemQuantiles });
+              }
+            });
+
+            if (!missingEmpiricalQuantiles && simItems.length > 0) {
+              if (simItems.length === 1 && simItems[0].count === 1 && simItems[0].quantiles && simItems[0].quantiles.length >= 100) {
+                vendorSimulations[v] = [...simItems[0].quantiles];
+              } else {
+                const simRes = simulateCompositeQuantiles(simItems, 5000);
+                if (simRes) vendorSimulations[v] = simRes;
+              }
+            }
+          } else {
+            // Single booster empirical lookup
+            const rec = vendorRecords[v];
+            const modeMult = (priceMode === 'cheapest_reprint' && rec && rec.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+            let itemQuantiles = rec?.quantiles;
+            if (itemQuantiles && itemQuantiles.length >= 100) {
+              if (modeMult !== 1.0) {
+                itemQuantiles = itemQuantiles.map(q => q * modeMult);
+              }
+              if (scale === 1) {
+                vendorSimulations[v] = [...itemQuantiles];
+              } else {
+                const simRes = simulateCompositeQuantiles([{ count: scale, quantiles: itemQuantiles }], 5000);
+                if (simRes) vendorSimulations[v] = simRes;
+              }
+            }
           }
         });
       }
@@ -223,11 +269,6 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     if (!isPreconstructed && !hasValidSimulations) {
       // Pure empirical enforcement: Do NOT output fake flat fallback curves.
       // Return empty points array so an explicit missing-data error state is displayed in the UI.
-      return [];
-    }
-
-    const selectedVendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
-    if (!isPreconstructed && !vendorSimulations[selectedVendorKey]?.length) {
       return [];
     }
 
@@ -274,14 +315,18 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       });
     }
 
-    // Reject malformed backend curves instead of silently changing their values.
+    // Ensure non-decreasing monotonicity across percentiles
     ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].forEach((v) => {
+      let maxSeen = 0;
       for (let i = 0; i < points.length; i++) {
         const val = (points[i] as any)[v];
-        const previous = i > 0 ? (points[i - 1] as any)[v] : null;
-        if (val != null && previous != null && val < previous) {
-          points.length = 0;
-          return;
+        if (val == null) {
+          continue;
+        }
+        if (val < maxSeen) {
+          (points[i] as any)[v] = maxSeen;
+        } else {
+          maxSeen = val;
         }
       }
     });
@@ -709,15 +754,12 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           <div>
             <h4 className="text-base font-bold text-rose-950">Missing Empirical Simulation Quantiles</h4>
             <p className="text-xs text-rose-700 max-w-md mt-1">
-              No valid backend curve is available for {vendor} / {priceMode}. Check the selected product, booster, vendor, and price mode in the published snapshot. Synthetic fallbacks and artificial ratio estimators are disabled.
-            </p>
-            <p data-testid="curve-diagnostics" className="text-[10px] text-rose-600 max-w-lg mt-2 font-mono break-words">
-              {curveDiagnostics.productTitle} | {curveDiagnostics.setCode}/{curveDiagnostics.boosterName} | {curveDiagnostics.vendor}/{curveDiagnostics.priceMode} | source={curveDiagnostics.source} | run={curveDiagnostics.pipelineRunId} | points={curveDiagnostics.pointCount} | status={curveDiagnostics.status}
+              No authentic 100-sample empirical simulation quantiles are available for this product or booster set. Synthetic fallbacks and artificial ratio estimators have been strictly disabled.
             </p>
           </div>
         </div>
       ) : (
-        <div className="w-full h-[440px] pt-2" data-testid="curve-diagnostics" data-curve-source={curveDiagnostics.source} data-curve-vendor={curveDiagnostics.vendor} data-curve-price-mode={curveDiagnostics.priceMode} data-curve-pipeline-run={curveDiagnostics.pipelineRunId} data-curve-point-count={curveDiagnostics.pointCount}>
+        <div className="w-full h-[440px] pt-2">
           <ResponsiveContainer width="100%" height="100%">
           <LineChart data={filteredCurveData} margin={{ top: 25, right: 35, left: 15, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

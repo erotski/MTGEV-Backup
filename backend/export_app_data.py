@@ -4,7 +4,6 @@ Executes in GitHub Actions or locally to generate static JSON files inside publi
 """
 import json
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 import mysql.connector
 from config import DB_CONFIG
@@ -28,7 +27,7 @@ def export_all():
 
 
     # 1. Export Sets List
-    print(">> 1. Exporting sets.json...")
+    print("▶ 1. Exporting sets.json...")
     try:
         cursor.execute("""
             SELECT DISTINCT 
@@ -56,7 +55,7 @@ def export_all():
         print(f"  ✘ Error exporting sets: {e}")
 
     # 2. Export Sealed Products with True Market Prices
-    print(">> 2. Exporting sealed_products.json...")
+    print("▶ 2. Exporting sealed_products.json...")
     try:
         cursor.execute("""
             SELECT 
@@ -88,8 +87,7 @@ def export_all():
         print(f"  ✘ Error exporting sealed products: {e}")
 
     # 3. Export Booster EV Simulation Results
-    print(">> 3. Exporting booster_ev.json...")
-    ev_results = []
+    print("▶ 3. Exporting booster_ev.json...")
     try:
         cursor.execute("""
             SELECT 
@@ -128,58 +126,8 @@ def export_all():
     except Exception as e:
         print(f"  ✘ Error exporting booster EV results: {e}")
 
-    # 3b. Export weighted booster pricing reliability by named vendor.
-    print(">> 3b. Exporting pricing_reliability.json...")
-    try:
-        named_vendors = {"tcgplayer", "cardmarket", "cardkingdom", "manapool"}
-        reliability = {}
-        for row in ev_results:
-            vendor = str(row.get("vendor") or "").lower()
-            if vendor not in named_vendors:
-                continue
-            key = f"{vendor}:{row.get('priceMode') or 'direct'}"
-            weight = int(row.get("simulatedPacks") or 0)
-            if weight <= 0:
-                continue
-            aggregate = reliability.setdefault(key, {
-                "vendor": vendor,
-                "priceMode": row.get("priceMode") or "direct",
-                "simulatedPacks": 0,
-                "completeBoosterPct": 0.0,
-                "resolutionPct": 0.0,
-                "differentFinishPct": 0.0,
-                "differentVendorPct": 0.0,
-                "sourceRows": 0,
-            })
-            aggregate["simulatedPacks"] += weight
-            aggregate["sourceRows"] += 1
-            for field in ("completeBoosterPct", "differentFinishPct", "differentVendorPct"):
-                aggregate[field] += float(row.get(field) or 0.0) * weight
-            if aggregate["priceMode"] == "direct":
-                aggregate["resolutionPct"] += float(row.get("exactMatchPct") or 0.0) * weight
-            else:
-                aggregate["resolutionPct"] += float(row.get("completeBoosterPct") or 0.0) * weight
-
-        for aggregate in reliability.values():
-            weight = aggregate["simulatedPacks"]
-            for field in ("completeBoosterPct", "resolutionPct", "differentFinishPct", "differentVendorPct"):
-                aggregate[field] = round(aggregate[field] / weight, 2)
-            if aggregate["priceMode"] == "direct":
-                aggregate["directExactPct"] = aggregate["resolutionPct"]
-                aggregate["nonExactPct"] = round(100.0 - aggregate["directExactPct"], 2)
-            else:
-                aggregate["reprintResolvedPct"] = aggregate["resolutionPct"]
-                aggregate["unresolvedPct"] = round(100.0 - aggregate["reprintResolvedPct"], 2)
-            del aggregate["resolutionPct"]
-
-        with open(OUTPUT_DIR / "pricing_reliability.json", "w", encoding="utf-8") as f:
-            json.dump({"vendors": reliability}, f, indent=2)
-        print(f"  ✔ Exported reliability for {len(reliability)} vendor/mode combinations")
-    except Exception as e:
-        print(f"  ✘ Error exporting pricing reliability: {e}")
-
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
-    print(">> 4. Exporting arbitrage_leaderboard.json...")
+    print("▶ 4. Exporting arbitrage_leaderboard.json...")
     try:
         # Pre-load quantiles from existing sealed_products.json if available
         sp_quantiles_lookup = {}
@@ -204,7 +152,8 @@ def export_all():
         cursor.execute("""
             SELECT set_code, booster_name, ev_average, ev_mid90, ev_min, ev_max, exact_match_pct, updated_at
             FROM booster_ev_results
-            WHERE price_mode = 'direct' AND vendor = 'all_cheapest' AND ev_average > 0;
+            WHERE price_mode = 'direct' AND vendor IN ('all_cheapest', 'all') AND ev_average > 0
+            ORDER BY CASE WHEN vendor = 'all_cheapest' THEN 1 ELSE 0 END;
         """)
         ev_rows = cursor.fetchall()
         ev_by_set = {}
@@ -431,7 +380,7 @@ def export_all():
             if pack_count <= 0:
                 if contents and isinstance(contents, dict) and contents.get("card"):
                     cards = contents["card"]
-                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all_cheapest", 0.0)) for cd in cards)
+                    singles_ev = sum(cd.get("prices", {}).get("tcgplayer", cd.get("prices", {}).get("all_cheapest", cd.get("prices", {}).get("all", 0.0))) for cd in cards)
                     if singles_ev > 0:
                         a.pop('spCategory', None)
                         a.pop('spSubtype', None)
@@ -441,10 +390,10 @@ def export_all():
                         a['packCount'] = 0
                         a['cardCount'] = len(cards)
                         a['unitEvMin'] = 0.0
-                        a['unitEvAvg'] = 0.0
-                        a['unitEvMid90'] = 0.0
+                        a['unitEvAvg'] = "0.00"
+                        a['unitEvMid90'] = "0.00"
                         a['unitEvMax'] = 0.0
-                        a['completePct'] = 100.0
+                        a['completePct'] = "100.00"
                         a['updatedAt'] = ""
                         a['contents'] = contents
                         a['totalEvMin'] = round(singles_ev, 2)
@@ -511,10 +460,10 @@ def export_all():
             a['boosterName'] = matched_booster
             a['packCount'] = pack_count
             a['unitEvMin'] = pack_min
-            a['unitEvAvg'] = pack_ev
-            a['unitEvMid90'] = pack_mid
+            a['unitEvAvg'] = str(pack_ev)
+            a['unitEvMid90'] = str(pack_mid)
             a['unitEvMax'] = pack_max
-            a['completePct'] = float(ev_info.get("exact_match_pct", 100.0) or 100.0)
+            a['completePct'] = str(ev_info.get("exact_match_pct", "100.00"))
             a['updatedAt'] = str(ev_info.get("updated_at") or "")
             a['contents'] = contents
             a['totalEvMin'] = box_ev_min
@@ -549,44 +498,11 @@ def export_all():
         with open(OUTPUT_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
             json.dump(valid_arbs, f, indent=2, default=str)
         print(f"  ✔ Exported {len(valid_arbs)} product arbitrage opportunities")
-
-        product_metrics = []
-        generated_at = datetime.now(timezone.utc).isoformat()
-        for record in valid_arbs:
-            product_metrics.append({
-                "productUuid": record.get("productUuid") or record.get("id"),
-                "boxName": record.get("boxName"),
-                "setCode": record.get("setCode"),
-                "setName": record.get("setName"),
-                "category": record.get("category"),
-                "marketPrice": float(record.get("marketPrice") or 0),
-                "totalEvMin": float(record.get("totalEvMin") or 0),
-                "totalEvAvg": float(record.get("totalEvAvg") or 0),
-                "totalEvMid90": float(record.get("totalEvMid90") or 0),
-                "totalEvMax": float(record.get("totalEvMax") or 0),
-                "effectiveEv": float(record.get("totalEvAvg") or 0),
-                "profitUsd": float(record.get("profitUsd") or 0),
-                "roiPct": float(record.get("roiPct") or 0),
-                "evScore": float(record.get("evScore")) if record.get("evScore") is not None else None,
-                "packCount": int(record.get("packCount") or 0),
-                "cardCount": int(record.get("cardCount") or 0),
-                "vendor": record.get("vendor"),
-                "priceMode": record.get("priceMode"),
-                "provenance": {
-                    "source": "pipeline",
-                    "generatedAt": generated_at,
-                    "schemaVersion": 1,
-                },
-            })
-
-        with open(OUTPUT_DIR / "product_metrics.json", "w", encoding="utf-8") as f:
-            json.dump(product_metrics, f, indent=2, allow_nan=False)
-        print(f"  ✔ Exported {len(product_metrics)} complete-product metric records")
     except Exception as e:
         print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
 
     # 5. Export / Update single_card_prices.json with genuine DB prices
-    print("\n>> 5. Exporting single_card_prices.json from MTGJSON prices table...")
+    print("\n▶ 5. Exporting single_card_prices.json from MTGJSON prices table...")
     try:
         single_prices_file = OUTPUT_DIR / "single_card_prices.json"
         existing_single_prices = {"byUuid": {}, "byName": {}, "byNameSet": {}}
@@ -617,7 +533,7 @@ def export_all():
                     is_foil = cd.get("foil", False) or ('foil' in finishes and 'nonfoil' not in finishes)
                     resolved_p = resolve_card_prices(u, finishes, is_foil)
 
-                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all_cheapest") or resolved_p.get("cardkingdom") or 0.0
+                    p_val = resolved_p.get("tcgplayer") or resolved_p.get("all_cheapest") or resolved_p.get("all") or resolved_p.get("cardkingdom") or 0.0
                     if p_val > 0:
                         card_entry = {
                             "name": cname,
@@ -636,21 +552,6 @@ def export_all():
                             by_name_set[f"{cname.lower()}___{cset}"] = card_entry
                             by_name_set[f"{cname.lower()}_{cset}"] = card_entry
                         updated_count += 1
-
-        # Normalize the legacy "all" vendor-price alias to the canonical
-        # "all_cheapest" key across every indexed record, including entries
-        # seeded by one-off ingestion scripts that this loop never re-touches.
-        normalized_count = 0
-        for indexed in (by_uuid, by_name, by_name_set):
-            for entry in indexed.values():
-                prices = entry.get("prices")
-                if not isinstance(prices, dict) or "all" not in prices:
-                    continue
-                prices.setdefault("all_cheapest", prices["all"])
-                del prices["all"]
-                normalized_count += 1
-        if normalized_count:
-            print(f"  ✔ Normalized {normalized_count} legacy 'all' vendor price keys to 'all_cheapest'")
 
         existing_single_prices["byUuid"] = by_uuid
         existing_single_prices["byName"] = by_name

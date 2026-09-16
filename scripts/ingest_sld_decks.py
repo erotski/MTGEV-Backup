@@ -54,11 +54,9 @@ def resolve_prices(all_prices_data, card_uuid, want_foil=False):
 
     valid_vals = [v for k, v in res.items() if k in ["tcgplayer", "cardkingdom", "cardmarket"] and v and v > 0]
     if valid_vals:
-        res["all_cheapest"] = round(min(valid_vals), 2)
-        res["all_average"] = round(sum(valid_vals) / len(valid_vals), 2)
+        res["all"] = round(sum(valid_vals) / len(valid_vals), 2)
     else:
-        res["all_cheapest"] = 0.05
-        res["all_average"] = 0.05
+        res["all"] = 0.05
     return res
 
 def main():
@@ -116,8 +114,8 @@ def main():
             "tcgplayerPrice": normal_p.get("tcgplayer", 0),
             "cardKingdomPrice": normal_p.get("cardkingdom", 0),
             "cardmarketPrice": normal_p.get("cardmarket", 0),
-            "price": normal_p.get("all_cheapest", 0.05),
-            "foilPrice": foil_p.get("all_cheapest", 0.05),
+            "price": normal_p.get("all", 0.05),
+            "foilPrice": foil_p.get("all", 0.05),
             "foilTcgplayerPrice": foil_p.get("tcgplayer", 0),
             "foilCardKingdomPrice": foil_p.get("cardkingdom", 0),
             "foilCardmarketPrice": foil_p.get("cardmarket", 0),
@@ -156,7 +154,7 @@ def main():
                 "uuid": cuuid,
                 "count": cmd.get("count", 1),
                 "isFoil": cfoil,
-                "price": cp.get("all_cheapest", 0.05),
+                "price": cp.get("all", 0.05),
                 "scryfallId": cinfo.get("identifiers", {}).get("scryfallId", ""),
                 "type": cinfo.get("type", "Legendary Creature"),
                 "manaCost": cinfo.get("manaCost", ""),
@@ -185,7 +183,7 @@ def main():
             cfoil = bool(mc.get("isFoil", is_foil))
             cp = resolve_prices(all_prices_data, cuuid, want_foil=cfoil)
             count = mc.get("count", 1)
-            unit_p = cp.get("all_cheapest", 0.05)
+            unit_p = cp.get("all", 0.05)
             types_list = cinfo.get("types", [])
             primary_type = get_primary_type(cinfo.get("type", ""), types_list)
 
@@ -228,7 +226,7 @@ def main():
             "tcgplayer": round(sum((c["tcgplayerPrice"] or c["price"]) * c["count"] for c in cards) + sum((cmd.get("tcgplayerPrice") or cmd["price"]) * cmd["count"] for cmd in commanders), 2),
             "cardkingdom": round(sum((c["cardKingdomPrice"] or c["price"]) * c["count"] for c in cards) + sum((cmd.get("cardKingdomPrice") or cmd["price"]) * cmd["count"] for cmd in commanders), 2),
             "cardmarket": round(sum((c["cardmarketPrice"] or c["price"]) * c["count"] for c in cards) + sum((cmd.get("cardmarketPrice") or cmd["price"]) * cmd["count"] for cmd in commanders), 2),
-            "all_cheapest": total_singles_ev
+            "all": total_singles_ev
         }
 
         # Face commander (if commander deck)

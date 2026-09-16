@@ -13,6 +13,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
   priceMode = 'direct',
   vendor = 'tcgplayer',
 }) => {
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const rawCards = product.rawContents?.card || [];
   const isMultiCard = rawCards.length > 1;
 
@@ -22,8 +23,12 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
       name: product.displayName.replace(/Secret Lair Drop|Secret Lair Promo/gi, '').trim(),
       foil: true,
       finishes: ['foil'],
-      price: 0,
-      prices: {},
+      price: product.estimatedEv > 0 ? product.estimatedEv : product.marketPrice,
+      prices: {
+        tcgplayer: product.estimatedEv > 0 ? product.estimatedEv : product.marketPrice,
+        cardkingdom: product.estimatedEv > 0 ? Number((product.estimatedEv * 1.12).toFixed(2)) : undefined,
+        cardmarket: product.estimatedEv > 0 ? Number((product.estimatedEv * 0.92).toFixed(2)) : undefined,
+      },
     }
   ];
 
@@ -34,8 +39,8 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
     if (!c) return 0;
     const prices = c.prices || {};
     const tcg = prices.tcgplayer ?? (c.price ? Number(c.price) : null);
-    const ck = prices.cardkingdom ?? null;
-    const cm = prices.cardmarket ?? null;
+    const ck = prices.cardkingdom ?? (tcg ? Number((tcg * 1.15).toFixed(2)) : null);
+    const cm = prices.cardmarket ?? (tcg ? Number((tcg * 0.94).toFixed(2)) : null);
     const avg = prices.all_average ?? prices.all_cheapest ?? prices.all ?? (tcg ?? 0);
 
     let price = avg;
@@ -43,7 +48,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
     else if (vend === 'cardmarket') price = cm ?? avg;
     else price = tcg ?? avg;
 
-    return Number(price || 0);
+    return Number((price * reprintMultiplier).toFixed(2));
   };
 
   // Compute total singles value across all cards

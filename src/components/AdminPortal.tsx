@@ -193,7 +193,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [foilPackSize, setFoilPackSize] = useState<'sm' | 'md' | 'lg' | 'hero'>('hero');
   const [sealedProducts, setSealedProducts] = useState<any[]>([]);
   const [arbitrageRecords, setArbitrageRecords] = useState<any[]>([]);
-  const [snapshotIntegrity, setSnapshotIntegrity] = useState<{ ok: boolean; warnings: string[]; metadata: any | null }>({ ok: true, warnings: [], metadata: null });
   const [isIntegrityLoading, setIsIntegrityLoading] = useState(true);
   const [integrityLoadError, setIntegrityLoadError] = useState<string | null>(null);
   const [integrityFilter, setIntegrityFilter] = useState<'all' | 'zero_ev' | 'error' | 'warning'>('all');
@@ -208,10 +207,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     let isMounted = true;
     Promise.all([
       dataService.getSealedProducts(),
-      dataService.getArbitrageRecords(),
-      dataService.getSnapshotIntegrityReport(),
+      dataService.getArbitrageRecords()
     ])
-      .then(([products, arbs, integrity]) => {
+      .then(([products, arbs]) => {
         if (isMounted) {
           if (products.length === 0 && (!arbs || arbs.length === 0)) {
             setIntegrityLoadError('MTGJSON sealed product data is empty or unavailable.');
@@ -219,14 +217,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             setSealedProducts(products || []);
             setArbitrageRecords(arbs || []);
           }
-          setSnapshotIntegrity(integrity || { ok: true, warnings: [], metadata: null });
           setIsIntegrityLoading(false);
         }
       })
       .catch(() => {
         if (isMounted) {
           setIntegrityLoadError('MTGJSON sealed product data could not be loaded.');
-          setSnapshotIntegrity({ ok: false, warnings: ['Snapshot integrity check could not run.'], metadata: null });
           setIsIntegrityLoading(false);
         }
       });
@@ -889,17 +885,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
             </div>
           </div>
-
-          {snapshotIntegrity.warnings.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900">
-              <div className="text-xs font-bold uppercase tracking-wider mb-2">Snapshot integrity warnings</div>
-              <ul className="list-disc pl-5 space-y-1 text-xs">
-                {snapshotIntegrity.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {/* Critical Quality Warning when Schema Errors or Zero EV issues exist */}
           {(integrityIssues.filter((i) => i.severity === 'error').length > 0 || zeroEvCount > 0) && (

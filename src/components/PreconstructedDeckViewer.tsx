@@ -235,8 +235,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
   // Helper to compute unit card price dynamically based on vendorMode
   const getCardPrice = (c?: DeckCardItem | null): number => {
     if (!c) return 0;
-    const provenance = c.priceProvenance?.[vendorMode];
-    if (provenance?.status === 'unpriced') return 0;
     if (vendorMode === 'cardkingdom' && c.prices?.cardkingdom) return c.prices.cardkingdom;
     if (vendorMode === 'cardmarket' && c.prices?.cardmarket) return c.prices.cardmarket;
     if (vendorMode === 'tcgplayer' && (c.prices?.tcgplayer || c.price)) return c.prices?.tcgplayer || c.price;
@@ -249,9 +247,8 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
       if (vals.length > 0) {
         return vals.reduce((sum, v) => sum + v, 0) / vals.length;
       }
-      return 0;
     }
-    return 0;
+    return c.price || 0;
   };
 
   // Total calculated EV of currently displayed cards based on selected vendor mode
@@ -401,7 +398,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
 
   const netProfit = Number((currentEvTotal - marketPrice).toFixed(2));
   const netRoi = marketPrice > 0 ? Number(((netProfit / marketPrice) * 100).toFixed(1)) : 0;
-  const deckReliability = deckDetail.pricingReliability?.[vendorMode];
 
   // Processed cards total count (accounting for multiple basic lands)
   const processedCardsTotalCount = useMemo(() => {
@@ -465,15 +461,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
               ${currentEvTotal.toFixed(2)}
             </span>
           </div>
-
-          {deckReliability && (
-            <div className="bg-amber-500/15 px-3 py-1.5 rounded-xl border border-amber-400/30 text-right" title="Fixed deck card pricing provenance">
-              <span className="text-amber-300 block text-[10px]">Pricing Coverage</span>
-              <span className="font-black text-amber-200 text-sm">
-                {deckReliability.coveragePct.toFixed(1)}% exact {deckReliability.fallbackCards > 0 ? `+ ${deckReliability.fallbackCards} fallback` : ''}
-              </span>
-            </div>
-          )}
 
           {marketPrice > 0 ? (
             <div
@@ -783,7 +770,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
                 ) : (
                   <DeckGridSection
                     cards={groupData.cards}
-                    vendorMode={vendorMode}
                     getCardPrice={getCardPrice}
                     onPreview={setPreviewCard}
                   />
@@ -837,7 +823,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
                 ) : (
                   <DeckGridSection
                     cards={groupData.cards}
-                    vendorMode={vendorMode}
                     getCardPrice={getCardPrice}
                     onPreview={setPreviewCard}
                   />
@@ -860,7 +845,6 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
             ) : (
               <DeckGridSection
                 cards={processedCards}
-                vendorMode={vendorMode}
                 getCardPrice={getCardPrice}
                 onPreview={setPreviewCard}
               />
@@ -944,17 +928,6 @@ interface TableSectionProps {
 }
 
 const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getCardPrice, onPreview }) => {
-  const getPriceProvenanceLabel = (card: DeckCardItem) => {
-    const provenance = card.priceProvenance?.[vendorMode];
-    if (!provenance || provenance.status === 'exact') return null;
-    if (provenance.status === 'vendor_fallback') return 'Price from another vendor';
-    if (provenance.status === 'finish_fallback') return 'Price from another finish';
-    if (provenance.status === 'vendor_finish_fallback') return 'Price from another vendor and finish';
-    if (provenance.status === 'reprint') return 'Reprint price';
-    if (provenance.status === 'ignored') return 'Ignored card';
-    return 'No price available';
-  };
-
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
@@ -998,11 +971,6 @@ const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getC
                   )}
                   <span className="group-hover:text-indigo-600 transition truncate max-w-xs">
                     {card.name}
-                    {getPriceProvenanceLabel(card) && (
-                      <span className="ml-2 text-[9px] font-normal text-amber-700" title="Price provenance">
-                        {getPriceProvenanceLabel(card)}
-                      </span>
-                    )}
                   </span>
                 </td>
                 <td className="py-2 px-3 text-center">
@@ -1062,23 +1030,11 @@ const DeckTableSection: React.FC<TableSectionProps> = ({ cards, vendorMode, getC
 // Visual Grid Subcomponent with Mana Cost & Qty Badges
 interface GridSectionProps {
   cards: DeckCardItem[];
-  vendorMode: 'all' | 'all_average' | 'tcgplayer' | 'cardmarket' | 'cardkingdom';
   getCardPrice: (card: DeckCardItem) => number;
   onPreview: (card: DeckCardItem) => void;
 }
 
-const DeckGridSection: React.FC<GridSectionProps> = ({ cards, vendorMode, getCardPrice, onPreview }) => {
-  const getPriceProvenanceLabel = (card: DeckCardItem) => {
-    const provenance = card.priceProvenance?.[vendorMode];
-    if (!provenance || provenance.status === 'exact') return null;
-    if (provenance.status === 'vendor_fallback') return 'Other vendor';
-    if (provenance.status === 'finish_fallback') return 'Other finish';
-    if (provenance.status === 'vendor_finish_fallback') return 'Other vendor + finish';
-    if (provenance.status === 'reprint') return 'Reprint';
-    if (provenance.status === 'ignored') return 'Ignored';
-    return 'No price';
-  };
-
+const DeckGridSection: React.FC<GridSectionProps> = ({ cards, getCardPrice, onPreview }) => {
   return (
     <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
       {cards.map((card, idx) => {
@@ -1143,11 +1099,6 @@ const DeckGridSection: React.FC<GridSectionProps> = ({ cards, vendorMode, getCar
               </div>
               <div className="flex items-center justify-between font-mono text-[10px]">
                 <span className="text-slate-500 uppercase">{card.rarity}</span>
-                {getPriceProvenanceLabel(card) && (
-                  <span className="text-amber-700 font-semibold" title="Price provenance">
-                    {getPriceProvenanceLabel(card)}
-                  </span>
-                )}
                 <span className="font-black text-emerald-600 text-xs">
                   ${totalVal.toFixed(2)}
                   {qty > 1 && <span className="text-[9px] text-slate-400 font-normal block">${unitVal.toFixed(2)} ea</span>}

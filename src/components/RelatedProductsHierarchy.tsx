@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, ProductMetricsRecord, PriceMode, Vendor, EvBasis } from '../types';
+import { BoosterEVRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
-import { resolveCardPrice, findBoosterEv } from '../utils/vendorUtils';
+import { resolveCardPrice, normalizeVendor, findBoosterEv } from '../utils/vendorUtils';
+import { getCanonicalProductMetrics } from '../utils/productUtils';
 import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
 import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
 import {
@@ -60,7 +61,7 @@ interface RelatedProductsHierarchyProps {
   preconDecks?: Record<string, any>;
   boosterEvMap?: Record<string, BoosterEVRecord[]>;
   singleCardPrices?: any;
-  productMetrics?: ProductMetricsRecord[];
+  reprintMultiplier?: number;
   onSelectProduct?: (productId: string, boosterName: string, product?: CatalogPackProduct) => void;
   onPriceModeChange?: (mode: PriceMode) => void;
   onVendorChange?: (vendor: Vendor) => void;
@@ -80,14 +81,14 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   preconDecks,
   boosterEvMap,
   singleCardPrices,
-  productMetrics = [],
+  reprintMultiplier: propReprintMultiplier,
   onSelectProduct,
   onPriceModeChange,
   onVendorChange,
   onEvBasisChange,
 }) => {
-  const lower = (value: unknown) => String(value ?? '').toLowerCase();
-
+  // Price & EV scaling based on priceMode & vendor
+  const reprintMultiplier = propReprintMultiplier ?? (priceMode === 'cheapest_reprint' ? 0.82 : 1.0);
   const cleanProductName = (name: string) => {
     if (!name) return '';
     let cleaned = name;
@@ -142,7 +143,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
           const setBoosterRecords: BoosterEVRecord[] = 
             boosterMap[setCode.toUpperCase()] ||
-            boosterMap[lower(setCode)] ||
+            boosterMap[setCode.toLowerCase()] ||
             boosterMap[setCode] ||
             [];
 
@@ -160,7 +161,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 if (child) {
                   total += sCount * resolveRecursivePacks(child, new Set(visited));
                 } else {
-                  const sName = lower(s.name);
+                  const sName = (s.name || '').toLowerCase();
                   if (sName.includes('pack') || sName.includes('booster')) total += sCount * 1;
                   else if (sName.includes('box')) total += sCount * 36;
                   else total += sCount;
@@ -188,12 +189,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
             setDbSealedProducts([]);
           } else {
             const mapped: CatalogPackProduct[] = matching.map((sp: any) => {
-              const pName = String(sp.displayName || sp.name || 'Sealed Product');
-              const pNameLower = lower(pName);
-              const sCode = String(sp.setCode || sp.set_code || setCode || '').toUpperCase();
-              const category = lower(sp.category);
-              const subtype = lower(sp.subtype);
-              const contentsNote = String(sp.contents?.note || '');
+              const pName = sp.displayName || sp.name || 'Sealed Product';
+              const pNameLower = pName.toLowerCase();
+              const sCode = (sp.setCode || sp.set_code || setCode).toUpperCase();
+              const category = (sp.category || '').toLowerCase();
+              const subtype = (sp.subtype || '').toLowerCase();
 
               // Strictly database-driven packaging type assignment
               let packType: ProductPackagingType = 'other';
@@ -221,16 +221,24 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 packType = 'other';
               }
 
-              const productId = sp.uuid || sp.id;
-              const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
-              const metric = productMetrics.find((item) =>
-                item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
+              // Single canonical source of truth for containment, breakdown, and EV calculation
+              const metrics = getCanonicalProductMetrics(
+                sp,
+                rawProductMap,
+                arbitrageMap,
+                boosterMap,
+                rawPrecon,
+                rawSingle,
+                vendor,
+                priceMode,
+                evBasis
               );
-              const pCount = metric?.packCount ?? 0;
-              const determinedCardCount = metric?.cardCount ?? Number(sp.cardCount || 0);
-              const determinedBoosterName = sp.boosterName || 'play';
-              const mPrice = metric?.marketPrice ?? Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
-              const ev = metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0;
+
+              const pCount = metrics.packsCount;
+              const determinedCardCount = metrics.cardCount;
+              const determinedBoosterName = metrics.primaryBoosterName;
+              const mPrice = metrics.marketPrice > 0 ? metrics.marketPrice : Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
+              const ev = metrics.effectiveEv;
 
               let badgeText = 'Factory Sealed';
               if (category === 'box_set') {
@@ -243,7 +251,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 badgeText = subtype === 'collector' ? 'Collector Case' : 'Master Case';
               } else if (category === 'bundle') {
                 badgeText = subtype === 'gift' ? 'Gift Bundle' : 'Bundle';
-              } else if (contentsNote.includes('1 of them is foil')) {
+              } else if (sp.contents?.note?.includes('1 of them is foil')) {
                 badgeText = '8 Cards (1 Foil)';
               } else if (sp.contents?.variable) {
                 badgeText = 'Variable Collation';
@@ -254,13 +262,35 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               const matchedBooster = findBoosterEv(boosterMap, sCode, determinedBoosterName, priceMode, vendor);
               let quantiles = matchedBooster?.quantiles;
 
-              const productQuantiles = sp.quantilesByVendor?.[selectedVendor];
-              if (productQuantiles && productQuantiles.length >= 100) {
-                quantiles = productQuantiles;
+              if (metrics.auditResult?.packItems && metrics.auditResult.packItems.length > 0) {
+                const composite = new Array(100).fill(metrics.auditResult.totalFixedEv || 0);
+                let valid = false;
+                metrics.auditResult.packItems.forEach((pi) => {
+                  const c = pi.count || 1;
+                  const itemBooster = findBoosterEv(boosterMap, pi.set || sCode, pi.code || pi.packName || '', priceMode, vendor);
+                  const modeMult = (priceMode === 'cheapest_reprint' && itemBooster && itemBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+                  if (itemBooster?.quantiles && itemBooster.quantiles.length >= 100) {
+                    valid = true;
+                    for (let i = 0; i < 100; i++) {
+                      composite[i] += c * itemBooster.quantiles[i] * modeMult;
+                    }
+                  } else {
+                    const avg = pi.unitEv || itemBooster?.evAverage || 0;
+                    for (let i = 0; i < 100; i++) {
+                      composite[i] += c * avg * modeMult;
+                    }
+                  }
+                });
+                if (valid) {
+                  quantiles = composite.map((v) => Number(v.toFixed(2)));
+                }
+              } else if (quantiles && pCount > 1) {
+                const modeMult = (priceMode === 'cheapest_reprint' && matchedBooster && matchedBooster.priceMode !== 'cheapest_reprint') ? 0.82 : 1.0;
+                quantiles = quantiles.map((q) => Number((q * pCount * modeMult).toFixed(2)));
               }
 
               return {
-                id: sp.uuid || sp.id || `db-${sCode}-${lower(pName).replace(/\s+/g, '-')}`,
+                id: sp.uuid || sp.id || `db-${sCode}-${pName.replace(/\s+/g, '-').toLowerCase()}`,
                 rawCategory: category,
                 rawSubtype: subtype,
                 setCode: sCode,
@@ -272,9 +302,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 displayName: pName,
                 marketPrice: mPrice,
                 estimatedEv: ev,
-                estimatedEvMin: metric?.totalEvMin ?? 0,
-                estimatedEvMid90: metric?.totalEvMid90 ?? 0,
-                estimatedEvMax: metric?.totalEvMax ?? 0,
+                estimatedEvMin: metrics.min5Ev || metrics.minEv,
+                estimatedEvMid90: metrics.mid90Ev,
+                estimatedEvMax: metrics.max5Ev || metrics.maxEv,
                 quantiles: quantiles,
                 cardCount: determinedCardCount,
                 packsCount: pCount,
@@ -313,30 +343,273 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     };
   }, [setCode, setName, priceMode, vendor, activeBooster, evBasis]);
 
+  /*
+   * Legacy synthetic product definitions are retained below for reference only.
+   * Runtime product rendering must use MTGJSON records exclusively.
+   */
+  const getSyntheticProducts = (): CatalogPackProduct[] => {
+    const packEv = activeBooster.evAverage;
+    const packPrice = Number((packEv * 0.92).toFixed(2)) || 4.99;
+    const boxPrice = Number((packPrice * 36 * 0.87).toFixed(2)); // ~13% bulk box discount
+    const bundlePrice = Number((packPrice * 9 * 0.90).toFixed(2)); // ~10% bundle discount
+    const casePrice = Number((boxPrice * 6 * 0.96).toFixed(2)); // wholesale case discount
+
+    return [
+      {
+        id: `pack-${setCode.toLowerCase()}-${activeBooster.boosterName}`,
+        setCode: setCode,
+        setName: setName,
+        releaseDate: activeBooster.updatedAt?.split('T')[0] || '2024-01-01',
+        block: `${setName} Era`,
+        packagingType: 'pack',
+        boosterName: (activeBooster.boosterName as any) || 'play',
+        displayName: `${setName} ${activeBooster.fullBoosterName || 'Booster Pack'}`,
+        marketPrice: packPrice,
+        estimatedEv: packEv,
+        cardCount: 14,
+        packsCount: 1,
+        badge: 'Base Unit',
+        specialFeatures: ['Standard Pack Collation', '1 Rare/Mythic', 'Foil Wildcard Chance', 'Basic Land'],
+        containedIn: [
+          {
+            productId: `bundle-${setCode.toLowerCase()}`,
+            name: `${setName} Bundle (9 Packs + Promo + Die)`,
+            packagingType: 'bundle',
+            quantity: 9,
+            unitDescription: `Contains 9x ${setName} Boosters + 30 Basic Lands + Spindown`,
+            marketPrice: bundlePrice,
+            estimatedEv: packEv * 9 + 3.5,
+            savingsPct: 10.0,
+            bonusAccessories: ['1x Traditional Foil Alt-Art Promo', '30x Basic Lands (15 Foil)', '1x Spindown Die', '1x Storage Box'],
+          },
+          {
+            productId: `box-${setCode.toLowerCase()}`,
+            name: `${setName} Booster Box (36 Packs)`,
+            packagingType: 'box',
+            quantity: 36,
+            unitDescription: `Contains 36x Factory Sealed Boosters (504 cards)`,
+            marketPrice: boxPrice,
+            estimatedEv: packEv * 36,
+            savingsPct: 13.0,
+          },
+          {
+            productId: `case-${setCode.toLowerCase()}`,
+            name: `${setName} Sealed Master Case (6 Boxes / 216 Packs)`,
+            packagingType: 'case',
+            quantity: 216,
+            unitDescription: `Contains 6x Sealed Booster Boxes (216 Boosters total)`,
+            marketPrice: casePrice,
+            estimatedEv: packEv * 216,
+            savingsPct: 16.5,
+          },
+        ],
+        variations: [
+          {
+            boosterIndex: 0,
+            boosterWeight: 100,
+            name: 'Standard Collation',
+            description: 'Standard pack distribution: 6 Commons, 3 Uncommons, 1 Rare/Mythic, 1 Wildcard, 1 Foil, 1 Land, 1 Token.',
+            sheets: [
+              { sheetName: `${setCode} Common Sheet`, sheetCode: 'c', sheetPicks: 6, description: 'Main set commons', category: 'common' },
+              { sheetName: `${setCode} Uncommon Sheet`, sheetCode: 'u', sheetPicks: 3, description: 'Main set uncommons', category: 'uncommon' },
+              { sheetName: `${setCode} Rare/Mythic Sheet`, sheetCode: 'r_m', sheetPicks: 1, description: 'Main set rares and mythics', category: 'rare_mythic', rareOdds: 0.857 },
+              { sheetName: 'Wildcard / Special Slot', sheetCode: 'wildcard', sheetPicks: 1, description: 'Wildcard slot of any rarity', category: 'wildcard', rareOdds: 0.20 },
+              { sheetName: 'Traditional Foil Wildcard', sheetCode: 'foil', sheetPicks: 1, description: 'Foil card slot', category: 'foil', foilChance: 1.0, rareOdds: 0.15 },
+              { sheetName: 'Basic Land Sheet', sheetCode: 'l', sheetPicks: 1, description: 'Full art or basic land', category: 'land' },
+              { sheetName: 'Token / Art Card', sheetCode: 'token', sheetPicks: 1, description: 'Ad token or art card', category: 'ancillary' },
+            ],
+          },
+        ],
+      },
+      {
+        id: `bundle-${setCode.toLowerCase()}`,
+        setCode: setCode,
+        setName: setName,
+        releaseDate: activeBooster.updatedAt?.split('T')[0] || '2024-01-01',
+        block: `${setName} Era`,
+        packagingType: 'bundle',
+        boosterName: (activeBooster.boosterName as any) || 'play',
+        displayName: `${setName} Bundle / Fat Pack (9 Packs)`,
+        marketPrice: bundlePrice,
+        estimatedEv: packEv * 9 + 3.5,
+        cardCount: 156,
+        packsCount: 9,
+        badge: 'Includes Promo & Lands',
+        specialFeatures: ['9x Booster Packs', '30 Basic Lands (15 Foil)', 'Foil Alt-Art Promo', 'Spindown Life Counter'],
+        contains: [
+          {
+            productId: `pack-${setCode.toLowerCase()}-${activeBooster.boosterName}`,
+            name: `${setName} Booster Pack`,
+            packagingType: 'pack',
+            quantity: 9,
+            unitDescription: `9x Individual 14-card Booster Packs`,
+            marketPrice: packPrice,
+            estimatedEv: packEv,
+          },
+        ],
+        bonusAccessories: ['1x Traditional Foil Alt-Art Promo', '30x Basic Lands (15 Foil, 15 Non-Foil)', '1x Spindown Die', '1x Storage Box'],
+        variations: [
+          {
+            boosterIndex: 0,
+            boosterWeight: 100,
+            name: 'Standard Collation',
+            description: 'Standard pack collation across 9 bundle packs.',
+            sheets: [
+              { sheetName: `${setCode} Common Sheet`, sheetCode: 'c', sheetPicks: 6, description: 'Main set commons', category: 'common' },
+              { sheetName: `${setCode} Uncommon Sheet`, sheetCode: 'u', sheetPicks: 3, description: 'Main set uncommons', category: 'uncommon' },
+              { sheetName: `${setCode} Rare/Mythic Sheet`, sheetCode: 'r_m', sheetPicks: 1, description: 'Main set rares/mythics', category: 'rare_mythic', rareOdds: 0.857 },
+              { sheetName: 'Wildcard / Special Slot', sheetCode: 'wildcard', sheetPicks: 1, description: 'Wildcard slot', category: 'wildcard', rareOdds: 0.20 },
+              { sheetName: 'Traditional Foil Wildcard', sheetCode: 'foil', sheetPicks: 1, description: 'Foil slot', category: 'foil', foilChance: 1.0, rareOdds: 0.15 },
+              { sheetName: 'Basic Land Sheet', sheetCode: 'l', sheetPicks: 1, description: 'Basic land', category: 'land' },
+              { sheetName: 'Token / Art Card', sheetCode: 'token', sheetPicks: 1, description: 'Token/Art', category: 'ancillary' },
+            ],
+          },
+        ],
+      },
+      {
+        id: `box-${setCode.toLowerCase()}`,
+        setCode: setCode,
+        setName: setName,
+        releaseDate: activeBooster.updatedAt?.split('T')[0] || '2024-01-01',
+        block: `${setName} Era`,
+        packagingType: 'box',
+        boosterName: (activeBooster.boosterName as any) || 'play',
+        displayName: `${setName} Booster Box (36 Packs)`,
+        marketPrice: boxPrice,
+        estimatedEv: packEv * 36,
+        cardCount: 504,
+        packsCount: 36,
+        badge: '13% Box Discount',
+        specialFeatures: ['36x Factory Sealed Packs', '504 MTG Cards Total', 'Draft Pod Ready (12 Extra Packs)'],
+        contains: [
+          {
+            productId: `pack-${setCode.toLowerCase()}-${activeBooster.boosterName}`,
+            name: `${setName} Booster Pack`,
+            packagingType: 'pack',
+            quantity: 36,
+            unitDescription: `36x Individual 14-card Booster Packs`,
+            marketPrice: packPrice,
+            estimatedEv: packEv,
+          },
+        ],
+        containedIn: [
+          {
+            productId: `case-${setCode.toLowerCase()}`,
+            name: `${setName} Sealed Master Case (6 Boxes)`,
+            packagingType: 'case',
+            quantity: 6,
+            unitDescription: `Contains 6 Factory Sealed Booster Boxes`,
+            marketPrice: casePrice,
+            estimatedEv: packEv * 216,
+            savingsPct: 4.0,
+          },
+        ],
+        variations: [
+          {
+            boosterIndex: 0,
+            boosterWeight: 100,
+            name: 'Standard Box Collation',
+            description: 'Full 36-pack display box collation.',
+            sheets: [
+              { sheetName: `${setCode} Common Sheet`, sheetCode: 'c', sheetPicks: 6, description: 'Main set commons', category: 'common' },
+              { sheetName: `${setCode} Uncommon Sheet`, sheetCode: 'u', sheetPicks: 3, description: 'Main set uncommons', category: 'uncommon' },
+              { sheetName: `${setCode} Rare/Mythic Sheet`, sheetCode: 'r_m', sheetPicks: 1, description: 'Main set rares/mythics', category: 'rare_mythic', rareOdds: 0.857 },
+              { sheetName: 'Wildcard / Special Slot', sheetCode: 'wildcard', sheetPicks: 1, description: 'Wildcard slot', category: 'wildcard', rareOdds: 0.20 },
+              { sheetName: 'Traditional Foil Wildcard', sheetCode: 'foil', sheetPicks: 1, description: 'Foil slot', category: 'foil', foilChance: 1.0, rareOdds: 0.15 },
+              { sheetName: 'Basic Land Sheet', sheetCode: 'l', sheetPicks: 1, description: 'Basic land', category: 'land' },
+              { sheetName: 'Token / Art Card', sheetCode: 'token', sheetPicks: 1, description: 'Token/Art', category: 'ancillary' },
+            ],
+          },
+        ],
+      },
+      {
+        id: `case-${setCode.toLowerCase()}`,
+        setCode: setCode,
+        setName: setName,
+        releaseDate: activeBooster.updatedAt?.split('T')[0] || '2024-01-01',
+        block: `${setName} Era`,
+        packagingType: 'case',
+        boosterName: (activeBooster.boosterName as any) || 'play',
+        displayName: `${setName} Sealed Booster Case (6 Boxes)`,
+        marketPrice: casePrice,
+        estimatedEv: packEv * 216,
+        cardCount: 3024,
+        packsCount: 216,
+        badge: 'Wholesale Master Case',
+        specialFeatures: ['6x Factory Sealed Display Boxes', '216 Booster Packs', '3,024 MTG Cards Total', 'Print Run Collation'],
+        contains: [
+          {
+            productId: `box-${setCode.toLowerCase()}`,
+            name: `${setName} Booster Box`,
+            packagingType: 'box',
+            quantity: 6,
+            unitDescription: `6x Sealed Display Boxes (36 packs each)`,
+            marketPrice: boxPrice,
+            estimatedEv: packEv * 36,
+          },
+          {
+            productId: `pack-${setCode.toLowerCase()}-${activeBooster.boosterName}`,
+            name: `${setName} Booster Pack`,
+            packagingType: 'pack',
+            quantity: 216,
+            unitDescription: `216x Total Booster Packs across the 6 boxes`,
+            marketPrice: packPrice,
+            estimatedEv: packEv,
+          },
+        ],
+        variations: [
+          {
+            boosterIndex: 0,
+            boosterWeight: 100,
+            name: 'Master Case Collation',
+            description: 'Collation across 6 display boxes (216 packs).',
+            sheets: [
+              { sheetName: `${setCode} Common Sheet`, sheetCode: 'c', sheetPicks: 6, description: 'Main set commons', category: 'common' },
+              { sheetName: `${setCode} Uncommon Sheet`, sheetCode: 'u', sheetPicks: 3, description: 'Main set uncommons', category: 'uncommon' },
+              { sheetName: `${setCode} Rare/Mythic Sheet`, sheetCode: 'r_m', sheetPicks: 1, description: 'Main set rares/mythics', category: 'rare_mythic', rareOdds: 0.857 },
+              { sheetName: 'Wildcard / Special Slot', sheetCode: 'wildcard', sheetPicks: 1, description: 'Wildcard slot', category: 'wildcard', rareOdds: 0.20 },
+              { sheetName: 'Traditional Foil Wildcard', sheetCode: 'foil', sheetPicks: 1, description: 'Foil slot', category: 'foil', foilChance: 1.0, rareOdds: 0.15 },
+              { sheetName: 'Basic Land Sheet', sheetCode: 'l', sheetPicks: 1, description: 'Basic land', category: 'land' },
+              { sheetName: 'Token / Art Card', sheetCode: 'token', sheetPicks: 1, description: 'Token/Art', category: 'ancillary' },
+            ],
+          },
+        ],
+      },
+    ];
+  };
+
   // Price & EV scaling based on priceMode & vendor
+  const normVendor = normalizeVendor(vendor);
+  const vendorEvMultiplier =
+    normVendor === 'cardmarket' ? 0.868 :
+    normVendor === 'cardkingdom' ? 1.15 :
+    normVendor === 'manapool' ? 0.98 :
+    1.0;
+
   const rawProducts = dbSealedProducts;
 
-  // Preserve backend-generated product values; market price and EV are not interchangeable.
+  // Dynamically scale EV for active PriceMode & Vendor; marketPrice remains authentic TCGplayer price
   const setProducts = useMemo(() => {
     return rawProducts.map((p) => {
+      const scaledEv = Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2));
       const scaledPrice = Number((p.marketPrice || 0).toFixed(2));
 
       const scaledContains = p.contains?.map((item) => ({
         ...item,
         marketPrice: Number((item.marketPrice || 0).toFixed(2)),
-        estimatedEv: Number((item.estimatedEv || 0).toFixed(2)),
+        estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
       }));
 
       const scaledContainedIn = p.containedIn?.map((item) => ({
         ...item,
         marketPrice: Number((item.marketPrice || 0).toFixed(2)),
-        estimatedEv: Number((item.estimatedEv || 0).toFixed(2)),
+        estimatedEv: Number((item.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
       }));
 
       return {
         ...p,
         marketPrice: scaledPrice,
-        estimatedEv: Number((p.estimatedEv || 0).toFixed(2)),
+        estimatedEv: scaledEv,
         contains: scaledContains,
         containedIn: scaledContainedIn,
         contents: p.contents || p.rawContents,
@@ -345,7 +618,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         subtype: p.subtype || (p as any).rawSubtype,
       };
     });
-  }, [rawProducts]);
+  }, [rawProducts, reprintMultiplier, vendorEvMultiplier]);
 
   // Active selected product for deep containment inspection
   const [selectedProductId, setSelectedProductId] = useState<string>(
@@ -365,8 +638,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === prodId ||
           p.uuid === prodId ||
-          (p.uuid && lower(p.uuid) === lower(prodId)) ||
-          (p.id && lower(p.id) === lower(prodId))
+          (p.uuid && p.uuid.toLowerCase() === prodId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === prodId.toLowerCase())
       );
       onSelectProduct(prodId, boosterName || found?.boosterName || 'play', found);
     }
@@ -379,8 +652,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         (p) =>
           p.id === target ||
           p.uuid === target ||
-          (p.uuid && lower(p.uuid) === lower(target)) ||
-          (p.id && lower(p.id) === lower(target))
+          (p.uuid && p.uuid.toLowerCase() === target.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === target.toLowerCase())
       );
       if (match) return match;
     }
@@ -437,7 +710,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   };
 
   const getPackagingBadge = (prod: CatalogPackProduct) => {
-    const name = lower(prod.displayName);
+    const name = (prod.displayName || '').toLowerCase();
     const isCollector = name.includes('collector') || prod.boosterName === 'collector' || prod.rawSubtype === 'collector';
     const isGift = name.includes('gift') || prod.rawSubtype === 'gift';
     const isBlister = name.includes('blister') || name.includes('3-pack');
@@ -580,7 +853,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     };
 
     const normalizeCat = (p: CatalogPackProduct): string => {
-      const raw = lower(p.rawCategory);
+      const raw = (p.rawCategory || '').toLowerCase();
       if (raw && categoryConfigs[raw]) return raw;
       if (p.packagingType === 'box') return 'booster_box';
       if (p.packagingType === 'pack') return 'booster_pack';
@@ -681,21 +954,20 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const COLLAPSED_LIMIT = 6;
 
   // When a specific product is targeted via prop (e.g. from Arbitrage "Inspect Set"):
-  // Select it and switch category to 'all' so it is actively visible. The list stays
-  // collapsed (visibleProducts pins the active product below the fold) so navigating
-  // into a set with hundreds of products doesn't force the entire list open.
+  // Select it, uncollapse the list, and switch category to 'all' so it is actively visible!
   useEffect(() => {
     if (propSelectedProductId && setProducts.length > 0) {
       const match = setProducts.find(
         (p) =>
           p.id === propSelectedProductId ||
           p.uuid === propSelectedProductId ||
-          (p.uuid && lower(p.uuid) === lower(propSelectedProductId)) ||
-          (p.id && lower(p.id) === lower(propSelectedProductId))
+          (p.uuid && p.uuid.toLowerCase() === propSelectedProductId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === propSelectedProductId.toLowerCase())
       );
       if (match) {
         setSelectedProductId(match.id);
         setActiveCategory('all');
+        setIsListCollapsed(false);
       }
     }
   }, [propSelectedProductId, setProducts]);
@@ -704,15 +976,30 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const filteredProducts = useMemo(() => {
     let prods = displayedProducts;
     if (searchQuery.trim()) {
-      const q = lower(searchQuery).trim();
+      const q = searchQuery.toLowerCase().trim();
       prods = prods.filter((p) =>
-        lower(p.displayName).includes(q) ||
-        lower(p.packagingType).includes(q) ||
-        lower(p.boosterName).includes(q)
+        (p.displayName || '').toLowerCase().includes(q) ||
+        (p.packagingType || '').toLowerCase().includes(q) ||
+        (p.boosterName || '').toLowerCase().includes(q)
       );
     }
     return prods;
   }, [displayedProducts, searchQuery]);
+
+  // If the active product exists in filteredProducts but beyond COLLAPSED_LIMIT, automatically uncollapse
+  useEffect(() => {
+    if (activeProduct && filteredProducts.length > COLLAPSED_LIMIT && isListCollapsed) {
+      const index = filteredProducts.findIndex(
+        (p) =>
+          p.id === activeProduct.id ||
+          (activeProduct.uuid && p.uuid === activeProduct.uuid) ||
+          (activeProduct.id && p.uuid === activeProduct.id)
+      );
+      if (index >= COLLAPSED_LIMIT) {
+        setIsListCollapsed(false);
+      }
+    }
+  }, [activeProduct, filteredProducts, isListCollapsed]);
 
   // Smooth scroll into view when a product is targeted from props
   useEffect(() => {
@@ -934,11 +1221,32 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         </div>
 
         <div className="flex flex-col md:flex-row items-start gap-4">
+          {/* Dedicated Sticky Left Div for Product Picture (hidden in List view) */}
+          {viewMode !== 'list' && (
+            <div className="w-full md:w-60 shrink-0 bg-slate-50/90 rounded-2xl p-2 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center md:sticky md:top-4 self-start overflow-hidden">
+              {activeProduct && (
+                <div className="w-full flex items-center justify-center p-0">
+                  <ProductPackagingImage
+                    productId={activeProduct.id}
+                    setCode={setCode}
+                    setName={setName}
+                    packagingType={activeProduct.packagingType}
+                    displayName={cleanProductName(activeProduct.displayName)}
+                    cardCount={activeProduct.cardCount}
+                    size="full"
+                    className="w-full h-64 max-h-[300px] object-contain"
+                    allowZoom={true}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Right Side: Flat Grid vs List */}
           <div className="flex-1 min-w-0 space-y-4">
             {viewMode === 'grid' ? (
               // FLAT GRID VIEW
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                 {visibleProducts.map((prod) => {
                   const isSelected =
                     (activeProduct?.id && prod.id && activeProduct.id === prod.id) ||
@@ -1182,6 +1490,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                       <th className="p-3">Simulated EV</th>
                       <th className="p-3">Margin ($)</th>
                       <th className="p-3">EV ROI (%)</th>
+                      <th className="p-3">Pack Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -1269,6 +1578,17 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                               <span className="text-slate-400 font-normal text-[11px]">N/A</span>
                             )}
                           </td>
+                          <td className="p-3 font-mono text-slate-600 whitespace-nowrap">
+                            {p.packsCount > 0 && p.marketPrice > 0 ? (
+                              `$${(p.marketPrice / p.packsCount).toFixed(2)}/pack`
+                            ) : p.cardCount === 1 && p.marketPrice > 0 ? (
+                              `$${p.marketPrice.toFixed(2)}/card`
+                            ) : p.cardCount && p.cardCount > 1 && p.marketPrice > 0 ? (
+                              `$${(p.marketPrice / p.cardCount).toFixed(2)}/card`
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">—</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -1308,7 +1628,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           {(() => {
             const isDeck =
               activeProduct.packagingType === 'starter_deck' ||
-              lower(activeProduct.displayName).includes('commander deck') ||
+              (activeProduct.displayName || '').toLowerCase().includes('commander deck') ||
               activeProduct.rawCategory === 'deck';
 
             return (
@@ -1324,6 +1644,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   preconDecks={preconDecks}
                   boosterEvMap={boosterEvMap}
                   singleCardPrices={singleCardPrices}
+                  reprintMultiplier={reprintMultiplier}
                   title="Product & Prize breakdown"
                   collapsible={true}
                   defaultCollapsed={false}

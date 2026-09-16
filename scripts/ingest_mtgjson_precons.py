@@ -73,8 +73,7 @@ def main():
 
         valid_vals = [v for k, v in res.items() if k in ["tcgplayer", "cardkingdom", "cardmarket"] and v and v > 0]
         if valid_vals:
-            res["all_cheapest"] = round(min(valid_vals), 2)
-            res["all_average"] = round(sum(valid_vals) / len(valid_vals), 2)
+            res["all"] = round(sum(valid_vals) / len(valid_vals), 2)
         return res
 
     # 2. Load existing single_card_prices.json
@@ -145,7 +144,7 @@ def main():
 
             # Fetch MTGJSON vendor prices strictly (No Scryfall pricing)
             vendor_prices = resolve_card_prices(c_uuid, want_foil=is_foil)
-            unit_price = vendor_prices.get("all_cheapest")
+            unit_price = vendor_prices.get("all")
             if unit_price is None:
                 continue
             unit_price = round(unit_price, 2)

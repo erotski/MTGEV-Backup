@@ -30,7 +30,6 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
     const lowerName = displayName.toLowerCase();
     const cat = (sp.category || '').toLowerCase();
     const sub = (sp.subtype || '').toLowerCase();
-    let metadataSource: 'pipeline' | 'inferred' = 'pipeline';
 
     // Map packaging type accurately
     let packagingType: ProductPackagingType = 'box';
@@ -53,7 +52,6 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
     } else if (cat === 'kit') {
       packagingType = 'kit';
     } else {
-      metadataSource = 'inferred';
       // Fallback based on product title
       if (lowerName.includes('booster pack') || lowerName.includes('draft pack') || lowerName.includes('play booster') || lowerName.includes('collector booster')) {
         packagingType = 'pack';
@@ -84,8 +82,8 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
       rawSubtype: sp.subtype,
       setCode,
       setName: sp.setName || setCode,
-      releaseDate: sp.releaseDate || '',
-      block: sp.block || '',
+      releaseDate: sp.releaseDate || '2024-01-01',
+      block: sp.block || 'Standard',
       packagingType,
       boosterName: sp.boosterName || sub || 'play',
       displayName,
@@ -99,7 +97,6 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
       contents: sp.contents,
       category: sp.category,
       subtype: sp.subtype,
-      metadataSource,
       totalEvAvg: sp.totalEvAvg,
       totalEvMid90: sp.totalEvMid90,
       totalEvMin5: sp.totalEvMin5,

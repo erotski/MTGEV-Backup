@@ -243,7 +243,7 @@ export function getChildCommanderSetCodes(parentSetCode?: string | null): string
   const node = SCRYFALL_HIERARCHY_CACHE[upper];
   if (node && Array.isArray(node.childSets)) {
     const cmdChildren = node.childSets
-      .filter((c) => c.setType === 'commander' || (c.name || '').toLowerCase().includes('commander'))
+      .filter((c) => c.setType === 'commander' || c.name.toLowerCase().includes('commander'))
       .map((c) => c.code.toUpperCase());
     if (cmdChildren.length > 0) return cmdChildren;
   }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, ProductMetricsRecord, EvBasis } from '../types';
+import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
-import { resolveRecursiveProductAudit } from '../utils/productUtils';
+import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
 import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildCommanderSetCodes, getChildSets, getScryfallNode } from '../utils/setHierarchyUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
@@ -42,10 +42,22 @@ interface BoosterDetailExplorerProps {
   onVendorChange: (vendor: Vendor) => void;
   evBasis?: EvBasis;
   onEvBasisChange?: (basis: EvBasis) => void;
-  productMetrics?: ProductMetricsRecord[];
   initialProductId?: string;
   onClearInitialProductId?: () => void;
 }
+
+const getBoosterPackMarketPrice = (setCode: string, boosterName: string): number => {
+  const isCollector = boosterName.toLowerCase().includes('collector');
+  if (setCode === 'MH3') return isCollector ? 39.99 : 7.99;
+  if (setCode === 'BLB') return isCollector ? 26.99 : 4.49;
+  if (setCode === 'OTJ') return isCollector ? 24.99 : 4.25;
+  if (setCode === 'MOM') return isCollector ? 28.50 : 4.85;
+  if (setCode === 'WOE') return isCollector ? 22.99 : 4.50;
+  if (setCode === 'LCI') return isCollector ? 25.00 : 4.50;
+  if (setCode === 'FDN') return isCollector ? 29.99 : 4.49;
+  if (setCode === 'FIN') return isCollector ? 42.99 : 6.99;
+  return isCollector ? 28.00 : 4.99;
+};
 
 export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   selectedSetCode,
@@ -58,20 +70,20 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   onVendorChange,
   evBasis = 'avg',
   onEvBasisChange,
-  productMetrics = [],
   initialProductId,
   onClearInitialProductId,
 }) => {
-  const debugMode = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('debug') || ''
-    : '';
-  const showRelatedProducts = debugMode !== 'booster-only' && debugMode !== 'no-related';
-  const showCurves = debugMode !== 'booster-only' && debugMode !== 'no-curves';
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor
   const rawSetBoosters = boosterRecords.filter((b) => b.setCode.toUpperCase() === selectedSetCode.toUpperCase());
+  const reprintMultiplier = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
   const normVendor = normalizeVendor(vendor);
+  const vendorEvMultiplier =
+    normVendor === 'cardmarket' ? 0.868 :
+    normVendor === 'cardkingdom' ? 1.15 :
+    normVendor === 'manapool' ? 0.98 :
+    1.0;
 
   // Search & sorting state for MTG Sets dropdown
   const [setSearchQuery, setSetSearchQuery] = useState<string>('');
@@ -83,7 +95,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
       if (dateA !== dateB) return dateB - dateA;
-      return String(a.name || '').localeCompare(String(b.name || ''));
+      return a.name.localeCompare(b.name);
     });
   }, [availableSets]);
 
@@ -94,24 +106,25 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     }
     const q = setSearchQuery.toLowerCase().trim();
     return sortedSets.filter((s) => {
-      const setName = String(s.name || '');
-      const setCode = String(s.code || '');
       const matchesSelf =
-        setName.toLowerCase().includes(q) ||
-        setCode.toLowerCase().includes(q) ||
-        String(s.block || '').toLowerCase().includes(q);
+        s.name.toLowerCase().includes(q) ||
+        s.code.toLowerCase().includes(q) ||
+        (s.block && s.block.toLowerCase().includes(q));
 
       // Also match if a child commander set code or name matches query
-      const childCodes = getChildCommanderSetCodes(setCode);
-      const matchesChild = childCodes.some((cc) => String(cc || '').toLowerCase().includes(q));
+      const childCodes = getChildCommanderSetCodes(s.code);
+      const matchesChild = childCodes.some((cc) => cc.toLowerCase().includes(q));
       return matchesSelf || matchesChild;
     });
   }, [sortedSets, setSearchQuery]);
 
-  // Group by boosterName and keep only the requested vendor/mode. Missing records must remain
-  // unavailable instead of silently switching to an aggregate or unrelated vendor.
+  // Group by boosterName (e.g. 'play', 'collector', 'draft'), preferring rows matching the
+  // active priceMode, then pick the row for the exact selected vendor (falling back to the
+  // 'all' consensus row) - mirrors backend/ev_engine.py's get_pack_ev priority so both the
+  // Booster EV explorer and the Product Overview/Admin pages agree on the same numbers.
   const exactModeBoosters = rawSetBoosters.filter((b) => b.priceMode === priceMode);
-  const sourceBoosters = exactModeBoosters;
+  const fallbackBoosters = rawSetBoosters.filter((b) => b.priceMode === 'direct');
+  const sourceBoosters = exactModeBoosters.length > 0 ? exactModeBoosters : fallbackBoosters.length > 0 ? fallbackBoosters : rawSetBoosters;
 
   const boostersByName = new Map<string, BoosterEVRecord[]>();
   sourceBoosters.forEach((b) => {
@@ -120,14 +133,21 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   });
 
   const currentBoosters = Array.from(boostersByName.values()).map((rows) => {
-    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor);
-    if (!base) return null;
+    const base = rows.find((r) => r.vendor === normVendor) || rows.find((r) => r.vendor === vendor) || rows.find((r) => r.vendor === 'all_cheapest') || rows[0];
+    const mult = base.priceMode === priceMode ? 1.0 : reprintMultiplier;
     return {
       ...base,
+      evAverage: Number((base.evAverage * mult).toFixed(2)),
+      evMid90: Number((base.evMid90 * mult).toFixed(2)),
+      evMin: Number((base.evMin * mult).toFixed(2)),
+      evMax: Number((base.evMax * mult).toFixed(2)),
+      evMin5: Number((base.evMin5 * mult).toFixed(2)),
+      evMax5: Number((base.evMax5 * mult).toFixed(2)),
+      quantiles: base.quantiles ? base.quantiles.map((q) => Number((q * mult).toFixed(2))) : undefined,
       priceMode,
       vendor,
     };
-  }).filter((booster): booster is BoosterEVRecord => Boolean(booster));
+  });
 
   // Catalog products for this set, with EV scaled by active priceMode and vendor (marketPrice untouched)
   const setCatalogProducts = useMemo(() => {
@@ -137,9 +157,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return prods.map((p) => ({
       ...p,
       marketPrice: Number((p.marketPrice || 0).toFixed(2)),
-      estimatedEv: p.estimatedEv,
+      estimatedEv: Number((p.estimatedEv * reprintMultiplier * vendorEvMultiplier).toFixed(2)),
     }));
-  }, [selectedSetCode]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier]);
 
   // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
   const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
@@ -150,16 +170,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const [arbitrageRecords, setArbitrageRecords] = useState<Record<string, any>>({});
   const [preconDecks, setPreconDecks] = useState<Record<string, PreconstructedDeckDetail>>({});
   const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
-  const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
-  const [snapshotWarnings, setSnapshotWarnings] = useState<string[]>([]);
-  const [gatewayMetrics, setGatewayMetrics] = useState<any>(null);
 
   // Track the actively selected product ID from the Related Products catalog
   const [selectedProductId, setSelectedProductId] = useState<string>(
     initialProductId || setCatalogProducts[0]?.id || ''
-  );
-  const [activeBoosterName, setActiveBoosterName] = useState<string>(
-    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
   );
 
   useEffect(() => {
@@ -169,8 +183,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         (p) =>
           p.id === initialProductId ||
           p.uuid === initialProductId ||
-          (p.uuid && String(p.uuid).toLowerCase() === String(initialProductId || '').toLowerCase()) ||
-          (p.id && String(p.id).toLowerCase() === String(initialProductId || '').toLowerCase())
+          (p.uuid && p.uuid.toLowerCase() === initialProductId.toLowerCase()) ||
+          (p.id && p.id.toLowerCase() === initialProductId.toLowerCase())
       );
       if (matched) {
         setSelectedProductOverride(matched);
@@ -183,6 +197,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }
   }, [initialProductId, setCatalogProducts, dbProducts, onClearInitialProductId]);
+
+  const [activeBoosterName, setActiveBoosterName] = useState<string>(
+    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
+  );
 
   // Global lookup map of all sealed products by UUID/ID
   const productMap = useMemo(() => {
@@ -213,8 +231,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       dataService.getArbitrageRecords(),
       dataService.getPreconDecks(),
       dataService.getSingleCardPrices(),
-      dataService.getLatestPipelineRun(),
-    ]).then(([rawProds, rawArb, rawPrecon, rawSingle, latestRun]) => {
+    ]).then(([rawProds, rawArb, rawPrecon, rawSingle]) => {
       if (!isMounted) return;
       if (Array.isArray(rawProds)) setAllRawProducts(rawProds);
       if (Array.isArray(rawArb)) {
@@ -227,7 +244,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
       if (rawPrecon) setPreconDecks(rawPrecon);
       if (rawSingle) setSingleCardPrices(rawSingle);
-      if (latestRun?.id) setPipelineRunId(latestRun.id);
     }).catch(() => {});
 
     return () => { isMounted = false; };
@@ -257,18 +273,17 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         else if (cat === 'deck' || cat === 'multiple_decks' || cat === 'deck_box') packType = 'starter_deck';
         else if (cat === 'kit') packType = 'kit';
 
-        const productId = sp.id || sp.uuid;
-        const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
-        const metric = productMetrics.find((item) =>
-          item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
+        // Single canonical source of truth for containment, breakdown, and EV calculation
+        const metrics = getCanonicalProductMetrics(
+          sp,
+          productMap,
+          arbitrageRecords,
+          boosterEvMap,
+          preconDecks,
+          singleCardPrices,
+          vendor,
+          priceMode
         );
-        const metrics = {
-          marketPrice: metric?.marketPrice ?? Number(sp.marketPrice || sp.tcgplayer_price || 0),
-          primaryBoosterName: sp.boosterName || 'play',
-          packsCount: metric?.packCount ?? 0,
-          cardCount: metric?.cardCount ?? Number(sp.cardCount || 0),
-          estimatedEv: metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0,
-        };
 
         let basePrice = metrics.marketPrice;
         if (basePrice === 0) {
@@ -315,8 +330,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               (p) =>
                 p.id === targetId ||
                 p.uuid === targetId ||
-                (p.uuid && String(p.uuid).toLowerCase() === String(targetId || '').toLowerCase()) ||
-                (p.id && String(p.id).toLowerCase() === String(targetId || '').toLowerCase())
+                (p.uuid && p.uuid.toLowerCase() === targetId.toLowerCase()) ||
+                (p.id && p.id.toLowerCase() === targetId.toLowerCase())
             )
           : null;
 
@@ -340,7 +355,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       }
     }).catch(() => {});
     return () => { isMounted = false; };
-  }, [selectedSetCode, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, initialProductId]);
+  }, [selectedSetCode, reprintMultiplier, vendorEvMultiplier, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, initialProductId]);
 
   // Sync when set changes
   useEffect(() => {
@@ -390,8 +405,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         !selectedProductId ||
         selectedProductOverride.id === selectedProductId ||
         selectedProductOverride.uuid === selectedProductId ||
-        (selectedProductOverride.uuid && selectedProductId && String(selectedProductOverride.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
-        (selectedProductOverride.id && selectedProductId && String(selectedProductOverride.id).toLowerCase() === String(selectedProductId || '').toLowerCase());
+        (selectedProductOverride.uuid && selectedProductId && selectedProductOverride.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+        (selectedProductOverride.id && selectedProductId && selectedProductOverride.id.toLowerCase() === selectedProductId.toLowerCase());
       if (related.includes(overrideSet) && isIdMatch) {
         return selectedProductOverride;
       }
@@ -400,8 +415,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       (p) =>
         p.id === selectedProductId ||
         p.uuid === selectedProductId ||
-        (p.uuid && selectedProductId && String(p.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
-        (p.id && selectedProductId && String(p.id).toLowerCase() === String(selectedProductId || '').toLowerCase())
+        (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+        (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
     );
     if (dbMatch) return dbMatch;
     return (
@@ -409,39 +424,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         (p) =>
           p.id === selectedProductId ||
           p.uuid === selectedProductId ||
-          (p.uuid && selectedProductId && String(p.uuid).toLowerCase() === String(selectedProductId || '').toLowerCase()) ||
-          (p.id && selectedProductId && String(p.id).toLowerCase() === String(selectedProductId || '').toLowerCase())
+          (p.uuid && selectedProductId && p.uuid.toLowerCase() === selectedProductId.toLowerCase()) ||
+          (p.id && selectedProductId && p.id.toLowerCase() === selectedProductId.toLowerCase())
       ) ||
       dbProducts[0] ||
       setCatalogProducts[0]
     );
   }, [selectedProductOverride, selectedSetCode, dbProducts, selectedProductId, setCatalogProducts]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    dataService.getSnapshotIntegrityReport().then((report) => {
-      if (!isMounted) return;
-      setSnapshotWarnings(report.warnings || []);
-      const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
-      const productId = activeProduct?.id || activeProduct?.uuid;
-      const metrics = productMetrics.find((item) =>
-        item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
-      );
-      setGatewayMetrics(metrics || null);
-      if (report.metadata?.pipelineRunId || report.metadata?.id) {
-        setPipelineRunId(report.metadata.pipelineRunId || report.metadata.id || 'unavailable');
-      }
-    }).catch(() => {
-      if (!isMounted) return;
-      setSnapshotWarnings([]);
-      setGatewayMetrics(null);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [activeProduct, productMetrics, vendor, priceMode, evBasis]);
 
   // Lookup raw product with full contents metadata
   const activeRawProduct = useMemo(() => {
@@ -453,8 +442,8 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       allRawProducts.find(
         (p) =>
           related.includes((p.setCode || '').toUpperCase()) &&
-          ((p.displayName || p.name || '').toLowerCase() === (activeProduct.displayName || '').toLowerCase() ||
-            (p.name || '').toLowerCase() === (activeProduct.displayName || '').toLowerCase())
+          ((p.displayName || p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase() ||
+            (p.name || '').toLowerCase() === activeProduct.displayName.toLowerCase())
       ) || activeProduct
     );
   }, [activeProduct, productMap, allRawProducts, selectedSetCode]);
@@ -497,26 +486,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Derive authoritative canonical metrics
   const canonicalMetrics = useMemo(() => {
-    if (gatewayMetrics) {
-      return {
-        estimatedEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,
-        fixedBaseEv: 0,
-        variableEv: gatewayMetrics.totalEvAvg,
-        minEv: gatewayMetrics.totalEvMin,
-        min5Ev: gatewayMetrics.totalEvMin,
-        mid90Ev: gatewayMetrics.totalEvMid90,
-        max5Ev: gatewayMetrics.totalEvMax,
-        maxEv: gatewayMetrics.totalEvMax,
-        marketPrice: gatewayMetrics.marketPrice,
-        effectiveEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,
-        packsCount: gatewayMetrics.packCount,
-        cardCount: gatewayMetrics.cardCount,
-        netSpread: gatewayMetrics.profitUsdByBasis?.[evBasis] ?? gatewayMetrics.profitUsd,
-        roiPct: gatewayMetrics.roiPctByBasis?.[evBasis] ?? gatewayMetrics.roiPct,
-      };
-    }
-    return null;
-  }, [gatewayMetrics, activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
+    if (!activeRawProduct && !activeProduct) return null;
+    return getCanonicalProductMetrics(
+      activeRawProduct || activeProduct,
+      productMap,
+      arbitrageRecords,
+      boosterEvMap,
+      preconDecks,
+      singleCardPrices,
+      vendor,
+      priceMode,
+      evBasis
+    );
+  }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
 
   const productFixedBaseEv = canonicalMetrics?.fixedBaseEv ?? (productAudit?.totalFixedEv || 0);
   const productVariableEv = canonicalMetrics?.variableEv ?? (productAudit?.totalVariableEv || 0);
@@ -557,13 +539,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return activeProduct.packagingType === 'box_set' || cat === 'box_set';
   }, [activeProduct]);
 
-  const packMarketPrice = Number(activeProduct?.marketPrice || 0);
+  const packMarketPrice = Number(getBoosterPackMarketPrice(selectedSetCode, activeBooster?.boosterName || 'play').toFixed(2));
 
   // Product level scaled metrics from authoritative breakdown
   const productPacksCount =
     productAudit && productAudit.totalPacks > 0
       ? productAudit.totalPacks
-      : activeProduct?.packsCount ?? (activeBooster ? 1 : 0);
+      : activeProduct?.packsCount || 1;
 
   const productTotalCards =
     productAudit && productAudit.totalCards > 0
@@ -635,10 +617,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       return activeProduct.evScore;
     }
 
-    // 3. Empirical quantiles by vendor from the backend snapshot
+    // 3. Empirical quantiles by vendor (scaled by reprintMultiplier if in Cheapest Reprint mode)
     const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
     const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey];
     if (rawQuantiles && rawQuantiles.length >= 100) {
+      const reprintMult = priceMode === 'cheapest_reprint' ? 0.82 : 1.0;
+      const quantiles = reprintMult !== 1.0 ? rawQuantiles.map((q) => q * reprintMult) : rawQuantiles;
       const score = calculateEvScore(
         productMarketPrice,
         productEstimatedEv,
@@ -646,7 +630,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         productMid90Ev,
         productMax5,
         false,
-        rawQuantiles,
+        quantiles,
         productPacksCount
       );
       if (score != null) return score;
@@ -715,9 +699,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         const rawType = sc.setType || '';
         const formattedType =
           rawType === 'memorabilia'
-            ? (sc.name || '').toLowerCase().includes('scene box')
+            ? sc.name.toLowerCase().includes('scene box')
               ? 'Scene Box'
-              : (sc.name || '').toLowerCase().includes('art')
+              : sc.name.toLowerCase().includes('art')
               ? 'Art Series'
               : 'Memorabilia'
             : rawType === 'masterpiece'
@@ -1025,7 +1009,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               {childSetsList.map((child) => (
                 <a
                   key={child.code}
-                  href={`https://scryfall.com/sets/${(child.code || '').toLowerCase()}`}
+                  href={`https://scryfall.com/sets/${child.code.toLowerCase()}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-50/90 hover:bg-indigo-50/60 hover:border-indigo-200 border border-slate-200/90 rounded-xl p-2.5 flex items-center gap-2.5 transition group cursor-pointer"
@@ -1063,7 +1047,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       </div>
 
       {/* 1. Related Products & Containment Hierarchy Selector (Primary Product Catalog for Set) */}
-      {activeBooster && showRelatedProducts && (
+      {activeBooster && (
         <RelatedProductsHierarchy
           setCode={selectedSetCode}
           setName={currentSet?.name || activeBooster.setName || selectedSetCode}
@@ -1080,7 +1064,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           preconDecks={preconDecks}
           boosterEvMap={boosterEvMap}
           singleCardPrices={singleCardPrices}
-          productMetrics={productMetrics}
+          reprintMultiplier={reprintMultiplier}
           onSelectProduct={(prodId, bName, product) => {
             setSelectedProductId(prodId);
             if (product) {
@@ -1096,32 +1080,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       {/* 2. Active Selected Product Detailed Stats Grid */}
       {activeBooster && (
         <div className="space-y-6">
-          {snapshotWarnings.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs">
-              <div className="font-bold uppercase tracking-wider mb-1">Snapshot warnings</div>
-              <ul className="list-disc pl-5 space-y-1">
-                {snapshotWarnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {(gatewayMetrics?.pipelineRunId || pipelineRunId) && (
-            <div className="bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl p-3 text-xs flex flex-wrap items-center gap-3">
-              <span className="font-bold uppercase tracking-wider text-slate-500">Data source</span>
-              <span className="font-mono text-slate-800">{gatewayMetrics?.source || 'live_pipeline'}</span>
-              <span className="font-bold uppercase tracking-wider text-slate-500">Pipeline</span>
-              <span className="font-mono text-slate-800">{gatewayMetrics?.pipelineRunId || pipelineRunId}</span>
-              {gatewayMetrics?.generatedAt && (
-                <>
-                  <span className="font-bold uppercase tracking-wider text-slate-500">Generated</span>
-                  <span className="font-mono text-slate-800">{new Date(gatewayMetrics.generatedAt).toISOString()}</span>
-                </>
-              )}
-            </div>
-          )}
-
           {/* EV Score & Market Price Banner */}
           <div
             id="product-ev-score-banner"
@@ -1355,7 +1313,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
           </div>
 
           {/* Graphical Product Price Quantile Distribution Curve */}
-          {activeBooster && showCurves && (
+          {activeBooster && (
             <PackDistributionCurve
               productTitle={activeProduct?.displayName || `${currentSet?.name || selectedSetCode} ${activeBooster.fullBoosterName || activeBooster.boosterName}`}
               activeBooster={activeBooster}
@@ -1372,7 +1330,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               cardCount={productTotalCards}
               packItems={flatPackItems}
               quantilesByVendor={activeProduct?.quantilesByVendor}
-              pipelineRunId={pipelineRunId}
             />
           )}
 

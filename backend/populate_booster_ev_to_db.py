@@ -1,12 +1,11 @@
 from collections import defaultdict
 import json
-import os
 from pathlib import Path
 import time
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
-from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG, QUICK_TEST_SET
+from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG
 from price_resolver import PriceResolver
 
 
@@ -30,18 +29,6 @@ IGNORED_SHEET_KEYWORDS = (
     'checklist',
 )
 
-# Only these named vendors may become a per-vendor booster_ev_results row.
-# Any other provider string discovered from AllPricesToday (typos, aggregate
-# or reserved labels such as "all") must never be treated as a real seller.
-NAMED_VENDORS = {'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'}
-
-COLLATION_OVERRIDE_PATH = (
-  Path(__file__).resolve().parents[1]
-  / 'public'
-  / 'data'
-  / 'booster_collation_overrides.json'
-)
-
 
 def is_ignored_sheet(sheet_name: str) -> bool:
   s_lower = sheet_name.lower()
@@ -60,7 +47,6 @@ class DatabaseBoosterEVEngine:
     self.card_cache = {}
     self.price_cache = {}
     self.lowest_cache = {}
-    self.collation_overrides = self._load_collation_overrides()
     self.price_resolver = PriceResolver(
       self.card_cache, self.price_cache, self.lowest_cache
     )
@@ -69,26 +55,6 @@ class DatabaseBoosterEVEngine:
     self.cursor = self.conn.cursor(dictionary=True)
 
     self._init_database_schema()
-
-  @staticmethod
-  def _load_collation_overrides():
-    if not COLLATION_OVERRIDE_PATH.exists():
-      return {}
-    try:
-      with COLLATION_OVERRIDE_PATH.open('r', encoding='utf-8') as handle:
-        document = json.load(handle)
-      return document.get('entries', {})
-    except (OSError, json.JSONDecodeError) as exc:
-      print(f'   -> Could not load collation overrides: {exc}')
-      return {}
-
-  def _sheet_fixed_override(self, set_code: str, booster_name: str, sheet_name: str):
-    entry = self.collation_overrides.get(
-      f'{set_code.upper()}:{booster_name.lower()}'
-    )
-    if not entry or not entry.get('fixedByDefault', False):
-      return None
-    return sheet_name not in set(entry.get('variableSheets', []))
 
   def _init_database_schema(self):
     """Creates the target MySQL table with indexes for high-speed querying."""
@@ -309,14 +275,11 @@ class DatabaseBoosterEVEngine:
     )
     card_rows = self.cursor.fetchall()
 
-    sheets = defaultdict(lambda: {'cards': {}, 'foil': False, 'fixed': False})
+    sheets = defaultdict(lambda: {'cards': {}, 'foil': False})
     for row in card_rows:
       s_name = row['sheetName']
       sheets[s_name]['cards'][row['cardUuid']] = float(row['cardWeight'])
       sheets[s_name]['foil'] = sheet_meta.get(s_name, False)
-      fixed_override = self._sheet_fixed_override(set_code, booster_name, s_name)
-      if fixed_override is not None:
-        sheets[s_name]['fixed'] = fixed_override
 
     return {'boosters': boosters_list, 'sheets': dict(sheets)}
 
@@ -345,7 +308,7 @@ class DatabaseBoosterEVEngine:
     sellers = set()
     for u in all_uuids:
       sellers.update(self.price_cache.get(u, {}).keys())
-    sellers = sorted(s for s in sellers if s in NAMED_VENDORS)
+    sellers = sorted([s for s in sellers if s])
     if not sellers:
       print(f'   -> No named vendor price data for {set_code} {booster_name}; skipping simulation')
       return None
@@ -362,13 +325,6 @@ class DatabaseBoosterEVEngine:
       if total_w == 0:
         continue
       w_list /= total_w
-
-      fixed_indices = None
-      if sheet.get('fixed', False):
-        fixed_counts = np.rint(np.array(list(cards.values()), dtype=np.float64)).astype(int)
-        fixed_indices = np.repeat(np.arange(len(u_list)), fixed_counts)
-        if len(fixed_indices) == 0:
-          fixed_indices = np.arange(len(u_list))
 
       req_finish = 'foil' if sheet.get('foil', False) else 'normal'
 
@@ -425,8 +381,6 @@ class DatabaseBoosterEVEngine:
       sheet_data[sheet_name] = {
           'uuids': u_list,
           'weights': w_list,
-          'fixed': sheet.get('fixed', False),
-          'fixed_indices': fixed_indices,
           'matrix': matrix,
           'status': status_matrix,
       }
@@ -480,12 +434,9 @@ class DatabaseBoosterEVEngine:
           continue
 
         s_info = sheet_data[sheet_name]
-        if s_info['fixed']:
-          picked_indices = np.resize(s_info['fixed_indices'], pick_count)
-        else:
-          picked_indices = np.random.choice(
-              len(s_info['uuids']), size=pick_count, p=s_info['weights']
-          )
+        picked_indices = np.random.choice(
+            len(s_info['uuids']), size=pick_count, p=s_info['weights']
+        )
 
         for mode in modes:
           for v in all_vendors_list:
@@ -537,7 +488,7 @@ class DatabaseBoosterEVEngine:
     # Remove pre-migration aggregate rows so legacy `all` records cannot
     # compete with the canonical all_cheapest rows during export.
     self.cursor.execute(
-      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all'",
+      "DELETE FROM booster_ev_results WHERE set_code = %s AND booster_name = %s AND vendor = 'all_cheapest'",
       (set_code, booster_name),
     )
 
@@ -641,7 +592,7 @@ class DatabaseBoosterEVEngine:
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
-def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None, quick_test_limit: int = None):
+def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None):
   db_config = DB_CONFIG
 
   engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size, audit_config=audit_config)
@@ -663,13 +614,8 @@ def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_con
   engine.cursor.execute(query, tuple(params) if params else None)
   all_boosters = engine.cursor.fetchall()
 
-  if quick_test_limit:
-    all_boosters = all_boosters[:quick_test_limit]
-
   print('=' * 65)
   print(f'Starting Booster EV Engine -> MySQL `booster_ev_results` [Sample Size: {sample_size:,} packs]')
-  if quick_test_limit:
-    print(f'Quick test mode: limited to {len(all_boosters)} booster configurations')
   print(f'Total Paper Booster Configurations: {len(all_boosters)}')
   print(f'Database Target: {db_config["database"]}.booster_ev_results')
   print('=' * 65 + '\n')
@@ -725,7 +671,6 @@ if __name__ == '__main__':
   parser.add_argument('--audit-vendor', type=str, default='all_cheapest', help='Vendor for --audit-set')
   parser.add_argument('--audit-price-mode', type=str, default='direct', choices=['direct', 'cheapest_reprint'])
   parser.add_argument('--audit-output', type=str, default='backend/audit/booster_samples.json')
-  parser.add_argument('--limit', type=int, default=None, help='Only simulate the first N booster configurations (quick test runs)')
   args = parser.parse_args()
   audit_config = {
       'enabled': AUDIT_ENABLED or bool(args.audit_set),
@@ -733,6 +678,4 @@ if __name__ == '__main__':
   }
   if args.audit_output and args.audit_set:
     audit_config['output_dir'] = str(Path(args.audit_output).parent)
-  quick_test_limit = args.limit or (int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None)
-  target_set = args.set or QUICK_TEST_SET
-  run_full_pipeline(sample_size=args.sample_size, target_set=target_set, audit_config=audit_config, quick_test_limit=quick_test_limit)
+  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config)

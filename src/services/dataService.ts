@@ -1,4 +1,4 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord, ProductMetricsRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
 import { 
   loadScryfallHierarchy, 
@@ -100,8 +100,6 @@ class DataService {
   private arbitragePromise: Promise<BoxArbitrageRecord[]> | null = null;
   private boosterEvCache: Record<string, BoosterEVRecord[]> | null = null;
   private boosterEvPromise: Promise<Record<string, BoosterEVRecord[]>> | null = null;
-  private pricingReliabilityCache: Record<string, PricingReliability> | null = null;
-  private pricingReliabilityPromise: Promise<Record<string, PricingReliability>> | null = null;
   private boosterSlotsCache: Record<string, Record<string, DbBoosterData>> | null = null;
   private preconDecksCache: Record<string, any> | null = null;
   private preconDecksPromise: Promise<Record<string, any>> | null = null;
@@ -121,7 +119,6 @@ class DataService {
     byName: Record<string, any>;
     totalIndexed: number;
   }> | null = null;
-  private snapshotIntegrityReport: SnapshotIntegrityReport | null = null;
   private isLoadedFromPipeline = false;
 
   public getSingleCardPricesSync(): {
@@ -141,17 +138,6 @@ class DataService {
     return this.boosterEvCache;
   }
 
-  public async getProductMetricsSnapshot(): Promise<ProductMetricsRecord[]> {
-    try {
-      const response = await fetch('/data/product_metrics.json', { cache: 'no-cache' });
-      if (!response.ok) return [];
-      const data = await response.json();
-      return Array.isArray(data) ? data as ProductMetricsRecord[] : [];
-    } catch {
-      return [];
-    }
-  }
-
   public async getProductChaseCards(): Promise<Record<string, any>> {
     if (this.productChaseCardsCache) return this.productChaseCardsCache;
     if (this.productChaseCardsPromise) return this.productChaseCardsPromise;
@@ -167,57 +153,6 @@ class DataService {
     this.productChaseCardsCache = await this.productChaseCardsPromise;
     this.productChaseCardsPromise = null;
     return this.productChaseCardsCache;
-  }
-
-  public async getLatestPipelineRun(): Promise<PipelineRunRecord | null> {
-    try {
-      const response = await fetch('/data/latest_pipeline_run.json', { cache: 'no-cache' });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return data && typeof data === 'object' ? data as PipelineRunRecord : null;
-    } catch {
-      return null;
-    }
-  }
-
-  public async getSnapshotIntegrityReport(): Promise<SnapshotIntegrityReport> {
-    if (this.snapshotIntegrityReport) {
-      return this.snapshotIntegrityReport;
-    }
-
-    const warnings: string[] = [];
-    const metadata = await this.getLatestPipelineRun();
-
-    if (!metadata) {
-      warnings.push('No /data/latest_pipeline_run.json snapshot metadata found.');
-    }
-
-    const [sets, sealedProducts, boosterEv] = await Promise.all([
-      this.getSets().catch(() => ({ sets: [] as SetOption[], isLive: false })),
-      this.getSealedProducts().catch(() => []),
-      this.getBoosterEVs().catch(() => ({})),
-    ]);
-
-    if (!sets.sets || sets.sets.length === 0) {
-      warnings.push('Sets snapshot did not load or is empty.');
-    }
-    if (!Array.isArray(sealedProducts) || sealedProducts.length === 0) {
-      warnings.push('Sealed products snapshot did not load or is empty.');
-    }
-    if (!boosterEv || Object.keys(boosterEv).length === 0) {
-      warnings.push('Booster EV snapshot did not load or is empty.');
-    }
-
-    const report: SnapshotIntegrityReport = {
-      ok: warnings.length === 0,
-      warnings,
-      metadata,
-    };
-    this.snapshotIntegrityReport = report;
-    if (warnings.length > 0) {
-      console.warn('Snapshot integrity warnings:', warnings);
-    }
-    return report;
   }
 
   /**
@@ -406,18 +341,13 @@ class DataService {
             const grouped: Record<string, BoosterEVRecord[]> = {};
             rawEv.forEach((item: any) => {
               const setCode = item.setCode || item.set_code;
-              const boosterName = item.boosterName || item.booster_name;
-              if (!setCode || !boosterName) {
-                console.warn('Skipping malformed booster EV record:', item);
-                return;
-              }
               if (!grouped[setCode]) grouped[setCode] = [];
               grouped[setCode].push({
                 id: item.id || 0,
                 setCode: setCode,
                 setName: item.setName || setCode,
-                boosterName,
-                fullBoosterName: `${boosterName} Booster`,
+                boosterName: item.boosterName || item.booster_name,
+                fullBoosterName: `${item.boosterName} Booster`,
                 priceMode: item.priceMode || item.price_mode || 'direct',
                 vendor: item.vendor === 'all' ? 'all_cheapest' : (item.vendor || 'all_cheapest'),
                 evAverage: Number(item.evAverage || item.ev_average || 0),
@@ -451,33 +381,6 @@ class DataService {
     })();
 
     return this.boosterEvPromise;
-  }
-
-  /** Loads aggregate named-vendor booster pricing reliability telemetry. */
-  public async getPricingReliability(): Promise<Record<string, PricingReliability>> {
-    if (this.pricingReliabilityCache) return this.pricingReliabilityCache;
-    if (this.pricingReliabilityPromise) return this.pricingReliabilityPromise;
-
-    this.pricingReliabilityPromise = (async () => {
-      try {
-        const response = await fetch('/data/pricing_reliability.json', { cache: 'no-cache' });
-        if (response.ok) {
-          const raw = await response.json();
-          if (raw?.vendors && typeof raw.vendors === 'object') {
-            this.pricingReliabilityCache = raw.vendors as Record<string, PricingReliability>;
-            return this.pricingReliabilityCache;
-          }
-        }
-      } catch (error) {
-        console.warn('Could not fetch /data/pricing_reliability.json:', error);
-      } finally {
-        this.pricingReliabilityPromise = null;
-      }
-      this.pricingReliabilityCache = {};
-      return this.pricingReliabilityCache;
-    })();
-
-    return this.pricingReliabilityPromise;
   }
 
   /**

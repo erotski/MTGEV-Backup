@@ -1,5 +1,4 @@
 import json
-import os
 import time
 import mysql.connector
 import requests
@@ -56,11 +55,8 @@ def sync_all_sealed_prices():
 
   raw_products = cursor.fetchall()
   products = []
-  quick_test_set = os.environ.get('QUICK_TEST_SET', '').strip().upper()
 
   for p in raw_products:
-    if quick_test_set and (p.get('setCode') or '').upper() != quick_test_set:
-      continue
     ident_raw = p.get('identifiers')
     tcg_id = None
     if ident_raw:
@@ -78,10 +74,6 @@ def sync_all_sealed_prices():
         products.append(p)
       except Exception:
         pass
-
-  quick_test_limit = int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None
-  if quick_test_limit:
-    products = products[:quick_test_limit]
 
   print('=' * 70)
   print(
@@ -112,8 +104,6 @@ def sync_all_sealed_prices():
 
 
   updated_count = 0
-  missing_count = 0
-  missing_examples = []
   start_time = time.time()
 
   for idx, p in enumerate(products, 1):
@@ -166,12 +156,17 @@ def sync_all_sealed_prices():
           (p_uuid, product_page_url, float(real_market_price), status),
       )
       updated_count += 1
+      print(
+          f'[{idx}/{len(products)}] {p_set:<5} | {p_name[:38]:<40} ->'
+          f' ${float(real_market_price):.2f}'
+      )
     else:
       status = 'no_price_found'
       cursor.execute(update_sql, (p_uuid, product_page_url, None, status))
-      missing_count += 1
-      if len(missing_examples) < 10:
-        missing_examples.append(f'{p_set}:{p_name}')
+      print(
+          f'[{idx}/{len(products)}] {p_set:<5} | {p_name[:38]:<40} -> [No'
+          ' Price]'
+      )
 
     # Polite rate limiting (~10 requests/sec)
     time.sleep(0.08)
@@ -182,11 +177,9 @@ def sync_all_sealed_prices():
   elapsed = time.time() - start_time
   print('\n' + '=' * 70)
   print(
-      f'[SUCCESS] Market price fetch: {updated_count}/{len(products)} priced, '
-      f'{missing_count} missing, {int(elapsed)}s'
+      f'[SUCCESS] Synced {updated_count} sealed products with TRUE market'
+      f' prices in {int(elapsed)}s!'
   )
-  if missing_examples:
-    print('[SUMMARY] Missing price examples: ' + ' | '.join(missing_examples))
   print('=' * 70)
 
 
