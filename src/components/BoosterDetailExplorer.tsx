@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, ProductMetricsRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
 import { normalizeVendor } from '../utils/vendorUtils';
-import { resolveRecursiveProductAudit, getCanonicalProductMetrics } from '../utils/productUtils';
+import { resolveRecursiveProductAudit } from '../utils/productUtils';
 import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildCommanderSetCodes, getChildSets, getScryfallNode } from '../utils/setHierarchyUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
@@ -257,17 +257,18 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         else if (cat === 'deck' || cat === 'multiple_decks' || cat === 'deck_box') packType = 'starter_deck';
         else if (cat === 'kit') packType = 'kit';
 
-        // Single canonical source of truth for containment, breakdown, and EV calculation
-        const metrics = getCanonicalProductMetrics(
-          sp,
-          productMap,
-          arbitrageRecords,
-          boosterEvMap,
-          preconDecks,
-          singleCardPrices,
-          vendor,
-          priceMode
+        const productId = sp.id || sp.uuid;
+        const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+        const metric = productMetrics.find((item) =>
+          item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
         );
+        const metrics = {
+          marketPrice: metric?.marketPrice ?? Number(sp.marketPrice || sp.tcgplayer_price || 0),
+          primaryBoosterName: sp.boosterName || 'play',
+          packsCount: metric?.packCount ?? 0,
+          cardCount: metric?.cardCount ?? Number(sp.cardCount || 0),
+          estimatedEv: metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0,
+        };
 
         let basePrice = metrics.marketPrice;
         if (basePrice === 0) {
@@ -514,18 +515,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         roiPct: gatewayMetrics.roiPctByBasis?.[evBasis] ?? gatewayMetrics.roiPct,
       };
     }
-    if (!activeRawProduct && !activeProduct) return null;
-    return getCanonicalProductMetrics(
-      activeRawProduct || activeProduct,
-      productMap,
-      arbitrageRecords,
-      boosterEvMap,
-      preconDecks,
-      singleCardPrices,
-      vendor,
-      priceMode,
-      evBasis
-    );
+    return null;
   }, [gatewayMetrics, activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode, evBasis]);
 
   const productFixedBaseEv = canonicalMetrics?.fixedBaseEv ?? (productAudit?.totalFixedEv || 0);

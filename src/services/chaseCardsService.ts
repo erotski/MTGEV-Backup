@@ -4,8 +4,7 @@ import { dataService } from './dataService';
 import { findMatchingPreconDeck } from '../utils/productUtils';
 
 /**
- * Construct canonical card image URL with high-fidelity Scryfall fallbacks.
- * Ensures the exact collector number and card version are resolved accurately.
+ * Construct a canonical card image URL from its Scryfall UUID.
  */
 export function getCardImageUrl(
   card: { imageUrl?: string; scryfallId?: string; setCode?: string; number?: string },
@@ -14,9 +13,6 @@ export function getCardImageUrl(
   if (card.imageUrl && card.imageUrl.startsWith('http')) return card.imageUrl;
   if (card.scryfallId && card.scryfallId.length > 2) {
     return `https://cards.scryfall.io/${version}/front/${card.scryfallId.charAt(0)}/${card.scryfallId.charAt(1)}/${card.scryfallId}.jpg`;
-  }
-  if (card.setCode && card.number) {
-    return `https://api.scryfall.com/cards/${card.setCode.toLowerCase()}/${card.number}?format=image&version=${version}`;
   }
   return '';
 }

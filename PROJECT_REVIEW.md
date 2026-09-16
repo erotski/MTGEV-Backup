@@ -48,6 +48,7 @@ GitHub Actions
   -> load preconstructed decks
   -> export product chase cards (direct MySQL price resolution)
   -> evaluate composite products (10,000 MC samples)
+  -> export complete-product metrics
   -> validate output bundle + semantics + telemetry
   -> stage & atomically publish public/data/
   -> commit to data-sync branch
@@ -96,8 +97,8 @@ The workflow is `.github/workflows/daily_mtg_ev_update.yml`. It provisions a tem
 
 **Frontend:**
 - `App.tsx` — global vendor, price mode, EV basis, set, and tab state.
-- `dataService.ts` — JSON loading/caching boundary; `getProductMetrics()` gateway.
-- `productUtils.ts` — transitional structural breakdown helper; backend data remains authoritative for product EV.
+- `dataService.ts` — JSON loading/caching boundary; product-metrics snapshot gateway.
+- `productUtils.ts` — structural breakdown helper; backend data remains authoritative for product EV.
 - `evScore.ts` — EV score calculation from empirical quantiles.
 - `BoosterDetailExplorer.tsx` — booster and product exploration; state declaration order matters here (see Section 10 fix log).
 - `PackDistributionCurve.tsx` — curve rendering from backend quantiles only; never fabricates a flat/synthetic curve.
@@ -330,14 +331,15 @@ For valuation or data-boundary changes, also verify representative generated JSO
 7. `load_deck_tables.py`
 8. `export_product_chase_cards.py`
 9. `composite_evaluator.py`
-10. `validate_pricing_and_ev.py`
+10. `export_product_metrics.py`
+11. `validate_pricing_and_ev.py`
 
 Required output files (`REQUIRED_OUTPUTS` in `daily_update.py`):
 
 ```text
 sets.json, sealed_products.json, booster_ev.json, arbitrage_leaderboard.json,
-single_card_prices.json, product_chase_cards.json, pricing_reliability.json,
-precon_decks.json
+single_card_prices.json, product_chase_cards.json, product_metrics.json,
+pricing_reliability.json, precon_decks.json
 ```
 
 Plus telemetry outputs (`TELEMETRY_OUTPUTS`), also required and semantically validated:
@@ -381,8 +383,8 @@ pipeline_execution_logs.json, latest_pipeline_run.json
 
 **`export_product_chase_cards.py`** — Backend TOP 5 chase-card producer.
 - Candidates come from three sources: MySQL booster sheets (`setBoosterSheetCards`/`setBoosterSheets`/`setBoosterContents`), deck contents (`deckCards`/`decks`, falling back to `precon_decks.json` when those tables are absent), and direct/variable card references in `sealed_products.json` contents.
-- **Prices are resolved directly from MySQL** for every discovered candidate uuid: `load_direct_prices()` queries the `prices` table (direct mode), `load_reprint_prices()` queries `lowest_prices` (cheapest-reprint mode), both filtered through the same `NAMED_VENDORS` allowlist. `resolve_vendor_prices()` computes `all_cheapest`/`all_average` per card per mode.
-- Display metadata (name, scryfallId, imageUrl) is supplemented from `single_card_prices.json`'s `byUuid` index when available, but is no longer required for a card to be priced.
+- **Prices are resolved directly from MySQL** for every discovered candidate uuid: `load_direct_prices()` queries the `prices` table (direct mode), filtered through the `NAMED_VENDORS` allowlist. `resolve_vendor_prices()` computes `all_cheapest`/`all_average`. Product TOP 5 output intentionally contains direct-price records only; it does not emit `cheapest_reprint` lists.
+- Display metadata (`name`, `setCode`, collector `number`, `scryfallId`, rarity, and type) comes directly from the MySQL `cards` table. The exporter builds the artwork URL solely from `scryfallId`; missing Scryfall UUIDs remain explicit and must not trigger a collector-number or set-code image lookup. `single_card_prices.json` is only a compatibility supplement.
 - The export runs in two passes: resolve all products' candidates first (building one global uuid set), then bulk-query prices/metadata once, then build the per-product/per-vendor/per-mode TOP 5 lists.
 
 **`load_deck_tables.py`** — Creates temporary `decks`/`deckCards` tables when the MTGJSON dump omits them, loads the current `precon_decks.json` snapshot, enriches fixed deck cards with current price provenance, writes per-deck `pricingReliability` summaries.
@@ -437,8 +439,8 @@ The frontend never connects directly to MySQL. Its runtime inputs are generated 
 - `getProductChaseCards()` — fetches `product_chase_cards.json`.
 - `getLatestPipelineRun()` — fetches `latest_pipeline_run.json`.
 - `getSnapshotIntegrityReport()` — checks sets/sealed-products/booster-EV loaded and non-empty, surfaces warnings.
-- `getProductMetricsSnapshot()` — loads the backend-generated `product_metrics.json` complete-product valuation snapshot for Products Overview. It must not call `productUtils.ts` or calculate EV in the browser.
-- `getProductMetrics(productId, vendor, priceMode, evBasis)` — transitional Booster Explorer gateway; it still wraps `getCanonicalProductMetrics()` and must be migrated to backend snapshot records under DEV-08/DEV-11.
+- `getProductMetricsSnapshot()` — loads the backend-generated `product_metrics.json` complete-product valuation snapshot. It must not call `productUtils.ts` or calculate EV in the browser.
+- Detailed views select product metrics from the loaded snapshot by product ID, vendor, price mode, and EV basis. There is no recursive valuation gateway.
 
 Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster_ev.json`, `arbitrage_leaderboard.json`, `product_metrics.json`, `single_card_prices.json`, `precon_decks.json`, `product_chase_cards.json`, `pricing_reliability.json`, `latest_pipeline_run.json`. Root `public/data/` is authoritative; `backend/public/data/` must remain absent.
 
@@ -455,15 +457,15 @@ Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster
 - **`BoosterDetailExplorer.tsx`** (Booster Explorer) — displays booster records/curves/slots/chase cards. `booster_ev.json` is authoritative. A missing vendor/mode record must render unavailable, never borrow an unrelated mode. **State declaration order matters**: `activeBoosterName` (and any other `useState` referenced by an effect's setter) must be declared before the effect that calls its setter — a prior ordering bug caused a production `ReferenceError: Cannot access 'X' before initialization` that blanked the whole page.
 - **`PackDistributionCurve.tsx`** — renders empirical 100-bucket curves from backend quantiles only. Returns an empty points array (triggering an explicit "missing data" UI) rather than fabricating a flat/synthetic curve when quantiles are absent.
 - **`BoosterSlotViewer.tsx`** — converts DB booster records into UI models; must not fabricate odds or pricing.
-- **`ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`** — recursive contents/fixed-cards/decks/nested-products display via `productUtils.ts`. `ProductHierarchyInspector` uses `getCanonicalProductMetrics` for EV instead of a second fallback resolver.
-- **`ProductChaseCardsViewer.tsx`** — loads `product_chase_cards.json` for the selected product/vendor/price-mode. Resolves the product's chase-card record by matching `id`/`uuid`/`productUuid` against the snapshot's keys (case-insensitive fallback), and surfaces a specific diagnostic message (missing snapshot vs. no record for this vendor/mode vs. no key match at all) instead of a generic empty state.
+- **`ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`** — structural contents/fixed-cards/decks/nested-products display via `productUtils.ts`; product-level EV comes from the backend metrics snapshot.
+- **`ProductChaseCardsViewer.tsx`** — loads the direct-price record from `product_chase_cards.json` for the selected product/vendor. Resolves the product's chase-card record by matching `id`/`uuid`/`productUuid` against the snapshot's keys (case-insensitive fallback), and surfaces a specific diagnostic message (missing snapshot vs. no record for this vendor vs. no key match at all) instead of a generic empty state.
 - **`chaseCardsService.ts`** — reduced to image/metadata helpers and the curated Special Chases catalog; legacy product-candidate discovery functions removed.
 - **`SpecialChaseShowcase.tsx`** — curated/editorial, not equivalent to backend chase data; must be labeled as curated.
 - **`AdminPortal.tsx`** — pipeline logs, data health, admin controls; should eventually load `latest_pipeline_run.json` directly and distinguish stale/missing/failed/deployed states explicitly.
 
 ### Valuation boundary
 
-**`productUtils.ts`** — recursive product contents breakdown (card/pack/deck/variable-slot/nested resolution). It is transitional and high-risk because it overlaps backend valuation. It may remain temporarily for structural breakdown display, but it must be removed from Products Overview valuation and ultimately reduced to identity/containment presentation helpers.
+**`productUtils.ts`** — structural product contents breakdown (card/pack/deck/variable-slot/nested resolution). It is presentation support only; complete-product EV belongs to the backend metrics snapshot.
 
 Required policy:
 - Use backend vendor/mode records when present.
@@ -566,10 +568,10 @@ Statuses:
 | DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`, resolved directly from MySQL price tables; curated Special Chases remain editorial. | Viewer renders backend snapshot with explicit diagnostics when missing; exporter rewritten to price booster-sheet candidates, not just `single_card_prices.json` entries. |
 | DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. Outstanding: triage the 452/752/569 diagnostic findings in Section 11. |
 | DEV-07 | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | `latest_pipeline_run.json` confirmed live with real run id/timestamp/status/stages. Still missing: a shared `sourceCommit` field and frontend rejection/warning when snapshots disagree on run identity. |
-| DEV-08 | Frontend data gateway | P0 | IN PROGRESS | Add a backend-generated complete-product metrics snapshot and make every valuation view consume it through `dataService`, with no browser-side recursive EV calculation. | Existing gateway is transitional and still wraps `getCanonicalProductMetrics()`. Booster Explorer consumes it; Products Overview and breakdown/hierarchy views still require migration. |
+| DEV-08 | Frontend data gateway | P0 | DONE | Add a backend-generated complete-product metrics snapshot and make every valuation view consume it through `dataService`, with no browser-side recursive EV calculation. | `product_metrics.json` is loaded through the frontend data boundary; Products Overview and detailed product views select snapshot records by product/vendor/mode. |
 | DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | Invalid snapshots produce structured warnings and an Admin Portal diagnostic. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |
-| DEV-11 | Recursive EV consolidation | P1 | IN PROGRESS | Remove recursive product valuation from React. Retain only structural containment/card/deck display helpers; backend owns complete-product EV. | Products Overview reads backend `totalEv*`, `profitUsd`, `roiPct`, and `evScore` directly; no `getCanonicalProductMetrics()` call remains in valuation views. |
+| DEV-11 | Recursive EV consolidation | P1 | DONE | Remove recursive product valuation from React. Retain only structural containment/card/deck display helpers; backend owns complete-product EV. | Products Overview and detailed views read backend metrics directly; no `getCanonicalProductMetrics()` call remains in the source tree. A full audited pipeline run remains required for operational verification. |
 | DEV-12 | Reproducibility | P1 | NEXT | Record source versions, commit SHA, sample count, audit flag, and seed policy. | `latest_pipeline_run.json` contains reproducibility metadata. |
 | DEV-13 | Workflow audit | P1 | BLOCKED | Run GitHub Actions with `audit_enabled=true` after source changes. | Audit artifact exists; endpoint means reproduce from raw samples. |
 | DEV-14 | Catalog provenance | P1 | DONE | Mark generated catalog metadata as `pipeline` or `inferred`; avoid invented dates/blocks. | Catalog loader tests distinguish inferred metadata. |
@@ -625,11 +627,11 @@ Recommended representative fixtures: one single booster; one booster box or bund
 
 ## 13. Next 5 Steps
 
-1. **Define the backend product-metrics contract**: add a generated `product_metrics.json` keyed by `productUuid + vendor + priceMode`, containing complete-product `totalEv*`, market price, profit, ROI, EV score, descriptive pack/card counts, provenance, pipeline run ID, and schema version. Do not expose unit EV as a required Products Overview field.
-2. **Move pack/card counting into backend export and validation**: derive counts from structured containment and explicit booster/topper classification. Validate the LOTR-style case example (`6 x 36` draft packs plus `6 x 1` topper packs = `222` sealed booster/topper units) without using title substring matching as the authority.
-3. **Migrate Products Overview to snapshot-only reads**: remove `getCanonicalProductMetrics()`, `fixedBaseEv`, `variableEv`, `toUnitEv()`, booster multiplication, and recursive contents valuation from `ArbitrageLeaderboard.tsx`. It should display backend totals directly and use packs/cards only as descriptive columns.
-4. **Add cross-file reconciliation tests before deleting frontend valuation**: the initial `test_product_metrics_contract.py` now validates product identity, duplicate vendor/mode keys, numeric bounds, provenance, and representative categories. Extend it with single-pack equality, box/case containment reconciliation, missing-vendor records, missing-quantile records, curves, and chase cards. Require explicit unavailable states and shared `pipelineRunId`/`schemaVersion`.
-5. **Reduce and then remove frontend recursive valuation**: migrate `BoosterDetailExplorer`, `ProductBreakdownTable`, `ProductHierarchyInspector`, and `RelatedProductsHierarchy` to structural display plus backend metrics; delete `getCanonicalProductMetrics()` only after the reconciliation fixtures pass in CI and one full audited pipeline run.
+1. **Run the full audited GitHub Actions pipeline** from `main` with `audit_enabled=true` and no quick-test limit.
+2. **Inspect the generated product-metrics snapshot** for representative single boosters, boxes/bundles, nested cases, preconstructed decks, variable-content products, and missing vendor/quantile records.
+3. **Verify publication and deployment**: confirm `data-sync` contains the source plus generated snapshots, Vercel serves the new `pipelineRunId`, and the frontend loads the same product-metrics records.
+4. **Add end-to-end frontend checks** that compare displayed EV, market price, curve endpoints, and chase cards against the selected published snapshots.
+5. **Triage the remaining validator diagnostics**: classify the 452 quantile skews, 752 contents-versus-EV mismatches, and 569 ROI anomalies, then fix confirmed data or collation defects.
 
 ## 14. Vendor Add/Remove Procedure
 

@@ -131,7 +131,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
 
     dataService.getProductChaseCards().then((data) => {
       if (!mounted) return;
-      const mode = priceMode === 'cheapest_reprint' ? 'cheapest_reprint' : 'direct';
+      const mode = 'direct';
       const match = productKeyCandidates
         .map((candidate) => ({ candidate, record: data[candidate] }))
         .find(({ record }) => record && typeof record === 'object');
@@ -306,8 +306,6 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                           const target = e.target as HTMLImageElement;
                           if (card.scryfallId && !target.src.includes('api.scryfall.com')) {
                             target.src = `https://api.scryfall.com/cards/${card.scryfallId}?format=image&version=normal`;
-                          } else if (card.number) {
-                            target.src = `https://api.scryfall.com/cards/${(card.setCode || setCode || 'sld').toLowerCase()}/${card.number}?format=image&version=normal`;
                           }
                         }}
                       />

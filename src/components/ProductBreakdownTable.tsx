@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { BoosterEVRecord, PriceMode, Vendor, PreconstructedDeckDetail, EvBasis } from '../types';
+import { BoosterEVRecord, PriceMode, ProductMetricsRecord, Vendor, PreconstructedDeckDetail, EvBasis } from '../types';
 import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   RecursiveProductBreakdownResult,
   resolveRecursiveProductAudit,
   getCardsPerPack,
-  getCanonicalProductMetrics,
   findMatchingPreconDeck,
 } from '../utils/productUtils';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
@@ -73,6 +72,15 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   const [showBreakdownModal, setShowBreakdownModal] = useState(false);
   const [inspectedProduct, setInspectedProduct] = useState<CatalogPackProduct | null>(null);
   const [inspectedDeckDetail, setInspectedDeckDetail] = useState<PreconstructedDeckDetail | null>(null);
+  const [productMetrics, setProductMetrics] = useState<ProductMetricsRecord[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    dataService.getProductMetricsSnapshot().then((metrics) => {
+      if (mounted) setProductMetrics(metrics);
+    });
+    return () => { mounted = false; };
+  }, []);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
 
   // Self-healing data load if props were omitted or empty
@@ -507,32 +515,15 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
 
   // Compute product contents EV
   const computeProductContentsEv = useCallback(
-    (prod: any, mult: number = 1): number => {
-      const canonical = getCanonicalProductMetrics(
-        prod,
-        effectiveProductMap instanceof Map ? effectiveProductMap : new Map(Object.entries(effectiveProductMap)),
-        effectiveArbitrageMap,
-        effectiveBoosterEvMap,
-        effectivePreconDecks,
-        effectiveSingleCardPrices,
-        vendor || 'all',
-        (priceMode || 'direct') as PriceMode,
-        evBasis
+    (prod: any): number => {
+      const productId = prod.id || prod.uuid;
+      const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+      const metric = productMetrics.find((item) =>
+        item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === (priceMode || 'direct')
       );
-      if (canonical.effectiveEv > 0) {
-        return Number((canonical.effectiveEv * mult).toFixed(2));
-      }
-      if (canonical.estimatedEv > 0) {
-        return Number((canonical.estimatedEv * mult).toFixed(2));
-      }
-      const pUid = prod.id || prod.uuid || '';
-      const directArb = effectiveArbitrageMap[pUid];
-      if (directArb && directArb.totalEvAvg > 0) {
-        return Number((directArb.totalEvAvg * mult).toFixed(2));
-      }
-      return 0;
+      return metric?.totalEvAvg || 0;
     },
-    [effectiveProductMap, effectiveArbitrageMap, effectiveBoosterEvMap, effectivePreconDecks, effectiveSingleCardPrices, vendor, priceMode, evBasis]
+    [productMetrics, vendor, priceMode]
   );
 
   // Resolve audit if not passed directly

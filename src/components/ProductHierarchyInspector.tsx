@@ -30,11 +30,11 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
-import { BoxArbitrageRecord, BoosterEVRecord, Vendor, PriceMode } from '../types';
+import { BoxArbitrageRecord, BoosterEVRecord, ProductMetricsRecord, Vendor, PriceMode } from '../types';
 import { ProductBreakdownModal } from './ProductBreakdownModal';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
 import { findBoosterEv, resolveCardPrice, normalizeVendor } from '../utils/vendorUtils';
-import { getCanonicalProductMetrics, getCardsPerPack, findMatchingPreconDeck } from '../utils/productUtils';
+import { getCardsPerPack, findMatchingPreconDeck } from '../utils/productUtils';
 
 export interface SealedProductItem {
   id: string;
@@ -115,6 +115,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
     byNameSet: Record<string, any>;
     byName: Record<string, any>;
   }>({ byUuid: {}, byNameSet: {}, byName: {} });
+  const [productMetrics, setProductMetrics] = useState<ProductMetricsRecord[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -140,12 +141,13 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
       setIsLoading(true);
       setLoadError(null);
       try {
-        const [products, arbRecords, decks, evs, cardPrices] = await Promise.all([
+        const [products, arbRecords, decks, evs, cardPrices, metrics] = await Promise.all([
           dataService.getSealedProducts(),
           dataService.getArbitrageRecords(),
           dataService.getPreconDecks(),
           dataService.getBoosterEVs(),
           dataService.getSingleCardPrices(),
+          dataService.getProductMetricsSnapshot(),
         ]);
 
         setSealedProducts(products || []);
@@ -158,6 +160,7 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
         setPreconDecks(decks || {});
         setBoosterEvMap(evs || {});
         setSingleCardPrices(cardPrices || { byUuid: {}, byNameSet: {}, byName: {} });
+        setProductMetrics(metrics || []);
 
         // Initial selection: composite product or first product
         const initialItem = (products || []).find(
@@ -392,23 +395,15 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
 
   // Helper to compute pure Contents EV for any sealed item (single canonical source of truth)
   const computeProductContentsEv = useCallback(
-    (prod: SealedProductItem, multiplier: number = 1): number => {
-      const canonical = getCanonicalProductMetrics(
-        prod,
-        productMap,
-        arbitrageMap,
-        boosterEvMap,
-        preconDecks,
-        singleCardPrices,
-        vendor,
-        priceMode
+    (prod: SealedProductItem): number => {
+      const productId = prod.id || prod.uuid;
+      const selectedVendor = vendor === 'all' ? 'all_cheapest' : vendor;
+      const metric = productMetrics.find((item) =>
+        item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
       );
-      if (canonical.estimatedEv > 0) {
-        return Number((canonical.estimatedEv * multiplier).toFixed(2));
-      }
-      return 0;
+      return metric?.totalEvAvg || 0;
     },
-    [arbitrageMap, preconDecks, productMap, singleCardPrices, boosterEvMap, vendor, priceMode]
+    [productMetrics, vendor, priceMode]
   );
 
   // Filter products

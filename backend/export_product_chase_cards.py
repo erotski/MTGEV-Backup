@@ -18,7 +18,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "public" / "data"
 OUTPUT_PATH = DATA_DIR / "product_chase_cards.json"
 VENDORS = ("all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool")
-MODES = ("direct", "cheapest_reprint")
+MODES = ("direct",)
 NAMED_VENDORS = ("tcgplayer", "cardmarket", "cardkingdom", "manapool")
 EUR_USD_RATE = 1.09
 
@@ -101,10 +101,25 @@ def load_card_metadata(cursor, uuids):
         batch = uuid_list[start:start + 1000]
         placeholders = ",".join(["%s"] * len(batch))
         cursor.execute(
-            f"SELECT uuid, name FROM cards WHERE uuid IN ({placeholders})", batch
+            f"""
+            SELECT uuid, name, setCode, number, scryfallId, rarity, types
+            FROM cards
+            WHERE uuid IN ({placeholders})
+            """,
+            batch,
         )
         metadata.update({row["uuid"]: row for row in cursor.fetchall()})
     return metadata
+
+
+def build_scryfall_image_url(scryfall_id):
+    scryfall_id = str(scryfall_id or "").strip()
+    if len(scryfall_id) < 2:
+        return ""
+    return (
+        f"https://cards.scryfall.io/normal/front/{scryfall_id[0]}/"
+        f"{scryfall_id[1]}/{scryfall_id}.jpg"
+    )
 
 
 def load_direct_prices(cursor, uuids):
@@ -248,10 +263,7 @@ def export_product_chase_cards():
             all_uuids.update(uuid for uuid, _ in candidates)
 
         metadata = load_card_metadata(cursor, all_uuids)
-        mode_prices = {
-            "direct": load_direct_prices(cursor, all_uuids),
-            "cheapest_reprint": load_reprint_prices(cursor, all_uuids),
-        }
+        mode_prices = {"direct": load_direct_prices(cursor, all_uuids)}
 
         output = {}
         for product_id, candidates in product_candidates.items():
@@ -272,14 +284,18 @@ def export_product_chase_cards():
                             continue
                         meta = metadata.get(uuid, {})
                         display = display_metadata.get(uuid, {})
+                        scryfall_id = meta.get("scryfallId") or display.get("scryfallId", "")
                         cards.append({
                             "uuid": uuid,
                             "name": meta.get("name") or display.get("name") or "",
-                            "setCode": (display.get("set") or "").upper(),
+                            "setCode": (meta.get("setCode") or display.get("set") or "").upper(),
+                            "number": str(meta.get("number") or display.get("number") or ""),
+                            "rarity": meta.get("rarity") or display.get("rarity") or "",
+                            "cardType": meta.get("types") or display.get("cardType") or "",
                             "finish": "foil" if is_foil else "nonfoil",
                             "price": round(price, 2),
-                            "scryfallId": display.get("scryfallId", ""),
-                            "imageUrl": display.get("imageUrl", ""),
+                            "scryfallId": scryfall_id,
+                            "imageUrl": build_scryfall_image_url(scryfall_id) or display.get("imageUrl", ""),
                         })
                     cards.sort(key=lambda card: card["price"], reverse=True)
                     product_result[f"{mode}:{vendor}"] = cards[:5]
