@@ -1,0 +1,188 @@
+{
+  "lastUpdated": "2026-09-16T13:03:38.437152+00:00",
+  "runs": [
+    {
+      "id": "run-2026-09-16-122024",
+      "timestamp": "2026-09-16T12:20:24.534847+00:00",
+      "trigger": "scheduled_pipeline",
+      "status": "success",
+      "durationSeconds": 2593.9,
+      "quickTestLimit": null,
+      "quickTestSet": null,
+      "stages": [
+        {
+          "name": "download.py",
+          "description": "Download mtgjson data + sync MySQL",
+          "status": "success",
+          "duration": 491.99,
+          "exitCode": 0,
+          "summary": [
+            "=================================================================",
+            "MTGJSON Direct Streaming & Import",
+            "Source URL : https://mtgjson.com/api/v5/AllPrintings.sql.bz2",
+            "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+            "=================================================================",
+            "[INFO] Download finished. Finalizing database tables & indices...",
+            "[SUCCESS] MTGJSON database successfully updated!"
+          ]
+        },
+        {
+          "name": "download_prices_today.py",
+          "description": "Stream AllPricesToday.sql into MySQL",
+          "status": "success",
+          "duration": 218.76,
+          "exitCode": 0,
+          "summary": [
+            "=================================================================",
+            "MTGJSON AllPricesToday Direct Streaming & Import",
+            "Source URL : https://mtgjson.com/api/v5/AllPricesToday.sql.bz2",
+            "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+            "=================================================================",
+            "[INFO] Finalizing and committing price tables...",
+            "[SUCCESS] card_prices_today updated!"
+          ]
+        },
+        {
+          "name": "lowest_prices.py",
+          "description": "Calculate lowest prices across sources",
+          "status": "success",
+          "duration": 40.45,
+          "exitCode": 0,
+          "summary": [
+            "[INFO] Indexing prices table from MTGJSON...",
+            "[INFO] Building lowest_prices table...",
+            "[INFO] Computing minimum prices per card name & provider...",
+            "[INFO] Populating lowest_prices...",
+            "[SUCCESS] Lowest prices computed and indexed successfully!"
+          ]
+        },
+        {
+          "name": "sync_live_sealed_prices.py",
+          "description": "Sync live TCGplayer sealed product prices",
+          "status": "success",
+          "duration": 736.01,
+          "exitCode": 0,
+          "summary": [
+            "======================================================================",
+            "Starting Live TCGplayer Market Price Sync for 3358 products",
+            "======================================================================",
+            "======================================================================",
+            "[SUCCESS] Market price fetch: 3075/3358 priced, 283 missing, 735s",
+            "[SUMMARY] Missing price examples: ZNC:Zendikar Rising Commander Deck Display | ZEN:Zendikar 3 Booster Draft Pack | ZEN:Zendikar Booster Box Case | ZEN:Zendikar Intro Packs Set of 5 | XLN:Ixalan Booster Box | WWK:Worldwake Fat Pack | WOE:Wilds of Eldraine Bundle Case | WC99:1999 World Championship Deck Jakub Slemr | WC97:1997 World Championship Deck Paul McCabe | WC04:2004 World Championship Deck Aeo Paquette",
+            "======================================================================"
+          ]
+        },
+        {
+          "name": "populate_booster_ev_to_db.py",
+          "description": "Build price data from synced card data",
+          "status": "success",
+          "duration": 871.68,
+          "exitCode": 0,
+          "summary": [
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_all_cheapest.json",
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_all_average.json",
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_cardkingdom.json",
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_cardmarket.json",
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_manapool.json",
+            "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_tcgplayer.json",
+            "-> theme-w        | Direct EV: $  5.23 | Mid 90%: $  5.03 | Valid: [1.98, 2.28, 2.4, 2.47, 2.51, 2.56, 2.59, 2.62, 2.65, 2.68, 2.71, 2.73, 2.76, 2.79, 2.82, 2.85, 2.88, 2.91, 2.94, 2.98, 3.01, 3.04, 3.09, 3.16, 3.23, 3.31, 3.39, 3.47, 3.55, 3.61, 3.68, 3.75, 3.82, 3.88, 3.94, 4.03, 4.12, 4.21, 4.28, 4.33, 4.39, 4.44, 4.48, 4.52, 4.54, 4.58, 4.62, 4.65, 4.68, 4.72, 4.75, 4.79, 4.83, 4.86, 4.91, 4.96, 5.02, 5.09, 5.16, 5.24, 5.32, 5.4, 5.47, 5.51, 5.57, 5.62, 5.67, 5.74, 5.81, 5.89, 6.0, 6.12, 6.25, 6.35, 6.43, 6.5, 6.57, 6.65, 6.73, 6.83, 6.97, 7.17, 7.32, 7.46, 7.57, 7.72, 7.92, 8.22, 8.49, 8.76, 9.14, 9.33, 9.5, 9.68, 10.0, 10.71, 11.3, 11.97, 13.72, 18.16]%",
+            "[SUCCESS] Completed all sets in 00:14:31 and stored to MySQL table `booster_ev_results`!"
+          ]
+        },
+        {
+          "name": "export_app_data.py",
+          "description": "Export MySQL data to React JSON format",
+          "status": "success",
+          "duration": 4.36,
+          "exitCode": 0,
+          "summary": [
+            ">> 3b. Exporting pricing_reliability.json...",
+            "\u2714 Exported reliability for 8 vendor/mode combinations",
+            ">> 4. Exporting arbitrage_leaderboard.json...",
+            "\u2714 Exported 2011 product arbitrage opportunities",
+            "\u2714 Exported 2011 complete-product metric records",
+            ">> 5. Exporting single_card_prices.json from MTGJSON prices table...",
+            "\u2714 Exported single_card_prices.json with 510 cards updated from MTGJSON DB (332 total indexed)",
+            "[SUCCESS] Pipeline export complete. Ready for React frontend deployment!"
+          ]
+        },
+        {
+          "name": "load_deck_tables.py",
+          "description": "Load preconstructed decks into MySQL",
+          "status": "success",
+          "duration": 3.55,
+          "exitCode": 0,
+          "summary": [
+            "OK Loaded 878 decks and 5039 deck cards into MySQL"
+          ]
+        },
+        {
+          "name": "export_product_chase_cards.py",
+          "description": "Export vendor-aware product TOP 5 chase cards",
+          "status": "success",
+          "duration": 120.1,
+          "exitCode": 0,
+          "summary": [
+            "OK Exported chase cards for 4127 products to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data/product_chase_cards.json"
+          ]
+        },
+        {
+          "name": "composite_evaluator.py",
+          "description": "Evaluate composite products & quantiles (10,000 MC samples)",
+          "status": "success",
+          "duration": 100.57,
+          "exitCode": 0,
+          "summary": [
+            "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese",
+            "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese Rainbow Foil",
+            "\u2714 Evaluated 3042 sealed products in 97.62s (32.1ms/product)",
+            "\u2714 Successfully saved enriched sealed_products.json to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data",
+            "\u2714 Synchronized pre-computed quantiles into arbitrage_leaderboard.json",
+            "======================================================================",
+            "COMPOSITE EVALUATION COMPLETE",
+            "======================================================================"
+          ]
+        },
+        {
+          "name": "export_product_metrics.py",
+          "description": "Export complete-product metrics by vendor",
+          "status": "success",
+          "duration": 1.35,
+          "exitCode": 0,
+          "summary": [
+            "[SUCCESS] Exported 17922 complete-product vendor metrics"
+          ]
+        },
+        {
+          "name": "test_product_metrics_contract.py",
+          "description": "Validate complete-product metrics contract",
+          "status": "success",
+          "duration": 0.63,
+          "exitCode": 0,
+          "summary": [
+            "OK validated 17922 product metric records across 14 categories"
+          ]
+        },
+        {
+          "name": "validate_pricing_and_ev.py",
+          "description": "Run automated quality and pricing/EV validation audit",
+          "status": "success",
+          "duration": 1.16,
+          "exitCode": 0,
+          "summary": [
+            "\u2022 [SLD] Secret Lair Bundle Dr Lairs Secretoriu | Market: $ 450.00 | EV: $    2.42 | ROI:   -99.5%",
+            "==============================================================================",
+            "VALIDATOR DIAGNOSTIC SUMMARY",
+            "==============================================================================",
+            "1. Booster Quantile Outlier Skews:    443 records",
+            "2. Product Contents vs EV Mismatches:  755 records",
+            "3. Extreme ROI Pricing Anomalies:      569 records",
+            "------------------------------------------------------------------------------"
+          ]
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "commonRemediations": []
+}
