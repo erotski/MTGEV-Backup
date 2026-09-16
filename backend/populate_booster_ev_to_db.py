@@ -48,6 +48,37 @@ def is_ignored_sheet(sheet_name: str) -> bool:
   return any(kw in s_lower for kw in IGNORED_SHEET_KEYWORDS)
 
 
+def allocate_booster_indices(boosters, sample_size: int):
+  """Allocate samples proportionally across booster configurations."""
+  if not boosters or sample_size <= 0:
+    return np.array([], dtype=int)
+
+  weights = np.array([booster['weight'] for booster in boosters], dtype=np.float64)
+  if weights.sum() == 0:
+    weights = np.ones(len(boosters), dtype=np.float64)
+  exact_counts = weights / weights.sum() * sample_size
+  counts = np.floor(exact_counts).astype(int)
+  remaining = sample_size - int(counts.sum())
+  if remaining:
+    fractional_order = np.argsort(-(exact_counts - counts), kind='stable')
+    counts[fractional_order[:remaining]] += 1
+  return np.repeat(np.arange(len(boosters)), counts)
+
+
+def select_sheet_indices(sheet_info, pick_count: int, sheet_name: str = 'unknown'):
+  if sheet_info['fixed']:
+    fixed_indices = sheet_info['fixed_indices']
+    if len(fixed_indices) != pick_count:
+      raise ValueError(
+          f'Fixed sheet {sheet_name} defines {len(fixed_indices)} cards but '
+          f'booster contents require {pick_count}'
+      )
+    return fixed_indices
+  return np.random.choice(
+      len(sheet_info['uuids']), size=pick_count, p=sheet_info['weights']
+  )
+
+
 class DatabaseBoosterEVEngine:
 
   def __init__(self, db_config, sample_size=5000, hi_lo_ratio=0.05, audit_config=None):
@@ -431,15 +462,10 @@ class DatabaseBoosterEVEngine:
           'status': status_matrix,
       }
 
-    # 5,000 Booster Variant Picks
-    b_weights = np.array([b['weight'] for b in boosters], dtype=np.float64)
-    if b_weights.sum() == 0:
-      b_weights = np.ones(len(boosters))
-    b_weights /= b_weights.sum()
-
-    chosen_booster_indices = np.random.choice(
-        len(boosters), size=self.sample_size, p=b_weights
-    )
+    # Stratify the outer booster variants so configured weights are represented
+    # exactly (subject only to integer rounding). Randomness remains inside each
+    # variable sheet.
+    chosen_booster_indices = allocate_booster_indices(boosters, self.sample_size)
 
     all_vendors_list = ['all_cheapest', 'all_average'] + sellers
     modes = ['direct', 'cheapest_reprint']
@@ -480,12 +506,7 @@ class DatabaseBoosterEVEngine:
           continue
 
         s_info = sheet_data[sheet_name]
-        if s_info['fixed']:
-          picked_indices = np.resize(s_info['fixed_indices'], pick_count)
-        else:
-          picked_indices = np.random.choice(
-              len(s_info['uuids']), size=pick_count, p=s_info['weights']
-          )
+        picked_indices = select_sheet_indices(s_info, pick_count, sheet_name)
 
         for mode in modes:
           for v in all_vendors_list:
@@ -613,8 +634,8 @@ class DatabaseBoosterEVEngine:
     return {
         'ev_avg': direct_all[4],
         'ev_mid90': direct_all[5],
-        'complete_pct': direct_all[10],
-        'exact_pct': direct_all[11],
+      'complete_pct': direct_all[11],
+      'exact_pct': direct_all[12],
     }
 
   def _matches_audit(self, set_code, booster_name, price_mode, vendor):
