@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import time
+import warnings
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
@@ -69,10 +70,13 @@ def select_sheet_indices(sheet_info, pick_count: int, sheet_name: str = 'unknown
   if sheet_info['fixed']:
     fixed_indices = sheet_info['fixed_indices']
     if len(fixed_indices) != pick_count:
-      raise ValueError(
+      warnings.warn(
           f'Fixed sheet {sheet_name} defines {len(fixed_indices)} cards but '
-          f'booster contents require {pick_count}'
+          f'booster contents require {pick_count}; resizing deterministically',
+          RuntimeWarning,
+          stacklevel=2,
       )
+      return np.resize(fixed_indices, pick_count)
     return fixed_indices
   return np.random.choice(
       len(sheet_info['uuids']), size=pick_count, p=sheet_info['weights']

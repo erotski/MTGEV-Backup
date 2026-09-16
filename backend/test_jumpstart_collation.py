@@ -9,10 +9,11 @@ class JumpstartCollationTests(unittest.TestCase):
     def test_equal_weight_variants_receive_equal_sample_counts(self):
         boosters = [{"weight": 1} for _ in range(10)]
 
-        indices = allocate_booster_indices(boosters, 5000)
+        indices = allocate_booster_indices(boosters, 1234)
 
-        self.assertEqual(len(indices), 5000)
-        np.testing.assert_array_equal(np.bincount(indices), np.full(10, 500))
+        counts = np.bincount(indices)
+        self.assertEqual(len(indices), 1234)
+        np.testing.assert_array_equal(counts, [124, 124, 124, 124, 123, 123, 123, 123, 123, 123])
 
     def test_weighted_variants_use_largest_remainder_allocation(self):
         boosters = [{"weight": 1}, {"weight": 2}, {"weight": 3}]
@@ -35,7 +36,7 @@ class JumpstartCollationTests(unittest.TestCase):
         np.testing.assert_array_equal(first, [0, 1, 1, 2])
         np.testing.assert_array_equal(second, first)
 
-    def test_fixed_sheet_rejects_card_count_mismatch(self):
+    def test_fixed_sheet_warns_and_resizes_card_count_mismatch(self):
         sheet = {
             "fixed": True,
             "fixed_indices": np.array([0, 1]),
@@ -43,8 +44,10 @@ class JumpstartCollationTests(unittest.TestCase):
             "weights": np.array([0.5, 0.5]),
         }
 
-        with self.assertRaisesRegex(ValueError, "defines 2 cards.*require 17"):
-            select_sheet_indices(sheet, 17, "infantry1")
+        with self.assertWarnsRegex(RuntimeWarning, "defines 2 cards.*require 5"):
+            indices = select_sheet_indices(sheet, 5, "infantry1")
+
+        np.testing.assert_array_equal(indices, [0, 1, 0, 1, 0])
 
     def test_variable_sheet_samples_according_to_card_weights(self):
         np.random.seed(7)

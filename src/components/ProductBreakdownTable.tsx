@@ -552,7 +552,12 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     (lower(a.boxName || a.displayName).trim() === lower(product.displayName || product.name).trim())
   );
   const rawMarketPrice = product.marketPrice || (arb ? arb.marketPrice : 0) || product.price || 0;
-  const rawTotalEv = audit.totalEv > 0 ? audit.totalEv : (arb ? arb.totalEvAvg : 0);
+  // Canonical product_metrics.json record (composite evaluator) must win over the
+  // recursive structural audit and the arbitrage snapshot, which can disagree with it
+  // for the same product/vendor/mode (see PROJECT_REVIEW.md Section 11, "Product
+  // Contents vs EV Mismatches"). The recursive audit total is a display-only fallback.
+  const canonicalContentsEv = computeProductContentsEv(product);
+  const rawTotalEv = canonicalContentsEv > 0 ? canonicalContentsEv : (arb ? arb.totalEvAvg : (audit.totalEv > 0 ? audit.totalEv : 0));
 
   const isDark = theme === 'dark';
 
