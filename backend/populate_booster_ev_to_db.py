@@ -1,11 +1,12 @@
 from collections import defaultdict
 import json
+import os
 from pathlib import Path
 import time
 import mysql.connector
 import numpy as np
 from ev_statistics import empirical_quantiles
-from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG
+from config import AUDIT_ENABLED, AUDIT_OUTPUT_DIR, DB_CONFIG, QUICK_TEST_SET
 from price_resolver import PriceResolver
 
 
@@ -592,7 +593,7 @@ class DatabaseBoosterEVEngine:
 # ====================================================
 # 5. MAIN EXECUTION PIPELINE
 # ====================================================
-def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None):
+def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_config=None, quick_test_limit: int = None):
   db_config = DB_CONFIG
 
   engine = DatabaseBoosterEVEngine(db_config, sample_size=sample_size, audit_config=audit_config)
@@ -613,6 +614,8 @@ def run_full_pipeline(sample_size: int = 5000, target_set: str = None, audit_con
 
   engine.cursor.execute(query, tuple(params) if params else None)
   all_boosters = engine.cursor.fetchall()
+  if quick_test_limit:
+    all_boosters = all_boosters[:quick_test_limit]
 
   print('=' * 65)
   print(f'Starting Booster EV Engine -> MySQL `booster_ev_results` [Sample Size: {sample_size:,} packs]')
@@ -666,6 +669,7 @@ if __name__ == '__main__':
       default=None,
       help='Filter to specific setCode (e.g. DFT)',
   )
+  parser.add_argument('--limit', type=int, default=None, help='Limit booster configurations for a quick test')
   parser.add_argument('--audit-set', type=str, default=None, help='Capture one booster audit run for this set')
   parser.add_argument('--audit-booster', type=str, default='draft', help='Booster name for --audit-set')
   parser.add_argument('--audit-vendor', type=str, default='all_cheapest', help='Vendor for --audit-set')
@@ -678,4 +682,6 @@ if __name__ == '__main__':
   }
   if args.audit_output and args.audit_set:
     audit_config['output_dir'] = str(Path(args.audit_output).parent)
-  run_full_pipeline(sample_size=args.sample_size, target_set=args.set, audit_config=audit_config)
+  quick_test_limit = args.limit or (int(os.environ['QUICK_TEST_LIMIT']) if os.environ.get('QUICK_TEST_LIMIT') else None)
+  target_set = args.set or QUICK_TEST_SET
+  run_full_pipeline(sample_size=args.sample_size, target_set=target_set, audit_config=audit_config, quick_test_limit=quick_test_limit)

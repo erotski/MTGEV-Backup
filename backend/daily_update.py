@@ -8,6 +8,7 @@ import argparse
 import importlib.util
 import json
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -27,6 +28,22 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger(__name__)
+
+
+def get_quick_test_limit():
+    raw = os.environ.get('QUICK_TEST_LIMIT')
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
+def get_quick_test_set():
+    raw = os.environ.get('QUICK_TEST_SET', '').strip().upper()
+    return raw or None
 
 REQUIRED_OUTPUTS = (
     "sets.json",
@@ -117,6 +134,12 @@ def validate_output_bundle() -> tuple[bool, str]:
 
 def run_all() -> bool:
     start_dt = datetime.now(timezone.utc)
+    quick_test_limit = get_quick_test_limit()
+    quick_test_set = get_quick_test_set()
+    if quick_test_set:
+        log.info('Quick test mode: restricting heavy stages to set %s.', quick_test_set)
+    if quick_test_limit:
+        log.info('Quick test mode: limiting heavy stages to %d sets/products.', quick_test_limit)
     log.info("═══ Daily update started at %s ═══", start_dt.strftime("%Y-%m-%d %H:%M:%S UTC"))
     failures = []
     stage_records = []
