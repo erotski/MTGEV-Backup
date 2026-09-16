@@ -710,7 +710,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
   const COLLAPSED_LIMIT = 6;
 
   // When a specific product is targeted via prop (e.g. from Arbitrage "Inspect Set"):
-  // Select it, uncollapse the list, and switch category to 'all' so it is actively visible!
+  // Select it and switch category to 'all' so it is actively visible. The list stays
+  // collapsed (visibleProducts pins the active product below the fold) so navigating
+  // into a set with hundreds of products doesn't force the entire list open.
   useEffect(() => {
     if (propSelectedProductId && setProducts.length > 0) {
       const match = setProducts.find(
@@ -723,7 +725,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       if (match) {
         setSelectedProductId(match.id);
         setActiveCategory('all');
-        setIsListCollapsed(false);
       }
     }
   }, [propSelectedProductId, setProducts]);
@@ -741,21 +742,6 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     }
     return prods;
   }, [displayedProducts, searchQuery]);
-
-  // If the active product exists in filteredProducts but beyond COLLAPSED_LIMIT, automatically uncollapse
-  useEffect(() => {
-    if (activeProduct && filteredProducts.length > COLLAPSED_LIMIT && isListCollapsed) {
-      const index = filteredProducts.findIndex(
-        (p) =>
-          p.id === activeProduct.id ||
-          (activeProduct.uuid && p.uuid === activeProduct.uuid) ||
-          (activeProduct.id && p.uuid === activeProduct.id)
-      );
-      if (index >= COLLAPSED_LIMIT) {
-        setIsListCollapsed(false);
-      }
-    }
-  }, [activeProduct, filteredProducts, isListCollapsed]);
 
   // Smooth scroll into view when a product is targeted from props
   useEffect(() => {
@@ -977,32 +963,11 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
         </div>
 
         <div className="flex flex-col md:flex-row items-start gap-4">
-          {/* Dedicated Sticky Left Div for Product Picture (hidden in List view) */}
-          {viewMode !== 'list' && (
-            <div className="w-full md:w-60 shrink-0 bg-slate-50/90 rounded-2xl p-2 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center md:sticky md:top-4 self-start overflow-hidden">
-              {activeProduct && (
-                <div className="w-full flex items-center justify-center p-0">
-                  <ProductPackagingImage
-                    productId={activeProduct.id}
-                    setCode={setCode}
-                    setName={setName}
-                    packagingType={activeProduct.packagingType}
-                    displayName={cleanProductName(activeProduct.displayName)}
-                    cardCount={activeProduct.cardCount}
-                    size="full"
-                    className="w-full h-64 max-h-[300px] object-contain"
-                    allowZoom={true}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Right Side: Flat Grid vs List */}
           <div className="flex-1 min-w-0 space-y-4">
             {viewMode === 'grid' ? (
               // FLAT GRID VIEW
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
                 {visibleProducts.map((prod) => {
                   const isSelected =
                     (activeProduct?.id && prod.id && activeProduct.id === prod.id) ||

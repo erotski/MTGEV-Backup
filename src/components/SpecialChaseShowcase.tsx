@@ -740,7 +740,7 @@ export const SpecialChaseShowcase: React.FC<SpecialChaseShowcaseProps> = ({ onSe
                         onClick={() => onSelectProduct(prod.setCode, prod.productId)}
                         className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1 cursor-pointer"
                       >
-                        Explore Set <ChevronRight className="w-3.5 h-3.5" />
+                        Details <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}

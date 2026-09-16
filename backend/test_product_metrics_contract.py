@@ -47,9 +47,13 @@ def main() -> None:
         assert record["provenance"].get("source") == "pipeline"
         assert record["provenance"].get("schemaVersion") == 1
 
-        bounds = [record["totalEvMin"], record["totalEvMid90"], record["totalEvAvg"], record["totalEvMax"]]
-        assert all(isinstance(value, (int, float)) for value in bounds)
-        assert bounds[0] <= bounds[1] <= bounds[2] <= bounds[3], f"invalid EV bounds: {identity}"
+        minimum = record["totalEvMin"]
+        average = record["totalEvAvg"]
+        mid90 = record["totalEvMid90"]
+        maximum = record["totalEvMax"]
+        values = [minimum, average, mid90, maximum]
+        assert all(isinstance(value, (int, float)) for value in values)
+        assert minimum <= mid90 <= maximum and minimum <= average <= maximum, f"invalid EV bounds: {identity}"
         assert record["packCount"] >= 0 and record["cardCount"] >= 0
         categories.add(record.get("category"))
 

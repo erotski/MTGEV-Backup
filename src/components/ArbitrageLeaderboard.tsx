@@ -1011,9 +1011,9 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
                       <button
                         id={`btn-explore-set-${box.setCode}`}
                         onClick={() => onSelectSet(box.setCode, box.productUuid || box.id)}
-                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg transition cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg transition cursor-pointer flex items-center gap-1 justify-center"
                       >
-                        Explore Set
+                        Details <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
