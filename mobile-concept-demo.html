@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MTGEV Mobile Concept Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* An iframe has its own real viewport, so its width (not the outer page's width)
+     is what Tailwind's sm:/md: media queries evaluate against here. */
+  #frame { width: 1280px; height: 900px; border: 1px solid #334155; display: block; margin: 0 auto; }
+  #frame.is-mobile { width: 390px; height: 844px; }
+</style>
+</head>
+<body class="bg-slate-200 min-h-screen py-6">
+
+  <!-- Demo-only controls, not part of the app -->
+  <div class="max-w-3xl mx-auto mb-4 px-4 flex items-center gap-3">
+    <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">Preview width:</span>
+    <button onclick="document.getElementById('frame').classList.remove('is-mobile')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white">Desktop</button>
+    <button onclick="document.getElementById('frame').classList.add('is-mobile')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950">Mobile (390px)</button>
+  </div>
+
+  <iframe id="frame" class="is-mobile shadow-2xl bg-white" src="mobile-concept-content.html"></iframe>
+
+  <p class="max-w-3xl mx-auto mt-4 px-4 text-xs text-slate-500">
+    This is a static, standalone concept (not wired to real data) so you can review the layout pattern before I apply it to the actual React components. The preview above renders inside a real &lt;iframe&gt;, so the Desktop/Mobile toggle changes the iframe's actual viewport width — the same thing that happens on a real phone — rather than just scaling a box.
+  </p>
+
+</body>
+</html>
