@@ -1,6 +1,188 @@
 {
-  "lastUpdated": "2026-09-16T13:03:38.437152+00:00",
+  "lastUpdated": "2026-09-16T21:45:44.800638+00:00",
   "runs": [
+    {
+      "id": "run-2026-09-16-210250",
+      "timestamp": "2026-09-16T21:02:50.286646+00:00",
+      "trigger": "scheduled_pipeline",
+      "status": "success",
+      "durationSeconds": 2574.51,
+      "quickTestLimit": null,
+      "quickTestSet": null,
+      "stages": [
+        {
+          "name": "download.py",
+          "description": "Download mtgjson data + sync MySQL",
+          "status": "success",
+          "duration": 486.08,
+          "exitCode": 0,
+          "summary": [
+            "=================================================================",
+            "MTGJSON Direct Streaming & Import",
+            "Source URL : https://mtgjson.com/api/v5/AllPrintings.sql.bz2",
+            "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+            "=================================================================",
+            "[INFO] Download finished. Finalizing database tables & indices...",
+            "[SUCCESS] MTGJSON database successfully updated!"
+          ]
+        },
+        {
+          "name": "download_prices_today.py",
+          "description": "Stream AllPricesToday.sql into MySQL",
+          "status": "success",
+          "duration": 216.32,
+          "exitCode": 0,
+          "summary": [
+            "=================================================================",
+            "MTGJSON AllPricesToday Direct Streaming & Import",
+            "Source URL : https://mtgjson.com/api/v5/AllPricesToday.sql.bz2",
+            "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+            "=================================================================",
+            "[INFO] Finalizing and committing price tables...",
+            "[SUCCESS] card_prices_today updated!"
+          ]
+        },
+        {
+          "name": "lowest_prices.py",
+          "description": "Calculate lowest prices across sources",
+          "status": "success",
+          "duration": 41.08,
+          "exitCode": 0,
+          "summary": [
+            "[INFO] Indexing prices table from MTGJSON...",
+            "[INFO] Building lowest_prices table...",
+            "[INFO] Computing minimum prices per card name & provider...",
+            "[INFO] Populating lowest_prices...",
+            "[SUCCESS] Lowest prices computed and indexed successfully!"
+          ]
+        },
+        {
+          "name": "sync_live_sealed_prices.py",
+          "description": "Sync live TCGplayer sealed product prices",
+          "status": "success",
+          "duration": 741.15,
+          "exitCode": 0,
+          "summary": [
+            "======================================================================",
+            "Starting Live TCGplayer Market Price Sync for 3358 products",
+            "======================================================================",
+            "======================================================================",
+            "[SUCCESS] Market price fetch: 3074/3358 priced, 284 missing, 740s",
+            "[SUMMARY] Missing price examples: ZEN:Zendikar 3 Booster Draft Pack | ZEN:Zendikar Booster Box Case | ZEN:Zendikar Intro Packs Set of 5 | WOE:Wilds of Eldraine Bundle Case | WC99:1999 World Championship Deck Jakub Slemr | WC97:1997 World Championship Deck Paul McCabe | WC04:2004 World Championship Deck Aeo Paquette | WC04:2004 World Championship Deck Box | WC02:2002 World Championship Deck Brian Kibler | WC02:2002 World Championship Deck Carlos Romao",
+            "======================================================================"
+          ]
+        },
+        {
+          "name": "populate_booster_ev_to_db.py",
+          "description": "Build price data from synced card data",
+          "status": "success",
+          "duration": 858.53,
+          "exitCode": 0,
+          "summary": [
+            "-> set            | Direct EV: $  5.12 | Mid 90%: $  4.17 | Valid: [0.7, 0.82, 0.89, 0.92, 0.95, 0.97, 0.99, 1.0, 1.02, 1.04, 1.05, 1.07, 1.08, 1.09, 1.11, 1.12, 1.13, 1.15, 1.16, 1.17, 1.19, 1.21, 1.22, 1.24, 1.25, 1.27, 1.29, 1.31, 1.33, 1.36, 1.38, 1.41, 1.44, 1.47, 1.5, 1.55, 1.59, 1.63, 1.68, 1.73, 1.79, 1.83, 1.88, 1.94, 1.98, 2.04, 2.1, 2.17, 2.24, 2.32, 2.41, 2.51, 2.64, 2.81, 2.98, 3.15, 3.37, 3.61, 3.79, 3.96, 4.09, 4.2, 4.3, 4.42, 4.57, 4.74, 4.9, 5.04, 5.18, 5.32, 5.46, 5.65, 5.81, 6.01, 6.26, 6.51, 6.75, 6.94, 7.17, 7.45, 7.75, 8.15, 8.63, 8.95, 9.32, 9.9, 10.59, 11.38, 12.21, 12.83, 13.96, 14.8, 15.53, 16.35, 18.18, 21.3, 25.41, 29.39, 36.41, 60.9]%",
+            "-> theme-b        | Direct EV: $ 13.43 | Mid 90%: $ 12.53 | Valid: [2.24, 2.4, 2.5, 2.55, 2.6, 2.63, 2.66, 2.68, 2.71, 2.73, 2.75, 2.77, 2.79, 2.81, 2.83, 2.85, 2.87, 2.89, 2.91, 2.92, 2.94, 2.96, 2.98, 3.01, 3.05, 3.08, 3.11, 3.16, 3.23, 3.33, 3.43, 3.49, 3.58, 3.68, 3.8, 4.34, 5.66, 5.82, 5.97, 6.49, 10.75, 13.53, 13.61, 13.65, 13.68, 13.72, 13.74, 13.77, 13.79, 13.81, 13.83, 13.85, 13.86, 13.89, 13.91, 13.93, 13.95, 13.97, 14.0, 14.02, 14.05, 14.08, 14.12, 14.16, 14.22, 14.28, 14.36, 14.46, 14.54, 14.65, 14.78, 15.12, 16.63, 16.83, 17.0, 17.56, 23.54, 24.69, 24.78, 24.85, 24.9, 24.95, 24.99, 25.05, 25.12, 25.2, 25.34, 25.57, 25.77, 25.97, 26.23, 27.75, 30.37, 35.9, 36.17, 36.68, 37.06, 40.88, 50.64, 81.1]%",
+            "-> theme-g        | Direct EV: $ 10.19 | Mid 90%: $  9.77 | Valid: [2.15, 2.35, 2.5, 2.6, 2.66, 2.72, 2.77, 2.81, 2.86, 2.9, 2.94, 2.98, 3.02, 3.05, 3.1, 3.13, 3.17, 3.21, 3.26, 3.3, 3.37, 3.43, 3.49, 3.58, 3.68, 3.84, 4.17, 5.77, 6.27, 7.02, 7.7, 7.81, 7.87, 7.93, 7.98, 8.03, 8.08, 8.12, 8.16, 8.2, 8.24, 8.28, 8.31, 8.35, 8.4, 8.44, 8.48, 8.52, 8.58, 8.63, 8.69, 8.75, 8.81, 8.88, 8.96, 9.06, 9.26, 10.0, 10.57, 10.78, 10.94, 11.14, 11.4, 11.77, 12.17, 12.47, 12.84, 13.14, 13.27, 13.35, 13.43, 13.53, 13.6, 13.68, 13.77, 13.87, 13.95, 14.07, 14.27, 14.73, 15.75, 16.0, 16.29, 16.59, 17.13, 17.46, 17.63, 17.98, 18.43, 18.75, 19.02, 19.32, 20.59, 21.87, 22.66, 23.09, 23.82, 26.42, 29.91, 42.45]%",
+            "-> theme-party    | Direct EV: $  3.00 | Mid 90%: $  2.74 | Valid: [1.69, 1.94, 2.03, 2.08, 2.11, 2.14, 2.16, 2.18, 2.19, 2.21, 2.22, 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.3, 2.31, 2.32, 2.32, 2.33, 2.34, 2.35, 2.36, 2.36, 2.37, 2.38, 2.39, 2.39, 2.4, 2.4, 2.41, 2.42, 2.42, 2.43, 2.44, 2.44, 2.45, 2.46, 2.46, 2.47, 2.48, 2.48, 2.49, 2.5, 2.5, 2.51, 2.52, 2.53, 2.53, 2.54, 2.55, 2.56, 2.56, 2.57, 2.58, 2.58, 2.59, 2.6, 2.61, 2.62, 2.62, 2.63, 2.64, 2.65, 2.66, 2.67, 2.68, 2.69, 2.7, 2.71, 2.72, 2.73, 2.75, 2.76, 2.77, 2.79, 2.81, 2.83, 2.85, 2.88, 2.91, 2.94, 2.98, 3.04, 3.12, 3.21, 3.39, 4.69, 5.2, 5.36, 5.64, 7.95, 8.14, 8.28, 8.47, 8.83, 9.27, 11.42]%",
+            "-> theme-r        | Direct EV: $  5.93 | Mid 90%: $  5.46 | Valid: [1.96, 2.17, 2.33, 2.45, 2.53, 2.59, 2.67, 2.74, 2.81, 2.86, 2.92, 2.97, 3.02, 3.06, 3.1, 3.14, 3.18, 3.22, 3.26, 3.3, 3.34, 3.37, 3.4, 3.44, 3.48, 3.51, 3.55, 3.58, 3.61, 3.64, 3.68, 3.71, 3.74, 3.77, 3.8, 3.83, 3.87, 3.9, 3.93, 3.96, 4.0, 4.03, 4.06, 4.11, 4.15, 4.18, 4.21, 4.24, 4.28, 4.32, 4.37, 4.42, 4.46, 4.51, 4.57, 4.63, 4.69, 4.75, 4.82, 4.89, 4.95, 5.01, 5.08, 5.14, 5.22, 5.29, 5.37, 5.45, 5.52, 5.6, 5.68, 5.77, 5.88, 5.97, 6.09, 6.19, 6.3, 6.42, 6.56, 6.71, 6.87, 7.08, 7.33, 7.77, 8.64, 10.29, 10.84, 11.33, 11.85, 13.96, 16.1, 16.37, 16.63, 16.87, 17.11, 17.35, 17.67, 18.13, 19.34, 25.13]%",
+            "-> theme-u        | Direct EV: $  5.59 | Mid 90%: $  4.37 | Valid: [2.08, 2.28, 2.4, 2.46, 2.5, 2.53, 2.56, 2.58, 2.61, 2.64, 2.67, 2.69, 2.71, 2.73, 2.75, 2.77, 2.79, 2.81, 2.82, 2.84, 2.86, 2.88, 2.89, 2.92, 2.94, 2.95, 2.97, 2.99, 3.01, 3.03, 3.05, 3.07, 3.08, 3.1, 3.12, 3.14, 3.16, 3.18, 3.2, 3.22, 3.24, 3.26, 3.28, 3.3, 3.32, 3.34, 3.36, 3.38, 3.4, 3.43, 3.45, 3.48, 3.5, 3.53, 3.55, 3.57, 3.6, 3.62, 3.65, 3.68, 3.71, 3.74, 3.77, 3.81, 3.85, 3.89, 3.93, 3.98, 4.02, 4.07, 4.16, 4.26, 4.39, 4.55, 5.18, 6.67, 6.94, 7.09, 7.2, 7.32, 7.44, 7.57, 7.72, 7.89, 8.13, 8.33, 8.48, 8.62, 8.78, 8.94, 9.07, 9.24, 9.52, 10.06, 23.24, 31.37, 31.64, 31.95, 32.72, 60.15]%",
+            "-> theme-w        | Direct EV: $  4.95 | Mid 90%: $  4.76 | Valid: [2.07, 2.27, 2.37, 2.43, 2.47, 2.5, 2.52, 2.55, 2.57, 2.59, 2.61, 2.63, 2.66, 2.68, 2.7, 2.72, 2.74, 2.76, 2.79, 2.82, 2.84, 2.88, 2.91, 2.94, 3.0, 3.11, 3.26, 3.37, 3.43, 3.49, 3.54, 3.59, 3.65, 3.69, 3.75, 3.81, 3.89, 3.97, 4.07, 4.15, 4.2, 4.24, 4.28, 4.31, 4.34, 4.36, 4.39, 4.42, 4.44, 4.46, 4.48, 4.51, 4.54, 4.56, 4.6, 4.63, 4.67, 4.73, 4.84, 4.97, 5.09, 5.19, 5.25, 5.3, 5.34, 5.39, 5.44, 5.49, 5.55, 5.62, 5.69, 5.83, 5.95, 6.03, 6.09, 6.14, 6.19, 6.25, 6.3, 6.36, 6.45, 6.63, 6.87, 7.02, 7.13, 7.23, 7.36, 7.53, 7.82, 8.0, 8.26, 8.77, 8.99, 9.19, 9.43, 10.17, 10.9, 11.32, 13.15, 17.94]%",
+            "[SUCCESS] Completed all sets in 00:14:18 and stored to MySQL table `booster_ev_results`!"
+          ]
+        },
+        {
+          "name": "export_app_data.py",
+          "description": "Export MySQL data to React JSON format",
+          "status": "success",
+          "duration": 4.29,
+          "exitCode": 0,
+          "summary": [
+            ">> 3b. Exporting pricing_reliability.json...",
+            "\u2714 Exported reliability for 8 vendor/mode combinations",
+            ">> 4. Exporting arbitrage_leaderboard.json...",
+            "\u2714 Exported 2008 product arbitrage opportunities",
+            "\u2714 Exported 2008 complete-product metric records",
+            ">> 5. Exporting single_card_prices.json from MTGJSON prices table...",
+            "\u2714 Exported single_card_prices.json with 508 cards updated from MTGJSON DB (332 total indexed)",
+            "[SUCCESS] Pipeline export complete. Ready for React frontend deployment!"
+          ]
+        },
+        {
+          "name": "load_deck_tables.py",
+          "description": "Load preconstructed decks into MySQL",
+          "status": "success",
+          "duration": 3.64,
+          "exitCode": 0,
+          "summary": [
+            "OK Loaded 878 decks and 5039 deck cards into MySQL"
+          ]
+        },
+        {
+          "name": "export_product_chase_cards.py",
+          "description": "Export vendor-aware product TOP 5 chase cards",
+          "status": "success",
+          "duration": 115.86,
+          "exitCode": 0,
+          "summary": [
+            "OK Exported chase cards for 4137 products to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data/product_chase_cards.json"
+          ]
+        },
+        {
+          "name": "composite_evaluator.py",
+          "description": "Evaluate composite products & quantiles (10,000 MC samples)",
+          "status": "success",
+          "duration": 101.11,
+          "exitCode": 0,
+          "summary": [
+            "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese",
+            "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese Rainbow Foil",
+            "\u2714 Evaluated 3042 sealed products in 98.13s (32.3ms/product)",
+            "\u2714 Successfully saved enriched sealed_products.json to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data",
+            "\u2714 Synchronized pre-computed quantiles into arbitrage_leaderboard.json",
+            "======================================================================",
+            "COMPOSITE EVALUATION COMPLETE",
+            "======================================================================"
+          ]
+        },
+        {
+          "name": "export_product_metrics.py",
+          "description": "Export complete-product metrics by vendor",
+          "status": "success",
+          "duration": 1.36,
+          "exitCode": 0,
+          "summary": [
+            "[SUCCESS] Exported 17922 complete-product vendor metrics"
+          ]
+        },
+        {
+          "name": "test_product_metrics_contract.py",
+          "description": "Validate complete-product metrics contract",
+          "status": "success",
+          "duration": 0.64,
+          "exitCode": 0,
+          "summary": [
+            "OK validated 17922 product metric records across 14 categories"
+          ]
+        },
+        {
+          "name": "validate_pricing_and_ev.py",
+          "description": "Run automated quality and pricing/EV validation audit",
+          "status": "success",
+          "duration": 1.18,
+          "exitCode": 0,
+          "summary": [
+            "\u2022 [SLD] Secret Lair Bundle Dr Lairs Secretoriu | Market: $ 450.00 | EV: $    2.42 | ROI:   -99.5%",
+            "==============================================================================",
+            "VALIDATOR DIAGNOSTIC SUMMARY",
+            "==============================================================================",
+            "1. Booster Quantile Outlier Skews:    469 records",
+            "2. Product Contents vs EV Mismatches:  770 records",
+            "3. Extreme ROI Pricing Anomalies:      571 records",
+            "------------------------------------------------------------------------------"
+          ]
+        }
+      ],
+      "errors": []
+    },
     {
       "id": "run-2026-09-16-122024",
       "timestamp": "2026-09-16T12:20:24.534847+00:00",
