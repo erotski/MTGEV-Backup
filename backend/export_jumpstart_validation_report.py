@@ -49,6 +49,7 @@ def fetch_mtgjson_jumpstart(set_code: str):
 
 def classify_set(set_code, booster, override, sample_size, source, source_meta=None):
     issues = []
+    notes = []
     exact_fixed_sheets = set(override.get("fixedSheets", [])) if "fixedSheets" in override else None
     variable_sheets = set(override.get("variableSheets", []))
     fixed_by_default = override.get("fixedByDefault") is True
@@ -113,6 +114,7 @@ def classify_set(set_code, booster, override, sample_size, source, source_meta=N
         "status": "pass" if not issues else "warning",
         "configurationSource": source,
         "sourceMetadata": source_meta or {},
+        "notes": notes,
         "sampleSize": sample_size,
         "configurationCount": len(configurations),
         "totalConfigurationWeight": sum(float(item.get("weight", 0)) for item in configurations),
@@ -183,8 +185,9 @@ def build_report(booster_slots, booster_evs, overrides, fetch_missing=True):
             )
             set_report["status"] = "warning"
         if source == "mtgjson":
-            set_report["issues"].append("Jumpstart configuration is absent from booster_slots.json; MTGJSON fallback was used.")
-            set_report["status"] = "warning"
+            set_report.setdefault("notes", []).append(
+                "Jumpstart configuration is absent from booster_slots.json; MTGJSON fallback was used."
+            )
         set_reports.append(set_report)
 
     warnings = sum(len(item["issues"]) for item in set_reports)
