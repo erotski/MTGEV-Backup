@@ -1,0 +1,68 @@
+name: Refresh Booster Collation Metadata
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  refresh-collation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install streaming parser
+        run: pip install ijson
+
+      - name: Download AllPrintings JSON to runner workspace
+        env:
+          MTGJSON_URL: https://mtgjson.com/api/v5/AllPrintings.json
+        run: |
+          set -e
+          curl --fail --location --retry 3 --user-agent "MTGEV-Collation-Metadata/1.0" "$MTGJSON_URL" --output /tmp/AllPrintings.json
+
+      - name: Generate fixed-sheet overlay
+        run: python backend/sync_booster_fixed_metadata.py --json-corpus /tmp/AllPrintings.json
+
+      - name: Validate generated overlay
+        run: |
+          set -e
+          test -s public/data/booster_collation_overrides.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('public/data/booster_collation_overrides.json').read_text(encoding='utf-8'))
+          assert report['fixedSheetCount'] > 0
+          assert report['warningCount'] == 0
+          assert all('fixedSheets' in entry and 'sheetNames' in entry for entry in report['entries'].values())
+          assert all(
+              set(entry['fixedSheets']) <= set(entry['sheetNames'])
+              for entry in report['entries'].values()
+          )
+          print(f"Validated {report['fixedSheetCount']} fixed sheets across {report['setCount']} sets")
+          PY
+
+      - name: Commit compact metadata artifacts
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/booster_collation_overrides.json
+          if git diff --staged --quiet; then
+            echo "No collation metadata changes."
+          else
+            git commit -m "Refresh booster fixed-sheet metadata [skip ci]"
+            git push origin main
+          fi

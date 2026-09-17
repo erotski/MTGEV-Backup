@@ -47,6 +47,7 @@ REQUIRED_OUTPUTS = (
     "product_chase_cards.json",
     "pricing_reliability.json",
     "precon_decks.json",
+    "jumpstart_validation_report.json",
 )
 
 TELEMETRY_OUTPUTS = (
@@ -85,6 +86,7 @@ SCRIPTS = [
     ("composite_evaluator.py",           "Evaluate composite products & quantiles (10,000 MC samples)"),
     ("export_product_metrics.py",        "Export complete-product metrics by vendor"),
     ("test_product_metrics_contract.py", "Validate complete-product metrics contract"),
+    ("export_jumpstart_validation_report.py", "Export Jumpstart collation validation report"),
     ("validate_pricing_and_ev.py",       "Run automated quality and pricing/EV validation audit")
 ]
 
@@ -304,6 +306,34 @@ def validate_output_semantics() -> tuple[bool, str]:
     precon_decks = load_required("precon_decks.json")
     if not isinstance(precon_decks, dict):
         return False, "precon_decks.json must contain an object"
+
+    jumpstart_report = load_required("jumpstart_validation_report.json")
+    if not isinstance(jumpstart_report, dict) or jumpstart_report.get("status") not in {"pass", "warning"}:
+        return False, "jumpstart_validation_report.json has invalid status"
+    jumpstart_sets = jumpstart_report.get("sets")
+    if not isinstance(jumpstart_sets, list) or not jumpstart_sets:
+        return False, "jumpstart_validation_report.json must contain a non-empty sets array"
+    configuration_count = 0
+    for set_report in jumpstart_sets:
+        configurations = set_report.get("configurations")
+        if not isinstance(configurations, list):
+            return False, f"Jumpstart set {set_report.get('setCode')} has invalid configurations"
+        configuration_count += len(configurations)
+        sample_size = set_report.get("sampleSize") or 0
+        allocated_samples = 0
+        for configuration in configurations:
+            if configuration.get("totalPicks") != 20:
+                return False, f"Jumpstart {set_report.get('setCode')} configuration {configuration.get('boosterIndex')} is not 20 cards"
+            allocated_samples += configuration.get("allocatedSamples") or 0
+            contents = configuration.get("contents")
+            if not isinstance(contents, list) or not contents:
+                return False, f"Jumpstart {set_report.get('setCode')} configuration has no contents"
+            if any(item.get("treatment") not in {"fixed", "variable"} for item in contents):
+                return False, f"Jumpstart {set_report.get('setCode')} contains unknown sheet treatment"
+        if configurations and allocated_samples != sample_size:
+            return False, f"Jumpstart {set_report.get('setCode')} allocations do not total {sample_size}"
+    if jumpstart_report.get("summary", {}).get("configurationCount") != configuration_count:
+        return False, "jumpstart_validation_report.json configuration summary is incorrect"
 
     return True, ""
 
