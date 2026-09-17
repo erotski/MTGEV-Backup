@@ -575,20 +575,28 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // Check if viewing default pricing mode to use authentic precomputed composite metrics
   const isDefaultPricing = (vendor === 'all' || vendor === 'all_cheapest' || vendor === 'tcgplayer') && priceMode === 'direct';
 
-  // Calculate dynamic product EV from canonical metrics (or precomputed 10,000-sample composite)
+  // Canonical EV sources only: precomputed 10,000-sample composite (activeProduct.totalEv*)
+  // or the product_metrics.json gateway record (canonicalMetrics). A recursive frontend
+  // audit total or a booster-unit-EV * packCount multiplier must never stand in for these
+  // (see PROJECT_REVIEW.md Section 5/11) — when neither backend source is present, the
+  // value is explicitly unavailable (0) rather than silently recalculated.
+  const evGatewayUnavailable = !(
+    (isDefaultPricing && activeProduct?.totalEvAvg != null) ||
+    canonicalMetrics ||
+    (isPreconProduct && activeProduct)
+  );
+
   const productAvgEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
-    productAudit && productAudit.totalEv > 0
-      ? productAudit.totalEv
-      : isPreconProduct && activeProduct
+    isPreconProduct && activeProduct
       ? Number(activeProduct.estimatedEv.toFixed(2))
-      : Number((activeBooster.evAverage * productPacksCount).toFixed(2))
+      : 0
   ));
 
-  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMid90 * productPacksCount).toFixed(2))));
-  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMin5 * productPacksCount).toFixed(2))));
-  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMax5 * productPacksCount).toFixed(2))));
-  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMin * productPacksCount).toFixed(2))));
-  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productAvgEv : Number((activeBooster.evMax * productPacksCount).toFixed(2))));
+  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productAvgEv : 0));
+  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productAvgEv : 0));
 
   // Product Active EV matching the selected basis (Floor, Mid 90%, Mean, Ceiling)
   const productEstimatedEv = useMemo(() => {
@@ -1096,6 +1104,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       {/* 2. Active Selected Product Detailed Stats Grid */}
       {activeBooster && (
         <div className="space-y-6">
+          {evGatewayUnavailable && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl p-3 text-xs">
+              <div className="font-bold uppercase tracking-wider mb-1">EV data unavailable</div>
+              <p>No backend product-metrics record was found for this product/vendor/price-mode combination. EV figures below are shown as 0 rather than an estimated or recalculated value.</p>
+            </div>
+          )}
           {snapshotWarnings.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs">
               <div className="font-bold uppercase tracking-wider mb-1">Snapshot warnings</div>

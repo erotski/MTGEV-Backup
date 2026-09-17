@@ -29,7 +29,7 @@ def run_validation():
 
     sealed_file = PUBLIC_DATA_DIR / "sealed_products.json"
     if not sealed_file.exists():
-        print(f"✘ Error: {sealed_file} does not exist. Run composite_evaluator.py first.")
+        print(f"[ERROR] Error: {sealed_file} does not exist. Run composite_evaluator.py first.")
         sys.exit(1)
 
     with open(sealed_file, "r", encoding="utf-8") as f:
@@ -67,24 +67,24 @@ def run_validation():
             vendor_completeness_errors += 1
 
     if monotonic_errors == 0:
-        print("✔ [PASS] Monotonicity: 100% of evaluated products have monotonically non-decreasing quantiles.")
+        print("[PASS] Monotonicity: 100% of evaluated products have monotonically non-decreasing quantiles.")
         passed_checks += 1
     else:
-        print(f"✘ [FAIL] Monotonicity: {monotonic_errors} products had non-monotonic quantile buckets.")
+        print(f"[FAIL] Monotonicity: {monotonic_errors} products had non-monotonic quantile buckets.")
         failed_checks += 1
 
     if endpoint_errors == 0:
-        print("✔ [PASS] Endpoints: Curve point 1 is no greater than curve point 100 for all evaluated products.")
+        print("[PASS] Endpoints: Curve point 1 is no greater than curve point 100 for all evaluated products.")
         passed_checks += 1
     else:
-        print(f"✘ [FAIL] Endpoints: {endpoint_errors} products had invalid minimum/maximum ordering.")
+        print(f"[FAIL] Endpoints: {endpoint_errors} products had invalid minimum/maximum ordering.")
         failed_checks += 1
 
     if vendor_completeness_errors == 0:
-        print("✔ [PASS] Vendor Completeness: All evaluated products include multi-vendor quantile arrays.")
+        print("[PASS] Vendor Completeness: All evaluated products include multi-vendor quantile arrays.")
         passed_checks += 1
     else:
-        print(f"✘ [FAIL] Vendor Completeness: {vendor_completeness_errors} products missing expected vendor keys.")
+        print(f"[FAIL] Vendor Completeness: {vendor_completeness_errors} products missing expected vendor keys.")
         failed_checks += 1
 
     # 2. Archetype Validation Checks
@@ -106,10 +106,10 @@ def run_validation():
             precon_flat_errors += 1
 
     if precon_flat_errors == 0:
-        print(f"✔ [PASS] Precon Invariant: All {len(precons)} precon products render a deterministic flat line.")
+        print(f"[PASS] Precon Invariant: All {len(precons)} precon products render a deterministic flat line.")
         passed_checks += 1
     else:
-        print(f"✘ [FAIL] Precon Invariant: {precon_flat_errors} precon products had variance in quantiles.")
+        print(f"[FAIL] Precon Invariant: {precon_flat_errors} precon products had variance in quantiles.")
         failed_checks += 1
 
     # 3. Statistical Parity Audit for HOB Products
@@ -132,7 +132,7 @@ def run_validation():
         # Verify median is between min5 and max5
         is_median_bounded = (p05 <= p50 <= p95) or (abs(p05 - p95) < 0.05)
 
-        status = "✔" if (is_mean_bounded and is_median_bounded) else "✘"
+        status = "[OK]" if (is_mean_bounded and is_median_bounded) else "[FAIL]"
         print(f"  {status} {name[:36]:<36} | {arch[:12]:<12} | Mean: ${mean_ev:>7.2f} | 50%: ${p50:>7.2f} | EV Score: {ev_score:>3}% | Breakeven: {breakeven:>3}%")
 
     # 4. Variable Slots & Multi-Tier Superdrop Bundle Validation
@@ -152,18 +152,18 @@ def run_validation():
         # Check that curve has spread when variable slots with variance exist
         has_variance = (q[-1] - q[0]) > 0.1
         if mean_ev > 0 and has_variance:
-            print(f"  ✔ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | 5%: ${p05:>8.2f} | 50%: ${p50:>8.2f} | 95%: ${p95:>8.2f}")
+            print(f"  [OK] {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | 5%: ${p05:>8.2f} | 50%: ${p50:>8.2f} | 95%: ${p95:>8.2f}")
         elif mean_ev > 0:
-            print(f"  ✔ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | (Deterministic / Narrow variance)")
+            print(f"  [OK] {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | (Deterministic / Narrow variance)")
         else:
             var_errors += 1
-            print(f"  ✘ {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | INVALID EV")
+            print(f"  [ERROR] {name[:40]:<40} | Mean: ${mean_ev:>8.2f} | INVALID EV")
 
     if var_errors == 0:
-        print("✔ [PASS] Variable Slot & Superdrop Invariant: All variable-slot products evaluated with valid distributions.")
+        print("[PASS] Variable Slot & Superdrop Invariant: All variable-slot products evaluated with valid distributions.")
         passed_checks += 1
     else:
-        print(f"✘ [FAIL] Variable Slot & Superdrop Invariant: {var_errors} products failed evaluation.")
+        print(f"[FAIL] Variable Slot & Superdrop Invariant: {var_errors} products failed evaluation.")
         failed_checks += 1
 
     print("\n" + "=" * 70)

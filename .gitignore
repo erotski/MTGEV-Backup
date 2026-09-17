@@ -12,6 +12,8 @@ __pycache__/
 incoming_zips/*.zip
 *.zip
 backend/audit_output/
+all_printings_json/
+
 
 # Pipeline-generated output (regenerated every run; authoritative copy lives on the
 # `data-sync` branch, which is Vercel's Production Branch). Committing these to `main`

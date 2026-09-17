@@ -33,6 +33,29 @@ DIST_DATA_DIR = ROOT_DIR / "dist" / "data"
 
 VENDORS = ["all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool"]
 
+# populate_booster_ev_to_db.py always simulates this many packs per booster/vendor/mode
+# (see booster_ev.json "simulatedPacks"). Used to correct the endpoint-weighting bug below.
+BOOSTER_SIMULATED_PACKS = 5000
+
+
+def bucket_weights(bucket_count: int = 100, simulated_packs: int = BOOSTER_SIMULATED_PACKS):
+    """Probability weight of each of the 100 empirical_quantiles() buckets.
+
+    empirical_quantiles() stores the exact min and exact max as single-sample
+    endpoints (bucket 1 and bucket 100), while the 98 interior buckets are each
+    the mean of ~(simulated_packs-2)/98 samples. Treating all 100 buckets as
+    equally likely (as a naive uniform resample or arithmetic mean does) gives
+    the min/max endpoints ~50x too much weight and biases the reconstructed
+    mean upward for right-skewed (chase-card-driven) distributions. This
+    reweights each bucket to match its true share of the original samples.
+    """
+    if bucket_count <= 2 or simulated_packs <= bucket_count:
+        return [1.0 / bucket_count] * bucket_count
+    endpoint_weight = 1.0 / simulated_packs
+    interior_weight = (1.0 - 2 * endpoint_weight) / (bucket_count - 2)
+    return [endpoint_weight] + [interior_weight] * (bucket_count - 2) + [endpoint_weight]
+
+
 def load_data():
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "r", encoding="utf-8") as f:
         sealed_products = json.load(f)
@@ -175,6 +198,93 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
 
     return {"packs": packs, "cards": cards, "decks": decks, "variables": variables}
 
+def find_matched_precon_deck(d, precon_decks):
+    """Resolves a contents.deck entry to its authoritative precon_decks.json record."""
+    dname = (d.get("name") or "").strip().lower()
+    dset = (d.get("set") or "").strip().upper()
+    dname_alpha = re.sub(r"[^a-z0-9]", "", dname)
+
+    # 1. Exact name or key match in same set or without set constraint
+    for k, deck_obj in precon_decks.items():
+        if not isinstance(deck_obj, dict):
+            continue
+        obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
+        obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
+        if dset and obj_set and dset != obj_set:
+            continue
+        if (dname and obj_name == dname) or (k.strip().lower() == dname):
+            return deck_obj
+
+    # 2. Match within same set if set is specified
+    if dname and dset:
+        for k, deck_obj in precon_decks.items():
+            if not isinstance(deck_obj, dict):
+                continue
+            obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
+            if obj_set != dset:
+                continue
+            obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
+            obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
+            if (dname_alpha and dname_alpha == obj_alpha) or (dname in obj_name) or (obj_name in dname):
+                return deck_obj
+
+    # 3. Exact full alphanumeric match across all decks only if sets do not conflict
+    if dname and not dset:
+        for k, deck_obj in precon_decks.items():
+            if not isinstance(deck_obj, dict):
+                continue
+            obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
+            obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
+            if dname_alpha and dname_alpha == obj_alpha:
+                return deck_obj
+
+    return None
+
+
+def get_cards_per_pack(code):
+    """Cards per booster pack by MTGJSON booster code, mirroring src/utils/productUtils.ts."""
+    c = (code or "").lower()
+    if "sample" in c:
+        return 2
+    if "prerelease" in c:
+        return 2
+    if "collector" in c:
+        return 15
+    if c in ("play", "draft", "set", "default", "booster"):
+        return 15
+    if "jumpstart" in c:
+        return 20
+    if "theme" in c:
+        return 35
+    if "topper" in c:
+        return 1
+    return 15
+
+
+def resolve_total_card_count(cards, decks, packs_dict, precon_decks):
+    """Recursively derives the true total card count for a composite product from its
+    resolved cards/decks/packs — this is the sole authority consumed by the frontend
+    (product_metrics.json cardCount); no frontend fallback/estimation should override it."""
+    total = 0
+    for cd in cards:
+        total += int(cd.get("count", 1) or 1)
+
+    for d in decks:
+        matched_deck = find_matched_precon_deck(d, precon_decks)
+        deck_cards = int((matched_deck or {}).get("cardCount") or 0)
+        if deck_cards <= 0:
+            dname = (d.get("name") or "").lower()
+            category = ((matched_deck or {}).get("category") or "").lower()
+            is_commander = "commander" in dname or "commander" in category
+            deck_cards = 100 if is_commander else 60
+        total += deck_cards
+
+    for (_p_set, p_code), cnt in packs_dict.items():
+        total += cnt * get_cards_per_pack(p_code)
+
+    return total
+
+
 def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_cheapest", prod=None, provenance=None):
     """Calculates fixed singles EV for guaranteed cards, lands, and precon decks."""
     total_fixed = 0.0
@@ -226,47 +336,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
 
     # 2. Evaluate precon decks
     for d in decks:
-        dname = (d.get("name") or "").strip().lower()
-        dset = (d.get("set") or "").strip().upper()
-        dname_alpha = re.sub(r"[^a-z0-9]", "", dname)
-        matched_deck = None
-
-        # 1. Exact name or key match in same set or without set constraint
-        for k, deck_obj in precon_decks.items():
-            if not isinstance(deck_obj, dict):
-                continue
-            obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
-            obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
-            if dset and obj_set and dset != obj_set:
-                continue
-            if (dname and obj_name == dname) or (k.strip().lower() == dname):
-                matched_deck = deck_obj
-                break
-
-        # 2. Match within same set if set is specified
-        if not matched_deck and dname and dset:
-            for k, deck_obj in precon_decks.items():
-                if not isinstance(deck_obj, dict):
-                    continue
-                obj_set = (deck_obj.get("set") or deck_obj.get("setCode") or "").strip().upper()
-                if obj_set != dset:
-                    continue
-                obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
-                obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
-                if (dname_alpha and dname_alpha == obj_alpha) or (dname in obj_name) or (obj_name in dname):
-                    matched_deck = deck_obj
-                    break
-
-        # 3. Exact full alphanumeric match across all decks only if sets do not conflict
-        if not matched_deck and dname and not dset:
-            for k, deck_obj in precon_decks.items():
-                if not isinstance(deck_obj, dict):
-                    continue
-                obj_name = (deck_obj.get("deckName") or deck_obj.get("name") or "").strip().lower()
-                obj_alpha = re.sub(r"[^a-z0-9]", "", obj_name)
-                if dname_alpha and dname_alpha == obj_alpha:
-                    matched_deck = deck_obj
-                    break
+        matched_deck = find_matched_precon_deck(d, precon_decks)
 
         if matched_deck:
             deck_stats = (matched_deck.get("pricingReliability") or {}).get(vendor)
@@ -340,7 +410,7 @@ def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, ven
                 booster_lookup.get((pk_set, "default", vendor, "direct"))
             )
             if booster_entry and booster_entry.get("quantiles"):
-                pack_specs.append((cnt, booster_entry["quantiles"]))
+                pack_specs.append((cnt, booster_entry["quantiles"], booster_entry["evAverage"]))
             elif booster_entry and booster_entry.get("evAverage"):
                 fixed_val += float(booster_entry["evAverage"]) * cnt
 
@@ -365,12 +435,13 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
     """
     Simulates composite product draws using NumPy if available,
     or high-performance random fallback.
-    pack_specs: list of (count, quantiles_100_list)
+    pack_specs: list of (count, quantiles_100_list, booster_evAverage)
     variable_slots: list of slot option lists, where each option has:
-      { 'probability': float, 'fixed_ev': float, 'pack_specs': [(count, quantiles)] }
+      { 'probability': float, 'fixed_ev': float, 'pack_specs': [(count, quantiles, evAverage)] }
     """
     has_packs = len(pack_specs) > 0
     has_vars = bool(variable_slots and len(variable_slots) > 0)
+    weights_100 = bucket_weights()
 
     if not has_packs and not has_vars:
         # Pure precon / fixed cards (Archetype 1)
@@ -388,15 +459,40 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
             "quantiles": [fixed_val] * 100
         }
 
+    if not has_vars and len(pack_specs) == 1 and pack_specs[0][0] == 1:
+        # Single guaranteed pack, no variable slots: the booster's own evAverage
+        # (the true 5,000-sample mean) is authoritative and exact — resampling
+        # the 100-point curve here would only add Monte Carlo noise and risk
+        # reintroducing the endpoint-overweighting bias bucket_weights() fixes.
+        _count, q_list, ev_average = pack_specs[0]
+        q_clean = sorted(q_list[:100])
+        mean_val = ev_average + fixed_ev
+        q_res = [round(x + fixed_ev, 2) for x in q_clean]
+        return {
+            "mean": round(mean_val, 2),
+            "median": q_res[49],
+            "min": q_res[0],
+            "max": q_res[-1],
+            "p05": q_res[4],
+            "p50": q_res[49],
+            "p95": q_res[94],
+            "p99": q_res[99],
+            "std": 0.0,
+            "quantiles": q_res
+        }
+
     if HAS_NUMPY:
         composite_draws = np.full(iterations, fixed_ev, dtype=np.float64)
+        weights_arr = np.array(weights_100, dtype=np.float64)
 
         # 1. Guaranteed packs
-        for count, q_list in pack_specs:
+        for count, q_list, _ev_average in pack_specs:
             if count <= 0 or not q_list:
                 continue
             q_arr = np.array(q_list[:100], dtype=np.float64)
-            draw_indices = np.random.randint(0, len(q_arr), size=(count, iterations))
+            # Weighted resample: the exact min/max endpoints are single samples,
+            # not equally-likely buckets (see bucket_weights()).
+            draw_indices = np.random.choice(len(q_arr), size=(count, iterations), p=weights_arr)
             pack_evs = q_arr[draw_indices]
             composite_draws += np.sum(pack_evs, axis=0)
 
@@ -413,11 +509,11 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
                         continue
                     if opt.get("fixed_ev", 0.0) > 0:
                         composite_draws[mask] += opt["fixed_ev"]
-                    for p_cnt, p_quantiles in opt.get("pack_specs", []):
+                    for p_cnt, p_quantiles, _p_ev_average in opt.get("pack_specs", []):
                         if p_cnt <= 0 or not p_quantiles:
                             continue
                         q_arr = np.array(p_quantiles[:100], dtype=np.float64)
-                        p_draws = np.random.randint(0, len(q_arr), size=(p_cnt, count_chosen))
+                        p_draws = np.random.choice(len(q_arr), size=(p_cnt, count_chosen), p=weights_arr)
                         composite_draws[mask] += np.sum(q_arr[p_draws], axis=0)
 
         composite_draws.sort()
@@ -438,35 +534,17 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
             "quantiles": quantiles
         }
     else:
-        # If no variable slots and single pack count:
-        if not has_vars and len(pack_specs) == 1 and pack_specs[0][0] == 1:
-            q_clean = sorted(pack_specs[0][1][:100])
-            mean_val = sum(q_clean) / len(q_clean) + fixed_ev
-            q_res = [round(x + fixed_ev, 2) for x in q_clean]
-            return {
-                "mean": round(mean_val, 2),
-                "median": q_res[49],
-                "min": q_res[0],
-                "max": q_res[-1],
-                "p05": q_res[4],
-                "p50": q_res[49],
-                "p95": q_res[94],
-                "p99": q_res[99],
-                "std": 0.0,
-                "quantiles": q_res
-            }
-
         n = 500
         totals = [fixed_ev] * n
 
         # 1. Guaranteed packs
-        for count, q_list in pack_specs:
+        for count, q_list, _ev_average in pack_specs:
             if count <= 0 or not q_list:
                 continue
             q_clean = q_list[:100]
-            # Batch sample simulation
+            # Batch sample simulation, weighted to match true endpoint probability.
             for _ in range(count):
-                choices = random.choices(q_clean, k=n)
+                choices = random.choices(q_clean, weights=weights_100, k=n)
                 for i in range(n):
                     totals[i] += choices[i]
 
@@ -479,10 +557,10 @@ def simulate_composite_draws(pack_specs, fixed_ev=0.0, variable_slots=None, iter
                     opt = chosen[i]
                     if opt.get("fixed_ev", 0.0) > 0:
                         totals[i] += opt["fixed_ev"]
-                    for p_cnt, p_quantiles in opt.get("pack_specs", []):
+                    for p_cnt, p_quantiles, _p_ev_average in opt.get("pack_specs", []):
                         if p_cnt <= 0 or not p_quantiles:
                             continue
-                        p_picks = random.choices(p_quantiles[:100], k=p_cnt)
+                        p_picks = random.choices(p_quantiles[:100], weights=weights_100, k=p_cnt)
                         totals[i] += sum(p_picks)
         
         totals.sort()
@@ -542,6 +620,18 @@ def run_composite_evaluator(target_set=None):
         decks = resolved["decks"]
         variables = resolved.get("variables", [])
 
+        # Authoritative recursive pack/card totals — the frontend must consume these
+        # directly rather than re-deriving or estimating them from raw contents.
+        total_packs_count = sum(packs_dict.values())
+        if total_packs_count > 0:
+            p["packsCount"] = total_packs_count
+        else:
+            p.pop("packsCount", None)
+
+        total_card_count = resolve_total_card_count(cards, decks, packs_dict, precon_decks)
+        if total_card_count > 0:
+            p["cardCount"] = total_card_count
+
         has_packs = len(packs_dict) > 0
         has_fixed = len(cards) > 0 or len(decks) > 0
         has_variables = len(variables) > 0
@@ -600,7 +690,7 @@ def run_composite_evaluator(target_set=None):
                     booster_lookup.get((p_set, "default", v, "direct"))
                 )
                 if booster_entry and booster_entry.get("quantiles"):
-                    pack_specs.append((count, booster_entry["quantiles"]))
+                    pack_specs.append((count, booster_entry["quantiles"], booster_entry["evAverage"]))
 
             variable_slots_for_vendor = []
             for slot in variables:
@@ -673,27 +763,23 @@ def run_composite_evaluator(target_set=None):
         }
         p["breakevenPercentile"] = breakeven_p
         p["evScore"] = ev_score
-        
-        total_packs_count = sum(packs_dict.values())
-        if total_packs_count > 0:
-            p["packsCount"] = total_packs_count
 
         updated_products.append(p)
         evaluated_count += 1
 
     total_time = time.time() - start_time
-    print(f"✔ Evaluated {evaluated_count} sealed products in {total_time:.2f}s ({total_time / max(1, evaluated_count) * 1000:.1f}ms/product)")
+    print(f"[OK] Evaluated {evaluated_count} sealed products in {total_time:.2f}s ({total_time / max(1, evaluated_count) * 1000:.1f}ms/product)")
 
     # Save to public/data/sealed_products.json
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "w", encoding="utf-8") as f:
         json.dump(updated_products, f, indent=2, default=str)
-    print(f"✔ Successfully saved enriched sealed_products.json to {PUBLIC_DATA_DIR}")
+    print(f"[OK] Successfully saved enriched sealed_products.json to {PUBLIC_DATA_DIR}")
 
     # Also update dist if exists
     if DIST_DATA_DIR.exists():
         with open(DIST_DATA_DIR / "sealed_products.json", "w", encoding="utf-8") as f:
             json.dump(updated_products, f, indent=2, default=str)
-        print(f"✔ Successfully saved enriched sealed_products.json to {DIST_DATA_DIR}")
+        print(f"[OK] Successfully saved enriched sealed_products.json to {DIST_DATA_DIR}")
 
     # Also sync updated metrics into arbitrage_leaderboard.json
     arb_path = PUBLIC_DATA_DIR / "arbitrage_leaderboard.json"
@@ -719,7 +805,7 @@ def run_composite_evaluator(target_set=None):
 
             with open(arb_path, "w", encoding="utf-8") as af:
                 json.dump(arb_records, af, indent=2, default=str)
-            print(f"✔ Synchronized pre-computed quantiles into arbitrage_leaderboard.json")
+            print(f"[OK] Synchronized pre-computed quantiles into arbitrage_leaderboard.json")
 
             if DIST_DATA_DIR.exists() and (DIST_DATA_DIR / "arbitrage_leaderboard.json").exists():
                 with open(DIST_DATA_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as af:

@@ -20,14 +20,34 @@ Audits all sealed products, booster packs, and composite boxes across the databa
 import json
 import sys
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 
 PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public" / "data"
 
+
+def bucket_weights(bucket_count: int = 100, simulated_packs: int = 5000) -> List[float]:
+    """True probability weight of each empirical_quantiles() bucket.
+
+    Mirrors composite_evaluator.py's bucket_weights(): the exact min/max
+    endpoints represent a single sample each, not a full 1% bucket. A naive
+    arithmetic mean of the 100-point curve overweights those endpoints and
+    was previously misreported here as a "quantile skew" data-quality bug
+    (see PROJECT_REVIEW.md DEV-25) when it was actually this same artifact.
+    """
+    if bucket_count <= 2 or simulated_packs <= bucket_count:
+        return [1.0 / bucket_count] * bucket_count
+    endpoint_weight = 1.0 / simulated_packs
+    interior_weight = (1.0 - 2 * endpoint_weight) / (bucket_count - 2)
+    return [endpoint_weight] + [interior_weight] * (bucket_count - 2) + [endpoint_weight]
+
+
+BUCKET_WEIGHTS_100 = bucket_weights()
+
 def load_json(filepath: Path) -> Any:
     if not filepath.exists():
-        print(f"✘ Error: {filepath} does not exist.")
+        print(f"[ERROR] {filepath} does not exist.")
         return None
     with open(filepath, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -80,8 +100,9 @@ def run_audit(fix_mode: bool = False):
 
         if q and len(q) == 100 and ev_avg > 0:
             q_mean = sum(q) / len(q)
+            q_weighted_mean = sum(v * w for v, w in zip(q, BUCKET_WEIGHTS_100))
             q_max = max(q)
-            ratio = q_mean / ev_avg
+            ratio = q_weighted_mean / ev_avg
             if ratio > 1.35 or ratio < 0.70:
                 booster_skew_issues.append({
                     "setCode": s_code,
@@ -90,13 +111,14 @@ def run_audit(fix_mode: bool = False):
                     "priceMode": pm,
                     "evAverage": ev_avg,
                     "quantileMean": q_mean,
+                    "quantileWeightedMean": q_weighted_mean,
                     "quantileMax": q_max,
                     "skewRatio": ratio,
                 })
 
     booster_skew_issues.sort(key=lambda x: x["skewRatio"], reverse=True)
     if booster_skew_issues:
-        print(f"✘ Found {len(booster_skew_issues)} booster distributions with significant quantile mean skew:")
+        print(f"[FAIL] Found {len(booster_skew_issues)} booster distributions with significant quantile mean skew:")
         for issue in booster_skew_issues[:8]:
             print(f"  • {issue['setCode']} {issue['boosterName']:<14} ({issue['vendor']}/{issue['priceMode']}) | "
                   f"True EV Avg: ${issue['evAverage']:>6.2f} | Quantile Mean: ${issue['quantileMean']:>6.2f} | "
@@ -104,7 +126,7 @@ def run_audit(fix_mode: bool = False):
         if len(booster_skew_issues) > 8:
             print(f"  ... and {len(booster_skew_issues) - 8} more.")
     else:
-        print("✔ [PASS] All booster quantile distributions match their analytical expected value.")
+        print("[PASS] All booster quantile distributions match their analytical expected value.")
 
     # ---------------------------------------------------------
     # TEST 2: Sealed Products Contents vs Total EV Consistency
@@ -214,8 +236,11 @@ def run_audit(fix_mode: bool = False):
             if pct_diff > 0.25 and diff > 15.0:
                 ev_mismatch_issues.append({
                     "id": p.get("id"),
+                    "productUuid": p.get("id") or p.get("uuid"),
                     "name": name,
                     "setCode": s_code,
+                    "category": p.get("category"),
+                    "archetype": p.get("archetype"),
                     "marketPrice": market_price,
                     "storedEv": stored_ev,
                     "calcEv": calc_ev,
@@ -224,29 +249,34 @@ def run_audit(fix_mode: bool = False):
                     "details": details[:2],
                 })
 
-        # Check for extreme ROI anomaly when market price is known
-        if market_price > 5.0 and (calc_ev > 0 or stored_ev > 0):
-            eval_ev = calc_ev if calc_ev > 0 else stored_ev
-            roi = ((eval_ev - market_price) / market_price) * 100
+        # ROI must use the authoritative complete-product EV, not a partial
+        # recursive contents walk that can omit decks or nested sealed items.
+        if market_price > 5.0 and stored_ev > 0:
+            roi = ((stored_ev - market_price) / market_price) * 100
             if roi > 300.0 or roi < -90.0:
                 roi_anomaly_issues.append({
+                    "id": p.get("id"),
+                    "productUuid": p.get("id") or p.get("uuid"),
                     "name": name,
                     "setCode": s_code,
+                    "category": p.get("category"),
+                    "archetype": p.get("archetype"),
                     "marketPrice": market_price,
-                    "evalEv": eval_ev,
+                    "storedEv": stored_ev,
+                    "calcEv": calc_ev,
                     "roi": roi,
                 })
 
     ev_mismatch_issues.sort(key=lambda x: x["diff"], reverse=True)
     if ev_mismatch_issues:
-        print(f"✘ Found {len(ev_mismatch_issues)} products with stored EV diverging from actual contents EV:")
+        print(f"[FAIL] Found {len(ev_mismatch_issues)} products with stored EV diverging from actual contents EV:")
         for issue in ev_mismatch_issues[:10]:
             print(f"  • [{issue['setCode']}] {issue['name'][:35]:<35} | Stored: ${issue['storedEv']:>8.2f} | "
                   f"Actual Contents: ${issue['calcEv']:>8.2f} | Diff: +${issue['diff']:>7.2f} (+{issue['pctDiff']:.1f}%)")
         if len(ev_mismatch_issues) > 10:
             print(f"  ... and {len(ev_mismatch_issues) - 10} more.")
     else:
-        print("✔ [PASS] 100% of composite products match their aggregated contents EV.")
+        print("[PASS] 100% of composite products match their aggregated contents EV.")
 
     # ---------------------------------------------------------
     # TEST 3: Extreme ROI Anomaly Audit
@@ -259,9 +289,9 @@ def run_audit(fix_mode: bool = False):
         print(f"Found {len(roi_anomaly_issues)} products with abnormal arbitrage spreads:")
         for issue in roi_anomaly_issues[:8]:
             print(f"  • [{issue['setCode']}] {issue['name'][:38]:<38} | Market: ${issue['marketPrice']:>7.2f} | "
-                  f"EV: ${issue['evalEv']:>8.2f} | ROI: {issue['roi']:>+7.1f}%")
+                f"Stored EV: ${issue['storedEv']:>8.2f} | ROI: {issue['roi']:>+7.1f}%")
     else:
-        print("✔ [PASS] No extreme arbitrage pricing outliers detected.")
+        print("[PASS] No extreme arbitrage pricing outliers detected.")
 
     # ---------------------------------------------------------
     # SUMMARY & RECOMMENDATIONS
@@ -274,6 +304,25 @@ def run_audit(fix_mode: bool = False):
     print(f"3. Extreme ROI Pricing Anomalies:      {len(roi_anomaly_issues)} records")
     print("-" * 78)
 
+    # Persist the full (untruncated) issue lists for offline DEV-25 triage, since
+    # the console only prints the top few per category.
+    diagnostics_path = PUBLIC_DATA_DIR / "pricing_validator_diagnostics.json"
+    diagnostics = {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "boosterSkewCount": len(booster_skew_issues),
+        "evMismatchCount": len(ev_mismatch_issues),
+        "roiAnomalyCount": len(roi_anomaly_issues),
+        "boosterSkewIssues": booster_skew_issues,
+        "evMismatchIssues": ev_mismatch_issues,
+        "roiAnomalyIssues": roi_anomaly_issues,
+    }
+    try:
+        with open(diagnostics_path, "w", encoding="utf-8") as f:
+            json.dump(diagnostics, f, indent=2)
+        print(f"Full diagnostic detail written to {diagnostics_path}")
+    except Exception as e:
+        print(f"[WARN] Could not write {diagnostics_path}: {e}")
+
     return {
         "booster_skew_count": len(booster_skew_issues),
         "ev_mismatch_count": len(ev_mismatch_issues),
@@ -283,3 +332,4 @@ def run_audit(fix_mode: bool = False):
 
 if __name__ == "__main__":
     run_audit()
+

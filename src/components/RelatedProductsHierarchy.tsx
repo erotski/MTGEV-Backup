@@ -171,7 +171,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
             // 2. Direct pack definitions
             if (product.contents?.pack && Array.isArray(product.contents.pack)) {
-              const packTotal = product.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 1), 0);
+              const packTotal = product.contents.pack.reduce((sum: number, p: any) => sum + (p.count || 0), 0);
               if (packTotal > 0) return packTotal;
             }
 

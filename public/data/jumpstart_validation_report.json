@@ -1,0 +1,1958 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-17T11:29:01.116054+00:00",
+  "status": "warning",
+  "sources": {
+    "boosterSlots": "public/data/booster_slots.json",
+    "boosterEv": "public/data/booster_ev.json",
+    "overrides": "public/data/booster_collation_overrides.json",
+    "mtgjsonFallback": "https://mtgjson.com/api/v5/{set_code}.json"
+  },
+  "summary": {
+    "setCount": 10,
+    "configurationCount": 50,
+    "warningCount": 5
+  },
+  "sets": [
+    {
+      "setCode": "BRO",
+      "status": "pass",
+      "configurationSource": "booster_slots",
+      "sourceMetadata": {},
+      "sampleSize": 5000,
+      "configurationCount": 10,
+      "totalConfigurationWeight": 10.0,
+      "metadataMode": "exactFixedSheets",
+      "fixedSheets": [
+        "infantry1",
+        "infantry1Foils",
+        "infantry2",
+        "infantry2Foils",
+        "powerstones1",
+        "powerstones1Foils",
+        "powerstones2",
+        "powerstones2Foils",
+        "titanic1",
+        "titanic1Foils",
+        "titanic2",
+        "titanic2Foils",
+        "unearthed1",
+        "unearthed1Foils",
+        "unearthed2",
+        "unearthed2Foils",
+        "welded1",
+        "welded1Foils",
+        "welded2",
+        "welded2Foils"
+      ],
+      "fixedByDefault": null,
+      "variableSheets": [],
+      "issues": [],
+      "configurations": [
+        {
+          "boosterIndex": 0,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "infantry1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "infantry1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 12,
+              "totalWeight": 20,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 1,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "infantry2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "infantry2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 12,
+              "totalWeight": 20,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 2,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "powerstones1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "powerstones1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 11,
+              "totalWeight": 18,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 3,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "powerstones2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "powerstones2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 11,
+              "totalWeight": 18,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 4,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 11,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "titanic1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "titanic1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 5,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 11,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "titanic2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "titanic2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 6,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 12,
+              "totalWeight": 22,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "unearthed1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "unearthed1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 7,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 12,
+              "totalWeight": 22,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "unearthed2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "unearthed2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 8,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 18,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "welded1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "welded1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 9,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 18,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "welded2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "welded2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        }
+      ],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "DMU",
+      "status": "pass",
+      "configurationSource": "booster_slots",
+      "sourceMetadata": {},
+      "sampleSize": 5000,
+      "configurationCount": 10,
+      "totalConfigurationWeight": 10.0,
+      "metadataMode": "exactFixedSheets",
+      "fixedSheets": [
+        "arcaneMischief",
+        "arcaneMischiefFoils",
+        "beastTerritory",
+        "beastTerritoryFoils",
+        "coalitionCorps",
+        "coalitionCorpsFoils",
+        "coalitionLegion",
+        "coalitionLegionFoils",
+        "monsterTerritory",
+        "monsterTerritoryFoils",
+        "mysticMischief",
+        "mysticMischiefFoils",
+        "readyToAttack",
+        "readyToAttackFoils",
+        "readyToCharge",
+        "readyToChargeFoils",
+        "totallyMerciless",
+        "totallyMercilessFoils",
+        "totallyRuthless",
+        "totallyRuthlessFoils"
+      ],
+      "fixedByDefault": null,
+      "variableSheets": [],
+      "issues": [],
+      "configurations": [
+        {
+          "boosterIndex": 0,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "arcaneMischief",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "arcaneMischiefFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 1,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "beastTerritory",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 17,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "beastTerritoryFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 2,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "coalitionCorps",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "coalitionCorpsFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 18,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 3,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "coalitionLegion",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "coalitionLegionFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 18,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 4,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "monsterTerritory",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 17,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "monsterTerritoryFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 5,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "mysticMischief",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "mysticMischiefFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 6,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "readyToAttack",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "readyToAttackFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 7,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "readyToCharge",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "readyToChargeFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 8,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "totallyMerciless",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "totallyMercilessFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 9,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 16,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "totallyRuthless",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 15,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "totallyRuthlessFoils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 2,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        }
+      ],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "J22",
+      "status": "warning",
+      "configurationSource": "unavailable",
+      "sampleSize": 5000,
+      "configurationCount": 0,
+      "fixedByDefault": false,
+      "variableSheets": [],
+      "issues": [
+        "No Jumpstart configuration available."
+      ],
+      "configurations": [],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "J25",
+      "status": "warning",
+      "configurationSource": "unavailable",
+      "sampleSize": 5000,
+      "configurationCount": 0,
+      "fixedByDefault": false,
+      "variableSheets": [],
+      "issues": [
+        "No Jumpstart configuration available."
+      ],
+      "configurations": [],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "JMP",
+      "status": "warning",
+      "configurationSource": "unavailable",
+      "sampleSize": 5000,
+      "configurationCount": 0,
+      "fixedByDefault": false,
+      "variableSheets": [],
+      "issues": [
+        "No Jumpstart configuration available."
+      ],
+      "configurations": [],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "LTR",
+      "status": "pass",
+      "configurationSource": "booster_slots",
+      "sourceMetadata": {},
+      "sampleSize": 5000,
+      "configurationCount": 10,
+      "totalConfigurationWeight": 10.0,
+      "metadataMode": "exactFixedSheets",
+      "fixedSheets": [
+        "courageous1",
+        "courageous2",
+        "journey1",
+        "journey2",
+        "marauders1",
+        "marauders2",
+        "mordor1",
+        "mordor2",
+        "tricksy1",
+        "tricksy2"
+      ],
+      "fixedByDefault": null,
+      "variableSheets": [],
+      "issues": [],
+      "configurations": [
+        {
+          "boosterIndex": 0,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "courageous1",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "whiteRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 1,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "courageous2",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "whiteRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 2,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "greenRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "journey1",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 3,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "greenRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "journey2",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 4,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "marauders1",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "redRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 5,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "marauders2",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "redRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 6,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "blackRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "mordor1",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 7,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "blackRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "mordor2",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 8,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "blueRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "tricksy1",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 9,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "blueRare",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 14,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "tricksy2",
+              "picks": 19,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 19,
+              "sourceFixed": null
+            }
+          ]
+        }
+      ],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "MOM",
+      "status": "pass",
+      "configurationSource": "booster_slots",
+      "sourceMetadata": {},
+      "sampleSize": 5000,
+      "configurationCount": 10,
+      "totalConfigurationWeight": 10.0,
+      "metadataMode": "exactFixedSheets",
+      "fixedSheets": [
+        "brood1",
+        "brood1Foils",
+        "brood2",
+        "brood2Foils",
+        "buff1",
+        "buff1Foils",
+        "buff2",
+        "buff2Foils",
+        "expendable1",
+        "expendable1Foils",
+        "expendable2",
+        "expendable2Foils",
+        "overachiever1",
+        "overachiever1Foils",
+        "overachiever2",
+        "overachiever2Foils",
+        "reinforcement1",
+        "reinforcement1Foils",
+        "reinforcement2",
+        "reinforcement2Foils"
+      ],
+      "fixedByDefault": null,
+      "variableSheets": [],
+      "issues": [],
+      "configurations": [
+        {
+          "boosterIndex": 0,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "brood1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "brood1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 30,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 1,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "brood2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "brood2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 10,
+              "totalWeight": 30,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 2,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "buff1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "buff1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 28,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 3,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "buff2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "buff2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 28,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 4,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "expendable1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "expendable1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 26,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 5,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "expendable2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "expendable2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 26,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 6,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "overachiever1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "overachiever1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 26,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 7,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "overachiever2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "overachiever2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 8,
+              "totalWeight": 26,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 8,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 28,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "reinforcement1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "reinforcement1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 9,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 28,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "reinforcement2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "reinforcement2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        }
+      ],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "MSH",
+      "status": "warning",
+      "configurationSource": "unavailable",
+      "sampleSize": 5000,
+      "configurationCount": 0,
+      "fixedByDefault": false,
+      "variableSheets": [],
+      "issues": [
+        "No Jumpstart configuration available."
+      ],
+      "configurations": [],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "ONE",
+      "status": "pass",
+      "configurationSource": "booster_slots",
+      "sourceMetadata": {},
+      "sampleSize": 5000,
+      "configurationCount": 10,
+      "totalConfigurationWeight": 10.0,
+      "metadataMode": "exactFixedSheets",
+      "fixedSheets": [
+        "corruption1",
+        "corruption1Foils",
+        "corruption2",
+        "corruption2Foils",
+        "miteY1",
+        "miteY1Foils",
+        "miteY2",
+        "miteY2Foils",
+        "progress1",
+        "progress1Foils",
+        "progress2",
+        "progress2Foils",
+        "rebellious1",
+        "rebellious1Foils",
+        "rebellious2",
+        "rebellious2Foils",
+        "toxic1",
+        "toxic1Foils",
+        "toxic2",
+        "toxic2Foils"
+      ],
+      "fixedByDefault": null,
+      "variableSheets": [],
+      "issues": [],
+      "configurations": [
+        {
+          "boosterIndex": 0,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "corruption1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "corruption1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 1,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "corruption2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "corruption2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlack",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 2,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "miteY1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "miteY1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 3,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "miteY2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "miteY2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicWhite",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 4,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "progress1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "progress1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 5,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "progress2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "progress2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rareMythicBlue",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 6,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rebellious1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rebellious1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 7,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicRed",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rebellious2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "rebellious2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 8,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "toxic1",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "toxic1Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        },
+        {
+          "boosterIndex": 9,
+          "weight": 1,
+          "allocatedSamples": 500,
+          "totalPicks": 20,
+          "contents": [
+            {
+              "sheetName": "rareMythicGreen",
+              "picks": 1,
+              "treatment": "variable",
+              "foil": false,
+              "cardCount": 9,
+              "totalWeight": 15,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "toxic2",
+              "picks": 17,
+              "treatment": "fixed",
+              "foil": false,
+              "cardCount": 13,
+              "totalWeight": 17,
+              "sourceFixed": null
+            },
+            {
+              "sheetName": "toxic2Foils",
+              "picks": 2,
+              "treatment": "fixed",
+              "foil": true,
+              "cardCount": 1,
+              "totalWeight": 2,
+              "sourceFixed": null
+            }
+          ]
+        }
+      ],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    },
+    {
+      "setCode": "TLE",
+      "status": "warning",
+      "configurationSource": "unavailable",
+      "sampleSize": 5000,
+      "configurationCount": 0,
+      "fixedByDefault": false,
+      "variableSheets": [],
+      "issues": [
+        "No Jumpstart configuration available."
+      ],
+      "configurations": [],
+      "boosterEvRecordCount": 12,
+      "boosterEvSampleSizes": [
+        5000
+      ]
+    }
+  ]
+}

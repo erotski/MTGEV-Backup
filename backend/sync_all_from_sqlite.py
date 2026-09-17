@@ -89,7 +89,7 @@ def run_sync():
             cursor.execute("SELECT code, name FROM sets")
             set_name_map = {r[0].lower(): r[1] for r in cursor.fetchall()}
             has_sqlite = True
-            print(f"✔ Extracted {len(sealed_products)} sealed products from MTGJSON SQLite.")
+            print(f"[OK] Extracted {len(sealed_products)} sealed products from MTGJSON SQLite.")
         except Exception as e:
             print(f"Note: SQLite unavailable ({e}), using JSON data directly.")
             has_sqlite = False
@@ -106,16 +106,16 @@ def run_sync():
                 sets_data = json.load(f)
                 for s in sets_data:
                     set_name_map[(s.get("code") or "").lower()] = s.get("name")
-        print(f"✔ Loaded {len(sealed_products)} sealed products from JSON.")
+        print(f"[OK] Loaded {len(sealed_products)} sealed products from JSON.")
     with_contents = [p for p in sealed_products if p.get("contents")]
-    print(f"✔ {len(with_contents)} products have explicit MTGJSON contents.")
+    print(f"[OK] {len(with_contents)} products have explicit MTGJSON contents.")
 
     # Save sealed_products.json
     for out_dir in [PUBLIC_DATA_DIR, DIST_DATA_DIR]:
         out_dir.mkdir(parents=True, exist_ok=True)
         with open(out_dir / "sealed_products.json", "w", encoding="utf-8") as f:
             json.dump(sealed_products, f, indent=2)
-    print("✔ Saved sealed_products.json to public/data and dist/data.")
+    print("[OK] Saved sealed_products.json to public/data and dist/data.")
 
     # 3. Load Booster EV table
     booster_ev_lookup = {}
@@ -209,7 +209,7 @@ def run_sync():
         })
 
     arbitrage_records.sort(key=lambda x: x["arbitrageValue"], reverse=True)
-    print(f"✔ Generated {len(arbitrage_records)} arbitrage leaderboard records.")
+    print(f"[OK] Generated {len(arbitrage_records)} arbitrage leaderboard records.")
 
     for out_dir in [PUBLIC_DATA_DIR, DIST_DATA_DIR]:
         with open(out_dir / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:

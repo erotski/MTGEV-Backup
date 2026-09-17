@@ -625,11 +625,12 @@ export function resolveRecursiveProductAudit(
       totalPacks += count;
       totalVariableEv += subtotalEv;
       totalEv += subtotalEv;
-      totalMinEv += Number((count * res.unitEvMin).toFixed(2));
-      totalMin5Ev += Number((count * res.unitEvMin5).toFixed(2));
-      totalMid90Ev += Number((count * res.unitEvMid90).toFixed(2));
-      totalMax5Ev += Number((count * res.unitEvMax5).toFixed(2));
-      totalMaxEv += Number((count * res.unitEvMax).toFixed(2));
+      // NOTE: min/mid90/max are NOT accumulated here. Unlike the mean, order
+      // statistics don't scale linearly with pack count (opening N packs and
+      // getting the single worst/best pack N times in a row is not the real
+      // N-pack floor/ceiling) — see PROJECT_REVIEW.md DEV-28. The backend's
+      // real Monte Carlo convolution (product_metrics.json/arbitrage) is the
+      // only valid source for those; see the end-of-function backfill below.
 
       const pEntry = {
         packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
@@ -952,7 +953,18 @@ export function resolveRecursiveProductAudit(
         let unitMax5 = 0;
         let unitMax = 0;
 
-        if (childAudit.totalEv > 0) {
+        if (childArb && childArb.totalEvAvg > 0) {
+          // Backend arbitrage/composite record for this exact child product wins
+          // over a frontend re-derivation of the same value (see PROJECT_REVIEW.md
+          // DEV-11/DEV-28/DEV-29) — the recursive audit remains for structural
+          // display and as a fallback when no backend record exists.
+          unitEv = Number(Number(childArb.totalEvAvg).toFixed(2));
+          unitMin = Number(Number(childArb.unitEvMin || 0).toFixed(2));
+          unitMin5 = Number(Number(childArb.unitEvMin5 || 0).toFixed(2));
+          unitMid90 = Number(Number(childArb.unitEvMid90 || 0).toFixed(2));
+          unitMax5 = Number(Number(childArb.unitEvMax5 || 0).toFixed(2));
+          unitMax = Number(Number(childArb.unitEvMax || 0).toFixed(2));
+        } else if (childAudit.totalEv > 0) {
           unitEv = Number((childAudit.totalEv / count).toFixed(2));
           unitMin = childAudit.totalMinEv > 0
             ? Number((childAudit.totalMinEv / count).toFixed(2))
@@ -969,13 +981,6 @@ export function resolveRecursiveProductAudit(
           unitMax = childAudit.totalMaxEv > 0
             ? Number((childAudit.totalMaxEv / count).toFixed(2))
             : 0;
-        } else if (childArb && childArb.totalEvAvg > 0) {
-          unitEv = Number(Number(childArb.totalEvAvg).toFixed(2));
-          unitMin = Number(Number(childArb.unitEvMin || 0).toFixed(2));
-          unitMin5 = Number(Number(childArb.unitEvMin5 || 0).toFixed(2));
-          unitMid90 = Number(Number(childArb.unitEvMid90 || 0).toFixed(2));
-          unitMax5 = Number(Number(childArb.unitEvMax5 || 0).toFixed(2));
-          unitMax = Number(Number(childArb.unitEvMax || 0).toFixed(2));
         }
 
         const subtotalEv = Number((count * unitEv).toFixed(2));
@@ -1025,11 +1030,8 @@ export function resolveRecursiveProductAudit(
           totalPacks += count;
           totalVariableEv += subtotalEv;
           totalEv += subtotalEv;
-          totalMinEv += Number((count * res.unitEvMin).toFixed(2));
-          totalMin5Ev += Number((count * res.unitEvMin5).toFixed(2));
-          totalMid90Ev += Number((count * res.unitEvMid90).toFixed(2));
-          totalMax5Ev += Number((count * res.unitEvMax5).toFixed(2));
-          totalMaxEv += Number((count * res.unitEvMax).toFixed(2));
+          // See the direct-packs section above: min/mid90/max are intentionally
+          // not linearly scaled by pack count here.
 
           const pEntry = {
             packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
@@ -1208,11 +1210,9 @@ export function resolveRecursiveProductAudit(
 
       totalVariableEv += slotEv;
       totalEv += slotEv;
-      totalMinEv += Number((minConfigEv * multiplier).toFixed(2));
-      totalMin5Ev += Number((minConfigEv * multiplier).toFixed(2));
-      totalMid90Ev += Number((slotEv * multiplier).toFixed(2));
-      totalMax5Ev += Number((maxConfigEv * multiplier).toFixed(2));
-      totalMaxEv += Number((maxConfigEv * multiplier).toFixed(2));
+      // Same reasoning as the direct-packs section: a variable slot's min/max
+      // configuration EV does not linearly scale with multiplier copies of
+      // that slot, so it is intentionally left out of the min/mid90/max totals.
 
       variableItems.push({
         slotIndex: sIdx + 1,

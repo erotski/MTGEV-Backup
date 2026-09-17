@@ -121,9 +121,20 @@ class DatabaseBoosterEVEngine:
     entry = self.collation_overrides.get(
       f'{set_code.upper()}:{booster_name.lower()}'
     )
-    if not entry or not entry.get('fixedByDefault', False):
+    if not entry:
       return None
-    return sheet_name not in set(entry.get('variableSheets', []))
+    if 'fixedSheets' in entry:
+      fixed_sheets = set(entry['fixedSheets'])
+      known_sheets = set(entry.get('sheetNames', []))
+      if known_sheets and sheet_name not in known_sheets:
+        print(
+            f'   -> WARNING: SQL sheet {set_code}:{booster_name}:{sheet_name} '
+            'is absent from synchronized metadata; treating it as variable'
+        )
+      return sheet_name in fixed_sheets
+    if entry.get('fixedByDefault', False):
+      return sheet_name not in set(entry.get('variableSheets', []))
+    return None
 
   def _init_database_schema(self):
     """Creates the target MySQL table with indexes for high-speed querying."""

@@ -51,9 +51,9 @@ def export_all():
         sets = cursor.fetchall()
         with open(OUTPUT_DIR / "sets.json", "w", encoding="utf-8") as f:
             json.dump(sets, f, indent=2, default=str)
-        print(f"  ✔ Exported {len(sets)} active sets")
+        print(f"  [OK] Exported {len(sets)} active sets")
     except Exception as e:
-        print(f"  ✘ Error exporting sets: {e}")
+        print(f"  [ERROR] Error exporting sets: {e}")
 
     # 2. Export Sealed Products with True Market Prices
     print(">> 2. Exporting sealed_products.json...")
@@ -83,9 +83,9 @@ def export_all():
                     pass
         with open(OUTPUT_DIR / "sealed_products.json", "w", encoding="utf-8") as f:
             json.dump(products, f, indent=2, default=str)
-        print(f"  ✔ Exported {len(products)} sealed products")
+        print(f"  [OK] Exported {len(products)} sealed products")
     except Exception as e:
-        print(f"  ✘ Error exporting sealed products: {e}")
+        print(f"  [ERROR] Error exporting sealed products: {e}")
 
     # 3. Export Booster EV Simulation Results
     print(">> 3. Exporting booster_ev.json...")
@@ -124,9 +124,9 @@ def export_all():
 
         with open(OUTPUT_DIR / "booster_ev.json", "w", encoding="utf-8") as f:
             json.dump(ev_results, f, indent=2, default=str)
-        print(f"  ✔ Exported {len(ev_results)} booster EV simulations")
+        print(f"  [OK] Exported {len(ev_results)} booster EV simulations")
     except Exception as e:
-        print(f"  ✘ Error exporting booster EV results: {e}")
+        print(f"  [ERROR] Error exporting booster EV results: {e}")
 
     # 3b. Export weighted booster pricing reliability by named vendor.
     print(">> 3b. Exporting pricing_reliability.json...")
@@ -174,9 +174,9 @@ def export_all():
 
         with open(OUTPUT_DIR / "pricing_reliability.json", "w", encoding="utf-8") as f:
             json.dump({"vendors": reliability}, f, indent=2)
-        print(f"  ✔ Exported reliability for {len(reliability)} vendor/mode combinations")
+        print(f"  [OK] Exported reliability for {len(reliability)} vendor/mode combinations")
     except Exception as e:
-        print(f"  ✘ Error exporting pricing reliability: {e}")
+        print(f"  [ERROR] Error exporting pricing reliability: {e}")
 
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
     print(">> 4. Exporting arbitrage_leaderboard.json...")
@@ -548,7 +548,7 @@ def export_all():
 
         with open(OUTPUT_DIR / "arbitrage_leaderboard.json", "w", encoding="utf-8") as f:
             json.dump(valid_arbs, f, indent=2, default=str)
-        print(f"  ✔ Exported {len(valid_arbs)} product arbitrage opportunities")
+        print(f"  [OK] Exported {len(valid_arbs)} product arbitrage opportunities")
 
         product_metrics = []
         generated_at = datetime.now(timezone.utc).isoformat()
@@ -581,9 +581,9 @@ def export_all():
 
         with open(OUTPUT_DIR / "product_metrics.json", "w", encoding="utf-8") as f:
             json.dump(product_metrics, f, indent=2, allow_nan=False)
-        print(f"  ✔ Exported {len(product_metrics)} complete-product metric records")
+        print(f"  [OK] Exported {len(product_metrics)} complete-product metric records")
     except Exception as e:
-        print(f"  ✘ Error exporting arbitrage leaderboard: {e}")
+        print(f"  [ERROR] Error exporting arbitrage leaderboard: {e}")
 
     # 5. Export / Update single_card_prices.json with genuine DB prices
     print("\n>> 5. Exporting single_card_prices.json from MTGJSON prices table...")
@@ -650,7 +650,7 @@ def export_all():
                 del prices["all"]
                 normalized_count += 1
         if normalized_count:
-            print(f"  ✔ Normalized {normalized_count} legacy 'all' vendor price keys to 'all_cheapest'")
+            print(f"  [OK] Normalized {normalized_count} legacy 'all' vendor price keys to 'all_cheapest'")
 
         existing_single_prices["byUuid"] = by_uuid
         existing_single_prices["byName"] = by_name
@@ -664,9 +664,9 @@ def export_all():
             with open(dist_single_prices / "single_card_prices.json", "w", encoding="utf-8") as sf:
                 json.dump(existing_single_prices, sf, indent=2)
 
-        print(f"  ✔ Exported single_card_prices.json with {updated_count} cards updated from MTGJSON DB ({len(by_uuid)} total indexed)")
+        print(f"  [OK] Exported single_card_prices.json with {updated_count} cards updated from MTGJSON DB ({len(by_uuid)} total indexed)")
     except Exception as e:
-        print(f"  ✘ Error exporting single_card_prices.json: {e}")
+        print(f"  [ERROR] Error exporting single_card_prices.json: {e}")
 
     cursor.close()
     conn.close()
