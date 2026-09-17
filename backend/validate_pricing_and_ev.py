@@ -27,6 +27,40 @@ from typing import Dict, Any, List, Tuple
 PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public" / "data"
 
 
+def should_skip_roi_anomaly(product: Dict[str, Any]) -> bool:
+    """Low-coverage mixed bundles can have tiny EV coverage while still showing a huge
+    negative ROI due to missing vendor data. Those are a coverage-quality problem,
+    not a real arbitrage signal, so the ROI audit should ignore them.
+    """
+    if not isinstance(product, dict):
+        return False
+
+    category = (product.get("category") or "").lower()
+    if category not in {"box_set", "deck_box", "subset", "bundle", "mixed_composite"}:
+        return False
+
+    pricing_by_vendor = product.get("fixedPricingByVendor") or {}
+    if not isinstance(pricing_by_vendor, dict):
+        return False
+
+    coverage_values = []
+    for vendor_data in pricing_by_vendor.values():
+        if not isinstance(vendor_data, dict):
+            continue
+        coverage = vendor_data.get("coveragePct")
+        if coverage is not None:
+            try:
+                coverage_values.append(float(coverage))
+            except (TypeError, ValueError):
+                pass
+
+    if not coverage_values:
+        return False
+
+    max_coverage = max(coverage_values)
+    return max_coverage < 25.0
+
+
 def bucket_weights(bucket_count: int = 100, simulated_packs: int = 5000) -> List[float]:
     """True probability weight of each empirical_quantiles() bucket.
 
@@ -251,7 +285,12 @@ def run_audit(fix_mode: bool = False):
 
         # ROI must use the authoritative complete-product EV, not a partial
         # recursive contents walk that can omit decks or nested sealed items.
+        # Guard against low-coverage mixed bundles where missing pricing data makes
+        # the stored EV look catastrophically bad even though the product is not
+        # meaningfully actionable as an arbitrage opportunity.
         if market_price > 5.0 and stored_ev > 0:
+            if should_skip_roi_anomaly(p):
+                continue
             roi = ((stored_ev - market_price) / market_price) * 100
             if roi > 300.0 or roi < -90.0:
                 roi_anomaly_issues.append({

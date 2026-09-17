@@ -1,6 +1,38 @@
 {
-  "lastUpdated": "2026-09-16T13:03:38.437152+00:00",
+  "lastUpdated": "2026-09-17T14:19:20.953180+00:00",
   "runs": [
+    {
+      "id": "run-2026-09-17-141920",
+      "timestamp": "2026-09-17T14:19:20.733498+00:00",
+      "trigger": "scheduled_pipeline",
+      "status": "failed",
+      "durationSeconds": 0.22,
+      "quickTestLimit": null,
+      "quickTestSet": null,
+      "stages": [
+        {
+          "name": "download.py",
+          "description": "Download mtgjson data + sync MySQL",
+          "status": "failed",
+          "duration": 0.22,
+          "exitCode": 1,
+          "summary": [
+            "Traceback (most recent call last):",
+            "File \"C:\\gitev\\MTGEV\\backend\\download.py\", line 5, in <module>",
+            "from tqdm import tqdm",
+            "ModuleNotFoundError: No module named 'tqdm'"
+          ]
+        }
+      ],
+      "errors": [
+        {
+          "stage": "download.py",
+          "exitCode": 1,
+          "timestamp": "2026-09-17T14:19:20.952171+00:00",
+          "errorTrace": "Traceback (most recent call last):\n  File \"C:\\gitev\\MTGEV\\backend\\download.py\", line 5, in <module>\n    from tqdm import tqdm\nModuleNotFoundError: No module named 'tqdm'"
+        }
+      ]
+    },
     {
       "id": "run-2026-09-16-122024",
       "timestamp": "2026-09-16T12:20:24.534847+00:00",

@@ -65,6 +65,8 @@ The workflow is `.github/workflows/daily_mtg_ev_update.yml`. It provisions a tem
 
 **Vercel's Git integration "Production Branch" is `data-sync`, not `main`.** `data-sync` is a full mirror of `main` (source + app code) with freshly generated `public/data/` overlaid on top, force-pushed by the workflow every run — pushing to it is what triggers the production deploy. `main` is for source development only and must never carry a stale, manually-committed copy of pipeline-generated JSON (see DEV-27 below for the incident this caused). The one-time CLI `vercel --prod` deploy step was removed from the workflow because it raced against Vercel's own Git-integration deploy from `data-sync` and could leave production pinned to whichever one deployed last.
 
+The weekly `.github/workflows/refresh_booster_collation_metadata.yml` workflow writes the compact fixed-sheet metadata overlay to a separate `collation-metadata` branch. The daily workflow fetches `public/data/booster_collation_overrides.json` from that branch before copying files into its isolated runner workspace, so `main` does not receive weekly bot commits and the daily run does not need to re-download `AllPrintings.json` solely for fixed-sheet metadata.
+
 ## 3. Repository Layers & Key Files
 
 | Layer | Main location | Responsibility |
@@ -217,6 +219,7 @@ A borrowed card price must remain distinguishable from an exact source price. Se
 - The authoritative full pipeline runs in GitHub Actions with a temporary MySQL 8 service.
 - Run manual workflows from `main`, not `data-sync`.
 - `data-sync` is for generated snapshots; source changes belong on `main`.
+- `collation-metadata` is for the weekly generated `booster_collation_overrides.json` overlay consumed by the daily pipeline.
 - Never commit audit samples or local generated caches.
 - A quick-test run (`QUICK_TEST_LIMIT` set) must never publish to `data-sync` or deploy to Vercel — this is enforced with `if: ${{ !inputs.quick_test_limit }}` on those workflow steps. Do not remove that guard.
 
@@ -378,6 +381,8 @@ For Scryfall artwork, use `cardIdentifiers.scryfallId` for the front face. `scry
 **`daily_update.py`** — Orchestrates all stages, captures telemetry, validates before publication, supports `--dry-run`, `--schedule`, `--loop`, and `--quick-test-limit N`. Sets `QUICK_TEST_LIMIT` env var when the flag is used, which propagates to subprocess stages automatically (they inherit the parent environment).
 
 **`download.py` / `download_prices_today.py`** — Stream the full MTGJSON AllPrintings/AllPricesToday SQL dumps into the ephemeral MySQL service. Large, network-dependent, and not shrunk by quick-test mode.
+
+**`sync_booster_fixed_metadata.py`** — Streams MTGJSON `AllPrintings.json` JSON data and writes `public/data/booster_collation_overrides.json`, the compact fixed-sheet metadata overlay for the SQL import's missing `BoosterSheet.fixed` field. It is run by the weekly metadata workflow and published to the `collation-metadata` branch; the daily workflow fetches that file before `populate_booster_ev_to_db.py` runs. The local `all_printings_json/` corpus remains ignored and must not be committed.
 
 **`lowest_prices.py`** — Builds the `lowest_prices` table (per uuid, per seller, per finish minimum price) used for cheapest-reprint resolution. Required before correct reprint pricing.
 
@@ -610,7 +615,7 @@ Statuses:
 | DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | Reference search, workflow review, and focused validation pass. |
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
-| DEV-20 | Jumpstart collation | P0 | NEXT | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | A reviewed Jumpstart inventory identifies each set/booster/sheet mix; representative audit files show fixed land/content counts, correct variance, and agreement with MTGJSON configuration. |
+| DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-17) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, and report classification. Remaining: full audited daily run and stronger fixed-card manifest audit. |
 | DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation. | GitHub Actions review found no frontend curve-selection mismatches. Note: a separate, real curve-integrity bug was found and fixed at the backend vendor-discovery layer — see DEV-23. |
 | DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Root cause (booster-sheet cards never priced, legacy `all` key) found and fixed in source (see DEV-05, DEV-23). Pending: a full non-quick-test pipeline run to confirm chase-card coverage improves broadly, not just for spot-checked products. |
 | DEV-23 | Booster vendor discovery integrity | P0 | IN PROGRESS | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | `NAMED_VENDORS` allowlist added to `populate_booster_ev_to_db.py` and `export_product_chase_cards.py`; DELETE query fixed to target `'all'` instead of `'all_cheapest'`. Pending: full pipeline run confirming MKM (and any other affected sets) now produce a real `all_cheapest` row. |
@@ -654,7 +659,7 @@ Recommended representative fixtures: one single booster; one booster box or bund
 
 1. Enumerate all current Jumpstart set codes from `public/data/booster_ev.json` and the raw MTGJSON JSON source.
 2. Review each Jumpstart sheet mix and classify sheets as `fixed`, `variable`, or `unknown`.
-3. Add reviewed corrections to a centralized `public/data/booster_collation_overrides.json` file rather than modifying the MySQL dump.
+3. Generate the centralized `public/data/booster_collation_overrides.json` overlay weekly from MTGJSON JSON metadata and publish it to the `collation-metadata` branch rather than modifying the MySQL dump or committing the overlay to `main`.
 4. Apply that overlay in `load_booster_config_from_db` after the normal MySQL load.
 5. During simulation, treat fixed entries as deterministic card selections/counts rather than weighted random draws.
 6. Keep wildcard rare/mythic or other explicitly variable sheets random.

@@ -62,6 +62,15 @@ jobs:
           sudo apt-get install -y mysql-client
           pip install mysql-connector-python requests tqdm numpy ijson
 
+      - name: Fetch booster collation metadata overlay
+        run: |
+          set -e
+          git fetch origin collation-metadata
+          mkdir -p public/data
+          git show origin/collation-metadata:public/data/booster_collation_overrides.json \
+            > public/data/booster_collation_overrides.json
+          test -s public/data/booster_collation_overrides.json
+
       - name: Prepare Isolated Pipeline Workspace
         run: |
           set -e
@@ -158,6 +167,7 @@ jobs:
             public/data/single_card_prices.json \
             public/data/pricing_reliability.json \
             public/data/product_chase_cards.json \
+            public/data/booster_collation_overrides.json \
             public/data/jumpstart_validation_report.json \
             public/data/precon_decks.json \
             public/data/pipeline_execution_logs.json \

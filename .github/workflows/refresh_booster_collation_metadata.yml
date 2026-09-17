@@ -54,15 +54,25 @@ jobs:
           print(f"Validated {report['fixedSheetCount']} fixed sheets across {report['setCount']} sets")
           PY
 
-      - name: Commit compact metadata artifacts
+      - name: Commit compact metadata artifacts to metadata branch
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/data/booster_collation_overrides.json
+          cp public/data/booster_collation_overrides.json /tmp/booster_collation_overrides.json
+          git fetch origin collation-metadata || true
+          if git show-ref --verify --quiet refs/remotes/origin/collation-metadata; then
+            git checkout -B collation-metadata origin/collation-metadata
+          else
+            git checkout --orphan collation-metadata
+            git rm -rf .
+          fi
+          mkdir -p public/data
+          cp /tmp/booster_collation_overrides.json public/data/booster_collation_overrides.json
+          git add -f public/data/booster_collation_overrides.json
           if git diff --staged --quiet; then
             echo "No collation metadata changes."
           else
             git commit -m "Refresh booster fixed-sheet metadata [skip ci]"
-            git push origin main
+            git push origin collation-metadata
           fi
