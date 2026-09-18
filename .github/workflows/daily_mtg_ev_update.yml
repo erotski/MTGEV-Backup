@@ -130,6 +130,7 @@ jobs:
           set -e
           test -s public/data/product_chase_cards.json
           test -s public/data/jumpstart_validation_report.json
+          test -s public/data/snapshot_manifest.json
           test -s public/data/latest_pipeline_run.json
           test -s public/data/pipeline_execution_logs.json
 
@@ -169,6 +170,7 @@ jobs:
             public/data/product_chase_cards.json \
             public/data/booster_collation_overrides.json \
             public/data/jumpstart_validation_report.json \
+            public/data/snapshot_manifest.json \
             public/data/precon_decks.json \
             public/data/pipeline_execution_logs.json \
             public/data/latest_pipeline_run.json

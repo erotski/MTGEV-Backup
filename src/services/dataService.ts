@@ -1,4 +1,4 @@
-import { SetOption, BoosterEVRecord, BoxArbitrageRecord, ProductMetricsRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport } from '../types';
+import { SetOption, BoosterEVRecord, BoxArbitrageRecord, ProductMetricsRecord, PricingReliability, PipelineRunRecord, SnapshotIntegrityReport, SnapshotManifest } from '../types';
 import { BoosterVariation, SheetConfig } from '../ecommerceBoosterData';
 import { 
   loadScryfallHierarchy, 
@@ -173,16 +173,35 @@ class DataService {
     }
   }
 
+  public async getSnapshotManifest(): Promise<SnapshotManifest | null> {
+    try {
+      const response = await fetch('/data/snapshot_manifest.json', { cache: 'no-cache' });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data && typeof data === 'object' ? data as SnapshotManifest : null;
+    } catch {
+      return null;
+    }
+  }
+
   public async getSnapshotIntegrityReport(): Promise<SnapshotIntegrityReport> {
     if (this.snapshotIntegrityReport) {
       return this.snapshotIntegrityReport;
     }
 
     const warnings: string[] = [];
-    const metadata = await this.getLatestPipelineRun();
+    const [metadata, manifest] = await Promise.all([
+      this.getLatestPipelineRun(),
+      this.getSnapshotManifest(),
+    ]);
 
     if (!metadata) {
       warnings.push('No /data/latest_pipeline_run.json snapshot metadata found.');
+    }
+    if (!manifest) {
+      warnings.push('No /data/snapshot_manifest.json snapshot identity found.');
+    } else if (manifest.schemaVersion !== 1 || !manifest.pipelineRunId || !manifest.sourceCommit) {
+      warnings.push('Snapshot manifest is missing schemaVersion, pipelineRunId, or sourceCommit.');
     }
 
     const [sets, sealedProducts, boosterEv, productMetrics] = await Promise.all([
@@ -203,6 +222,9 @@ class DataService {
     }
 
     const metadataRunId = metadata?.pipelineRunId || metadata?.id;
+    if (manifest?.pipelineRunId && metadataRunId && manifest.pipelineRunId !== metadataRunId) {
+      warnings.push(`Snapshot identity mismatch: manifest ${manifest.pipelineRunId} does not match latest run ${metadataRunId}.`);
+    }
     const snapshotRunIds = new Set(
       productMetrics
         .map((record: any) => record.pipelineRunId)
@@ -225,6 +247,7 @@ class DataService {
       ok: warnings.length === 0,
       warnings,
       metadata,
+      manifest,
     };
     this.snapshotIntegrityReport = report;
     if (warnings.length > 0) {

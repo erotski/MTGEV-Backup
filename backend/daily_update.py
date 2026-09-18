@@ -55,6 +55,13 @@ TELEMETRY_OUTPUTS = (
     "latest_pipeline_run.json",
 )
 
+SNAPSHOT_MANIFEST = "snapshot_manifest.json"
+PUBLISHED_SNAPSHOT_FILES = (
+    *REQUIRED_OUTPUTS,
+    "pricing_validator_diagnostics.json",
+    *TELEMETRY_OUTPUTS,
+)
+
 
 def get_quick_test_limit():
     """Optional cap on sets/products processed by the heaviest stages, read
@@ -121,6 +128,34 @@ def write_latest_run_file(run_record: dict):
         log.warning("Could not write latest pipeline run JSON: %s", error)
 
 
+def write_snapshot_manifest(run_id: str, generated_at: str, audit_enabled: bool) -> None:
+    """Write one identity record for the atomically published data bundle."""
+    data_dir = Path(__file__).parent.parent / "public" / "data"
+    source_commit = os.environ.get("GITHUB_SHA")
+    if not source_commit:
+        try:
+            source_commit = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=Path(__file__).parent.parent,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            ).strip()
+        except (OSError, subprocess.SubprocessError):
+            source_commit = "unknown"
+
+    manifest = {
+        "schemaVersion": 1,
+        "pipelineRunId": run_id,
+        "sourceCommit": source_commit,
+        "generatedAt": generated_at,
+        "auditEnabled": audit_enabled,
+        "files": list(PUBLISHED_SNAPSHOT_FILES),
+    }
+    with (data_dir / SNAPSHOT_MANIFEST).open("w", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+
 def run_script(script_name: str, description: str) -> tuple[bool, float, int, str, list[str]]:
     path = Path(__file__).parent / script_name
     log.info(">>  %s - %s", script_name, description)
@@ -169,6 +204,18 @@ def validate_output_bundle() -> tuple[bool, str]:
                 json.load(handle)
         except (OSError, json.JSONDecodeError) as error:
             return False, f"Invalid JSON in {path}: {error}"
+    manifest_path = data_dir / SNAPSHOT_MANIFEST
+    if not manifest_path.exists() or manifest_path.stat().st_size == 0:
+        return False, f"Missing or empty output: {manifest_path}"
+    try:
+        with manifest_path.open("r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except (OSError, json.JSONDecodeError) as error:
+        return False, f"Invalid JSON in {manifest_path}: {error}"
+    if not isinstance(manifest, dict) or not manifest.get("pipelineRunId") or not manifest.get("sourceCommit"):
+        return False, "snapshot_manifest.json is missing pipelineRunId or sourceCommit"
+    if manifest.get("schemaVersion") != 1 or manifest.get("files") != list(PUBLISHED_SNAPSHOT_FILES):
+        return False, "snapshot_manifest.json has an invalid schema or file list"
     return True, ""
 
 
@@ -365,6 +412,7 @@ def validate_telemetry_outputs() -> tuple[bool, str]:
 
 def run_all() -> bool:
     start_dt = datetime.now(timezone.utc)
+    run_id = f"run-{start_dt.strftime('%Y-%m-%d-%H%M%S')}"
     quick_test_limit = get_quick_test_limit()
     quick_test_set = get_quick_test_set()
     if quick_test_set:
@@ -401,6 +449,19 @@ def run_all() -> bool:
             break
 
     if not failures:
+        try:
+            audit_enabled = os.environ.get("AUDIT_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+            write_snapshot_manifest(run_id, start_dt.isoformat(), audit_enabled)
+        except (OSError, TypeError, ValueError) as error:
+            failures.append("snapshot_manifest")
+            error_records.append({
+                "stage": "snapshot_manifest",
+                "exitCode": 1,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "errorTrace": str(error),
+            })
+
+    if not failures:
         outputs_valid, output_error = validate_output_bundle()
         if not outputs_valid:
             failures.append("output_bundle")
@@ -428,7 +489,7 @@ def run_all() -> bool:
     overall_status = "failed" if failures else "success"
 
     run_record = {
-        "id": f"run-{start_dt.strftime('%Y-%m-%d-%H%M%S')}",
+        "id": run_id,
         "timestamp": start_dt.isoformat(),
         "trigger": "scheduled_pipeline",
         "status": overall_status,

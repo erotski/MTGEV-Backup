@@ -81,6 +81,16 @@ export interface SnapshotIntegrityReport {
   ok: boolean;
   warnings: string[];
   metadata: PipelineRunRecord | null;
+  manifest: SnapshotManifest | null;
+}
+
+export interface SnapshotManifest {
+  schemaVersion?: number;
+  pipelineRunId?: string;
+  sourceCommit?: string;
+  generatedAt?: string;
+  auditEnabled?: boolean;
+  files?: string[];
 }
 
 export interface ProductContentsCard {
