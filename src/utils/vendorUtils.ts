@@ -178,5 +178,5 @@ export function findBoosterEv(
   );
   if (match) return match;
 
-  return records.find((r) => matchesCode(r.boosterName)) || records[0];
+  return records.find((r) => matchesCode(r.boosterName));
 }

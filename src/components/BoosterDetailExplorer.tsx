@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, PreconstructedDeckDetail, ProductMetricsRecord, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
-import { normalizeVendor } from '../utils/vendorUtils';
+import { normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
 import { resolveRecursiveProductAudit } from '../utils/productUtils';
 import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildCommanderSetCodes, getChildSets, getScryfallNode } from '../utils/setHierarchyUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
@@ -262,9 +262,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         const metric = productMetrics.find((item) =>
           item.productUuid === productId && item.vendor === selectedVendor && item.priceMode === priceMode
         );
+        // Raw sealed_products.json records never carry a top-level `boosterName` field
+        // (that only exists on booster_ev.json records) — `sp.boosterName` was always
+        // undefined, so every product silently defaulted to 'play'. Derive the real
+        // booster code from the product's own contents.pack[0].code when present (the
+        // authoritative source for a single-booster leaf product), falling back to
+        // subtype/category/name inference only when no pack entry exists.
+        const ownPackCode = Array.isArray(sp.contents?.pack) ? sp.contents.pack[0]?.code : undefined;
+        const primaryBoosterName = ownPackCode
+          ? String(ownPackCode).toLowerCase()
+          : normalizeBoosterCode(sp.subtype || sp.category || pName);
         const metrics = {
           marketPrice: metric?.marketPrice ?? Number(sp.marketPrice || sp.tcgplayer_price || 0),
-          primaryBoosterName: sp.boosterName || 'play',
+          primaryBoosterName,
           packsCount: metric?.packCount ?? 0,
           cardCount: metric?.cardCount ?? Number(sp.cardCount || 0),
           estimatedEv: metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0,
@@ -273,9 +283,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         let basePrice = metrics.marketPrice;
         if (basePrice === 0) {
           basePrice = Number(sp.marketPrice || sp.tcgplayer_price || 0);
-        }
-        if (basePrice === 0 && (metrics.primaryBoosterName === 'box-topper' || pName.toLowerCase().includes('topper'))) {
-          basePrice = 9.99;
         }
 
         return {
@@ -500,8 +507,11 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     if (gatewayMetrics) {
       return {
         estimatedEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,
-        fixedBaseEv: 0,
-        variableEv: gatewayMetrics.totalEvAvg,
+        // product_metrics.json carries one combined total, not a real fixed/variable split —
+        // leave these unset so productFixedBaseEv/productVariableEv fall back to the
+        // structural productAudit breakdown below instead of a fabricated $0 base.
+        fixedBaseEv: undefined as number | undefined,
+        variableEv: undefined as number | undefined,
         minEv: gatewayMetrics.totalEvMin,
         min5Ev: gatewayMetrics.totalEvMin,
         mid90Ev: gatewayMetrics.totalEvMid90,
@@ -568,7 +578,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const productTotalCards =
     productAudit && productAudit.totalCards > 0
       ? productAudit.totalCards
-      : activeProduct?.cardCount || (isPreconProduct ? 100 : undefined);
+      : activeProduct?.cardCount || undefined;
 
   const productMarketPrice = activeProduct?.marketPrice && activeProduct.marketPrice > 0 ? activeProduct.marketPrice : (canonicalMetrics?.marketPrice || packMarketPrice);
 

@@ -682,12 +682,16 @@ def run_composite_evaluator(target_set=None):
             pack_specs = []
 
             for (p_set, p_code), count in packs_dict.items():
-                # Look up booster quantiles
+                # Look up booster quantiles for the exact pack code only. A pack code with
+                # no simulated booster_ev record (e.g. "prerelease", which MTGJSON does not
+                # model as a simulated booster type) must remain unpriced/unresolved here —
+                # it must NEVER silently borrow the "play" booster's distribution, which
+                # previously fabricated an extra phantom Play Booster draw on top of any
+                # genuinely-contained play boosters (see PROJECT_REVIEW.md DEV-11/DEV-28
+                # "no invented substitute data" rule).
                 booster_entry = (
                     booster_lookup.get((p_set, p_code, v, "direct")) or
-                    booster_lookup.get((p_set, p_code, "all_cheapest", "direct")) or
-                    booster_lookup.get((p_set, "play", v, "direct")) or
-                    booster_lookup.get((p_set, "default", v, "direct"))
+                    booster_lookup.get((p_set, p_code, "all_cheapest", "direct"))
                 )
                 if booster_entry and booster_entry.get("quantiles"):
                     pack_specs.append((count, booster_entry["quantiles"], booster_entry["evAverage"]))

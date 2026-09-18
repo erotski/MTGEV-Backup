@@ -607,6 +607,56 @@ export function resolveRecursiveProductAudit(
     visited.add(pId);
   }
 
+  // A sealed product whose own category is a single booster pack describes ITSELF via
+  // contents.pack (MTGJSON links a booster-pack product to its own booster configuration
+  // for simulation purposes) — this is identity metadata, not a contained child product.
+  // Without this guard, recursing into such a leaf (e.g. as a `sealed` sub-item of a parent
+  // composite) fabricated a spurious duplicate "PLAY Booster Pack" sub-item underneath a
+  // product that is already that exact booster pack.
+  const isLeafBoosterPackProduct =
+    (product?.category || '').toLowerCase() === 'booster_pack' &&
+    Array.isArray(prodContents.pack) &&
+    prodContents.pack.length === 1 &&
+    !prodContents.card &&
+    !prodContents.deck &&
+    !prodContents.sealed &&
+    !prodContents.variable;
+
+  if (isLeafBoosterPackProduct) {
+    const pk = prodContents.pack[0];
+    const count = multiplier;
+    const res = resolveBoosterPackEv(pk, parentSet, boosterEvMap, vendor, priceMode);
+    const cardsPerPack = getCardsPerPack(pk.code, product.category, product.subtype);
+    const effectiveUnitEv =
+      evBasis === 'min' ? res.unitEvMin :
+      evBasis === 'mid90' ? res.unitEvMid90 :
+      evBasis === 'max' ? res.unitEvMax :
+      res.unitEvAvg;
+    const leafEv = Number((count * effectiveUnitEv).toFixed(2));
+    return {
+      totalCards: count * cardsPerPack,
+      totalPacks: count,
+      totalDecks: 0,
+      totalSealedUnits: 0,
+      totalFixedEv: 0,
+      totalVariableEv: leafEv,
+      totalEv: leafEv,
+      totalMinEv: Number((count * res.unitEvMin).toFixed(2)),
+      totalMin5Ev: Number((count * res.unitEvMin5).toFixed(2)),
+      totalMid90Ev: Number((count * res.unitEvMid90).toFixed(2)),
+      totalMax5Ev: Number((count * res.unitEvMax5).toFixed(2)),
+      totalMaxEv: Number((count * res.unitEvMax).toFixed(2)),
+      quantiles: res.quantiles,
+      items: [],
+      packItems: [],
+      cardItems: [],
+      sealedItems: [],
+      deckItems: [],
+      variableItems: [],
+      otherItems: [],
+    };
+  }
+
   // 1. DIRECT PACKS
   if (prodContents.pack && Array.isArray(prodContents.pack)) {
     prodContents.pack.forEach((pk: any) => {
