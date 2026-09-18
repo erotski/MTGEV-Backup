@@ -78,6 +78,18 @@ jobs:
           mkdir -p ../mtgev-pipeline-workspace
           rsync -a --exclude='.git' --exclude='node_modules' ./ ../mtgev-pipeline-workspace/
 
+      - name: Run focused backend regression tests
+        run: |
+          set -e
+          python -m unittest \
+            backend.test_pricing_validator \
+            backend.test_ev_statistics \
+            backend.test_pipeline_bucket_contract \
+            backend.test_jumpstart_collation \
+            backend.test_jumpstart_validation_report \
+            backend.test_product_chase_cards \
+            backend.test_product_metrics_contract
+
       - name: Execute Daily Update Pipeline & JSON Export
         env:
           DB_HOST: 127.0.0.1
@@ -170,6 +182,7 @@ jobs:
             public/data/product_chase_cards.json \
             public/data/booster_collation_overrides.json \
             public/data/jumpstart_validation_report.json \
+            public/data/pricing_validator_diagnostics.json \
             public/data/snapshot_manifest.json \
             public/data/precon_decks.json \
             public/data/pipeline_execution_logs.json \

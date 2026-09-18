@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChaseCard } from '../types';
 import { CatalogPackProduct } from '../ecommerceBoosterData';
-import { getCardProductAvailability, getScryfallImageUrl } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   Sparkles,
@@ -21,15 +20,10 @@ import {
 
 const lower = (value: unknown) => String(value ?? '').toLowerCase();
 
-interface FlippableCardImageProps {
-  card: ChaseCard;
-  version?: 'normal' | 'large';
-}
-
-const FlippableCardImage = ({ card, version = 'normal' }: FlippableCardImageProps) => {
+const FlippableCardImage = ({ card }: { card: ChaseCard }) => {
+  const frontUrl = card.imageUrl || '';
+  const backUrl = card.backImageUrl || '';
   const [showBack, setShowBack] = useState(false);
-  const frontUrl = getScryfallImageUrl(card.scryfallId, version);
-  const backUrl = getScryfallImageUrl(card.scryfallCardBackId, version, 'back');
 
   if (!frontUrl) {
     return (
@@ -494,7 +488,7 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                   const isFoilZoom = isEtchedZoom || zoomedCard.finish === 'foil' || lower(product.displayName).includes('foil');
               return (
                 <div className="aspect-[5/7] w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-lg relative">
-                  <FlippableCardImage card={zoomedCard} version="large" />
+                  <FlippableCardImage card={zoomedCard} />
 
                   {/* Rainbow Holographic Foil Sheen */}
                   {isFoilZoom && (
@@ -570,7 +564,6 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                 </div>
               )}
               {(() => {
-                const avail = getCardProductAvailability(zoomedCard, product);
                 const matchedProds = getMatchingProductsForCard(zoomedCard, allProducts);
                 return (
                   <div className="pt-2.5 border-t border-slate-200 space-y-2">
@@ -606,15 +599,8 @@ export const ProductChaseCardsViewer: React.FC<ProductChaseCardsViewerProps> = (
                         })}
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {avail.availableProductsList.map((pName, pIdx) => (
-                          <span
-                            key={pIdx}
-                            className="bg-indigo-50 text-indigo-900 border border-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-2xs"
-                          >
-                            {pName}
-                          </span>
-                        ))}
+                      <div className="text-[10px] text-slate-500">
+                        No matching product records are available in the published snapshot.
                       </div>
                     )}
                   </div>

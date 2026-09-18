@@ -24,6 +24,7 @@ Update this document whenever a change crosses backend, frontend, generated-data
 14. [Vendor Add/Remove Procedure](#14-vendor-addremove-procedure)
 15. [Change Management](#15-change-management)
 16. [Legacy Cleanup Candidates](#16-legacy-cleanup-candidates)
+17. [File Importance Matrix](#17-file-importance-matrix)
 
 ## 1. Project Purpose
 
@@ -75,7 +76,7 @@ The weekly `.github/workflows/refresh_booster_collation_metadata.yml` workflow w
 | Source ingestion | `backend/download.py`, `download_prices_today.py` | Loads MTGJSON and current price feeds into temporary MySQL. |
 | Price preparation | `backend/lowest_prices.py`, `price_resolver.py` | Resolves direct, reprint, vendor, finish, and aggregate prices. |
 | Booster simulation | `backend/populate_booster_ev_to_db.py`, `ev_statistics.py` | Simulates booster openings and produces empirical distributions. |
-| Product evaluation | `backend/composite_evaluator.py`, `ev_engine.py` | Evaluates nested, fixed, variable, and composite products. |
+| Product evaluation | `backend/composite_evaluator.py` | Evaluates nested, fixed, variable, and composite products. The obsolete SQLite/recursive `ev_engine.py` path was removed under DEV-30. |
 | Deck/chase export | `backend/load_deck_tables.py`, `export_product_chase_cards.py` | Loads deck contracts and exports product TOP 5 cards (resolves prices directly from MySQL). |
 | Validation | `backend/validate_pricing_and_ev.py`, `validate_composite_data.py`, `daily_update.py` | Checks output structure, EV consistency, quantiles, provenance, references. |
 | Published data | root `public/data/` | Authoritative immutable frontend snapshots. |
@@ -345,7 +346,7 @@ Required output files (`REQUIRED_OUTPUTS` in `daily_update.py`):
 ```text
 sets.json, sealed_products.json, booster_ev.json, arbitrage_leaderboard.json,
 single_card_prices.json, product_chase_cards.json, product_metrics.json,
-pricing_reliability.json, precon_decks.json
+pricing_reliability.json, precon_decks.json, pricing_validator_diagnostics.json
 ```
 
 Plus telemetry outputs (`TELEMETRY_OUTPUTS`), also required and semantically validated:
@@ -353,6 +354,9 @@ Plus telemetry outputs (`TELEMETRY_OUTPUTS`), also required and semantically val
 ```text
 pipeline_execution_logs.json, latest_pipeline_run.json
 ```
+
+The published bundle also contains `snapshot_manifest.json`, which binds the
+run ID, source commit, generation time, audit mode, and published file list.
 
 `daily_update.py` runs three validation passes before publication: `validate_output_bundle()` (file existence/JSON syntax), `validate_output_semantics()` (shape, numeric finiteness, unique product IDs, 100-bucket monotonicity, booster endpoint agreement with `evMin`/`evMax`, chase-card product-id cross-references), and `validate_telemetry_outputs()` (after the run record is written).
 
@@ -400,7 +404,7 @@ For Scryfall artwork, use `cardIdentifiers.scryfallId` for the front face. `scry
 
 **`ev_statistics.py`** — Single source of truth for the empirical 100-bucket calculation. Must be used by both booster and composite calculations; must not be replaced by summary-statistic interpolation.
 
-**`ev_engine.py`** — Recursive product EV resolver. **Verified 2026-09-17: not part of the production pipeline.** Its only two callers are `backend/sync_all_from_sqlite.py` and `scripts/recompute_arbitrage_leaderboard.py` — neither is invoked by `daily_update.py`'s `SCRIPTS` list nor by any `.github/workflows/*.yml` step (grep-confirmed against the whole repo). So it does not actually run side by side with `composite_evaluator.py` in production; the "overlap" is dormant/legacy code duplicating a superseded approach, not a live dual-path bug. Reclassified from "highest-priority consolidation" to a Section 16 deletion candidate, contingent on confirming `scripts/recompute_arbitrage_leaderboard.py` is also safe to retire (see DEV-30). Retains an intentional `vendor == "all"` → `"all_cheapest"` input-argument normalization for the same reason as `price_resolver.py` below.
+**`ev_engine.py`** — Removed 2026-09-18 with the obsolete SQLite sync path. It was not part of the production pipeline; the active complete-product EV implementation is `composite_evaluator.py`.
 
 **`price_resolver.py`** — Owns direct vendor, global-cheapest, reprint, and named-vendor-average card-price resolution; preserves provenance statuses (`exact`, `finish_fallback`, `vendor_fallback`, `vendor_finish_fallback`, `reprint`, `ignored`, `unpriced`). Retains an input-alias normalization (`target_vendor == 'all'` → `'all_cheapest'`) inside `resolve_card_price()`. **Verified 2026-09-17: currently unexercised.** `PriceResolver` has exactly one caller in the whole repo (`populate_booster_ev_to_db.py`), and that caller only ever passes a real named vendor (`s` from the `NAMED_VENDORS`-filtered `sellers` set) into `target_vendor` — the `'all_cheapest'`/`'all_average'` aggregates are computed through the separate `resolve_card_price_global()`/`resolve_card_price_average()` methods, never through this branch. So the normalization is defensive dead code today, not an active caller-input alias — it only matters if a future caller calls `resolve_card_price(..., target_vendor='all', ...)` directly. Safe to keep as a guard, but the doc's prior framing ("this is caller-input aliasing") overstated it as currently live.
 
@@ -417,7 +421,7 @@ For Scryfall artwork, use `cardIdentifiers.scryfallId` for the front face. `scry
 
 **`load_deck_tables.py`** — Creates temporary `decks`/`deckCards` tables when the MTGJSON dump omits them, loads the current `precon_decks.json` snapshot, enriches fixed deck cards with current price provenance, writes per-deck `pricingReliability` summaries.
 
-**`sync_all_from_sqlite.py`** — Legacy/alternative SQLite sync path. **Verified 2026-09-17: confirmed dead in the production pipeline.** Hardcodes `SQLITE_PATH = Path("/tmp/AllPrintings.sqlite")`, a file that does not exist anywhere in the GitHub Actions MySQL-based workflow (which never produces a local sqlite dump); not referenced by `daily_update.py` or any workflow YAML. It is the sole other caller of `ev_engine.py` besides `scripts/recompute_arbitrage_leaderboard.py`. Promoted from "pending history review" to a confirmed Section 16 deletion candidate (see DEV-30).
+**`sync_all_from_sqlite.py`** — Removed 2026-09-18. This obsolete SQLite path was not referenced by the MySQL-based production workflow.
 
 **`validate_pricing_and_ev.py`** — Booster quantile skew audit, product contents-vs-EV consistency audit, ROI anomaly audit. Should be extended to validate `product_chase_cards.json` schema too.
 
@@ -470,7 +474,7 @@ The frontend never connects directly to MySQL. Its runtime inputs are generated 
 - `getProductMetricsSnapshot()` — loads the backend-generated `product_metrics.json` complete-product valuation snapshot. It must not call `productUtils.ts` or calculate EV in the browser.
 - Detailed views select product metrics from the loaded snapshot by product ID, vendor, price mode, and EV basis. There is no recursive valuation gateway.
 
-Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster_ev.json`, `arbitrage_leaderboard.json`, `product_metrics.json`, `single_card_prices.json`, `precon_decks.json`, `product_chase_cards.json`, `pricing_reliability.json`, `latest_pipeline_run.json`. Root `public/data/` is authoritative; `backend/public/data/` must remain absent.
+Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster_ev.json`, `arbitrage_leaderboard.json`, `product_metrics.json`, `single_card_prices.json`, `precon_decks.json`, `product_chase_cards.json`, `pricing_reliability.json`, `latest_pipeline_run.json`, `snapshot_manifest.json`. Root `public/data/` is authoritative; `backend/public/data/` must remain absent.
 
 ### Catalog and metadata layers
 
@@ -487,7 +491,7 @@ Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster
 - **`BoosterSlotViewer.tsx`** — converts DB booster records into UI models; must not fabricate odds or pricing.
 - **`ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`** — structural contents/fixed-cards/decks/nested-products display via `productUtils.ts`; product-level EV comes from the backend metrics snapshot.
 - **`ProductChaseCardsViewer.tsx`** — loads the direct-price record from `product_chase_cards.json` for the selected product/vendor. Resolves the product's chase-card record by matching `id`/`uuid`/`productUuid` against the snapshot's keys (case-insensitive fallback), and surfaces a specific diagnostic message (missing snapshot vs. no record for this vendor vs. no key match at all) instead of a generic empty state.
-- **`chaseCardsService.ts`** — reduced to image/metadata helpers and the curated Special Chases catalog; legacy product-candidate discovery functions removed.
+- **`ProductChaseCardsViewer.tsx`** — displays backend-generated product TOP 5 records and uses their UUID-derived artwork URLs; it does not maintain a separate curated or Scryfall lookup catalog.
 - **`SpecialChaseShowcase.tsx`** — curated/editorial, not equivalent to backend chase data; must be labeled as curated.
 - **`AdminPortal.tsx`** — pipeline logs, data health, admin controls; should eventually load `latest_pipeline_run.json` directly and distinguish stale/missing/failed/deployed states explicitly.
 
@@ -570,11 +574,11 @@ The most recent full pipeline run's `validate_pricing_and_ev.py` stage surfaced 
 
 | Category | Count (last observed run) | Meaning | Status |
 |---|---:|---|---|
-| Booster Quantile Outlier Skews | **443 records on deployed `data-sync` run `run-2026-09-16-210250`**; corrected local validator reports 0 | Quantile mean deviates >35% or <70% from the analytical `evAverage` for that booster/vendor/mode. | The deployed run used the pre-DEV-28 validator and still reported 443. The corrected validator's local re-run reports 0 because the original comparison used a biased arithmetic mean of the 100-point curve; this will be confirmed in production only after a new audited pipeline run from the current source. |
-| Product Contents vs EV Mismatches | **755 records on deployed `data-sync` run `run-2026-09-16-210250`** | A sealed product's stored total EV does not reconcile with the EV implied by walking its `contents` (packs/cards/decks/variable slots). | Root cause identified for a large share (see DEV-28): the same quantile endpoint-weighting bug inflated every multi-pack product's stored `totalEvAvg`, and it compounds with pack count — the worst offenders in the deployed data are large case/box products (e.g. Antiquities Booster Box Case: stored $84,305.30 vs recomputed $59,223.60, a 29.8% gap). Needs a new audited `data-sync` run from current source before this count can be considered post-fix. |
-| Extreme ROI Pricing Anomalies | **569 on deployed `data-sync` run `run-2026-09-16-210250`; 186 after local validator correction** | Product ROI (EV vs. market price) is an extreme outlier, e.g. -99%+ or implausibly high. | Root cause found for 383 records: the validator used a partial recursive `calcEv` whenever it was positive, even when the authoritative backend `storedEv` included decks/nested sealed contents that the validator walk omitted. The validator now uses `storedEv` for ROI and retains `calcEv` only as diagnostic context. Local run: 186 remain, with **108 deck records**, **148 mixed-composite records**, and **30 randomized records**; no positive-ROI anomalies remain. The lowest-EV tail includes promo packs, planeswalker/commander decks, and Secret Lair products, indicating a likely incomplete fixed-content/deck coverage issue mixed with genuine premium sealed pricing. Next triage should compare each low-EV product's stored `totalEvAvg`, deck lookup status, card coverage, and contents classification. |
+| Booster Quantile Outlier Skews | **0 on audited run `run-2026-09-18-103326`** | Quantile mean deviates >35% or <70% from the analytical `evAverage` for that booster/vendor/mode. | Closed for the current published run. The prior findings were caused by the validator's naive arithmetic mean over endpoint-preserving buckets; weighted validation now passes. |
+| Product Contents vs EV Mismatches | **584 on audited run `run-2026-09-18-103326`** | A sealed product's stored total EV does not reconcile with the EV implied by walking its `contents` (packs/cards/decks/variable slots). | Still open. Group by category, archetype, deck lookup, nested-product resolution, and coverage before changing valuation logic. |
+| Extreme ROI Pricing Anomalies | **184 in the run summary; 186 in `pricing_validator_diagnostics.json` for audited run `run-2026-09-18-103326`** | Product ROI (EV vs. market price) is an extreme outlier, e.g. -99%+ or implausibly high. | Still open. First resolve the count discrepancy, then classify low-EV products by deck coverage, fixed-card coverage, market-price freshness, and intentionally premium sealed pricing. |
 
-Next action for each: extend `validate_pricing_and_ev.py`'s output (or a follow-up script) to dump the top N offending records per category with enough context (product ID, set, vendor, price mode, contents summary) to distinguish real bugs from expected outliers (e.g., intentionally low-value curated bundles). **Done for this session**: the validator now writes the full untruncated lists (not just top 8–10) to `public/data/pricing_validator_diagnostics.json` — use that file directly instead of re-deriving one. Note that this local diagnostics file is not automatically the deployed `data-sync` artifact; the deployed source of truth is the generated bundle committed by the workflow. The corrected local diagnostic counts are 0 booster skew, 584 contents/EV mismatches, and 186 ROI anomalies; they require a future normal pipeline publication before becoming deployed counts.
+Next action for each: use the published `pricing_validator_diagnostics.json` to classify the 584 EV mismatches and 186 ROI records. The remaining validator work is data-quality triage, not evidence that the pipeline failed; the audited run itself completed successfully.
 
 ### 2026-09-18 FIN product-curve investigation
 
@@ -629,24 +633,24 @@ Statuses:
 | DEV-03 | Publication safety | P0 | DONE | Generated data is staged and published atomically. | Failed workflow preserves the previous root `public/data/` snapshot. |
 | DEV-04 | Frontend fallback removal | P0 | FIXED (2026-09-17, see DEV-29) | Synthetic multipliers, invented card prices, market-price-as-EV, and browser simulations removed from active paths. | Was regressed earlier in this session: `BoosterDetailExplorer.tsx` (~line 579) fell back to `Number((activeBooster.evAverage * productPacksCount).toFixed(2))` whenever `gatewayMetrics` was unavailable. Fixed in DEV-29 — see that row for the exact change and verification. |
 | DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`, resolved directly from MySQL price tables; curated Special Chases remain editorial. | Viewer renders backend snapshot with explicit diagnostics when missing; exporter rewritten to price booster-sheet candidates, not just `single_card_prices.json` entries. |
-| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation. Outstanding: triage the 452/752/569 diagnostic findings in Section 11. |
-| DEV-07 | Snapshot identity | P0 | IN PROGRESS | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Added `snapshot_manifest.json` generation and publication checks in `daily_update.py`, including `pipelineRunId`, `sourceCommit`, `generatedAt`, audit mode, and the published file list. `dataService` now loads and compares the manifest with `latest_pipeline_run.json`. Remaining: run the updated audited workflow and verify the published manifest on `data-sync`. |
+| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation; `pricing_validator_diagnostics.json` is now required and published. Remaining: triage the 584 EV mismatches and ROI anomalies in Section 11. |
+| DEV-07 | Snapshot identity | P0 | DONE (2026-09-18) | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Audited run `run-2026-09-18-103326` published `snapshot_manifest.json` with `pipelineRunId`, `sourceCommit` matching `main` (`dbdec7a...`), `generatedAt`, `schemaVersion`, and `auditEnabled: true`; `dataService` compares the manifest with `latest_pipeline_run.json`. |
 | DEV-08 | Frontend data gateway | P0 | DONE | Add a backend-generated complete-product metrics snapshot and make every valuation view consume it through `dataService`, with no browser-side recursive EV calculation. | `product_metrics.json` is loaded through the frontend data boundary; Products Overview and detailed product views select snapshot records by product/vendor/mode. |
 | DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | `dataService` now reports missing or mismatched snapshot-manifest identity alongside existing non-empty snapshot checks. Remaining: broaden schema and cross-file assertions beyond the identity gate. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |
 | DEV-11 | Recursive EV consolidation | P1 | FIXED (2026-09-17, see DEV-29) | Remove recursive product valuation from React. Retain only structural containment/card/deck display helpers; backend owns complete-product EV. | Was regressed earlier in this session: `BoosterDetailExplorer.tsx:465` and `ProductBreakdownTable.tsx:533` used `resolveRecursiveProductAudit`'s EV totals as a live fallback/first-choice value instead of only structural display data. Fixed in DEV-29 — both files now only use the recursive audit for structural containment/card/deck breakdown display; EV totals come from the canonical backend record only. `ArbitrageLeaderboard.tsx` (Products Overview) was already clean and required no change. |
 | DEV-12 | Reproducibility | P1 | NEXT | Record source versions, commit SHA, sample count, audit flag, and seed policy. | `latest_pipeline_run.json` contains reproducibility metadata. |
-| DEV-13 | Workflow audit | P1 | BLOCKED | Run GitHub Actions with `audit_enabled=true` after source changes. | Audit artifact exists; endpoint means reproduce from raw samples. |
+| DEV-13 | Workflow audit | P1 | DONE (2026-09-18) | Run GitHub Actions with `audit_enabled=true` after source changes. | Audited run `run-2026-09-18-103326` completed successfully and published audit samples; no quick-test limit was used. |
 | DEV-14 | Catalog provenance | P1 | DONE | Mark generated catalog metadata as `pipeline` or `inferred`; avoid invented dates/blocks. | Catalog loader tests distinguish inferred metadata. |
 | DEV-15 | Performance measurement | P2 | NEXT | Measure startup, JSON parse time, simulation memory, and stage duration. | Optimization decisions are based on recorded measurements. |
 | DEV-16 | Backend decomposition | P2 | NEXT | Split simulation, statistics, audit writing, and MySQL persistence. | Focused tests preserve summary, sample, and bucket behavior. |
-| DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | Reference search, workflow review, and focused validation pass. |
+| DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | SQLite/EV path and two unreferenced prototypes are removed; remaining work is the one-off ingestion review, `src/data.ts` migration, and local-artifact cleanup. |
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
 | DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-17) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, and report classification. Remaining: full audited daily run and stronger fixed-card manifest audit. |
 | DEV-21 | Curve snapshot integrity | P0 | IN PROGRESS | The published curve data still needs cross-layer validation. | The 2026-09-18 FIN investigation found a real frontend curve-selection mismatch: raw sealed products without top-level `boosterName` defaulted to `play`, selected-product mapping dropped product curves/statistics, and diagnostics inspected a different fallback source than rendering. Fixed locally under DEV-35; pending full pipeline publication and deployed FIN verification. |
-| DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Root cause (booster-sheet cards never priced, legacy `all` key) found and fixed in source (see DEV-05, DEV-23). Pending: a full non-quick-test pipeline run to confirm chase-card coverage improves broadly, not just for spot-checked products. |
-| DEV-23 | Booster vendor discovery integrity | P0 | IN PROGRESS | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | `NAMED_VENDORS` allowlist added to `populate_booster_ev_to_db.py` and `export_product_chase_cards.py`; DELETE query fixed to target `'all'` instead of `'all_cheapest'`. Pending: full pipeline run confirming MKM (and any other affected sets) now produce a real `all_cheapest` row. |
+| DEV-22 | Chase-card visibility | P0 | PARTIALLY_FIXED | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Full audited run exported chase data for 4,137 products. Backend coverage is regenerated; remaining work is browser-level representative-product verification. |
+| DEV-23 | Booster vendor discovery integrity | P0 | DONE (2026-09-18) | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | Full audited output contains 10 MKM `all_cheapest` booster rows after the allowlist and cleanup fixes. |
 | DEV-24 | Quick-test pipeline mode | P0 | DONE | Add an optional fast test-run mode that limits the two heaviest stages to N sets/products, never publishing. | `QUICK_TEST_LIMIT` implemented in `daily_update.py`, `populate_booster_ev_to_db.py`, `sync_live_sealed_prices.py`; workflow input added; publish/deploy steps gated off in quick-test mode. Validated via `--dry-run`; not yet exercised in a real GitHub Actions run. |
 | DEV-25 | Validator diagnostic triage | P1 | IN PROGRESS (2026-09-17) | Investigate the 452/752/569 findings from `validate_pricing_and_ev.py` (see Section 11) and classify each as a real bug or an expected outlier. | Root cause found for the 452 "Booster Quantile Outlier Skews": the validator itself compared each booster's true `evAverage` against a naive arithmetic mean of the 100-point quantile curve, which is a biased statistic (see DEV-28). Fixed the validator to use a properly weighted mean (`bucket_weights()`) instead — re-running against current data now reports **0** booster skew records (was 452), confirming these were false positives, not real booster data bugs. The validator now also writes the full untruncated issue lists to `public/data/pricing_validator_diagnostics.json` for offline triage instead of only printing the top 8–10. The 755 "Product Contents vs EV Mismatches" and 569 "Extreme ROI Anomalies" counts are still current-data counts from the *pre-DEV-28-fix* `sealed_products.json`; a full pipeline re-run is required to confirm how much of the 755 figure was the same root cause (early evidence: the worst offenders are all large multi-pack case/box products, where the bias compounds over many packs, e.g. Antiquities Booster Box Case stored $84,305.30 vs recomputed $59,223.60). The 569 ROI anomalies look like a separate issue (EV near-zero against a real market price, e.g. several Secret Lair drops/bundles) and still need real triage. |
 | DEV-26 | Windows console Unicode crash | P0 | PARTIALLY_FIXED → corrected 2026-09-17 | `export_app_data.py` and `daily_update.py` printed/logged Unicode symbols (`▶`, `═`, `✔`, `✘`) that crash with `UnicodeEncodeError: 'charmap' codec can't encode character` on a default Windows `cp1252` console. This silently aborted `export_app_data.py` on its very first line, cascading into `composite_evaluator.py` and `validate_pricing_and_ev.py` failures (confirmed live via `pipeline_execution_logs.json`, run `run-2026-09-12-192927`). This class of bug recurs whenever a new Unicode symbol is added to console output. | **The original DONE/FIXED claim was inaccurate.** A 2026-09-17 re-audit found `export_app_data.py` still had 8 raw `✔`/`✘` characters (never actually removed — only `daily_update.py`'s own console/subprocess UTF-8 forcing was hardened, which is why the pipeline appeared to keep working, but any standalone/non-`daily_update.py` invocation of these scripts still crashes), plus previously-undetected instances in `composite_evaluator.py`, `sync_all_from_sqlite.py`, and `validate_composite_data.py`. All five files fixed to plain ASCII (`[OK]`/`[ERROR]`/`[PASS]`/`[FAIL]`) and verified via a direct `python -c` scan of every `backend/*.py` file plus a real standalone run of `validate_pricing_and_ev.py` on Windows (previously crashed at the first `✔` print, now completes and writes its diagnostics JSON). |
@@ -657,7 +661,7 @@ Statuses:
 | DEV-31 | `simulate_and_store()` decomposition | P2 | NEXT | Split `populate_booster_ev_to_db.py`'s `simulate_and_store()` into matrix-building, sampling, statistics, and persistence stages; reduce peak memory by not holding every mode/vendor price matrix and every mode/vendor's full `valid_packs` sample list in memory simultaneously. | Verified 2026-09-17: confirmed the function currently builds `matrix[mode][vendor]`/`status_matrix[mode][vendor]` per sheet (2 modes × (2 aggregates + N vendors) × sheet card count) before any sampling, then separately accumulates `valid_packs[mode][vendor]` (default 5,000 floats each) for every mode/vendor pair before computing quantiles. Focused unit tests should preserve summary/sample/bucket behavior across the refactor (ties into DEV-16). |
 | DEV-32 | Frontend anti-pattern sweep (dataService.ts / productUtils.ts) | P0 | FIXED (2026-09-17) | `dataService.ts`'s `injectSldFallbackDecks()` hardcoded 8 Secret Lair decks (16 with foil editions) with forced $0 price/EV, all of which already exist correctly in `precon_decks.json` — and because of insertion-order-dependent index building in `productUtils.ts`'s `getOrBuildPreconIndex()` (`bySetExactName.set()` has no `if (!has())` guard), the fake $0 entries were silently overwriting the real ones for every one of those 8 decks in every consumer of `findMatchingPreconDeck`. Separately, `productUtils.ts`'s `resolveRecursiveProductAudit()` accumulated `totalMinEv`/`totalMid90Ev`/`totalMax5Ev`/`totalMaxEv` for multi-pack contents by linearly multiplying a single pack's order-statistic value by pack count — mathematically invalid for anything but the mean (same root-cause class as DEV-28, on the frontend structural-audit side). | Removed `injectSldFallbackDecks()` and all 3 call sites entirely (all 8 decks already have correct backend data, confirmed by direct `precon_decks.json` lookup). Removed the linear min/mid90/max scaling for random (pack/variable-slot) content in both the direct-packs section and the unmapped-sealed-subitem section of `resolveRecursiveProductAudit()`, replaced with comments pointing to the real backend source (`product_metrics.json`/arbitrage record, already preferred per DEV-29); deterministic content (cards/decks, where min=avg=max is mathematically correct) is unaffected. `tsc --noEmit` clean after both changes. |
 | DEV-33 | ROI validator authority correction | P1 | FIXED LOCALLY (2026-09-17) | `validate_pricing_and_ev.py` must calculate ROI anomalies from the backend authoritative complete-product `storedEv`, not from a partial recursive contents walk that can omit decks or nested sealed products. | Changed the validator to use `storedEv` for ROI and retain `calcEv` only as diagnostic context. Against the current local snapshot, ROI anomalies dropped from 569 to 186 and contents/EV mismatches from 755 to 584; the remaining 186 require genuine triage. This correction is not yet reflected in deployed `data-sync` because no new pipeline publication has been run. |
-| DEV-34 | Frontend snapshot identity warnings | P0 | FIXED LOCALLY (2026-09-17) | `dataService.getSnapshotIntegrityReport()` must inspect product metrics identity in addition to checking that snapshots are non-empty. | Added checks for missing `pipelineRunId`/`id` in `latest_pipeline_run.json`, missing `product_metrics.json`, absent product-metrics `pipelineRunId`, conflicting product-metrics run IDs, and disagreement with the latest run ID. TypeScript validation passes. Current generated snapshots do not yet carry shared run IDs, so the frontend now reports that limitation explicitly rather than silently treating mixed generations as valid; backend metadata publication remains part of DEV-07. |
+| DEV-34 | Frontend snapshot identity warnings | P0 | DONE (2026-09-18) | `dataService.getSnapshotIntegrityReport()` must inspect product metrics identity in addition to checking that snapshots are non-empty. | Manifest loading and comparison are implemented; the published audited run contains matching manifest/run identity and source commit metadata. |
 | DEV-35 | Product curve identity and vendor metrics | P0 | FIXED LOCALLY (2026-09-18) | Product selection must preserve the selected sealed product's empirical curve and vendor statistics without defaulting an unknown booster identity to `play`, substituting a booster/vendor curve, or aliasing min/max to p05/p95. | FIN evidence and all five root causes are recorded in Section 11. `RelatedProductsHierarchy.tsx` derives direct pack identity from `contents.pack[].code`, passes only product-owned `quantilesByVendor`, and preserves selected-vendor statistics without top-level fallback. `PackDistributionCurve.tsx` diagnostics use the renderer's source. `composite_evaluator.py` and `product_metrics.json` now provide p05, p95, EV score, and breakeven percentile for every vendor; validators require the expanded contract. Vite build, focused EV-statistics tests, helper assertions, and Python compilation pass. Pending: full pipeline regeneration and deployed FIN verification. |
 
 ### Frontend single-source-of-truth validation
@@ -699,11 +703,11 @@ Recommended representative fixtures: one single booster; one booster box or bund
 
 ## 13. Next 5 Steps
 
-1. **Run the updated full audited GitHub Actions pipeline** from `main` with `audit_enabled=true` and no quick-test limit, then verify `snapshot_manifest.json` on `data-sync`.
+1. **Resolve the published diagnostics discrepancy**: the validator output is now required and force-added to `data-sync`; confirm the next run reports identical ROI counts in telemetry and diagnostics.
 2. **Inspect the generated product-metrics snapshot** for representative single boosters, boxes/bundles, nested cases, preconstructed decks, variable-content products, and missing vendor/quantile records.
 3. **Verify publication and deployment**: confirm `data-sync` contains the source plus generated snapshots, Vercel serves the manifest run ID, and the frontend loads the same product-metrics records.
 4. **Add end-to-end frontend checks** that compare displayed EV, market price, curve endpoints, and chase cards against the selected published snapshots.
-5. **Triage the remaining validator diagnostics**: resolve the 184/186 ROI count discrepancy, then classify the 584 contents-versus-EV mismatches and remaining ROI anomalies.
+5. **Triage the remaining validator diagnostics**: classify the 584 contents-versus-EV mismatches and remaining ROI anomalies.
 
 ## 14. Vendor Add/Remove Procedure
 
@@ -764,14 +768,116 @@ Delete only after reference and history checks:
 - **`scripts/ingest-wpn.ts` — deleted 2026-09-17.** `package.json`'s `ingest-wpn` script and all in-app help text point at `scripts/ingest-wpn.js`; the TypeScript importer had no consumer.
 - Unreferenced ingestion scripts.
 - **Dead legacy cleanup completed 2026-09-18:** `scripts/recompute_arbitrage_leaderboard.py`, `backend/sync_all_from_sqlite.py`, and `backend/ev_engine.py` were removed after full-repo reference checks. No active production or workflow references remain.
-- `test_composite_evaluation.py` after deterministic tests replace it — **confirmed 2026-09-17**: zero references anywhere in the repo outside itself. Candidate for removal once its coverage is confirmed subsumed by `test_composite_evaluation.py`'s sibling suites (`test_ev_statistics.py`, `test_pipeline_bucket_contract.py`).
+- **`test_composite_evaluation.py` — REMOVE CANDIDATE.** Confirmed 2026-09-17: zero references anywhere in the repo outside itself. Delete only after its assertions are confirmed subsumed by the focused curve and composite contract tests.
 - **`update_overrides.py` — deleted 2026-09-17.** It had zero references anywhere in the repo and was not called by `daily_update.py` or any workflow.
 - **`new_file.txt` — deleted 2026-09-17.** It was an empty, unreferenced root file.
+- **`src/services/chaseCardsService.ts` — deleted 2026-09-18.** Curated chase-card seeds, bundled deck fallbacks, client-side product availability inference, Scryfall URL construction, and unused product-candidate helpers were removed. Consumers now use backend-generated chase/deck snapshots or explicit empty/unresolved states.
 - Local `dist/` when it is not intentionally deployed.
 - The uncalled synthetic product factory in `RelatedProductsHierarchy.tsx` (after final reference validation).
-- Obsolete product candidate functions in `chaseCardsService.ts`.
 - **New finding (2026-09-17, see DEV-32):** `dataService.ts`'s `injectSldFallbackDecks()` already removed this session — all 8 Secret Lair decks it hardcoded already have correct `precon_decks.json` entries, and the fake $0 entries were silently shadowing the real ones. No further action needed here.
 - **Name-guess pack-count fallbacks — confirmed unexercised (2026-09-18).** `productUtils.ts`'s "unmapped sealed subitem" branch and `RelatedProductsHierarchy.tsx`'s `resolveRecursivePacks()` name-guess branch both only run when a `contents.sealed[]` entry has no `uuid` resolvable in `productMap`/`rawProductMap`. A full scan of `public/data/sealed_products.json` (3,599 `contents.sealed` references across 4,127 products) found **zero** unresolved/missing-uuid entries — this code path is currently dead in practice, not an active data-completeness gap. Kept as a defensive fallback (a future MTGJSON schema change could plausibly omit a uuid) but instrumented with a `console.warn` at both call sites so it becomes observable instead of silently guessing if it ever does fire. Re-verify after any pipeline/schema change that touches `contents.sealed` before assuming this is still unreachable.
 
 
-Do not delete yet: `types.ts`, `ecommerceBoosterData.ts`, `productUtils.ts`, `chaseCardsService.ts`, `dataService.ts`, `setHierarchyUtils.ts`, generated JSON files required by the frontend.
+Do not delete yet: `types.ts`, `ecommerceBoosterData.ts`, `productUtils.ts`, `dataService.ts`, `setHierarchyUtils.ts`, generated JSON files required by the frontend.
+
+## 17. File Importance Matrix
+
+This is the cleanup map for the repository. It is intentionally based on references, workflow ownership, and generated-data contracts rather than file size or personal preference. Scores are importance, not code quality:
+
+| Score | Meaning |
+|---|---|
+| 5 | Production-critical or contract-defining; keep and test. |
+| 4 | Active supporting code; keep, refactor only with a focused reason. |
+| 3 | Useful test, admin, asset, or maintenance tooling; keep if the workflow remains supported. |
+| 2 | Optional, manual, editorial, or weakly integrated; review before keeping. |
+| 1 | Generated/local artifact or confirmed dead code; deletion candidate after a final reference check. |
+
+### Root, configuration, and data boundaries
+
+| File or group | Importance | Disposition and comment |
+|---|---:|---|
+| `index.html`, `src/main.tsx`, `src/App.tsx`, `src/index.css` | 5 / 5 / 5 / 4 | Keep. Application entrypoint, top-level runtime shell, and global Tailwind import. |
+| `package.json`, `bun.lock`, `tsconfig.json`, `vite.config.ts` | 5 | Keep. Build, dependency, and TypeScript contracts. |
+| `src/types.ts`, `src/ecommerceBoosterData.ts` | 5 / 4 | Keep. Shared contracts and catalog metadata used across many views. |
+| `src/data.ts` | 2 | Keep temporarily. It contains only empty startup arrays; migrate its four imports, then delete. |
+| `.env.example`, `.gitignore`, `.vercelignore`, `metadata.json` | 3 / 4 | Keep. Environment/deployment boundaries; review `metadata.json` if no tool consumes it. |
+| `PROJECT_REVIEW.md`, `public/products/README.md` | 4 / 3 | Keep. Operational rules and asset-ingestion instructions. |
+| Root `dist/`, `node_modules/`, `.venv/`, `backend/__pycache__/`, `scripts/__pycache__/`, local `*.log` | 1 | Local/generated clutter. Never commit; remove locally when stale. |
+| Root file `t` | 1 | Unknown unreferenced artifact. Inspect with Git and delete if it is not an intentional tool file. |
+
+### Backend production and validation code
+
+| File | Importance | Disposition and comment |
+|---|---:|---|
+| `backend/daily_update.py` | 5 | Keep. Authoritative pipeline orchestrator and publication gate. |
+| `backend/config.py` | 5 | Keep. MySQL and pipeline environment contract. |
+| `backend/download.py`, `backend/download_prices_today.py` | 5 | Keep. Required source ingestion stages. |
+| `backend/lowest_prices.py`, `backend/price_resolver.py` | 5 / 4 | Keep. Price preparation and provenance; review the currently defensive/dead alias branch only during a resolver refactor. |
+| `backend/populate_booster_ev_to_db.py`, `backend/ev_statistics.py` | 5 | Keep. Core simulation and empirical curve contract. |
+| `backend/composite_evaluator.py` | 5 | Keep. Authoritative complete-product EV and quantiles. |
+| `backend/export_app_data.py`, `backend/export_product_metrics.py` | 5 | Keep. Generated snapshot producers consumed by the frontend. |
+| `backend/export_product_chase_cards.py` | 5 | Keep. MySQL `cardIdentifiers` join and product TOP 5 artwork/pricing producer. |
+| `backend/load_deck_tables.py`, `scripts/deck_price_provenance.py` | 4 | Keep. Deck import/enrichment path; test together before any consolidation. |
+| `backend/sync_live_sealed_prices.py` | 4 | Keep. Live sealed market-price stage. |
+| `backend/sync_booster_fixed_metadata.py` | 4 | Keep. Weekly `collation-metadata` producer. |
+| `backend/export_jumpstart_validation_report.py`, `backend/inventory_jumpstart.py` | 3 / 2 | Keep the exporter because the daily workflow calls it; review `inventory_jumpstart.py` as manual investigation tooling. |
+| `backend/validate_pricing_and_ev.py` | 4 | Keep. Production quality gate and diagnostics producer. |
+| `backend/validate_composite_data.py` | 3 | Keep as manual validation, or add it deliberately to CI; it is not currently in the daily stage list. |
+| `backend/test_booster_fixed_metadata.py`, `test_booster_fixed_metadata_corpus.py`, `test_jumpstart_collation.py`, `test_jumpstart_validation_report.py` | 3 | Keep. Focused collation and Jumpstart regression coverage. |
+| `backend/test_ev_statistics.py`, `test_pipeline_bucket_contract.py` | 3 | Keep. Focused empirical-curve and bucket-contract regression coverage. |
+| `backend/test_composite_evaluation.py` | 1 | **REMOVE CANDIDATE.** No repository references outside the file; delete only after confirming its assertions are covered by focused curve and composite contract tests. |
+| `backend/test_pricing_validator.py`, `test_product_chase_cards.py`, `test_product_metrics_contract.py` | 3 | Keep. Contract tests for validators, artwork metadata, and generated product metrics. |
+
+### Manual scripts and import utilities
+
+| File or group | Importance | Disposition and comment |
+|---|---:|---|
+| `scripts/ingest-wpn.js`, `scripts/process_wpn_assets.py` | 3 | Keep. Documented WPN asset workflow and package-script entrypoint. |
+| `scripts/build_precon_decks.py`, `scripts/enrich_precon_decks.py` | 3 | Keep as reproducible deck-data tooling; clarify which one is the canonical generator. |
+| `scripts/ingest_mtgjson_precons.py`, `ingest_sld_decks.py`, `ingest_unsanctioned_decks.py` | 2 | Manual/one-off data ingestion. Keep until generated deck provenance is reproducible elsewhere, then archive or delete together. |
+| `scripts/ingest_final_fantasy_commander.cjs` | 2 | One-off set ingestion. Review whether the imported data is now covered by the normal deck pipeline. |
+| `scripts/fix_anomalous_promo_prices.py` | 2 | Manual repair utility. Keep only with a documented input/output contract and fixture; otherwise archive. |
+
+### Frontend services and utilities
+
+| File | Importance | Disposition and comment |
+|---|---:|---|
+| `src/services/dataService.ts` | 5 | Keep. Sole generated-data loading and caching boundary. |
+| `src/utils/productUtils.ts`, `src/utils/vendorUtils.ts`, `src/utils/setHierarchyUtils.ts` | 5 / 4 / 4 | Keep. Structural breakdown, vendor normalization, and set identity support. Do not move EV authority into these helpers. |
+| `src/utils/catalogProductLoader.ts`, `src/utils/evScore.ts` | 4 | Keep. Catalog merge and display score logic. |
+| `src/utils/productAssetMatcher.ts` | 3 | Keep while packaging assets are supported; review its inferred-match behavior against identity rules. |
+| `src/services/adminAuthService.ts` | 3 | Keep if the Admin tab remains deployed; otherwise remove with the complete admin surface. |
+| `src/services/scryfallApi.ts` | 1 | **REMOVE CANDIDATE.** Repository search found no active import. Confirm history/manual use, then delete; browser card artwork must continue to come from generated backend URLs, not this service. |
+
+### Frontend components
+
+| File or group | Importance | Disposition and comment |
+|---|---:|---|
+| `ArbitrageLeaderboard.tsx`, `BoosterDetailExplorer.tsx`, `PackDistributionCurve.tsx`, `BoosterSlotViewer.tsx` | 5 | Keep. Main product/booster views and empirical-curve display. |
+| `ProductBreakdownTable.tsx`, `ProductBreakdownModal.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx` | 4 | Keep. Active structural inspection views; audit remaining defensive name-guess branches before removing them. |
+| `ProductChaseCardsViewer.tsx`, `PreconstructedDeckViewer.tsx` | 4 | Keep. Backend-generated chase/deck display; no curated fallback catalog. |
+| `AdminPortal.tsx`, `AdminSecurityGate.tsx`, `AdminUserManagement.tsx` | 4 / 3 / 3 | Keep while the Admin tab is supported; consider extracting or removing as one unit, never individual fragments. |
+| `ErrorBoundary.tsx`, `GlobalControlFooter.tsx`, `ManaCostRenderer.tsx`, `SetSymbolIcon.tsx` | 3 / 3 / 3 / 3 | Keep. Shared presentation and failure handling. |
+| `ProductPackagingImage.tsx`, `BoosterFoilPackMockup.tsx`, `BoosterDisplayBoxMockup.tsx`, `CollectorBoosterBoxMockup.tsx`, `PackagingStockAssetGuide.tsx`, `PackagingAssetManager.tsx` | 3 | Keep while packaging assets are a product requirement; these are supporting/admin tooling, not valuation logic. |
+| `SingleCardBreakdownViewer.tsx` | 3 | Keep. Active child of `ProductBreakdownModal`. |
+| `SpecialChaseShowcase.tsx` | 2 | Keep only as explicitly curated/editorial content; never use it for product valuation. |
+| `CubeBuilderStudio.tsx` | 1 | **REMOVE CANDIDATE.** Repository search found only its own definition and no active import. Confirm history/manual use, then delete or document as a separately supported feature. |
+
+### Generated and static data
+
+| File or group | Importance | Disposition and comment |
+|---|---:|---|
+| `public/data/sets.json`, `sealed_products.json`, `booster_ev.json`, `arbitrage_leaderboard.json`, `product_metrics.json`, `single_card_prices.json`, `pricing_reliability.json`, `product_chase_cards.json` | 5 | Keep as generated snapshots on `data-sync`; do not hand-edit or treat `main` copies as authoritative. |
+| `public/data/pipeline_execution_logs.json`, `latest_pipeline_run.json`, `snapshot_manifest.json` | 4 | Keep for telemetry, snapshot identity, and Admin diagnostics. |
+| `public/data/precon_decks.json`, `booster_slots.json`, `scryfall_set_hierarchy.json`, `product_overrides.json` | 4 | Keep. Static/hand-maintained inputs or recovery metadata used by the frontend/pipeline. |
+| `public/data/booster_collation_overrides.json`, `jumpstart_validation_report.json`, `pricing_validator_diagnostics.json` | 3 / 4 / 3 | Keep: generated validation/metadata artifacts, with the overlay owned by `collation-metadata`. |
+| `public/products/<set>/` and `public/products/README.md` | 3 | Keep while WPN packaging assets are displayed; remove only unused set folders after an asset-reference scan. |
+| `all_printings_json/` | 1 | Local ignored corpus. Never commit; remove when no local investigation is using it. |
+
+### Cleanup order
+
+1. Remove local artifacts (`*.log`, `dist/`, `__pycache__/`, unknown root `t`) after confirming they are untracked or reproducible.
+2. **Remove confirmed dead frontend candidates:** `src/services/scryfallApi.ts` and `src/components/CubeBuilderStudio.tsx`, after the final history/manual-use check.
+3. Decide whether the one-off ingestion scripts are a supported reproducibility surface; archive them as a unit if not.
+4. Migrate the four `src/data.ts` imports, then delete the empty startup-data module.
+5. Refactor large active modules only after the deletion candidates are settled; do not mix cleanup with valuation-contract changes.

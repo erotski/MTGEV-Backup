@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BoosterEVRecord, PriceMode, ProductMetricsRecord, Vendor, PreconstructedDeckDetail, EvBasis } from '../types';
-import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
 import { dataService } from '../services/dataService';
 import {
   RecursiveProductBreakdownResult,
@@ -718,10 +717,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
       const cleanTargetName = (d.name || '').toLowerCase().trim();
       const matchedDeck: PreconstructedDeckDetail | undefined =
         (findMatchingPreconDeck(effectivePreconDecks, d.name, deckSet, product?.id) as PreconstructedDeckDetail) ||
-        (findMatchingPreconDeck(PRECON_DECK_DETAILS, d.name, deckSet, product?.id) as PreconstructedDeckDetail) ||
         (effectivePreconDecks ? effectivePreconDecks[d.name] || effectivePreconDecks[cleanTargetName] : undefined) ||
-        PRECON_DECK_DETAILS[d.name] ||
-        PRECON_DECK_DETAILS[cleanTargetName];
+        undefined;
 
       const isCommander = Boolean(
         matchedDeck?.isCommander ||

@@ -48,6 +48,7 @@ REQUIRED_OUTPUTS = (
     "pricing_reliability.json",
     "precon_decks.json",
     "jumpstart_validation_report.json",
+    "pricing_validator_diagnostics.json",
 )
 
 TELEMETRY_OUTPUTS = (

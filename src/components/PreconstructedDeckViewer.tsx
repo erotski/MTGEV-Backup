@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { PreconstructedDeckDetail, DeckCardItem } from '../types';
 import { ManaCostRenderer } from './ManaCostRenderer';
 import { dataService } from '../services/dataService';
-import { PRECON_DECK_DETAILS } from '../services/chaseCardsService';
 import { findMatchingPreconDeck } from '../utils/productUtils';
 import {
   Layers3,
@@ -112,33 +111,11 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
     const cleanName = (productName || '').toLowerCase().trim();
     const cleanSet = (setCode || '').toUpperCase().trim();
 
-    // 1. Synchronous bundled decks (instant, 0ms latency)
-    if (PRECON_DECK_DETAILS[cleanId]) return PRECON_DECK_DETAILS[cleanId];
-    if (PRECON_DECK_DETAILS[productId]) return PRECON_DECK_DETAILS[productId];
-    if (PRECON_DECK_DETAILS[cleanName]) return PRECON_DECK_DETAILS[cleanName];
-    if (PRECON_DECK_DETAILS[productName]) return PRECON_DECK_DETAILS[productName];
-
-    for (const d of Object.values(PRECON_DECK_DETAILS)) {
-      if (d.deckName) {
-        const dNameLower = d.deckName.toLowerCase().trim();
-        if (
-          dNameLower === cleanName ||
-          cleanName.includes(dNameLower) ||
-          dNameLower.includes(cleanName)
-        ) {
-          return d;
-        }
-      }
-    }
-
     const availableDecks = preconDecks || allDecks;
     if (availableDecks) {
       const matched = findMatchingPreconDeck(availableDecks, productName, setCode, productId);
       if (matched) return matched;
     }
-
-    const fallbackMatched = findMatchingPreconDeck(PRECON_DECK_DETAILS, productName, setCode, productId);
-    if (fallbackMatched) return fallbackMatched;
 
     const isCommanderProduct = Boolean(
       (cleanName.includes('commander deck') ||
