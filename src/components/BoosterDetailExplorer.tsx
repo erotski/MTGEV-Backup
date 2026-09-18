@@ -482,6 +482,12 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     );
   }, [activeRawProduct, activeProduct, productMap, arbitrageRecords, boosterEvMap, preconDecks, singleCardPrices, vendor, priceMode]);
 
+  const isConfigurationProduct = Boolean(
+    activeProduct?.contents?.deck?.length &&
+    activeBooster?.distributionType === 'discrete_fixed_configurations' &&
+    activeBooster.configurationOutcomes?.length
+  );
+
   // Recursively flatten pack items from nested sealed products
   const flatPackItems = useMemo(() => {
     if (!productAudit) return [];
@@ -533,6 +539,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   const isPurePreconProduct = useMemo(() => {
     if (!activeProduct) return false;
+    if (isConfigurationProduct) return false;
     if (activeProduct.archetype === 'pure_precon') return true;
     const cat = (activeProduct.rawCategory || '').toLowerCase();
     const packaging = activeProduct.packagingType;
@@ -549,7 +556,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       !hasPacks &&
       !hasVariable
     );
-  }, [activeProduct, productAudit, productVariableEv]);
+  }, [activeProduct, productAudit, productVariableEv, isConfigurationProduct]);
 
   const isMixedProduct = useMemo(() => {
     return Boolean(
@@ -571,12 +578,16 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // Product level scaled metrics from authoritative breakdown
   const productPacksCount =
-    productAudit && productAudit.totalPacks > 0
+    isConfigurationProduct
+      ? 1
+      : productAudit && productAudit.totalPacks > 0
       ? productAudit.totalPacks
       : activeProduct?.packsCount ?? (activeBooster ? 1 : 0);
 
   const productTotalCards =
-    productAudit && productAudit.totalCards > 0
+    isConfigurationProduct
+      ? Number(activeBooster.configurationOutcomes?.[0]?.statusCounts?.exact || activeProduct?.cardCount || 0)
+      : productAudit && productAudit.totalCards > 0
       ? productAudit.totalCards
       : activeProduct?.cardCount || undefined;
 
@@ -596,17 +607,19 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     (isPreconProduct && activeProduct)
   );
 
-  const productAvgEv = (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
+  const productAvgEv = isConfigurationProduct
+    ? activeBooster.evAverage
+    : (isDefaultPricing && activeProduct?.totalEvAvg != null) ? activeProduct.totalEvAvg : (canonicalMetrics?.estimatedEv ?? (
     isPreconProduct && activeProduct
       ? Number(activeProduct.estimatedEv.toFixed(2))
       : 0
   ));
 
-  const productMid90Ev = (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productAvgEv : 0));
-  const productMin5 = (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productAvgEv : 0));
-  const productMax5 = (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productAvgEv : 0));
-  const productMin = (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productAvgEv : 0));
-  const productMax = (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productAvgEv : 0));
+  const productMid90Ev = isConfigurationProduct ? activeBooster.evMid90 : (isDefaultPricing && activeProduct?.totalEvMid90 != null) ? activeProduct.totalEvMid90 : (canonicalMetrics?.mid90Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMin5 = isConfigurationProduct ? activeBooster.evMin5 : (isDefaultPricing && activeProduct?.totalEvMin5 != null) ? activeProduct.totalEvMin5 : (canonicalMetrics?.min5Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMax5 = isConfigurationProduct ? activeBooster.evMax5 : (isDefaultPricing && activeProduct?.totalEvMax5 != null) ? activeProduct.totalEvMax5 : (canonicalMetrics?.max5Ev ?? (isPreconProduct ? productAvgEv : 0));
+  const productMin = isConfigurationProduct ? activeBooster.evMin : (isDefaultPricing && activeProduct?.totalEvMin != null) ? activeProduct.totalEvMin : (canonicalMetrics?.minEv ?? (isPreconProduct ? productAvgEv : 0));
+  const productMax = isConfigurationProduct ? activeBooster.evMax : (isDefaultPricing && activeProduct?.totalEvMax != null) ? activeProduct.totalEvMax : (canonicalMetrics?.maxEv ?? (isPreconProduct ? productAvgEv : 0));
 
   // Product Active EV matching the selected basis (Floor, Mid 90%, Mean, Ceiling)
   const productEstimatedEv = useMemo(() => {
@@ -644,7 +657,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     if (productMarketPrice <= 0) return 100;
 
     // 1. Deterministic/preconstructed products: probability is strictly binary (100% or 0%)
-    if (isPreconProduct || (activeProduct?.packsCount === 0 && (productAudit?.totalPacks ?? 0) === 0)) {
+    if (isPreconProduct || (activeProduct?.packsCount === 0 && (productAudit?.totalPacks ?? 0) === 0 && !isConfigurationProduct)) {
       return productEstimatedEv >= productMarketPrice ? 100 : 0;
     }
 
@@ -709,6 +722,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     priceMode,
     productPacksCount,
     productAudit,
+    isConfigurationProduct,
   ]);
 
   const getRarityBadge = (rarity: string) => {
@@ -1405,6 +1419,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               priceMode={priceMode}
               vendor={vendor}
               isPreconstructed={isPreconProduct}
+              isConfigurationProduct={isConfigurationProduct}
               preconSinglesEv={productEstimatedEv}
               fixedBaseEv={productFixedBaseEv}
               variableEv={productVariableEv}

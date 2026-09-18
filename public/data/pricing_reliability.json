@@ -28,10 +28,17 @@
       "simulatedPacks": 3240000,
       "completeBoosterPct": 99.87,
       "differentFinishPct": 0.05,
+<<<<<<< HEAD
       "differentVendorPct": 1.79,
       "sourceRows": 648,
       "directExactPct": 98.15,
       "nonExactPct": 1.85
+=======
+      "differentVendorPct": 1.78,
+      "sourceRows": 648,
+      "directExactPct": 98.16,
+      "nonExactPct": 1.84
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     "tcgplayer:direct": {
       "vendor": "tcgplayer",

@@ -202,9 +202,16 @@ def resolve_product(product, products_by_id, booster_candidates, deck_candidates
             candidates.add((card["uuid"], bool(card.get("foil"))))
 
     for deck in contents.get("deck", []):
-        key = ((deck.get("name") or "").strip().lower(),
-               (deck.get("set") or product.get("setCode") or "").upper())
-        candidates.update(deck_candidates.get(key, set()))
+        deck_set = (deck.get("set") or product.get("setCode") or "").upper()
+        key = ((deck.get("name") or "").strip().lower(), deck_set)
+        deck_matches = deck_candidates.get(key, set())
+        if deck_matches:
+            candidates.update(deck_matches)
+        else:
+            # Some fixed-theme products expose named configurations but no
+            # corresponding decklist rows; their beginner booster sheets are
+            # the authoritative contained card pool.
+            candidates.update(booster_candidates.get((deck_set, "beginner"), set()))
 
     for variable in contents.get("variable", []):
         for config in variable.get("configs", []):

@@ -1,6 +1,10 @@
 {
   "schemaVersion": 1,
+<<<<<<< HEAD
   "generatedAt": "2026-09-18T21:00:15.301881+00:00",
+=======
+  "generatedAt": "2026-09-18T22:58:34.161393+00:00",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
   "status": "pass",
   "sources": {
     "boosterSlots": "public/data/booster_slots.json",

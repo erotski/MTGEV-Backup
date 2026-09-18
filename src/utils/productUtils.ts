@@ -811,8 +811,23 @@ export function resolveRecursiveProductAudit(
         (dk.name || '').toLowerCase().includes('commander')
       );
 
+      const fixedConfigurationRecord = findBoosterEv(
+        boosterEvMap,
+        parentSet,
+        'beginner',
+        priceMode,
+        vendor
+      );
+      const normalizedDeckName = String(dk.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fixedConfiguration = fixedConfigurationRecord?.configurationOutcomes?.find((outcome) =>
+        String(outcome.label || '').toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedDeckName
+      );
+      const fixedConfigurationCardCount = Number(fixedConfiguration?.statusCounts?.exact || 0);
+
       const deckCardCount = matchedDeckCardsCount > 0
         ? matchedDeckCardsCount
+        : fixedConfigurationCardCount > 0
+          ? fixedConfigurationCardCount
         : (product.cardCount && prodContents.deck && prodContents.deck.length > 0
             ? Math.max(1, Math.floor(product.cardCount / prodContents.deck.length))
             : (isCommander ? 100 : (product.subtype === 'secret_lair' ? 5 : 60)));
@@ -842,6 +857,9 @@ export function resolveRecursiveProductAudit(
       const finishLabel = isCollectorDeck ? (matchedDeck?.treatment || 'Ripple Foil') : (isFoil ? 'Foil' : 'Nonfoil');
 
       let singlesEv = matchedDeck?.totalSinglesEv || matchedDeck?.singlesEv || matchedDeck?.estimatedEv || 0;
+      if (fixedConfiguration && singlesEv <= 0) {
+        singlesEv = Number(fixedConfiguration.ev || 0);
+      }
       if (priceMode === 'cheapest_reprint' && singlesEv > 0) {
       }
 

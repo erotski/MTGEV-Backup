@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "generatedAt": "2026-09-18T21:58:51.630351+00:00",
+=======
+  "generatedAt": "2026-09-18T22:58:35.450487+00:00",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
   "boosterSkewCount": 0,
   "evMismatchCount": 584,
   "roiAnomalyCount": 183,
@@ -13,10 +17,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 2322.38,
       "calcEv": 132.52,
       "diff": 2189.86,
       "pctDiff": 94.29378482418898,
+=======
+      "storedEv": 2322.41,
+      "calcEv": 132.52,
+      "diff": 2189.89,
+      "pctDiff": 94.29385853488402,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($73.48 ea)",
         "1x Sealed 'None' ($59.04 ea)"
@@ -30,10 +41,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1823.98,
       "calcEv": 93.61999999999999,
       "diff": 1730.3600000000001,
       "pctDiff": 94.86726828145045,
+=======
+      "storedEv": 1823.88,
+      "calcEv": 93.61999999999999,
+      "diff": 1730.2600000000002,
+      "pctDiff": 94.86698686317084,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($46.81 ea)",
         "1x Sealed 'None' ($46.81 ea)"
@@ -47,10 +65,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 1499.989990234375,
+<<<<<<< HEAD
       "storedEv": 1547.62,
       "calcEv": 16.86,
       "diff": 1530.76,
       "pctDiff": 98.91058528579367,
+=======
+      "storedEv": 1551.48,
+      "calcEv": 16.86,
+      "diff": 1534.6200000000001,
+      "pctDiff": 98.91329569185552,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($8.43 ea)",
         "1x Sealed 'None' ($8.43 ea)"
@@ -81,10 +106,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1576.04,
       "calcEv": 274.6000000000001,
       "diff": 1301.4399999999998,
       "pctDiff": 82.57658435065099,
+=======
+      "storedEv": 1576.1,
+      "calcEv": 274.6000000000001,
+      "diff": 1301.4999999999998,
+      "pctDiff": 82.57724763657127,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($137.30 ea)",
         "1x Sealed 'None' ($137.30 ea)"
@@ -98,10 +130,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1320.91,
       "calcEv": 73.47999999999999,
       "diff": 1247.43,
       "pctDiff": 94.4371683157823,
+=======
+      "storedEv": 1321.0,
+      "calcEv": 73.47999999999999,
+      "diff": 1247.52,
+      "pctDiff": 94.43754731264194,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($11.82 ea)",
         "1x Sealed 'None' ($33.40 ea)"
@@ -132,10 +171,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 800.0,
+<<<<<<< HEAD
       "storedEv": 1260.75,
       "calcEv": 126.67999999999999,
       "diff": 1134.07,
       "pctDiff": 89.95201269085861,
+=======
+      "storedEv": 1260.44,
+      "calcEv": 126.67999999999999,
+      "diff": 1133.76,
+      "pctDiff": 89.94954142997683,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($63.34 ea)",
         "1x Sealed 'None' ($63.34 ea)"
@@ -149,10 +195,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 1496.68994140625,
+<<<<<<< HEAD
       "storedEv": 1159.01,
       "calcEv": 26.6,
       "diff": 1132.41,
       "pctDiff": 97.70493783487633,
+=======
+      "storedEv": 1157.83,
+      "calcEv": 26.6,
+      "diff": 1131.23,
+      "pctDiff": 97.70259882711625,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($13.30 ea)",
         "1x Sealed 'None' ($13.30 ea)"
@@ -166,10 +219,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1082.89,
       "calcEv": 16.31,
       "diff": 1066.5800000000002,
       "pctDiff": 98.49384517356334,
+=======
+      "storedEv": 1082.94,
+      "calcEv": 16.31,
+      "diff": 1066.63,
+      "pctDiff": 98.49391471364989,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($9.25 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -183,10 +243,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1029.78,
       "calcEv": 23.36,
       "diff": 1006.42,
       "pctDiff": 97.73155431257162,
+=======
+      "storedEv": 1029.21,
+      "calcEv": 23.36,
+      "diff": 1005.85,
+      "pctDiff": 97.73029799554999,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($11.68 ea)",
         "1x Sealed 'None' ($11.68 ea)"
@@ -200,10 +267,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1091.94,
       "calcEv": 104.96000000000001,
       "diff": 986.98,
       "pctDiff": 90.38775024268733,
+=======
+      "storedEv": 1091.74,
+      "calcEv": 104.96000000000001,
+      "diff": 986.78,
+      "pctDiff": 90.3859893381208,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($52.48 ea)",
         "1x Sealed 'None' ($52.48 ea)"
@@ -217,10 +291,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 897.0,
+<<<<<<< HEAD
       "storedEv": 998.64,
       "calcEv": 18.3,
       "diff": 980.34,
       "pctDiff": 98.16750781062245,
+=======
+      "storedEv": 998.87,
+      "calcEv": 18.3,
+      "diff": 980.57,
+      "pctDiff": 98.16792976062952,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($9.15 ea)",
         "1x Sealed 'None' ($9.15 ea)"
@@ -234,10 +315,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1014.97,
       "calcEv": 35.78,
       "diff": 979.19,
       "pctDiff": 96.47477265337892,
+=======
+      "storedEv": 1014.55,
+      "calcEv": 35.78,
+      "diff": 978.77,
+      "pctDiff": 96.47331329160713,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($8.94 ea)",
         "1x Sealed 'None' ($2.41 ea)"
@@ -251,10 +339,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1001.47,
       "calcEv": 59.04000000000001,
       "diff": 942.4300000000001,
       "pctDiff": 94.10466614077306,
+=======
+      "storedEv": 1001.41,
+      "calcEv": 59.04000000000001,
+      "diff": 942.37,
+      "pctDiff": 94.10431291878452,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.97 ea)",
         "1x Sealed 'None' ($29.23 ea)"
@@ -268,10 +363,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 1599.989990234375,
+<<<<<<< HEAD
       "storedEv": 1083.23,
       "calcEv": 154.35999999999999,
       "diff": 928.87,
       "pctDiff": 85.75002538703693,
+=======
+      "storedEv": 1083.39,
+      "calcEv": 154.35999999999999,
+      "diff": 929.0300000000001,
+      "pctDiff": 85.75212988859045,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($73.11 ea)",
         "1x Sealed 'None' ($53.69 ea)"
@@ -285,10 +387,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 849.9500122070312,
+<<<<<<< HEAD
       "storedEv": 886.9,
       "calcEv": 8.43,
       "diff": 878.47,
       "pctDiff": 99.04949825233962,
+=======
+      "storedEv": 888.41,
+      "calcEv": 8.43,
+      "diff": 879.98,
+      "pctDiff": 99.05111378755305,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($8.43 ea)",
         "2x Sealed 'None' ($0.00 ea)"
@@ -302,10 +411,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 860.85,
       "calcEv": 16.31,
       "diff": 844.5400000000001,
       "pctDiff": 98.10536098042633,
+=======
+      "storedEv": 861.23,
+      "calcEv": 16.31,
+      "diff": 844.9200000000001,
+      "pctDiff": 98.10619695087259,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($9.25 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -319,6 +435,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 844.9600219726562,
+<<<<<<< HEAD
       "storedEv": 901.22,
       "calcEv": 68.96,
       "diff": 832.26,
@@ -326,6 +443,15 @@
       "details": [
         "1x Sealed 'None' ($17.24 ea)",
         "1x Sealed 'None' ($17.24 ea)"
+=======
+      "storedEv": 899.02,
+      "calcEv": 67.48,
+      "diff": 831.54,
+      "pctDiff": 92.49404907566016,
+      "details": [
+        "1x Sealed 'None' ($16.87 ea)",
+        "1x Sealed 'None' ($16.87 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -336,10 +462,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 875.0,
+<<<<<<< HEAD
       "storedEv": 805.43,
       "calcEv": 24.82,
       "diff": 780.6099999999999,
       "pctDiff": 96.91841624970512,
+=======
+      "storedEv": 805.45,
+      "calcEv": 24.82,
+      "diff": 780.63,
+      "pctDiff": 96.91849276801787,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($12.41 ea)",
         "1x Sealed 'None' ($12.41 ea)"
@@ -353,6 +486,7 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 1053.48,
       "calcEv": 278.32000000000005,
       "diff": 775.16,
@@ -360,6 +494,15 @@
       "details": [
         "1x Sealed 'None' ($229.68 ea)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 1050.27,
+      "calcEv": 273.81999999999994,
+      "diff": 776.45,
+      "pctDiff": 73.9286088339189,
+      "details": [
+        "1x Sealed 'None' ($226.56 ea)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -370,10 +513,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 470.94000244140625,
+<<<<<<< HEAD
       "storedEv": 811.56,
       "calcEv": 41.29000000000001,
       "diff": 770.27,
       "pctDiff": 94.91226773128297,
+=======
+      "storedEv": 811.38,
+      "calcEv": 41.29000000000001,
+      "diff": 770.09,
+      "pctDiff": 94.91113904705564,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -404,10 +554,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 489.0,
+<<<<<<< HEAD
       "storedEv": 759.1,
       "calcEv": 43.36,
       "diff": 715.74,
       "pctDiff": 94.28797259913054,
+=======
+      "storedEv": 759.14,
+      "calcEv": 43.36,
+      "diff": 715.78,
+      "pctDiff": 94.28827357272704,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($21.68 ea)",
         "1x Sealed 'None' ($21.68 ea)"
@@ -471,10 +628,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 728.15,
       "calcEv": 59.079999999999984,
       "diff": 669.0699999999999,
       "pctDiff": 91.88628716610589,
+=======
+      "storedEv": 728.17,
+      "calcEv": 59.079999999999984,
+      "diff": 669.0899999999999,
+      "pctDiff": 91.88651001826496,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($3.33 ea)",
         "1x Sealed 'None' ($29.39 ea)"
@@ -488,10 +652,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 649.989990234375,
+<<<<<<< HEAD
       "storedEv": 660.81,
       "calcEv": 8.43,
       "diff": 652.38,
       "pctDiff": 98.72429291324285,
+=======
+      "storedEv": 663.25,
+      "calcEv": 8.43,
+      "diff": 654.82,
+      "pctDiff": 98.72898605352431,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($8.43 ea)",
         "2x Sealed 'None' ($0.00 ea)"
@@ -505,6 +676,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 691.0499877929688,
+<<<<<<< HEAD
       "storedEv": 699.47,
       "calcEv": 51.28,
       "diff": 648.19,
@@ -512,6 +684,15 @@
       "details": [
         "1x Sealed 'None' ($12.82 ea)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 698.6,
+      "calcEv": 50.64,
+      "diff": 647.96,
+      "pctDiff": 92.7512167191526,
+      "details": [
+        "1x Sealed 'None' ($12.66 ea)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -522,10 +703,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 689.96,
       "calcEv": 46.809999999999995,
       "diff": 643.1500000000001,
       "pctDiff": 93.21554872746248,
+=======
+      "storedEv": 690.04,
+      "calcEv": 46.809999999999995,
+      "diff": 643.23,
+      "pctDiff": 93.21633528491103,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.86 ea)",
         "1x Sealed 'None' ($31.65 ea)"
@@ -572,10 +760,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 648.85,
       "calcEv": 63.339999999999996,
       "diff": 585.51,
       "pctDiff": 90.23811358557448,
+=======
+      "storedEv": 648.95,
+      "calcEv": 63.339999999999996,
+      "diff": 585.61,
+      "pctDiff": 90.23961784420987,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($28.20 ea)"
@@ -589,10 +784,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 449.989990234375,
+<<<<<<< HEAD
       "storedEv": 584.08,
       "calcEv": 9.15,
       "diff": 574.9300000000001,
       "pctDiff": 98.43343377619505,
+=======
+      "storedEv": 584.13,
+      "calcEv": 9.15,
+      "diff": 574.98,
+      "pctDiff": 98.43356787016589,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($9.15 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -606,10 +808,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 562.6300048828125,
+<<<<<<< HEAD
       "storedEv": 581.47,
       "calcEv": 13.3,
       "diff": 568.1700000000001,
       "pctDiff": 97.7126936901302,
+=======
+      "storedEv": 582.21,
+      "calcEv": 13.3,
+      "diff": 568.9100000000001,
+      "pctDiff": 97.71560090001891,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($13.30 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -639,10 +848,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 497.0,
+<<<<<<< HEAD
       "storedEv": 611.67,
       "calcEv": 48.359999999999985,
       "diff": 563.31,
       "pctDiff": 92.09377605571632,
+=======
+      "storedEv": 611.66,
+      "calcEv": 48.359999999999985,
+      "diff": 563.3,
+      "pctDiff": 92.0936467972403,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($3.33 ea)",
         "1x Sealed 'None' ($29.39 ea)"
@@ -656,10 +872,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 749.6900024414062,
+<<<<<<< HEAD
       "storedEv": 576.57,
       "calcEv": 13.3,
       "diff": 563.2700000000001,
       "pctDiff": 97.69325493868915,
+=======
+      "storedEv": 576.21,
+      "calcEv": 13.3,
+      "diff": 562.9100000000001,
+      "pctDiff": 97.69181374845977,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($13.30 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -673,10 +896,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 450.0,
+<<<<<<< HEAD
       "storedEv": 560.84,
       "calcEv": 2.46,
       "diff": 558.38,
       "pctDiff": 99.56137222737323,
+=======
+      "storedEv": 560.93,
+      "calcEv": 2.46,
+      "diff": 558.4699999999999,
+      "pctDiff": 99.56144260424651,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -690,10 +920,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 611.63,
       "calcEv": 63.339999999999996,
       "diff": 548.29,
       "pctDiff": 89.64406585680885,
+=======
+      "storedEv": 611.55,
+      "calcEv": 63.339999999999996,
+      "diff": 548.2099999999999,
+      "pctDiff": 89.64271114381489,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($28.20 ea)"
@@ -707,10 +944,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 551.88,
       "calcEv": 11.68,
       "diff": 540.2,
       "pctDiff": 97.8835978835979,
+=======
+      "storedEv": 552.38,
+      "calcEv": 11.68,
+      "diff": 540.7,
+      "pctDiff": 97.8855135957131,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($4.45 ea)",
         "1x Sealed 'None' ($2.41 ea)"
@@ -724,10 +968,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 444.0,
+<<<<<<< HEAD
       "storedEv": 586.57,
       "calcEv": 46.809999999999995,
       "diff": 539.7600000000001,
       "pctDiff": 92.01970779276132,
+=======
+      "storedEv": 586.62,
+      "calcEv": 46.809999999999995,
+      "diff": 539.8100000000001,
+      "pctDiff": 92.02038798540794,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.86 ea)",
         "1x Sealed 'None' ($31.65 ea)"
@@ -741,6 +992,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 434.1600036621094,
+<<<<<<< HEAD
       "storedEv": 541.19,
       "calcEv": 13.28,
       "diff": 527.9100000000001,
@@ -748,6 +1000,15 @@
       "details": [
         "2x Sealed 'None' ($3.32 ea)",
         "2x Sealed 'None' ($3.32 ea)"
+=======
+      "storedEv": 541.51,
+      "calcEv": 13.8,
+      "diff": 527.71,
+      "pctDiff": 97.45157060811435,
+      "details": [
+        "2x Sealed 'None' ($3.45 ea)",
+        "2x Sealed 'None' ($3.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -758,16 +1019,43 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 795.0,
+<<<<<<< HEAD
       "storedEv": 577.54,
       "calcEv": 52.480000000000004,
       "diff": 525.06,
       "pctDiff": 90.91318350244138,
+=======
+      "storedEv": 577.23,
+      "calcEv": 52.480000000000004,
+      "diff": 524.75,
+      "pctDiff": 90.90830344923168,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.44 ea)",
         "1x Sealed 'None' ($0.00 ea)"
       ]
     },
     {
+<<<<<<< HEAD
+=======
+      "id": "43d53d01-01f6-5282-b8ac-9f64f0a7d83a",
+      "productUuid": "43d53d01-01f6-5282-b8ac-9f64f0a7d83a",
+      "name": "Outlaws of Thunder Junction Commander Deck Set of 4",
+      "setCode": "OTC",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 0.0,
+      "storedEv": 531.75,
+      "calcEv": 10.44,
+      "diff": 521.31,
+      "pctDiff": 98.0366713681241,
+      "details": [
+        "1x Sealed 'None' ($2.61 ea)",
+        "1x Sealed 'None' ($2.61 ea)"
+      ]
+    },
+    {
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "id": "02393b20-bc9a-5b06-befd-787e257f3a6a",
       "productUuid": "02393b20-bc9a-5b06-befd-787e257f3a6a",
       "name": "Outlaws of Thunder Junction Commander Deck Display",
@@ -775,6 +1063,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 589.0599975585938,
+<<<<<<< HEAD
       "storedEv": 531.77,
       "calcEv": 10.48,
       "diff": 521.29,
@@ -799,6 +1088,32 @@
       "details": [
         "1x Sealed 'None' ($2.62 ea)",
         "1x Sealed 'None' ($2.62 ea)"
+=======
+      "storedEv": 531.63,
+      "calcEv": 10.44,
+      "diff": 521.1899999999999,
+      "pctDiff": 98.03622820382596,
+      "details": [
+        "1x Sealed 'None' ($2.61 ea)",
+        "1x Sealed 'None' ($2.61 ea)"
+      ]
+    },
+    {
+      "id": "47510766-b91b-5fa3-b5f6-4aaba7f15063",
+      "productUuid": "47510766-b91b-5fa3-b5f6-4aaba7f15063",
+      "name": "Modern Horizons 3 Commander Decks Set of 4 Collectors Edition",
+      "setCode": "M3C",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 0.0,
+      "storedEv": 549.88,
+      "calcEv": 29.56,
+      "diff": 520.32,
+      "pctDiff": 94.62428166145341,
+      "details": [
+        "1x Sealed 'None' ($7.39 ea)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -809,6 +1124,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 550.74,
       "calcEv": 30.4,
       "diff": 520.34,
@@ -833,6 +1149,15 @@
       "details": [
         "1x Sealed 'None' ($7.60 ea)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 549.75,
+      "calcEv": 29.56,
+      "diff": 520.19,
+      "pctDiff": 94.62301045929969,
+      "details": [
+        "1x Sealed 'None' ($7.39 ea)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -843,6 +1168,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 773.3699951171875,
+<<<<<<< HEAD
       "storedEv": 550.67,
       "calcEv": 30.4,
       "diff": 520.27,
@@ -850,6 +1176,15 @@
       "details": [
         "1x Sealed 'None' ($7.60 ea)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 549.6,
+      "calcEv": 29.56,
+      "diff": 520.0400000000001,
+      "pctDiff": 94.62154294032025,
+      "details": [
+        "1x Sealed 'None' ($7.39 ea)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -860,6 +1195,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 350.489990234375,
+<<<<<<< HEAD
       "storedEv": 550.36,
       "calcEv": 30.4,
       "diff": 519.96,
@@ -867,6 +1203,32 @@
       "details": [
         "1x Sealed 'None' ($7.60 ea)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 549.5,
+      "calcEv": 29.56,
+      "diff": 519.94,
+      "pctDiff": 94.62056414922658,
+      "details": [
+        "1x Sealed 'None' ($7.39 ea)",
+        "1x Sealed 'None' ($7.39 ea)"
+      ]
+    },
+    {
+      "id": "9d373e6e-abeb-55b7-b1b5-6b5cf6875b45",
+      "productUuid": "9d373e6e-abeb-55b7-b1b5-6b5cf6875b45",
+      "name": "Fallout Commander Deck Display",
+      "setCode": "PIP",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 370.67999267578125,
+      "storedEv": 537.04,
+      "calcEv": 17.88,
+      "diff": 519.16,
+      "pctDiff": 96.67063905854313,
+      "details": [
+        "1x Sealed 'None' ($4.47 ea)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -877,6 +1239,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 536.67,
       "calcEv": 17.64,
       "diff": 519.03,
@@ -901,6 +1264,15 @@
       "details": [
         "1x Sealed 'None' ($4.41 ea)",
         "1x Sealed 'None' ($4.41 ea)"
+=======
+      "storedEv": 536.96,
+      "calcEv": 17.88,
+      "diff": 519.08,
+      "pctDiff": 96.67014302741359,
+      "details": [
+        "1x Sealed 'None' ($4.47 ea)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -911,6 +1283,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 704.6900024414062,
+<<<<<<< HEAD
       "storedEv": 540.29,
       "calcEv": 31.44,
       "diff": 508.84999999999997,
@@ -918,6 +1291,15 @@
       "details": [
         "1x Sealed 'None' ($7.86 ea)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 538.31,
+      "calcEv": 29.8,
+      "diff": 508.50999999999993,
+      "pctDiff": 94.46415634114172,
+      "details": [
+        "1x Sealed 'None' ($7.45 ea)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -944,10 +1326,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 499.989990234375,
+<<<<<<< HEAD
       "storedEv": 572.13,
       "calcEv": 73.11,
       "diff": 499.02,
       "pctDiff": 87.22143568769334,
+=======
+      "storedEv": 571.99,
+      "calcEv": 73.11,
+      "diff": 498.88,
+      "pctDiff": 87.21830801237783,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -961,10 +1350,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 699.9400024414062,
+<<<<<<< HEAD
       "storedEv": 478.32,
       "calcEv": 11.68,
       "diff": 466.64,
       "pctDiff": 97.55812008697107,
+=======
+      "storedEv": 478.34,
+      "calcEv": 11.68,
+      "diff": 466.65999999999997,
+      "pctDiff": 97.55822218505665,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($4.45 ea)",
         "1x Sealed 'None' ($2.41 ea)"
@@ -994,10 +1390,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 488.0,
+<<<<<<< HEAD
       "storedEv": 514.43,
       "calcEv": 52.480000000000004,
       "diff": 461.94999999999993,
       "pctDiff": 89.79841766615478,
+=======
+      "storedEv": 514.77,
+      "calcEv": 52.480000000000004,
+      "diff": 462.28999999999996,
+      "pctDiff": 89.80515570060415,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.44 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1011,6 +1414,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 468.98,
       "calcEv": 19.6,
       "diff": 449.38,
@@ -1018,6 +1422,15 @@
       "details": [
         "1x Sealed 'None' ($4.90 ea)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 470.5,
+      "calcEv": 21.36,
+      "diff": 449.14,
+      "pctDiff": 95.46014877789585,
+      "details": [
+        "1x Sealed 'None' ($5.34 ea)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1028,6 +1441,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 290.04998779296875,
+<<<<<<< HEAD
       "storedEv": 468.9,
       "calcEv": 19.6,
       "diff": 449.29999999999995,
@@ -1035,6 +1449,15 @@
       "details": [
         "1x Sealed 'None' ($4.90 ea)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 470.44,
+      "calcEv": 21.36,
+      "diff": 449.08,
+      "pctDiff": 95.4595697644758,
+      "details": [
+        "1x Sealed 'None' ($5.34 ea)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1045,10 +1468,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 375.9599914550781,
+<<<<<<< HEAD
       "storedEv": 440.88,
       "calcEv": 7.23,
       "diff": 433.65,
       "pctDiff": 98.36009798584648,
+=======
+      "storedEv": 440.74,
+      "calcEv": 7.23,
+      "diff": 433.51,
+      "pctDiff": 98.35957707491944,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($2.41 ea)",
         "1x Sealed 'None' ($2.41 ea)"
@@ -1062,10 +1492,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 399.989990234375,
+<<<<<<< HEAD
       "storedEv": 485.29,
       "calcEv": 53.69,
       "diff": 431.6,
       "pctDiff": 88.93651218858827,
+=======
+      "storedEv": 485.26,
+      "calcEv": 53.69,
+      "diff": 431.57,
+      "pctDiff": 88.93582821580183,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1096,10 +1533,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 550.0,
+<<<<<<< HEAD
       "storedEv": 438.4,
       "calcEv": 21.68,
       "diff": 416.71999999999997,
       "pctDiff": 95.05474452554743,
+=======
+      "storedEv": 438.35,
+      "calcEv": 21.68,
+      "diff": 416.67,
+      "pctDiff": 95.05418044941257,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1129,6 +1573,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 194.33999633789062,
+<<<<<<< HEAD
       "storedEv": 466.47,
       "calcEv": 51.28,
       "diff": 415.19000000000005,
@@ -1136,6 +1581,15 @@
       "details": [
         "1x Sealed 'None' ($12.82 ea)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 466.23,
+      "calcEv": 50.64,
+      "diff": 415.59000000000003,
+      "pctDiff": 89.13840808184801,
+      "details": [
+        "1x Sealed 'None' ($12.66 ea)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1146,10 +1600,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 345.0,
+<<<<<<< HEAD
       "storedEv": 424.74,
       "calcEv": 12.41,
       "diff": 412.33,
       "pctDiff": 97.07821255356217,
+=======
+      "storedEv": 424.9,
+      "calcEv": 12.41,
+      "diff": 412.48999999999995,
+      "pctDiff": 97.07931277947752,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($1.11 ea)",
         "1x Sealed 'None' ($3.22 ea)"
@@ -1163,10 +1624,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 384.0,
+<<<<<<< HEAD
       "storedEv": 414.23,
       "calcEv": 9.15,
       "diff": 405.08000000000004,
       "pctDiff": 97.79108224899211,
+=======
+      "storedEv": 414.36,
+      "calcEv": 9.15,
+      "diff": 405.21000000000004,
+      "pctDiff": 97.79177526788301,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($9.15 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1214,6 +1682,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 248.0500030517578,
+<<<<<<< HEAD
       "storedEv": 403.84,
       "calcEv": 21.32,
       "diff": 382.52,
@@ -1221,6 +1690,15 @@
       "details": [
         "1x Sealed 'None' ($5.33 ea)",
         "1x Sealed 'None' ($5.33 ea)"
+=======
+      "storedEv": 402.68,
+      "calcEv": 20.68,
+      "diff": 382.0,
+      "pctDiff": 94.86440846329592,
+      "details": [
+        "1x Sealed 'None' ($5.17 ea)",
+        "1x Sealed 'None' ($5.17 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1231,10 +1709,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 422.3599853515625,
+<<<<<<< HEAD
       "storedEv": 385.18,
       "calcEv": 16.81,
       "diff": 368.37,
       "pctDiff": 95.63580663585856,
+=======
+      "storedEv": 385.12,
+      "calcEv": 16.81,
+      "diff": 368.31,
+      "pctDiff": 95.63512671375156,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($2.45 ea)",
         "1x Sealed 'None' ($6.38 ea)"
@@ -1248,10 +1733,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 313.0,
+<<<<<<< HEAD
       "storedEv": 380.75,
       "calcEv": 12.41,
       "diff": 368.34,
       "pctDiff": 96.74064346684176,
+=======
+      "storedEv": 380.43,
+      "calcEv": 12.41,
+      "diff": 368.02,
+      "pctDiff": 96.73790184790893,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($1.11 ea)",
         "1x Sealed 'None' ($3.22 ea)"
@@ -1298,12 +1790,21 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 277.4800109863281,
+<<<<<<< HEAD
       "storedEv": 543.12,
       "calcEv": 211.56,
       "diff": 331.56,
       "pctDiff": 61.04728236853734,
       "details": [
         "4x Sealed 'None' ($52.89 ea)"
+=======
+      "storedEv": 543.08,
+      "calcEv": 210.92000000000002,
+      "diff": 332.16,
+      "pctDiff": 61.162259703911026,
+      "details": [
+        "4x Sealed 'None' ($52.73 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1313,7 +1814,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 225.94000244140625,
+=======
+      "marketPrice": 226.33999633789062,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 334.32,
       "calcEv": 5.02,
       "diff": 329.3,
@@ -1330,10 +1835,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 321.82,
       "calcEv": 4.82,
       "diff": 317.0,
       "pctDiff": 98.50226834876639,
+=======
+      "storedEv": 321.63,
+      "calcEv": 4.82,
+      "diff": 316.81,
+      "pctDiff": 98.5013835774026,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($2.41 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1347,6 +1859,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 327.44000244140625,
+<<<<<<< HEAD
       "storedEv": 312.73,
       "calcEv": 12.64,
       "diff": 300.09000000000003,
@@ -1371,6 +1884,15 @@
       "details": [
         "1x Deck 'Eldrazi Unbound' ($0.00)",
         "1x Sealed 'None' ($17.24 ea)"
+=======
+      "storedEv": 312.18,
+      "calcEv": 12.36,
+      "diff": 299.82,
+      "pctDiff": 96.04074572362097,
+      "details": [
+        "1x Sealed 'None' ($3.09 ea)",
+        "1x Sealed 'None' ($3.09 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1381,6 +1903,7 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 350.0,
+<<<<<<< HEAD
       "storedEv": 320.81,
       "calcEv": 21.68,
       "diff": 299.13,
@@ -1388,6 +1911,32 @@
       "details": [
         "1x Sealed 'None' ($0.00 ea)",
         "1x Sealed 'None' ($7.84 ea)"
+=======
+      "storedEv": 320.83,
+      "calcEv": 21.68,
+      "diff": 299.15,
+      "pctDiff": 93.24252719508775,
+      "details": [
+        "1x Sealed 'None' ($0.00 ea)",
+        "1x Sealed 'None' ($7.84 ea)"
+      ]
+    },
+    {
+      "id": "1ee1ed05-d68c-5926-9cda-6f3daf4eb355",
+      "productUuid": "1ee1ed05-d68c-5926-9cda-6f3daf4eb355",
+      "name": "Commander Masters Commander Deck Eldrazi Unbound",
+      "setCode": "CMM",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 427.1000061035156,
+      "storedEv": 316.01,
+      "calcEv": 16.87,
+      "diff": 299.14,
+      "pctDiff": 94.66156134299547,
+      "details": [
+        "1x Deck 'Eldrazi Unbound' ($0.00)",
+        "1x Sealed 'None' ($16.87 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1414,12 +1963,21 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 799.0,
+<<<<<<< HEAD
       "storedEv": 528.95,
       "calcEv": 240.24,
       "diff": 288.71000000000004,
       "pctDiff": 54.58171849891295,
       "details": [
         "1x Sealed 'None' ($229.68 ea)",
+=======
+      "storedEv": 526.94,
+      "calcEv": 237.12,
+      "diff": 289.82000000000005,
+      "pctDiff": 55.00056932478081,
+      "details": [
+        "1x Sealed 'None' ($226.56 ea)",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
         "1x Sealed 'None' ($0.00 ea)"
       ]
     },
@@ -1431,10 +1989,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 399.94000244140625,
+<<<<<<< HEAD
       "storedEv": 310.12,
       "calcEv": 23.599999999999998,
       "diff": 286.52,
       "pctDiff": 92.39004256416871,
+=======
+      "storedEv": 309.92,
+      "calcEv": 23.599999999999998,
+      "diff": 286.32,
+      "pctDiff": 92.3851316468766,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($20.00 ea)",
         "1x Sealed 'None' ($1.20 ea)"
@@ -1464,10 +2029,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 488.989990234375,
+<<<<<<< HEAD
       "storedEv": 272.77,
       "calcEv": 4.82,
       "diff": 267.95,
       "pctDiff": 98.23294350551747,
+=======
+      "storedEv": 272.85,
+      "calcEv": 4.82,
+      "diff": 268.03000000000003,
+      "pctDiff": 98.23346160894263,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($2.41 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1497,6 +2069,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 253.3800048828125,
+<<<<<<< HEAD
       "storedEv": 270.64,
       "calcEv": 6.64,
       "diff": 264.0,
@@ -1504,6 +2077,15 @@
       "details": [
         "1x Sealed 'None' ($3.32 ea)",
         "1x Sealed 'None' ($3.32 ea)"
+=======
+      "storedEv": 270.84,
+      "calcEv": 6.9,
+      "diff": 263.94,
+      "pctDiff": 97.45237040319009,
+      "details": [
+        "1x Sealed 'None' ($3.45 ea)",
+        "1x Sealed 'None' ($3.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1613,10 +2195,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 369.989990234375,
+<<<<<<< HEAD
       "storedEv": 292.98,
       "calcEv": 45.55,
       "diff": 247.43,
       "pctDiff": 84.45286367670147,
+=======
+      "storedEv": 292.93,
+      "calcEv": 45.55,
+      "diff": 247.38,
+      "pctDiff": 84.45020994776908,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($1.52 ea)",
         "1x Sealed 'None' ($1.52 ea)"
@@ -1647,6 +2236,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 173.08999633789062,
+<<<<<<< HEAD
       "storedEv": 252.5,
       "calcEv": 12.82,
       "diff": 239.68,
@@ -1654,6 +2244,15 @@
       "details": [
         "1x Deck 'Counter Blitz Collector's Edition (FINAL FANTASY X)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 252.34,
+      "calcEv": 12.66,
+      "diff": 239.68,
+      "pctDiff": 94.98295949908854,
+      "details": [
+        "1x Deck 'Counter Blitz Collector's Edition (FINAL FANTASY X)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1714,10 +2313,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 349.94000244140625,
+<<<<<<< HEAD
       "storedEv": 254.87,
       "calcEv": 23.599999999999998,
       "diff": 231.27,
       "pctDiff": 90.7403774473261,
+=======
+      "storedEv": 255.01,
+      "calcEv": 23.599999999999998,
+      "diff": 231.41,
+      "pctDiff": 90.7454609623152,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($20.00 ea)",
         "1x Sealed 'None' ($1.20 ea)"
@@ -1797,10 +2403,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 489.989990234375,
+<<<<<<< HEAD
       "storedEv": 226.36,
       "calcEv": 17.41,
       "diff": 208.95000000000002,
       "pctDiff": 92.30871178653473,
+=======
+      "storedEv": 226.72,
+      "calcEv": 17.41,
+      "diff": 209.31,
+      "pctDiff": 92.32092448835569,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($5.41 ea)",
         "1x Sealed 'None' ($10.53 ea)"
@@ -1830,12 +2443,21 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 239.9,
       "calcEv": 33.96,
       "diff": 205.94,
       "pctDiff": 85.84410170904543,
       "details": [
         "6x Sealed 'None' ($5.66 ea)"
+=======
+      "storedEv": 239.72,
+      "calcEv": 33.839999999999996,
+      "diff": 205.88,
+      "pctDiff": 85.8835307859169,
+      "details": [
+        "6x Sealed 'None' ($5.64 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1879,10 +2501,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 174.6999969482422,
+<<<<<<< HEAD
       "storedEv": 212.29,
       "calcEv": 8.43,
       "diff": 203.85999999999999,
       "pctDiff": 96.02901691082953,
+=======
+      "storedEv": 212.38,
+      "calcEv": 8.43,
+      "diff": 203.95,
+      "pctDiff": 96.03069968923627,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($4.17 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -1895,6 +2524,7 @@
       "setCode": "DSC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 233.8000030517578,
       "storedEv": 204.59,
       "calcEv": 3.16,
@@ -1903,6 +2533,16 @@
       "details": [
         "1x Deck 'Endless Punishment' ($0.00)",
         "1x Sealed 'None' ($3.16 ea)"
+=======
+      "marketPrice": 233.97000122070312,
+      "storedEv": 204.52,
+      "calcEv": 3.09,
+      "diff": 201.43,
+      "pctDiff": 98.48914531586152,
+      "details": [
+        "1x Deck 'Endless Punishment' ($0.00)",
+        "1x Sealed 'None' ($3.09 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -1913,10 +2553,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 301.57000732421875,
+<<<<<<< HEAD
       "storedEv": 227.33,
       "calcEv": 26.13,
       "diff": 201.20000000000002,
       "pctDiff": 88.50569656446575,
+=======
+      "storedEv": 227.29,
+      "calcEv": 26.13,
+      "diff": 201.16,
+      "pctDiff": 88.50367372079721,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($1.52 ea)",
         "1x Sealed 'None' ($1.52 ea)"
@@ -1963,6 +2610,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 328.19000244140625,
+<<<<<<< HEAD
       "storedEv": 214.82,
       "calcEv": 17.24,
       "diff": 197.57999999999998,
@@ -1970,6 +2618,15 @@
       "details": [
         "1x Deck 'Sliver Swarm' ($0.00)",
         "1x Sealed 'None' ($17.24 ea)"
+=======
+      "storedEv": 214.45,
+      "calcEv": 16.87,
+      "diff": 197.57999999999998,
+      "pctDiff": 92.13336442061086,
+      "details": [
+        "1x Deck 'Sliver Swarm' ($0.00)",
+        "1x Sealed 'None' ($16.87 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2030,10 +2687,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 179.99000549316406,
+<<<<<<< HEAD
       "storedEv": 196.69,
       "calcEv": 8.43,
       "diff": 188.26,
       "pctDiff": 95.71406782246173,
+=======
+      "storedEv": 196.77,
+      "calcEv": 8.43,
+      "diff": 188.34,
+      "pctDiff": 95.71581033694162,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Sealed 'None' ($4.17 ea)",
         "1x Sealed 'None' ($0.00 ea)"
@@ -2063,6 +2727,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 303.19000244140625,
+<<<<<<< HEAD
       "storedEv": 189.9,
       "calcEv": 7.86,
       "diff": 182.04,
@@ -2070,6 +2735,15 @@
       "details": [
         "1x Deck 'Mind Flayarrrs' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 189.49,
+      "calcEv": 7.45,
+      "diff": 182.04000000000002,
+      "pctDiff": 96.06839411050716,
+      "details": [
+        "1x Deck 'Mind Flayarrrs' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2080,6 +2754,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 280.6499938964844,
+<<<<<<< HEAD
       "storedEv": 189.9,
       "calcEv": 7.86,
       "diff": 182.04,
@@ -2087,6 +2762,15 @@
       "details": [
         "1x Deck 'Mind Flayarrrs' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 189.49,
+      "calcEv": 7.45,
+      "diff": 182.04000000000002,
+      "pctDiff": 96.06839411050716,
+      "details": [
+        "1x Deck 'Mind Flayarrrs' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2112,7 +2796,11 @@
       "setCode": "SLD",
       "category": "deck",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 275.8500061035156,
+=======
+      "marketPrice": 274.4200134277344,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 183.16,
       "calcEv": 3.35,
       "diff": 179.81,
@@ -2161,6 +2849,7 @@
       "setCode": "FIC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 47.95000076293945,
       "storedEv": 189.24,
       "calcEv": 12.82,
@@ -2169,6 +2858,16 @@
       "details": [
         "1x Deck 'Counter Blitz (FINAL FANTASY X)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "marketPrice": 48.150001525878906,
+      "storedEv": 189.08,
+      "calcEv": 12.66,
+      "diff": 176.42000000000002,
+      "pctDiff": 93.30442140892744,
+      "details": [
+        "1x Deck 'Counter Blitz (FINAL FANTASY X)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2179,6 +2878,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 180.64999389648438,
+<<<<<<< HEAD
       "storedEv": 180.05,
       "calcEv": 4.41,
       "diff": 175.64000000000001,
@@ -2186,6 +2886,15 @@
       "details": [
         "1x Deck 'Mutant Menace' ($0.00)",
         "1x Sealed 'None' ($4.41 ea)"
+=======
+      "storedEv": 180.11,
+      "calcEv": 4.47,
+      "diff": 175.64000000000001,
+      "pctDiff": 97.51818333240797,
+      "details": [
+        "1x Deck 'Mutant Menace' ($0.00)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2212,6 +2921,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 88.23999786376953,
+<<<<<<< HEAD
       "storedEv": 182.0,
       "calcEv": 7.6,
       "diff": 174.4,
@@ -2219,6 +2929,15 @@
       "details": [
         "1x Deck 'Tricky Terrain' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 181.79,
+      "calcEv": 7.39,
+      "diff": 174.4,
+      "pctDiff": 95.93486990483525,
+      "details": [
+        "1x Deck 'Tricky Terrain' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2229,6 +2948,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 253.4499969482422,
+<<<<<<< HEAD
       "storedEv": 182.0,
       "calcEv": 7.6,
       "diff": 174.4,
@@ -2236,6 +2956,15 @@
       "details": [
         "1x Deck 'Tricky Terrain Collector's Edition' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 181.79,
+      "calcEv": 7.39,
+      "diff": 174.4,
+      "pctDiff": 95.93486990483525,
+      "details": [
+        "1x Deck 'Tricky Terrain Collector's Edition' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2246,6 +2975,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 182.6199951171875,
+<<<<<<< HEAD
       "storedEv": 186.94,
       "calcEv": 17.24,
       "diff": 169.7,
@@ -2253,6 +2983,15 @@
       "details": [
         "1x Deck 'Planeswalker Party' ($0.00)",
         "1x Sealed 'None' ($17.24 ea)"
+=======
+      "storedEv": 186.57,
+      "calcEv": 16.87,
+      "diff": 169.7,
+      "pctDiff": 90.9578174411749,
+      "details": [
+        "1x Deck 'Planeswalker Party' ($0.00)",
+        "1x Sealed 'None' ($16.87 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2296,6 +3035,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 170.05999755859375,
+<<<<<<< HEAD
       "storedEv": 176.45,
       "calcEv": 7.86,
       "diff": 168.58999999999997,
@@ -2303,6 +3043,15 @@
       "details": [
         "1x Deck 'Draconic Dissent' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 176.04,
+      "calcEv": 7.45,
+      "diff": 168.59,
+      "pctDiff": 95.76800727107477,
+      "details": [
+        "1x Deck 'Draconic Dissent' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2313,6 +3062,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 175.0,
+<<<<<<< HEAD
       "storedEv": 176.45,
       "calcEv": 7.86,
       "diff": 168.58999999999997,
@@ -2320,6 +3070,15 @@
       "details": [
         "1x Deck 'Draconic Dissent' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 176.04,
+      "calcEv": 7.45,
+      "diff": 168.59,
+      "pctDiff": 95.76800727107477,
+      "details": [
+        "1x Deck 'Draconic Dissent' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2364,6 +3123,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 153.0399932861328,
+<<<<<<< HEAD
       "storedEv": 182.62,
       "calcEv": 17.24,
       "diff": 165.38,
@@ -2371,6 +3131,15 @@
       "details": [
         "1x Deck 'Enduring Enchantments' ($0.00)",
         "1x Sealed 'None' ($17.24 ea)"
+=======
+      "storedEv": 182.25,
+      "calcEv": 16.87,
+      "diff": 165.38,
+      "pctDiff": 90.74348422496571,
+      "details": [
+        "1x Deck 'Enduring Enchantments' ($0.00)",
+        "1x Sealed 'None' ($16.87 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2462,6 +3231,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 200.10000610351562,
+<<<<<<< HEAD
       "storedEv": 162.81,
       "calcEv": 2.62,
       "diff": 160.19,
@@ -2469,6 +3239,15 @@
       "details": [
         "1x Deck 'Grand Larceny' ($0.00)",
         "1x Sealed 'None' ($2.62 ea)"
+=======
+      "storedEv": 162.8,
+      "calcEv": 2.61,
+      "diff": 160.19,
+      "pctDiff": 98.39680589680589,
+      "details": [
+        "1x Deck 'Grand Larceny' ($0.00)",
+        "1x Sealed 'None' ($2.61 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2495,6 +3274,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 172.99000549316406,
+<<<<<<< HEAD
       "storedEv": 165.82,
       "calcEv": 7.86,
       "diff": 157.95999999999998,
@@ -2502,6 +3282,15 @@
       "details": [
         "1x Deck 'Exit from Exile' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 165.41,
+      "calcEv": 7.45,
+      "diff": 157.96,
+      "pctDiff": 95.49604014267578,
+      "details": [
+        "1x Deck 'Exit from Exile' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2512,6 +3301,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 1011.0,
+<<<<<<< HEAD
       "storedEv": 165.82,
       "calcEv": 7.86,
       "diff": 157.95999999999998,
@@ -2519,6 +3309,15 @@
       "details": [
         "1x Deck 'Exit from Exile' ($0.00)",
         "1x Sealed 'None' ($7.86 ea)"
+=======
+      "storedEv": 165.41,
+      "calcEv": 7.45,
+      "diff": 157.96,
+      "pctDiff": 95.49604014267578,
+      "details": [
+        "1x Deck 'Exit from Exile' ($0.00)",
+        "1x Sealed 'None' ($7.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2594,6 +3393,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 228.89999389648438,
+<<<<<<< HEAD
       "storedEv": 163.42,
       "calcEv": 12.82,
       "diff": 150.6,
@@ -2601,6 +3401,15 @@
       "details": [
         "1x Deck 'Scions & Spellcraft Collector's Edition (FINAL FANTASY XIV)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 163.26,
+      "calcEv": 12.66,
+      "diff": 150.6,
+      "pctDiff": 92.24549797868431,
+      "details": [
+        "1x Deck 'Scions & Spellcraft Collector's Edition (FINAL FANTASY XIV)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2676,6 +3485,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 93.55999755859375,
+<<<<<<< HEAD
       "storedEv": 151.06,
       "calcEv": 4.9,
       "diff": 146.16,
@@ -2683,6 +3493,15 @@
       "details": [
         "1x Deck 'Blood Rites' ($0.00)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 151.5,
+      "calcEv": 5.34,
+      "diff": 146.16,
+      "pctDiff": 96.47524752475248,
+      "details": [
+        "1x Deck 'Blood Rites' ($0.00)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2693,6 +3512,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 104.77999877929688,
+<<<<<<< HEAD
       "storedEv": 149.2,
       "calcEv": 3.32,
       "diff": 145.88,
@@ -2700,6 +3520,15 @@
       "details": [
         "1x Deck 'Mishra's Burnished Banner' ($0.00)",
         "1x Sealed 'None' ($3.32 ea)"
+=======
+      "storedEv": 149.33,
+      "calcEv": 3.45,
+      "diff": 145.88000000000002,
+      "pctDiff": 97.6896805732271,
+      "details": [
+        "1x Deck 'Mishra's Burnished Banner' ($0.00)",
+        "1x Sealed 'None' ($3.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2743,6 +3572,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 158.5500030517578,
+<<<<<<< HEAD
       "storedEv": 145.88,
       "calcEv": 2.62,
       "diff": 143.26,
@@ -2750,6 +3580,15 @@
       "details": [
         "1x Deck 'Most Wanted' ($0.00)",
         "1x Sealed 'None' ($2.62 ea)"
+=======
+      "storedEv": 145.87,
+      "calcEv": 2.61,
+      "diff": 143.26,
+      "pctDiff": 98.2107355864811,
+      "details": [
+        "1x Deck 'Most Wanted' ($0.00)",
+        "1x Sealed 'None' ($2.61 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2792,6 +3631,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 211.86000061035156,
+<<<<<<< HEAD
       "storedEv": 150.18,
       "calcEv": 7.6,
       "diff": 142.58,
@@ -2799,6 +3639,15 @@
       "details": [
         "1x Deck 'Eldrazi Incursion' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 149.97,
+      "calcEv": 7.39,
+      "diff": 142.58,
+      "pctDiff": 95.07234780289392,
+      "details": [
+        "1x Deck 'Eldrazi Incursion' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2809,6 +3658,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 398.57000732421875,
+<<<<<<< HEAD
       "storedEv": 150.18,
       "calcEv": 7.6,
       "diff": 142.58,
@@ -2816,6 +3666,15 @@
       "details": [
         "1x Deck 'Eldrazi Incursion Collector's Edition' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 149.97,
+      "calcEv": 7.39,
+      "diff": 142.58,
+      "pctDiff": 95.07234780289392,
+      "details": [
+        "1x Deck 'Eldrazi Incursion Collector's Edition' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2843,6 +3702,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 223.0800018310547,
+<<<<<<< HEAD
       "storedEv": 154.94,
       "calcEv": 12.82,
       "diff": 142.12,
@@ -2850,6 +3710,15 @@
       "details": [
         "1x Deck 'Limit Break Collector's Edition (FINAL FANTASY VII)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 154.78,
+      "calcEv": 12.66,
+      "diff": 142.12,
+      "pctDiff": 91.82064866261791,
+      "details": [
+        "1x Deck 'Limit Break Collector's Edition (FINAL FANTASY VII)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -2860,10 +3729,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 147.67,
       "calcEv": 6.15,
       "diff": 141.51999999999998,
       "pctDiff": 95.83530845804835,
+=======
+      "storedEv": 147.64,
+      "calcEv": 6.15,
+      "diff": 141.48999999999998,
+      "pctDiff": 95.83446220536439,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "5x Sealed 'None' ($1.23 ea)"
       ]
@@ -2876,6 +3752,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 95.80999755859375,
+<<<<<<< HEAD
       "storedEv": 144.68,
       "calcEv": 4.41,
       "diff": 140.27,
@@ -2883,6 +3760,15 @@
       "details": [
         "1x Deck 'Scrappy Survivors' ($0.00)",
         "1x Sealed 'None' ($4.41 ea)"
+=======
+      "storedEv": 144.74,
+      "calcEv": 4.47,
+      "diff": 140.27,
+      "pctDiff": 96.91170374464558,
+      "details": [
+        "1x Deck 'Scrappy Survivors' ($0.00)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3107,6 +3993,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 136.5800018310547,
+<<<<<<< HEAD
       "storedEv": 129.67,
       "calcEv": 4.9,
       "diff": 124.76999999999998,
@@ -3114,6 +4001,15 @@
       "details": [
         "1x Deck 'Veloci-Ramp-Tor' ($0.00)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 130.11,
+      "calcEv": 5.34,
+      "diff": 124.77000000000001,
+      "pctDiff": 95.89578049342865,
+      "details": [
+        "1x Deck 'Veloci-Ramp-Tor' ($0.00)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3156,10 +4052,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 130.13,
       "calcEv": 6.15,
       "diff": 123.97999999999999,
       "pctDiff": 95.27395681241835,
+=======
+      "storedEv": 130.14,
+      "calcEv": 6.15,
+      "diff": 123.98999999999998,
+      "pctDiff": 95.27431996311664,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "5x Sealed 'None' ($1.23 ea)"
       ]
@@ -3205,10 +4108,17 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 157.63999938964844,
+<<<<<<< HEAD
       "storedEv": 127.06,
       "calcEv": 4.6,
       "diff": 122.46000000000001,
       "pctDiff": 96.37966315126712,
+=======
+      "storedEv": 127.14,
+      "calcEv": 4.6,
+      "diff": 122.54,
+      "pctDiff": 96.38194116721725,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "2x Sealed 'None' ($1.15 ea)",
         "2x Sealed 'None' ($1.15 ea)"
@@ -3238,7 +4148,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 140.94000244140625,
+=======
+      "marketPrice": 140.3800048828125,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 131.63,
       "calcEv": 9.31,
       "diff": 122.32,
@@ -3271,6 +4185,7 @@
       "setCode": "BLC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 87.30120086669922,
       "storedEv": 127.02,
       "calcEv": 5.33,
@@ -3279,6 +4194,16 @@
       "details": [
         "1x Deck 'Squirreled Away' ($0.00)",
         "1x Sealed 'None' ($5.33 ea)"
+=======
+      "marketPrice": 87.30000305175781,
+      "storedEv": 126.86,
+      "calcEv": 5.17,
+      "diff": 121.69,
+      "pctDiff": 95.92464133690683,
+      "details": [
+        "1x Deck 'Squirreled Away' ($0.00)",
+        "1x Sealed 'None' ($5.17 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3289,6 +4214,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 121.76000213623047,
+<<<<<<< HEAD
       "storedEv": 145.71,
       "calcEv": 24.7,
       "diff": 121.01,
@@ -3296,6 +4222,15 @@
       "details": [
         "1x Sealed 'None' ($5.33 ea)",
         "1x Sealed 'None' ($4.55 ea)"
+=======
+      "storedEv": 145.53,
+      "calcEv": 24.520000000000003,
+      "diff": 121.00999999999999,
+      "pctDiff": 83.15124029409743,
+      "details": [
+        "1x Sealed 'None' ($5.17 ea)",
+        "1x Sealed 'None' ($4.57 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3354,6 +4289,7 @@
       "setCode": "BRC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 157.00999450683594,
       "storedEv": 121.34,
       "calcEv": 3.32,
@@ -3362,6 +4298,16 @@
       "details": [
         "1x Deck 'Urza's Iron Alliance' ($0.00)",
         "1x Sealed 'None' ($3.32 ea)"
+=======
+      "marketPrice": 157.32000732421875,
+      "storedEv": 121.47,
+      "calcEv": 3.45,
+      "diff": 118.02,
+      "pctDiff": 97.15979254136823,
+      "details": [
+        "1x Deck 'Urza's Iron Alliance' ($0.00)",
+        "1x Sealed 'None' ($3.45 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3422,6 +4368,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 127.33999633789062,
+<<<<<<< HEAD
       "storedEv": 129.67,
       "calcEv": 12.82,
       "diff": 116.85,
@@ -3429,6 +4376,15 @@
       "details": [
         "1x Deck 'Revival Trance Collector's Edition (FINAL FANTASY VI)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 129.51,
+      "calcEv": 12.66,
+      "diff": 116.85,
+      "pctDiff": 90.22469307389392,
+      "details": [
+        "1x Deck 'Revival Trance Collector's Edition (FINAL FANTASY VI)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3488,6 +4444,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 189.88999938964844,
+<<<<<<< HEAD
       "storedEv": 116.7,
       "calcEv": 2.62,
       "diff": 114.08,
@@ -3495,6 +4452,15 @@
       "details": [
         "1x Deck 'Quick Draw' ($0.00)",
         "1x Sealed 'None' ($2.62 ea)"
+=======
+      "storedEv": 116.69,
+      "calcEv": 2.61,
+      "diff": 114.08,
+      "pctDiff": 97.76330448196076,
+      "details": [
+        "1x Deck 'Quick Draw' ($0.00)",
+        "1x Sealed 'None' ($2.61 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3539,6 +4505,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 66.4800033569336,
+<<<<<<< HEAD
       "storedEv": 121.25,
       "calcEv": 7.6,
       "diff": 113.65,
@@ -3546,6 +4513,15 @@
       "details": [
         "1x Deck 'Graveyard Overdrive' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 121.04,
+      "calcEv": 7.39,
+      "diff": 113.65,
+      "pctDiff": 93.89458030403173,
+      "details": [
+        "1x Deck 'Graveyard Overdrive' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3556,6 +4532,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 152.82000732421875,
+<<<<<<< HEAD
       "storedEv": 121.25,
       "calcEv": 7.6,
       "diff": 113.65,
@@ -3563,6 +4540,15 @@
       "details": [
         "1x Deck 'Graveyard Overdrive Collector's Edition' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 121.04,
+      "calcEv": 7.39,
+      "diff": 113.65,
+      "pctDiff": 93.89458030403173,
+      "details": [
+        "1x Deck 'Graveyard Overdrive Collector's Edition' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3573,10 +4559,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 118.12,
       "calcEv": 6.15,
       "diff": 111.97,
       "pctDiff": 94.79343040975279,
+=======
+      "storedEv": 118.15,
+      "calcEv": 6.15,
+      "diff": 112.0,
+      "pctDiff": 94.79475243334744,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "5x Sealed 'None' ($1.23 ea)"
       ]
@@ -3698,6 +4691,26 @@
       ]
     },
     {
+<<<<<<< HEAD
+=======
+      "id": "131174a5-2071-5688-b77f-e2f6bea93bf0",
+      "productUuid": "131174a5-2071-5688-b77f-e2f6bea93bf0",
+      "name": "Dragons Maze Prerelease Guild Kit 10 Pack",
+      "setCode": "DGM",
+      "category": "limited_aid_case",
+      "archetype": "pure_randomized",
+      "marketPrice": 228.0,
+      "storedEv": 216.36,
+      "calcEv": 107.03,
+      "diff": 109.33000000000001,
+      "pctDiff": 50.53152153817712,
+      "details": [
+        "1x Sealed 'None' ($10.01 ea)",
+        "1x Sealed 'None' ($11.11 ea)"
+      ]
+    },
+    {
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "id": "8b63b5b9-524a-5e5a-889e-2f2a9d4d24e7",
       "productUuid": "8b63b5b9-524a-5e5a-889e-2f2a9d4d24e7",
       "name": "Secret Lair Drop Featuring Peach Momoko",
@@ -3820,10 +4833,17 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 0.0,
+<<<<<<< HEAD
       "storedEv": 110.19,
       "calcEv": 6.15,
       "diff": 104.03999999999999,
       "pctDiff": 94.41873128233051,
+=======
+      "storedEv": 110.17,
+      "calcEv": 6.15,
+      "diff": 104.02,
+      "pctDiff": 94.41771807207043,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "5x Sealed 'None' ($1.23 ea)"
       ]
@@ -3836,6 +4856,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 119.81999969482422,
+<<<<<<< HEAD
       "storedEv": 108.16,
       "calcEv": 4.41,
       "diff": 103.75,
@@ -3843,6 +4864,15 @@
       "details": [
         "1x Deck 'Hail, Caesar' ($0.00)",
         "1x Sealed 'None' ($4.41 ea)"
+=======
+      "storedEv": 108.22,
+      "calcEv": 4.47,
+      "diff": 103.75,
+      "pctDiff": 95.86952504158197,
+      "details": [
+        "1x Deck 'Hail, Caesar' ($0.00)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3853,6 +4883,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 103.22000122070312,
+<<<<<<< HEAD
       "storedEv": 106.22,
       "calcEv": 2.62,
       "diff": 103.6,
@@ -3860,6 +4891,15 @@
       "details": [
         "1x Deck 'Desert Bloom' ($0.00)",
         "1x Sealed 'None' ($2.62 ea)"
+=======
+      "storedEv": 106.21,
+      "calcEv": 2.61,
+      "diff": 103.6,
+      "pctDiff": 97.54260427455041,
+      "details": [
+        "1x Deck 'Desert Bloom' ($0.00)",
+        "1x Sealed 'None' ($2.61 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -3984,6 +5024,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 52.06999969482422,
+<<<<<<< HEAD
       "storedEv": 103.84,
       "calcEv": 4.41,
       "diff": 99.43,
@@ -3991,6 +5032,15 @@
       "details": [
         "1x Deck 'Science!' ($0.00)",
         "1x Sealed 'None' ($4.41 ea)"
+=======
+      "storedEv": 103.9,
+      "calcEv": 4.47,
+      "diff": 99.43,
+      "pctDiff": 95.69778633301252,
+      "details": [
+        "1x Deck 'Science!' ($0.00)",
+        "1x Sealed 'None' ($4.47 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4052,6 +5102,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 67.9000015258789,
+<<<<<<< HEAD
       "storedEv": 101.72,
       "calcEv": 3.16,
       "diff": 98.56,
@@ -4059,6 +5110,15 @@
       "details": [
         "1x Deck 'Jump Scare!' ($0.00)",
         "1x Sealed 'None' ($3.16 ea)"
+=======
+      "storedEv": 101.65,
+      "calcEv": 3.09,
+      "diff": 98.56,
+      "pctDiff": 96.96015740285291,
+      "details": [
+        "1x Deck 'Jump Scare!' ($0.00)",
+        "1x Sealed 'None' ($3.09 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4166,6 +5226,7 @@
       "setCode": "BLC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 74.44999694824219,
       "storedEv": 102.19,
       "calcEv": 5.33,
@@ -4174,6 +5235,16 @@
       "details": [
         "1x Deck 'Animated Army' ($0.00)",
         "1x Sealed 'None' ($5.33 ea)"
+=======
+      "marketPrice": 74.48999786376953,
+      "storedEv": 102.03,
+      "calcEv": 5.17,
+      "diff": 96.86,
+      "pctDiff": 94.93286288346565,
+      "details": [
+        "1x Deck 'Animated Army' ($0.00)",
+        "1x Sealed 'None' ($5.17 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4217,6 +5288,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 114.62000274658203,
+<<<<<<< HEAD
       "storedEv": 120.75,
       "calcEv": 24.7,
       "diff": 96.05,
@@ -4224,6 +5296,15 @@
       "details": [
         "1x Sealed 'None' ($5.33 ea)",
         "1x Sealed 'None' ($4.55 ea)"
+=======
+      "storedEv": 120.55,
+      "calcEv": 24.520000000000003,
+      "diff": 96.03,
+      "pctDiff": 79.65989216092908,
+      "details": [
+        "1x Sealed 'None' ($5.17 ea)",
+        "1x Sealed 'None' ($4.57 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4348,6 +5429,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 46.029998779296875,
+<<<<<<< HEAD
       "storedEv": 98.51,
       "calcEv": 4.9,
       "diff": 93.61,
@@ -4355,6 +5437,15 @@
       "details": [
         "1x Deck 'Ahoy Mateys' ($0.00)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 98.95,
+      "calcEv": 5.34,
+      "diff": 93.61,
+      "pctDiff": 94.6033350176857,
+      "details": [
+        "1x Deck 'Ahoy Mateys' ($0.00)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4446,6 +5537,7 @@
       "setCode": "FIC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 65.0199966430664,
       "storedEv": 104.03,
       "calcEv": 12.82,
@@ -4454,6 +5546,16 @@
       "details": [
         "1x Deck 'Scions & Spellcraft (FINAL FANTASY XIV)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "marketPrice": 65.0,
+      "storedEv": 103.87,
+      "calcEv": 12.66,
+      "diff": 91.21000000000001,
+      "pctDiff": 87.81168768653124,
+      "details": [
+        "1x Deck 'Scions & Spellcraft (FINAL FANTASY XIV)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4463,6 +5565,7 @@
       "setCode": "BLC",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 93.98999786376953,
       "storedEv": 96.52,
       "calcEv": 5.33,
@@ -4488,6 +5591,16 @@
       "details": [
         "1x Sealed 'None' ($5.33 ea)",
         "1x Sealed 'None' ($4.55 ea)"
+=======
+      "marketPrice": 93.88999938964844,
+      "storedEv": 96.36,
+      "calcEv": 5.17,
+      "diff": 91.19,
+      "pctDiff": 94.63470319634702,
+      "details": [
+        "1x Deck 'Peace Offering' ($0.00)",
+        "1x Sealed 'None' ($5.17 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4504,6 +5617,23 @@
       "pctDiff": 97.89712067292137,
       "details": [
         "1x Deck 'sAnS mERcY Foil Edition' ($0.00)"
+      ]
+    },
+    {
+      "id": "f72484ac-ae3f-51f6-92bb-1d0fa120ea89",
+      "productUuid": "f72484ac-ae3f-51f6-92bb-1d0fa120ea89",
+      "name": "Bloomburrow Deluxe Commander Kit Peace Offering",
+      "setCode": "BLC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 118.16999816894531,
+      "storedEv": 115.29,
+      "calcEv": 24.520000000000003,
+      "diff": 90.77000000000001,
+      "pctDiff": 78.73189348599186,
+      "details": [
+        "1x Sealed 'None' ($5.17 ea)",
+        "1x Sealed 'None' ($4.57 ea)"
       ]
     },
     {
@@ -4530,7 +5660,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 62.0099983215332,
+=======
+      "marketPrice": 62.43000030517578,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 93.86,
       "calcEv": 4.26,
       "diff": 89.6,
@@ -4582,6 +5716,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 49.0,
+<<<<<<< HEAD
       "storedEv": 96.99,
       "calcEv": 7.6,
       "diff": 89.39,
@@ -4589,6 +5724,15 @@
       "details": [
         "1x Deck 'Creative Energy' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 96.78,
+      "calcEv": 7.39,
+      "diff": 89.39,
+      "pctDiff": 92.36412481917752,
+      "details": [
+        "1x Deck 'Creative Energy' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4599,6 +5743,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 107.20999908447266,
+<<<<<<< HEAD
       "storedEv": 96.99,
       "calcEv": 7.6,
       "diff": 89.39,
@@ -4606,6 +5751,15 @@
       "details": [
         "1x Deck 'Creative Energy Collector's Edition' ($0.00)",
         "1x Sealed 'None' ($7.60 ea)"
+=======
+      "storedEv": 96.78,
+      "calcEv": 7.39,
+      "diff": 89.39,
+      "pctDiff": 92.36412481917752,
+      "details": [
+        "1x Deck 'Creative Energy Collector's Edition' ($0.00)",
+        "1x Sealed 'None' ($7.39 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4615,7 +5769,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 95.79000091552734,
+=======
+      "marketPrice": 95.30999755859375,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 93.91,
       "calcEv": 5.19,
       "diff": 88.72,
@@ -4943,6 +6101,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 96.75,
+<<<<<<< HEAD
       "storedEv": 89.61,
       "calcEv": 4.9,
       "diff": 84.71,
@@ -4950,6 +6109,15 @@
       "details": [
         "1x Deck 'Explorers of the Deep' ($0.00)",
         "1x Sealed 'None' ($4.90 ea)"
+=======
+      "storedEv": 90.05,
+      "calcEv": 5.34,
+      "diff": 84.71,
+      "pctDiff": 94.06996113270405,
+      "details": [
+        "1x Deck 'Explorers of the Deep' ($0.00)",
+        "1x Sealed 'None' ($5.34 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -4992,6 +6160,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 56.709999084472656,
+<<<<<<< HEAD
       "storedEv": 97.32,
       "calcEv": 12.82,
       "diff": 84.5,
@@ -4999,6 +6168,15 @@
       "details": [
         "1x Deck 'Limit Break (FINAL FANTASY VII)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 97.16,
+      "calcEv": 12.66,
+      "diff": 84.5,
+      "pctDiff": 86.96994648003293,
+      "details": [
+        "1x Deck 'Limit Break (FINAL FANTASY VII)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -5075,12 +6253,21 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 85.33999633789062,
+<<<<<<< HEAD
       "storedEv": 135.86,
       "calcEv": 52.89,
       "diff": 82.97000000000001,
       "pctDiff": 61.07021934344178,
       "details": [
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 135.7,
+      "calcEv": 52.730000000000004,
+      "diff": 82.96999999999998,
+      "pctDiff": 61.142225497420775,
+      "details": [
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -5124,7 +6311,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 94.7300033569336,
+=======
+      "marketPrice": 94.73359680175781,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 104.05,
       "calcEv": 22.51,
       "diff": 81.53999999999999,
@@ -5648,6 +6839,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 35.939998626708984,
+<<<<<<< HEAD
       "storedEv": 77.76,
       "calcEv": 5.33,
       "diff": 72.43,
@@ -5655,6 +6847,15 @@
       "details": [
         "1x Deck 'Family Matters' ($0.00)",
         "1x Sealed 'None' ($5.33 ea)"
+=======
+      "storedEv": 77.6,
+      "calcEv": 5.17,
+      "diff": 72.42999999999999,
+      "pctDiff": 93.33762886597938,
+      "details": [
+        "1x Deck 'Family Matters' ($0.00)",
+        "1x Sealed 'None' ($5.17 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -5698,6 +6899,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 91.1500015258789,
+<<<<<<< HEAD
       "storedEv": 96.63,
       "calcEv": 24.7,
       "diff": 71.92999999999999,
@@ -5705,6 +6907,15 @@
       "details": [
         "1x Sealed 'None' ($5.33 ea)",
         "1x Sealed 'None' ($4.55 ea)"
+=======
+      "storedEv": 96.5,
+      "calcEv": 24.520000000000003,
+      "diff": 71.97999999999999,
+      "pctDiff": 74.59067357512951,
+      "details": [
+        "1x Sealed 'None' ($5.17 ea)",
+        "1x Sealed 'None' ($4.57 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -6128,6 +7339,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 34.2599983215332,
+<<<<<<< HEAD
       "storedEv": 75.96,
       "calcEv": 12.82,
       "diff": 63.13999999999999,
@@ -6135,6 +7347,15 @@
       "details": [
         "1x Deck 'Revival Trance (FINAL FANTASY VI)' ($0.00)",
         "1x Sealed 'None' ($12.82 ea)"
+=======
+      "storedEv": 75.8,
+      "calcEv": 12.66,
+      "diff": 63.14,
+      "pctDiff": 83.2981530343008,
+      "details": [
+        "1x Deck 'Revival Trance (FINAL FANTASY VI)' ($0.00)",
+        "1x Sealed 'None' ($12.66 ea)"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       ]
     },
     {
@@ -6667,7 +7888,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 54.06999969482422,
+=======
+      "marketPrice": 53.97999954223633,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 67.58,
       "calcEv": 9.89,
       "diff": 57.69,
@@ -7145,13 +8370,37 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 68.73999786376953,
+<<<<<<< HEAD
       "storedEv": 58.28,
       "calcEv": 3.5,
       "diff": 54.78,
       "pctDiff": 93.99450926561428,
+=======
+      "storedEv": 58.32,
+      "calcEv": 3.48,
+      "diff": 54.84,
+      "pctDiff": 94.0329218106996,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
-        "1x Sealed 'None' ($1.75 ea)",
-        "1x Sealed 'None' ($1.75 ea)"
+        "1x Sealed 'None' ($1.74 ea)",
+        "1x Sealed 'None' ($1.74 ea)"
+      ]
+    },
+    {
+      "id": "4bf71a3b-acff-5cdd-b0d8-efa70095027b",
+      "productUuid": "4bf71a3b-acff-5cdd-b0d8-efa70095027b",
+      "name": "Aetherdrift Commander Deck Eternal Might",
+      "setCode": "DRC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 36.619998931884766,
+      "storedEv": 56.49,
+      "calcEv": 1.74,
+      "diff": 54.75,
+      "pctDiff": 96.91980881571959,
+      "details": [
+        "1x Deck 'Eternal Might' ($0.00)",
+        "1x Sealed 'None' ($1.74 ea)"
       ]
     },
     {
@@ -7897,7 +9146,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "pure_precon",
+<<<<<<< HEAD
       "marketPrice": 41.0099983215332,
+=======
+      "marketPrice": 40.790000915527344,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 49.14,
       "calcEv": 1.67,
       "diff": 47.47,
@@ -8501,7 +9754,11 @@
       "setCode": "SLD",
       "category": "box_set",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 38.310001373291016,
+=======
+      "marketPrice": 37.5099983215332,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "storedEv": 45.86,
       "calcEv": 3.49,
       "diff": 42.37,
@@ -9140,10 +10397,17 @@
       "category": "multiple_decks",
       "archetype": "mixed_composite",
       "marketPrice": 153.97999572753906,
+<<<<<<< HEAD
       "storedEv": 40.0,
       "calcEv": 5.66,
       "diff": 34.34,
       "pctDiff": 85.85000000000001,
+=======
+      "storedEv": 39.98,
+      "calcEv": 5.64,
+      "diff": 34.339999999999996,
+      "pctDiff": 85.89294647323662,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "details": [
         "1x Deck 'Deck A' ($0.00)",
         "1x Deck 'Deck B' ($0.00)"
@@ -9680,9 +10944,15 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 1874.9949951171875,
+<<<<<<< HEAD
       "storedEv": 8.53,
       "calcEv": 8.53,
       "roi": -99.54506545232314
+=======
+      "storedEv": 8.61,
+      "calcEv": 8.61,
+      "roi": -99.54079877426757
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "9efee6e3-9b8b-5da0-92be-59fd14a2561d",
@@ -9692,9 +10962,15 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 2000.0,
+<<<<<<< HEAD
       "storedEv": 9.65,
       "calcEv": 9.65,
       "roi": -99.5175
+=======
+      "storedEv": 9.61,
+      "calcEv": 9.61,
+      "roi": -99.51950000000001
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "ea7cd4b5-35cf-5181-a435-b141a26ebd6e",
@@ -9716,9 +10992,15 @@
       "category": "booster_box",
       "archetype": "pure_randomized",
       "marketPrice": 62497.49609375,
+<<<<<<< HEAD
       "storedEv": 625.95,
       "calcEv": 625.68,
       "roi": -98.9984398749975
+=======
+      "storedEv": 636.45,
+      "calcEv": 638.64,
+      "roi": -98.98163920192053
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "08543966-6649-5610-9897-2e6ad3075440",
@@ -9728,9 +11010,15 @@
       "category": "box_set",
       "archetype": "mixed_composite",
       "marketPrice": 20.209999084472656,
+<<<<<<< HEAD
       "storedEv": 0.26,
       "calcEv": 0.0,
       "roi": -98.71350810599611
+=======
+      "storedEv": 0.27,
+      "calcEv": 0.0,
+      "roi": -98.66402764853443
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "ff1b65ce-49d4-58dc-8445-6d14eab6dfc2",
@@ -9740,9 +11028,15 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 1199.989990234375,
+<<<<<<< HEAD
       "storedEv": 17.52,
       "calcEv": 17.52,
       "roi": -98.53998782135024
+=======
+      "storedEv": 17.18,
+      "calcEv": 16.96,
+      "roi": -98.56832139102723
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "f9e4075e-1d17-58fb-b67c-94d42ad2767e",
@@ -9752,9 +11046,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 288.9200134277344,
+<<<<<<< HEAD
       "storedEv": 4.38,
       "calcEv": 4.38,
       "roi": -98.48400948482735
+=======
+      "storedEv": 4.24,
+      "calcEv": 4.24,
+      "roi": -98.53246580266392
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "cdcd7361-1625-5a71-b059-77ceda4ab134",
@@ -9763,10 +11063,17 @@
       "setCode": "SS1",
       "category": "box_set",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 39.470001220703125,
       "storedEv": 0.62,
       "calcEv": 0.0,
       "roi": -98.42918677267537
+=======
+      "marketPrice": 39.59000015258789,
+      "storedEv": 0.61,
+      "calcEv": 0.0,
+      "roi": -98.45920687636035
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "c4345ca9-4383-54f6-85b0-79381b2b35b8",
@@ -9776,6 +11083,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 148.82000732421875,
+<<<<<<< HEAD
       "storedEv": 2.89,
       "calcEv": 2.89,
       "roi": -98.05805680838071
@@ -9791,6 +11099,11 @@
       "storedEv": 3.27,
       "calcEv": 3.27,
       "roi": -97.91852331447693
+=======
+      "storedEv": 2.76,
+      "calcEv": 2.76,
+      "roi": -98.14541065437051
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "570bb70e-b533-5283-b130-df16c494b139",
@@ -9800,9 +11113,14 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 148.13999938964844,
+<<<<<<< HEAD
       "storedEv": 3.09,
       "calcEv": 3.09,
       "roi": -97.9141352688463
+=======
+      "storedEv": 2.99,
+      "calcEv": 2.99,
+      "roi": -97.9816389818286
     },
     {
       "id": "914c4424-6b22-506e-a547-19c9a17592a2",
@@ -9812,9 +11130,29 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 292.0,
+      "storedEv": 5.92,
+      "calcEv": 5.98,
+      "roi": -97.97260273972603
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+    },
+    {
+      "id": "914c4424-6b22-506e-a547-19c9a17592a2",
+      "productUuid": "914c4424-6b22-506e-a547-19c9a17592a2",
+      "name": "Dominaria United Commander Decks Set of 2",
+      "setCode": "DMC",
+      "category": "subset",
+      "archetype": "mixed_composite",
+<<<<<<< HEAD
+      "marketPrice": 292.0,
       "storedEv": 6.15,
       "calcEv": 6.18,
       "roi": -97.89383561643837
+=======
+      "marketPrice": 157.10000610351562,
+      "storedEv": 3.24,
+      "calcEv": 3.24,
+      "roi": -97.93761943085786
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "43e219d0-3ec1-50eb-96f3-4f2a44c24ac8",
@@ -9824,9 +11162,15 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 1000.0,
+<<<<<<< HEAD
       "storedEv": 21.72,
       "calcEv": 21.549999999999997,
       "roi": -97.82799999999999
+=======
+      "storedEv": 21.49,
+      "calcEv": 21.45,
+      "roi": -97.851
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "6ddddac3-0d10-5fc7-8e34-2b5fca86aeb8",
@@ -9848,9 +11192,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 138.64999389648438,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -97.78579146401403
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -97.77857905835933
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "d78635bb-a3a7-5661-925d-fc3a91213447",
@@ -9860,9 +11210,51 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 95.4800033569336,
+<<<<<<< HEAD
       "storedEv": 2.4,
       "calcEv": 2.4,
       "roi": -97.48638467153371
+=======
+      "storedEv": 2.48,
+      "calcEv": 2.48,
+      "roi": -97.40259749391818
+    },
+    {
+      "id": "48ff4260-64d3-5e95-aa24-4aa90431b42d",
+      "productUuid": "48ff4260-64d3-5e95-aa24-4aa90431b42d",
+      "name": "Dominaria United Commander Deck Display",
+      "setCode": "DMC",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 455.0,
+      "storedEv": 11.84,
+      "calcEv": 11.96,
+      "roi": -97.3978021978022
+    },
+    {
+      "id": "dd9ebe9d-0c57-56e6-9c38-ee7279f94044",
+      "productUuid": "dd9ebe9d-0c57-56e6-9c38-ee7279f94044",
+      "name": "Dominaria United Commander Deck Painbow",
+      "setCode": "DMC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 114.36000061035156,
+      "storedEv": 2.99,
+      "calcEv": 2.99,
+      "roi": -97.38544947180654
+    },
+    {
+      "id": "879529b8-1ffa-5eb8-afa9-dc8389f57ca9",
+      "productUuid": "879529b8-1ffa-5eb8-afa9-dc8389f57ca9",
+      "name": "Streets of New Capenna Commander Deck Maestros Massacre Minimal Packaging",
+      "setCode": "NCC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 117.49500274658203,
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -97.37861191710164
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "41135125-89c7-5871-9555-ff3f4e5e6338",
@@ -9872,6 +11264,7 @@
       "category": "subset",
       "archetype": "mixed_composite",
       "marketPrice": 329.5400085449219,
+<<<<<<< HEAD
       "storedEv": 8.5,
       "calcEv": 8.76,
       "roi": -97.42064702931471
@@ -9959,6 +11352,59 @@
       "storedEv": 3.73,
       "calcEv": 3.73,
       "roi": -97.18978368110798
+=======
+      "storedEv": 8.66,
+      "calcEv": 8.48,
+      "roi": -97.37209450280768
+    },
+    {
+      "id": "56277bb8-a36f-5d54-98ee-909d8626fe41",
+      "productUuid": "56277bb8-a36f-5d54-98ee-909d8626fe41",
+      "name": "Doctor Who Commander Deck Masters of Evil",
+      "setCode": "WHO",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 122.63999938964844,
+      "storedEv": 3.24,
+      "calcEv": 3.24,
+      "roi": -97.35812131757604
+    },
+    {
+      "id": "4465f07e-3276-5210-a4a7-c41d608370ae",
+      "productUuid": "4465f07e-3276-5210-a4a7-c41d608370ae",
+      "name": "Shards of Alara Intro Pack Esper Artifice",
+      "setCode": "ALA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 120.0,
+      "storedEv": 3.22,
+      "calcEv": 3.22,
+      "roi": -97.31666666666666
+    },
+    {
+      "id": "0efe1bd4-c56d-5188-b8f6-8fa4d6cef710",
+      "productUuid": "0efe1bd4-c56d-5188-b8f6-8fa4d6cef710",
+      "name": "Tarkir Dragonstorm Commander Deck Temur Roar",
+      "setCode": "TDC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 88.68000030517578,
+      "storedEv": 2.48,
+      "calcEv": 2.48,
+      "roi": -97.20342806555531
+    },
+    {
+      "id": "6be795f2-0aef-528c-83db-29a386bb8a37",
+      "productUuid": "6be795f2-0aef-528c-83db-29a386bb8a37",
+      "name": "Secret Lair Countdown An Encyclopedia of Magic",
+      "setCode": "SLC",
+      "category": "box_set",
+      "archetype": "pure_precon",
+      "marketPrice": 301.9800109863281,
+      "storedEv": 8.81,
+      "calcEv": 11.81,
+      "roi": -97.08258835701584
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "04ab49ac-7d0b-5100-8571-a836eb621c1d",
@@ -9968,6 +11414,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 105.44000244140625,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -97.0883915696929
@@ -9983,6 +11430,35 @@
       "storedEv": 8.81,
       "calcEv": 11.81,
       "roi": -97.08258835701584
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -97.07890750314466
+    },
+    {
+      "id": "ddfe3fb9-b57f-526c-ba3a-442e1448f718",
+      "productUuid": "ddfe3fb9-b57f-526c-ba3a-442e1448f718",
+      "name": "Wilds of Eldraine Commander Deck Fae Dominion",
+      "setCode": "WOC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 279.8699951171875,
+      "storedEv": 8.2,
+      "calcEv": 8.2,
+      "roi": -97.07006819485365
+    },
+    {
+      "id": "c16803d0-6f98-579d-9f38-c5e11e78f104",
+      "productUuid": "c16803d0-6f98-579d-9f38-c5e11e78f104",
+      "name": "Murders at Karlov Manor Commander Deck Blame Game",
+      "setCode": "MKC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 132.72999572753906,
+      "storedEv": 3.96,
+      "calcEv": 3.96,
+      "roi": -97.01649956492963
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "6b2b605a-9632-54ab-b60e-e49d69b32425",
@@ -10004,9 +11480,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 130.1199951171875,
+<<<<<<< HEAD
       "storedEv": 3.97,
       "calcEv": 3.97,
       "roi": -96.94897006687975
+=======
+      "storedEv": 4.03,
+      "calcEv": 4.03,
+      "roi": -96.90285878325577
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "2f781c42-099e-5307-a511-e8ea67b4c13c",
@@ -10016,9 +11498,15 @@
       "category": "bundle",
       "archetype": "mixed_composite",
       "marketPrice": 767.4749755859375,
+<<<<<<< HEAD
       "storedEv": 24.07,
       "calcEv": 24.0,
       "roi": -96.86374139018363
+=======
+      "storedEv": 23.83,
+      "calcEv": 23.88,
+      "roi": -96.89501276809621
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "3f7ddeba-52f5-5f8f-a013-309403c8a870",
@@ -10028,6 +11516,7 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 13888.8798828125,
+<<<<<<< HEAD
       "storedEv": 448.46,
       "calcEv": 448.46,
       "roi": -96.77108590625102
@@ -10117,12 +11606,92 @@
       "roi": -96.47806714030594
     },
     {
+=======
+      "storedEv": 431.27,
+      "calcEv": 431.27,
+      "roi": -96.89485398650687
+    },
+    {
+      "id": "c761fe82-5597-5439-b50b-b09911bfa6fb",
+      "productUuid": "c761fe82-5597-5439-b50b-b09911bfa6fb",
+      "name": "March of the Machine Commander Deck Growing Threat",
+      "setCode": "MOC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 86.91000366210938,
+      "storedEv": 2.76,
+      "calcEv": 2.76,
+      "roi": -96.82430113484935
+    },
+    {
+      "id": "e6368858-fdb8-5c72-b599-081f20951d4f",
+      "productUuid": "e6368858-fdb8-5c72-b599-081f20951d4f",
+      "name": "Secret Lair Drop Oishii Tokens Rainbow Foil",
+      "setCode": "SLD",
+      "category": "box_set",
+      "archetype": "mixed_composite",
+      "marketPrice": 51.93000030517578,
+      "storedEv": 1.72,
+      "calcEv": 1.72,
+      "roi": -96.6878490470015
+    },
+    {
+      "id": "1da030aa-6282-5d52-b468-a277a5d18667",
+      "productUuid": "1da030aa-6282-5d52-b468-a277a5d18667",
+      "name": "March of the Machine Commander Deck Call For Backup",
+      "setCode": "MOC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 82.55999755859375,
+      "storedEv": 2.76,
+      "calcEv": 2.76,
+      "roi": -96.65697664532851
+    },
+    {
+      "id": "55fed710-49e0-55e9-949b-72a0c6d5c4b3",
+      "productUuid": "55fed710-49e0-55e9-949b-72a0c6d5c4b3",
+      "name": "March of the Machine Commander Decks Set of 5",
+      "setCode": "MOC",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 410.57000732421875,
+      "storedEv": 13.76,
+      "calcEv": 13.799999999999999,
+      "roi": -96.64856181539486
+    },
+    {
+      "id": "ecbb336b-1fdd-575a-b929-523b5fe96bba",
+      "productUuid": "ecbb336b-1fdd-575a-b929-523b5fe96bba",
+      "name": "Streets of New Capenna Commander Deck Display",
+      "setCode": "NCC",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 459.05999755859375,
+      "storedEv": 15.47,
+      "calcEv": 15.4,
+      "roi": -96.63007012541416
+    },
+    {
+      "id": "8980dc25-6a0d-5288-b960-9335972e8669",
+      "productUuid": "8980dc25-6a0d-5288-b960-9335972e8669",
+      "name": "Secret Lair 30th Anniversary Countdown Kit",
+      "setCode": "SLC",
+      "category": "box_set",
+      "archetype": "pure_precon",
+      "marketPrice": 395.1300048828125,
+      "storedEv": 13.32,
+      "calcEv": 14.87,
+      "roi": -96.62895759992956
+    },
+    {
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "id": "f10c00da-6199-58e8-bc03-ee504bcc39e8",
       "productUuid": "f10c00da-6199-58e8-bc03-ee504bcc39e8",
       "name": "Lorwyn Fat Pack",
       "setCode": "LRW",
       "category": "bundle",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 957.469970703125,
       "storedEv": 34.15,
       "calcEv": 34.26,
@@ -10139,6 +11708,60 @@
       "storedEv": 2.4,
       "calcEv": 2.4,
       "roi": -96.29515275513248
+=======
+      "marketPrice": 947.4650268554688,
+      "storedEv": 33.2,
+      "calcEv": 33.18,
+      "roi": -96.49591287710247
+    },
+    {
+      "id": "aaafd779-74dd-593e-a6be-9f9912314920",
+      "productUuid": "aaafd779-74dd-593e-a6be-9f9912314920",
+      "name": "March of the Machine Commander Deck Divine Convocation",
+      "setCode": "MOC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 76.1500015258789,
+      "storedEv": 2.76,
+      "calcEv": 2.76,
+      "roi": -96.37557459659138
+    },
+    {
+      "id": "4d7cf9d1-f15e-5f93-9639-27afec1ce0b5",
+      "productUuid": "4d7cf9d1-f15e-5f93-9639-27afec1ce0b5",
+      "name": "Wilds of Eldraine Commander Deck Display",
+      "setCode": "WOC",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 897.4949951171875,
+      "storedEv": 32.61,
+      "calcEv": 32.8,
+      "roi": -96.3665535543469
+    },
+    {
+      "id": "acb6c300-0c1d-5e4d-b6a0-7bc2e12b72dd",
+      "productUuid": "acb6c300-0c1d-5e4d-b6a0-7bc2e12b72dd",
+      "name": "2013 Core Set Intro Pack Mob Rule Red",
+      "setCode": "M13",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 156.68499755859375,
+      "storedEv": 5.73,
+      "calcEv": 5.68,
+      "roi": -96.34298108352256
+    },
+    {
+      "id": "4664d6d9-d65f-5faf-9175-9bd7ebbd52cd",
+      "productUuid": "4664d6d9-d65f-5faf-9175-9bd7ebbd52cd",
+      "name": "Doctor Who Commander Decks Set of 4",
+      "setCode": "WHO",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 348.5199890136719,
+      "storedEv": 13.0,
+      "calcEv": 12.96,
+      "roi": -96.26994134919188
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "d0dfec66-d58a-5e71-910c-09424f9f5a42",
@@ -10148,6 +11771,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 82.16000366210938,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -96.26338867677556
@@ -10163,6 +11787,11 @@
       "storedEv": 13.04,
       "calcEv": 13.08,
       "roi": -96.25846424565093
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -96.25121730438721
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "cc49a2ad-7068-5fe4-ac02-d0abf3acf451",
@@ -10172,6 +11801,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 81.12000274658203,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -96.21548336285116
@@ -10199,6 +11829,11 @@
       "storedEv": 5.95,
       "calcEv": 5.86,
       "roi": -96.20257198027213
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -96.20315594709497
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "50cd1c16-c8c0-5a56-b78c-7ca3363a5590",
@@ -10221,10 +11856,29 @@
       "archetype": "mixed_composite",
       "marketPrice": 99.94000244140625,
       "storedEv": 3.81,
+<<<<<<< HEAD
       "calcEv": 3.82,
       "roi": -96.18771272070585
     },
     {
+=======
+      "calcEv": 3.84,
+      "roi": -96.18771272070585
+    },
+    {
+      "id": "5bed745e-cf9f-5b5a-8378-3edc078b4d9d",
+      "productUuid": "5bed745e-cf9f-5b5a-8378-3edc078b4d9d",
+      "name": "Tarkir Dragonstorm Commander Deck Abzan Armor",
+      "setCode": "TDC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 64.77999877929688,
+      "storedEv": 2.48,
+      "calcEv": 2.48,
+      "roi": -96.17165784697022
+    },
+    {
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "id": "34e2948b-e2e8-5308-b421-334cbea4b9d5",
       "productUuid": "34e2948b-e2e8-5308-b421-334cbea4b9d5",
       "name": "Time Spiral Fat Pack",
@@ -10232,9 +11886,15 @@
       "category": "bundle",
       "archetype": "mixed_composite",
       "marketPrice": 799.989990234375,
+<<<<<<< HEAD
       "storedEv": 30.67,
       "calcEv": 30.599999999999998,
       "roi": -96.1662020307261
+=======
+      "storedEv": 30.71,
+      "calcEv": 30.78,
+      "roi": -96.16120196816426
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "9bc35b71-be0e-5bd1-ab69-a11d4ee1a6ad",
@@ -10244,9 +11904,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 79.98999786376953,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -96.16202015003364
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -96.14951858700444
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "bc60a74f-2603-5401-82d8-630502d6e660",
@@ -10256,9 +11922,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 79.16000366210938,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -96.12177885551377
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -96.10914621334932
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "5ebd9311-3598-5473-acdd-5c5ae603f366",
@@ -10267,18 +11939,38 @@
       "setCode": "HOU",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 78.98999786376953,
       "storedEv": 3.12,
       "calcEv": 3.12,
       "roi": -96.0501328213973
+=======
+      "marketPrice": 57.5,
+      "storedEv": 2.25,
+      "calcEv": 2.25,
+      "roi": -96.08695652173913
     },
     {
-      "id": "e4285534-2c7f-51ad-b6ae-37ac29db4d32",
-      "productUuid": "e4285534-2c7f-51ad-b6ae-37ac29db4d32",
-      "name": "Murders at Karlov Manor Commander Deck Deadly Disguise",
-      "setCode": "MKC",
+      "id": "c812d38c-9a0b-535e-9a32-4f93f63dc10d",
+      "productUuid": "c812d38c-9a0b-535e-9a32-4f93f63dc10d",
+      "name": "Betrayers of Kamigawa Fat Pack",
+      "setCode": "BOK",
+      "category": "bundle",
+      "archetype": "pure_randomized",
+      "marketPrice": 644.9550170898438,
+      "storedEv": 25.52,
+      "calcEv": 25.38,
+      "roi": -96.0431348971978
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+    },
+    {
+      "id": "5ebd9311-3598-5473-acdd-5c5ae603f366",
+      "productUuid": "5ebd9311-3598-5473-acdd-5c5ae603f366",
+      "name": "Hour of Devastation Planeswalker Deck Nicol Bolas",
+      "setCode": "HOU",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 94.29000091552734,
       "storedEv": 3.73,
       "calcEv": 3.73,
@@ -10307,6 +11999,12 @@
       "storedEv": 2.29,
       "calcEv": 2.29,
       "roi": -96.01739130434783
+=======
+      "marketPrice": 78.98999786376953,
+      "storedEv": 3.23,
+      "calcEv": 3.23,
+      "roi": -95.91087468369017
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "3be2adba-98b7-530b-9084-e323f9a9732c",
@@ -10316,9 +12014,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 74.98999786376953,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -95.906120699487
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -95.89278558775895
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "9164ff6d-93f7-5069-b67d-06eb82ceca98",
@@ -10328,9 +12032,14 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 70.0,
+<<<<<<< HEAD
       "storedEv": 2.9,
       "calcEv": 2.9,
       "roi": -95.85714285714285
+=======
+      "storedEv": 2.92,
+      "calcEv": 2.92,
+      "roi": -95.82857142857144
     },
     {
       "id": "5f1dfd55-f9c9-5ca2-8df6-390487c9b268",
@@ -10339,6 +12048,32 @@
       "setCode": "CON",
       "category": "deck",
       "archetype": "mixed_composite",
+      "marketPrice": 70.0,
+      "storedEv": 2.92,
+      "calcEv": 2.92,
+      "roi": -95.82857142857144
+    },
+    {
+      "id": "50619c98-2442-5dc6-8a8e-55c845ecca1a",
+      "productUuid": "50619c98-2442-5dc6-8a8e-55c845ecca1a",
+      "name": "Conflux Intro Pack Naya Domain",
+      "setCode": "CON",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 70.0,
+      "storedEv": 2.92,
+      "calcEv": 2.92,
+      "roi": -95.82857142857144
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+    },
+    {
+      "id": "5f1dfd55-f9c9-5ca2-8df6-390487c9b268",
+      "productUuid": "5f1dfd55-f9c9-5ca2-8df6-390487c9b268",
+      "name": "Conflux Intro Pack Esper Air Assault",
+      "setCode": "CON",
+      "category": "deck",
+      "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 70.0,
       "storedEv": 2.9,
       "calcEv": 2.9,
@@ -10367,6 +12102,24 @@
       "storedEv": 3.73,
       "calcEv": 3.73,
       "roi": -95.78578701844458
+=======
+      "marketPrice": 177.4600067138672,
+      "storedEv": 7.45,
+      "calcEv": 7.45,
+      "roi": -95.80187100296226
+    },
+    {
+      "id": "e4285534-2c7f-51ad-b6ae-37ac29db4d32",
+      "productUuid": "e4285534-2c7f-51ad-b6ae-37ac29db4d32",
+      "name": "Murders at Karlov Manor Commander Deck Deadly Disguise",
+      "setCode": "MKC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 94.29000091552734,
+      "storedEv": 3.96,
+      "calcEv": 3.96,
+      "roi": -95.8001909411925
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "1cc0da19-2b54-593b-84b1-f0bb12c34114",
@@ -10376,6 +12129,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 72.48999786376953,
+<<<<<<< HEAD
       "storedEv": 3.07,
       "calcEv": 3.07,
       "roi": -95.76493296941538
@@ -10415,6 +12169,11 @@
       "storedEv": 2.4,
       "calcEv": 2.4,
       "roi": -95.70968884712468
+=======
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -95.7511379628011
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "2549c308-b8ad-5e36-91cc-ed7b12a03a80",
@@ -10424,6 +12183,7 @@
       "category": "deck_box",
       "archetype": "mixed_composite",
       "marketPrice": 334.9949951171875,
+<<<<<<< HEAD
       "storedEv": 14.47,
       "calcEv": 14.5,
       "roi": -95.68053248230225
@@ -10451,6 +12211,95 @@
       "storedEv": 14.86,
       "calcEv": 14.92,
       "roi": -95.60939593321388
+=======
+      "storedEv": 14.52,
+      "calcEv": 14.6,
+      "roi": -95.66560688618031
+    },
+    {
+      "id": "7bdef404-4e7f-5277-a815-b362efc0a08c",
+      "productUuid": "7bdef404-4e7f-5277-a815-b362efc0a08c",
+      "name": "Tarkir Dragonstorm Commander Decks Set of 5",
+      "setCode": "TDC",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 278.010009765625,
+      "storedEv": 12.22,
+      "calcEv": 12.4,
+      "roi": -95.60447481358601
+    },
+    {
+      "id": "dcdd3aeb-1070-53f7-b97a-4dda68d0176b",
+      "productUuid": "dcdd3aeb-1070-53f7-b97a-4dda68d0176b",
+      "name": "Duskmourn House of Horror Commander Deck Miracle Worker",
+      "setCode": "DSC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 70.23999786376953,
+      "storedEv": 3.09,
+      "calcEv": 3.09,
+      "roi": -95.6007971327205
+    },
+    {
+      "id": "d2def311-b67d-593a-b314-5a7b65afde65",
+      "productUuid": "d2def311-b67d-593a-b314-5a7b65afde65",
+      "name": "Streets of New Capenna Commander Deck Bedecked Brokers",
+      "setCode": "NCC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 69.80000305175781,
+      "storedEv": 3.08,
+      "calcEv": 3.08,
+      "roi": -95.5873927430689
+    },
+    {
+      "id": "7922b4c9-12c3-5821-a3ec-ea444f998dc4",
+      "productUuid": "7922b4c9-12c3-5821-a3ec-ea444f998dc4",
+      "name": "Tarkir Dragonstorm Commander Deck Mardu Surge",
+      "setCode": "TDC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 55.939998626708984,
+      "storedEv": 2.48,
+      "calcEv": 2.48,
+      "roi": -95.56667847536217
+    },
+    {
+      "id": "1dda9d52-11ef-52dd-b169-b02271aff831",
+      "productUuid": "1dda9d52-11ef-52dd-b169-b02271aff831",
+      "name": "Murders at Karlov Manor Commander Deck Revenant Recon",
+      "setCode": "MKC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 88.51000213623047,
+      "storedEv": 3.96,
+      "calcEv": 3.96,
+      "roi": -95.52592938151221
+    },
+    {
+      "id": "e790c7f6-314a-5026-bb0c-e085edb102e0",
+      "productUuid": "e790c7f6-314a-5026-bb0c-e085edb102e0",
+      "name": "Innistrad Intro Pack Repel the Dark",
+      "setCode": "ISD",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 65.98999786376953,
+      "storedEv": 2.97,
+      "calcEv": 2.97,
+      "roi": -95.49931793280051
+    },
+    {
+      "id": "2c61d5a4-9252-595b-9a58-a782a3d27d68",
+      "productUuid": "2c61d5a4-9252-595b-9a58-a782a3d27d68",
+      "name": "Phyrexia All Will Be One Commander Deck Rebellion Rising",
+      "setCode": "ONC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 93.94000244140625,
+      "storedEv": 4.24,
+      "calcEv": 4.24,
+      "roi": -95.48648084968421
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "9967011a-b908-5af9-8f17-77fbe3810564",
@@ -10525,6 +12374,18 @@
       "roi": -95.44568228027657
     },
     {
+      "id": "4f3dade8-afa3-5ff0-ab93-1ee40ffec8f9",
+      "productUuid": "4f3dade8-afa3-5ff0-ab93-1ee40ffec8f9",
+      "name": "Morningtide Fat Pack",
+      "setCode": "MOR",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 797.4849853515625,
+      "storedEv": 36.25,
+      "calcEv": 36.06,
+      "roi": -95.45445987500071
+    },
+    {
       "id": "d10abcf3-329b-5335-937c-6fc217b8bebd",
       "productUuid": "d10abcf3-329b-5335-937c-6fc217b8bebd",
       "name": "Secret Lair Drop Dan Fraziers Mox Box Etched",
@@ -10537,6 +12398,7 @@
       "roi": -95.42963073385356
     },
     {
+<<<<<<< HEAD
       "id": "2c61d5a4-9252-595b-9a58-a782a3d27d68",
       "productUuid": "2c61d5a4-9252-595b-9a58-a782a3d27d68",
       "name": "Phyrexia All Will Be One Commander Deck Rebellion Rising",
@@ -10571,6 +12433,30 @@
       "storedEv": 3.73,
       "calcEv": 3.73,
       "roi": -95.1457571866636
+=======
+      "id": "9d70e71a-8d19-5af5-81b2-936fc1054eb3",
+      "productUuid": "9d70e71a-8d19-5af5-81b2-936fc1054eb3",
+      "name": "Murders at Karlov Manor Commander Deck Display",
+      "setCode": "MKC",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 338.45001220703125,
+      "storedEv": 15.53,
+      "calcEv": 15.84,
+      "roi": -95.41143464621882
+    },
+    {
+      "id": "97f492e4-9457-5fb3-b25c-17d20e7f2d0b",
+      "productUuid": "97f492e4-9457-5fb3-b25c-17d20e7f2d0b",
+      "name": "Duels of the Planeswalkers Eyes of Shadow Liliana Vess Deck",
+      "setCode": "DPA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 92.37999725341797,
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -95.35613755407284
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "754656b3-e670-5f33-b3eb-5f1b56fe6599",
@@ -10580,6 +12466,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 160.11000061035156,
+<<<<<<< HEAD
       "storedEv": 7.86,
       "calcEv": 7.86,
       "roi": -95.09087504213535
@@ -10595,6 +12482,23 @@
       "storedEv": 2.89,
       "calcEv": 2.89,
       "roi": -95.07666105206489
+=======
+      "storedEv": 7.45,
+      "calcEv": 7.45,
+      "roi": -95.34694899031915
+    },
+    {
+      "id": "1b634d7d-c292-5617-a361-330849141f5a",
+      "productUuid": "1b634d7d-c292-5617-a361-330849141f5a",
+      "name": "Guildpact Fat Pack",
+      "setCode": "GPT",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 364.989990234375,
+      "storedEv": 17.05,
+      "calcEv": 17.16,
+      "roi": -95.32863901581204
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "384cd144-0f5a-53ef-a65b-6bfe603b27f2",
@@ -10604,9 +12508,51 @@
       "category": "bundle",
       "archetype": "mixed_composite",
       "marketPrice": 879.4400024414062,
+<<<<<<< HEAD
       "storedEv": 43.48,
       "calcEv": 43.44,
       "roi": -95.05594470580193
+=======
+      "storedEv": 43.17,
+      "calcEv": 43.28,
+      "roi": -95.09119441006139
+    },
+    {
+      "id": "3c074ed1-0263-5e27-96a7-053f5fb1fbe1",
+      "productUuid": "3c074ed1-0263-5e27-96a7-053f5fb1fbe1",
+      "name": "Duels of the Planeswalkers 2015 XBOX Promo Pack",
+      "setCode": "DPA",
+      "category": "booster_pack",
+      "archetype": "mixed_composite",
+      "marketPrice": 11.489999771118164,
+      "storedEv": 0.57,
+      "calcEv": 0.79,
+      "roi": -95.03916439204131
+    },
+    {
+      "id": "e75417fa-9a5b-5a72-852b-22d04990b176",
+      "productUuid": "e75417fa-9a5b-5a72-852b-22d04990b176",
+      "name": "Duels of the Planeswalkers 2014 Android Promo Pack",
+      "setCode": "DPA",
+      "category": "booster_pack",
+      "archetype": "mixed_composite",
+      "marketPrice": 14.760000228881836,
+      "storedEv": 0.74,
+      "calcEv": 1.01,
+      "roi": -94.98644994224325
+    },
+    {
+      "id": "f964f260-ce68-5cdd-8597-561d13f9f6c8",
+      "productUuid": "f964f260-ce68-5cdd-8597-561d13f9f6c8",
+      "name": "Innistrad Intro Pack Eldritch Onslaught",
+      "setCode": "ISD",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 58.70000076293945,
+      "storedEv": 2.97,
+      "calcEv": 2.97,
+      "roi": -94.9403748528141
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "7e17487a-7a6a-51ff-927e-7063226b93dc",
@@ -10616,9 +12562,39 @@
       "category": "limited_aid_tool",
       "archetype": "pure_randomized",
       "marketPrice": 150000.0,
+<<<<<<< HEAD
       "storedEv": 7550.95,
       "calcEv": 7550.95,
       "roi": -94.96603333333333
+=======
+      "storedEv": 7609.51,
+      "calcEv": 7609.51,
+      "roi": -94.92699333333333
+    },
+    {
+      "id": "7b88a0dd-3910-5677-b57a-d8ed7ac179ca",
+      "productUuid": "7b88a0dd-3910-5677-b57a-d8ed7ac179ca",
+      "name": "Wilds of Eldraine Commander Decks Set of 2",
+      "setCode": "WOC",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 322.9700012207031,
+      "storedEv": 16.56,
+      "calcEv": 16.4,
+      "roi": -94.87258880471575
+    },
+    {
+      "id": "adeb6008-4d30-52be-80da-11ba517b57ff",
+      "productUuid": "adeb6008-4d30-52be-80da-11ba517b57ff",
+      "name": "Murders at Karlov Manor Commander Deck Deep Clue Sea",
+      "setCode": "MKC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 76.83999633789062,
+      "storedEv": 3.96,
+      "calcEv": 3.96,
+      "roi": -94.84643390326755
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "3c074ed1-0263-5e27-96a7-053f5fb1fbe1",
@@ -10627,6 +12603,7 @@
       "setCode": "DPA",
       "category": "booster_pack",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 11.489999771118164,
       "storedEv": 0.58,
       "calcEv": 0.8,
@@ -10655,6 +12632,12 @@
       "storedEv": 25.92,
       "calcEv": 26.01,
       "roi": -94.73143967103357
+=======
+      "marketPrice": 59.58000183105469,
+      "storedEv": 3.09,
+      "calcEv": 3.09,
+      "roi": -94.81369603048684
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "164a186d-f165-53f7-8307-11b4ddd98f6e",
@@ -10664,6 +12647,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 102.98999786376953,
+<<<<<<< HEAD
       "storedEv": 5.43,
       "calcEv": 5.43,
       "roi": -94.72764335117031
@@ -10811,6 +12795,215 @@
       "storedEv": 5.14,
       "calcEv": 5.06,
       "roi": -94.28825411488381
+=======
+      "storedEv": 5.41,
+      "calcEv": 5.41,
+      "roi": -94.74706271267614
+    },
+    {
+      "id": "c43f37b3-9215-5737-aaa0-b0caf429745c",
+      "productUuid": "c43f37b3-9215-5737-aaa0-b0caf429745c",
+      "name": "Aetherdrift Commander Deck Living Energy",
+      "setCode": "DRC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 32.869998931884766,
+      "storedEv": 1.74,
+      "calcEv": 1.74,
+      "roi": -94.70641905524324
+    },
+    {
+      "id": "62a4c0e4-e6a0-5b71-9287-0df9fb5e0947",
+      "productUuid": "62a4c0e4-e6a0-5b71-9287-0df9fb5e0947",
+      "name": "Secret Lair Drop Oishii Tokens",
+      "setCode": "SLD",
+      "category": "box_set",
+      "archetype": "mixed_composite",
+      "marketPrice": 32.40999984741211,
+      "storedEv": 1.72,
+      "calcEv": 1.72,
+      "roi": -94.69299596390668
+    },
+    {
+      "id": "c2b389b9-1d23-500a-ac6a-169497093dcd",
+      "productUuid": "c2b389b9-1d23-500a-ac6a-169497093dcd",
+      "name": "Mirrodin Besieged Event Deck Infect and Defile",
+      "setCode": "MBS",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 80.51000213623047,
+      "storedEv": 4.3,
+      "calcEv": 4.3,
+      "roi": -94.65904870711095
+    },
+    {
+      "id": "832131a2-077b-5300-98e2-02f5eabbbaed",
+      "productUuid": "832131a2-077b-5300-98e2-02f5eabbbaed",
+      "name": "March of the Machine Commander Deck Tinker Time",
+      "setCode": "MOC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 51.5,
+      "storedEv": 2.76,
+      "calcEv": 2.76,
+      "roi": -94.64077669902913
+    },
+    {
+      "id": "35e404f8-fe83-5d32-9f80-64a00a444552",
+      "productUuid": "35e404f8-fe83-5d32-9f80-64a00a444552",
+      "name": "Doctor Who Commander Deck Paradox Power",
+      "setCode": "WHO",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 60.41999816894531,
+      "storedEv": 3.24,
+      "calcEv": 3.24,
+      "roi": -94.63753707681293
+    },
+    {
+      "id": "67b41610-4941-50ce-968b-0be5fcc3b663",
+      "productUuid": "67b41610-4941-50ce-968b-0be5fcc3b663",
+      "name": "Innistrad Fat Pack",
+      "setCode": "ISD",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 491.9750061035156,
+      "storedEv": 26.8,
+      "calcEv": 26.73,
+      "roi": -94.55256879566743
+    },
+    {
+      "id": "5001db0c-3819-57ab-b7d0-9c62fc9335b1",
+      "productUuid": "5001db0c-3819-57ab-b7d0-9c62fc9335b1",
+      "name": "Core Set 2019 Planeswalker Decks Set of 5",
+      "setCode": "M19",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 249.69000244140625,
+      "storedEv": 13.75,
+      "calcEv": 14.05,
+      "roi": -94.49317158654493
+    },
+    {
+      "id": "5b668c61-62fa-572a-ab0d-19234b47614e",
+      "productUuid": "5b668c61-62fa-572a-ab0d-19234b47614e",
+      "name": "Alara Reborn Intro Pack Unnatural Schemes",
+      "setCode": "ARB",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 58.494998931884766,
+      "storedEv": 3.26,
+      "calcEv": 3.26,
+      "roi": -94.42687399003778
+    },
+    {
+      "id": "a94ae528-6d89-5cf9-b9fa-c9a370ece1e6",
+      "productUuid": "a94ae528-6d89-5cf9-b9fa-c9a370ece1e6",
+      "name": "Doctor Who Commander Deck Blast From the Past",
+      "setCode": "WHO",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 58.130001068115234,
+      "storedEv": 3.24,
+      "calcEv": 3.24,
+      "roi": -94.42628601330412
+    },
+    {
+      "id": "fdac09a3-55da-5e1c-b20d-2ec8cd541fd1",
+      "productUuid": "fdac09a3-55da-5e1c-b20d-2ec8cd541fd1",
+      "name": "Core Set 2019 Planeswalker Deck Ajani",
+      "setCode": "M19",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 50.0,
+      "storedEv": 2.81,
+      "calcEv": 2.81,
+      "roi": -94.38
+    },
+    {
+      "id": "ead1f22b-d425-5358-8440-cc1a7d226ba4",
+      "productUuid": "ead1f22b-d425-5358-8440-cc1a7d226ba4",
+      "name": "2013 Core Set Intro Pack Sole Domination Black",
+      "setCode": "M13",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 99.4749984741211,
+      "storedEv": 5.66,
+      "calcEv": 5.68,
+      "roi": -94.310128085629
+    },
+    {
+      "id": "a2f5a996-8718-537a-adb0-271e5c70a94f",
+      "productUuid": "a2f5a996-8718-537a-adb0-271e5c70a94f",
+      "name": "Duels of the Planeswalkers 2014 iPad Promo Pack",
+      "setCode": "DPA",
+      "category": "booster_pack",
+      "archetype": "mixed_composite",
+      "marketPrice": 12.989999771118164,
+      "storedEv": 0.74,
+      "calcEv": 1.01,
+      "roi": -94.30331013827029
+    },
+    {
+      "id": "25dfead8-d1ad-5260-85e9-24a6388f0dfd",
+      "productUuid": "25dfead8-d1ad-5260-85e9-24a6388f0dfd",
+      "name": "Battle for Zendikar Intro Pack Swarming Instinct",
+      "setCode": "BFZ",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 89.98999786376953,
+      "storedEv": 5.15,
+      "calcEv": 5.04,
+      "roi": -94.27714176880382
+    },
+    {
+      "id": "f386c97a-0bd4-5131-b9bb-abe23b07680f",
+      "productUuid": "f386c97a-0bd4-5131-b9bb-abe23b07680f",
+      "name": "Scars of Mirrodin Intro Pack Phyrexian Poison",
+      "setCode": "SOM",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 99.6500015258789,
+      "storedEv": 5.74,
+      "calcEv": 5.74,
+      "roi": -94.2398395262349
+    },
+    {
+      "id": "2862821a-7e70-585b-8662-4a6247497f7f",
+      "productUuid": "2862821a-7e70-585b-8662-4a6247497f7f",
+      "name": "Portal Second Age Gift Box",
+      "setCode": "P02",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 179.97000122070312,
+      "storedEv": 10.42,
+      "calcEv": 10.42,
+      "roi": -94.21014617473853
+    },
+    {
+      "id": "e1b62ec3-d6b0-50b0-a993-3b1ff65d0d66",
+      "productUuid": "e1b62ec3-d6b0-50b0-a993-3b1ff65d0d66",
+      "name": "Ugins Fate Event Booster Pack",
+      "setCode": "FRF",
+      "category": "booster_pack",
+      "archetype": "pure_randomized",
+      "marketPrice": 29.549999237060547,
+      "storedEv": 1.73,
+      "calcEv": 1.73,
+      "roi": -94.14551592329553
+    },
+    {
+      "id": "21e61c60-d9a9-5760-9b1d-2aa1acbbec93",
+      "productUuid": "21e61c60-d9a9-5760-9b1d-2aa1acbbec93",
+      "name": "Renaissance French Booster Pack",
+      "setCode": "REN",
+      "category": "booster_pack",
+      "archetype": "pure_randomized",
+      "marketPrice": 56.040000915527344,
+      "storedEv": 3.3,
+      "calcEv": 3.3,
+      "roi": -94.11134913260565
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "54ac2139-1043-5f7d-9e84-0c18ad249879",
@@ -10892,6 +13085,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 39.97999954223633,
+<<<<<<< HEAD
       "storedEv": 2.37,
       "calcEv": 2.37,
       "roi": -94.07203595013492
@@ -10919,6 +13113,23 @@
       "storedEv": 19.19,
       "calcEv": 19.18,
       "roi": -94.05827168855649
+=======
+      "storedEv": 2.38,
+      "calcEv": 2.38,
+      "roi": -94.04702344359538
+    },
+    {
+      "id": "23aa153d-ea05-5368-b6a6-8eb6577b1957",
+      "productUuid": "23aa153d-ea05-5368-b6a6-8eb6577b1957",
+      "name": "Zendikar Fat Pack",
+      "setCode": "ZEN",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 898.989990234375,
+      "storedEv": 53.57,
+      "calcEv": 53.6,
+      "roi": -94.04109049244988
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "c69d6542-40e7-5c3b-912b-abf8c07efd45",
@@ -10928,9 +13139,15 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 55.0,
+<<<<<<< HEAD
       "storedEv": 3.27,
       "calcEv": 3.27,
       "roi": -94.05454545454545
+=======
+      "storedEv": 3.33,
+      "calcEv": 3.33,
+      "roi": -93.94545454545454
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "b16793c3-062f-5ded-8ba4-fa8046f2a532",
@@ -10940,9 +13157,27 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 93.69999694824219,
+<<<<<<< HEAD
       "storedEv": 5.67,
       "calcEv": 5.67,
       "roi": -93.94877248167684
+=======
+      "storedEv": 5.74,
+      "calcEv": 5.74,
+      "roi": -93.87406596910495
+    },
+    {
+      "id": "f29c96f3-daf8-5475-9093-e54e80c6e279",
+      "productUuid": "f29c96f3-daf8-5475-9093-e54e80c6e279",
+      "name": "Amonkhet Planeswalker Decks Set of 2",
+      "setCode": "AKH",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 199.99000549316406,
+      "storedEv": 12.28,
+      "calcEv": 12.12,
+      "roi": -93.85969315330624
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "31881286-3564-59d0-9068-3585b62e28d1",
@@ -10952,6 +13187,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 68.37999725341797,
+<<<<<<< HEAD
       "storedEv": 4.31,
       "calcEv": 4.31,
       "roi": -93.69698717005349
@@ -10991,6 +13227,11 @@
       "storedEv": 47.04,
       "calcEv": 47.04,
       "roi": -93.5116345558381
+=======
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -93.72623548944999
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "3d19ed31-541e-5507-9df1-dc39f19a950c",
@@ -11000,9 +13241,51 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 65.9800033569336,
+<<<<<<< HEAD
       "storedEv": 4.31,
       "calcEv": 4.31,
       "roi": -93.46771782249829
+=======
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -93.49803003677904
+    },
+    {
+      "id": "938af06f-e0a3-5f9d-a113-0f227b493786",
+      "productUuid": "938af06f-e0a3-5f9d-a113-0f227b493786",
+      "name": "Alara Reborn Intro Pack Eternal Siege",
+      "setCode": "ARB",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 50.0,
+      "storedEv": 3.26,
+      "calcEv": 3.26,
+      "roi": -93.48
+    },
+    {
+      "id": "0da24da5-ff1a-503a-bc0b-4314a4e5077f",
+      "productUuid": "0da24da5-ff1a-503a-bc0b-4314a4e5077f",
+      "name": "Rivals of Ixalan Planeswalker Deck Angrath",
+      "setCode": "RIX",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 43.31999969482422,
+      "storedEv": 2.84,
+      "calcEv": 2.84,
+      "roi": -93.44413661124905
+    },
+    {
+      "id": "2c0912c5-2331-5a4e-ba31-cf9c6905a931",
+      "productUuid": "2c0912c5-2331-5a4e-ba31-cf9c6905a931",
+      "name": "Eventide Fat Pack",
+      "setCode": "EVE",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 724.989990234375,
+      "storedEv": 47.59,
+      "calcEv": 47.76,
+      "roi": -93.43577143946288
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "9c45e2b2-58ec-5e6d-90b4-92ab1ce9588d",
@@ -11012,6 +13295,7 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 49.34000015258789,
+<<<<<<< HEAD
       "storedEv": 3.24,
       "calcEv": 3.24,
       "roi": -93.4333198419537
@@ -11051,6 +13335,11 @@
       "storedEv": 25.05,
       "calcEv": 25.12,
       "roi": -93.23411823122011
+=======
+      "storedEv": 3.26,
+      "calcEv": 3.26,
+      "roi": -93.39278477924971
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "16df58bd-99a1-5f57-a66e-0de5dc360769",
@@ -11060,9 +13349,51 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 65.0,
+<<<<<<< HEAD
       "storedEv": 4.4,
       "calcEv": 4.4,
       "roi": -93.23076923076923
+=======
+      "storedEv": 4.3,
+      "calcEv": 4.3,
+      "roi": -93.38461538461539
+    },
+    {
+      "id": "11685081-932b-588a-9a58-7b53632af9e4",
+      "productUuid": "11685081-932b-588a-9a58-7b53632af9e4",
+      "name": "Aether Revolt Planeswalker Deck Ajani",
+      "setCode": "AER",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 39.9900016784668,
+      "storedEv": 2.69,
+      "calcEv": 2.69,
+      "roi": -93.27331861191577
+    },
+    {
+      "id": "4ba6479e-c06c-5850-9c29-53e23c13fb4b",
+      "productUuid": "4ba6479e-c06c-5850-9c29-53e23c13fb4b",
+      "name": "Tarkir Dragonstorm Commander Deck Jeskai Striker",
+      "setCode": "TDC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 36.36000061035156,
+      "storedEv": 2.48,
+      "calcEv": 2.48,
+      "roi": -93.17931804628752
+    },
+    {
+      "id": "5333f7b4-b761-55ba-8d91-4f74b8b969b1",
+      "productUuid": "5333f7b4-b761-55ba-8d91-4f74b8b969b1",
+      "name": "Dragons of Tarkir Intro Pack Set of 5",
+      "setCode": "DTK",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 274.989990234375,
+      "storedEv": 18.87,
+      "calcEv": 18.799999999999997,
+      "roi": -93.1379320447566
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "b3b2af6e-cefc-5fb0-aa82-63fb73d9358b",
@@ -11072,6 +13403,7 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 45000.0,
+<<<<<<< HEAD
       "storedEv": 3089.07,
       "calcEv": 3089.07,
       "roi": -93.1354
@@ -11087,6 +13419,11 @@
       "storedEv": 2.37,
       "calcEv": 2.37,
       "roi": -93.1264500247546
+=======
+      "storedEv": 3108.28,
+      "calcEv": 3108.28,
+      "roi": -93.09271111111111
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "ef24e368-e1c8-56d6-85ec-7289c91d0a4d",
@@ -11096,9 +13433,39 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 62.099998474121094,
+<<<<<<< HEAD
       "storedEv": 4.31,
       "calcEv": 4.31,
       "roi": -93.05958114991564
+=======
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -93.09178726986963
+    },
+    {
+      "id": "ceb9dc37-df20-5ea6-884d-c41ecf4b7a4d",
+      "productUuid": "ceb9dc37-df20-5ea6-884d-c41ecf4b7a4d",
+      "name": "Guilds of Ravnica Planeswalker Deck Vraska",
+      "setCode": "GRN",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 34.47999954223633,
+      "storedEv": 2.39,
+      "calcEv": 2.39,
+      "roi": -93.06844538361328
+    },
+    {
+      "id": "ad5225b6-6422-5fda-8b75-2c0f6bebc655",
+      "productUuid": "ad5225b6-6422-5fda-8b75-2c0f6bebc655",
+      "name": "Shards of Alara Fat Pack",
+      "setCode": "ALA",
+      "category": "bundle",
+      "archetype": "mixed_composite",
+      "marketPrice": 370.239990234375,
+      "storedEv": 25.71,
+      "calcEv": 25.76,
+      "roi": -93.05585547803071
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "5333f7b4-b761-55ba-8d91-4f74b8b969b1",
@@ -11107,10 +13474,29 @@
       "setCode": "DTK",
       "category": "subset",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 274.989990234375,
       "storedEv": 19.43,
       "calcEv": 19.4,
       "roi": -92.93428826866035
+=======
+      "marketPrice": 53.459999084472656,
+      "storedEv": 3.75,
+      "calcEv": 3.76,
+      "roi": -92.98540953194819
+    },
+    {
+      "id": "2143f4d9-7673-5ead-87f7-5ae6ffdd8241",
+      "productUuid": "2143f4d9-7673-5ead-87f7-5ae6ffdd8241",
+      "name": "Rise of the Eldrazi 3 Booster Draft Pack",
+      "setCode": "ROE",
+      "category": "limited_aid_tool",
+      "archetype": "pure_randomized",
+      "marketPrice": 224.69000244140625,
+      "storedEv": 16.11,
+      "calcEv": 16.23,
+      "roi": -92.83012157863983
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "f1e98f27-9dfc-54a0-9d94-336b37689f4a",
@@ -11120,9 +13506,63 @@
       "category": "multiple_decks",
       "archetype": "pure_randomized",
       "marketPrice": 485.0,
+<<<<<<< HEAD
       "storedEv": 34.69,
       "calcEv": 34.58,
       "roi": -92.84742268041238
+=======
+      "storedEv": 34.78,
+      "calcEv": 34.82,
+      "roi": -92.82886597938145
+    },
+    {
+      "id": "75fe0be5-4e0d-5865-bd62-2418249933ac",
+      "productUuid": "75fe0be5-4e0d-5865-bd62-2418249933ac",
+      "name": "Alara Reborn Intro Pack Dead Ahead",
+      "setCode": "ARB",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 44.9900016784668,
+      "storedEv": 3.26,
+      "calcEv": 3.26,
+      "roi": -92.75394559151505
+    },
+    {
+      "id": "3dc9a690-8698-50c2-b4ae-01183ad994ee",
+      "productUuid": "3dc9a690-8698-50c2-b4ae-01183ad994ee",
+      "name": "Duels of the Planeswalkers Teeth of the Predator Garruk Wildspeaker Deck",
+      "setCode": "DPA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 59.18000030517578,
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -92.7509294054113
+    },
+    {
+      "id": "485b2247-ae4d-551e-8a1d-bb7e0a02932f",
+      "productUuid": "485b2247-ae4d-551e-8a1d-bb7e0a02932f",
+      "name": "Dragons of Tarkir Intro Pack Cruel Plots",
+      "setCode": "DTK",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 51.619998931884766,
+      "storedEv": 3.75,
+      "calcEv": 3.76,
+      "roi": -92.73537373577183
+    },
+    {
+      "id": "fd0f1ab1-d803-55d1-8740-404eb4aafc3d",
+      "productUuid": "fd0f1ab1-d803-55d1-8740-404eb4aafc3d",
+      "name": "Duels of the Planeswalkers Thoughts of the Wind Jace Beleren Deck",
+      "setCode": "DPA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 57.9900016784668,
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -92.60217300253504
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "a78bd391-ba28-5133-bc98-afe2cd878c0a",
@@ -11185,6 +13625,7 @@
       "roi": -92.71713420450412
     },
     {
+<<<<<<< HEAD
       "id": "fd0f1ab1-d803-55d1-8740-404eb4aafc3d",
       "productUuid": "fd0f1ab1-d803-55d1-8740-404eb4aafc3d",
       "name": "Duels of the Planeswalkers Thoughts of the Wind Jace Beleren Deck",
@@ -11233,6 +13674,8 @@
       "roi": -92.5220293534538
     },
     {
+=======
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "id": "94cea37a-60d8-582e-94b7-375362650017",
       "productUuid": "94cea37a-60d8-582e-94b7-375362650017",
       "name": "Dominaria United Box Topper Pack",
@@ -11245,6 +13688,7 @@
       "roi": -92.51170028976226
     },
     {
+<<<<<<< HEAD
       "id": "8dfdec72-abe6-51e8-b383-22267a0cdf30",
       "productUuid": "8dfdec72-abe6-51e8-b383-22267a0cdf30",
       "name": "Dragons of Tarkir Intro Pack Furious Forces",
@@ -11291,6 +13735,54 @@
       "storedEv": 9.92,
       "calcEv": 9.92,
       "roi": -92.16800906901632
+=======
+      "id": "05605ef7-03cd-572f-9699-4f1922481b81",
+      "productUuid": "05605ef7-03cd-572f-9699-4f1922481b81",
+      "name": "Beta Booster Pack",
+      "setCode": "LEB",
+      "category": "booster_pack",
+      "archetype": "pure_randomized",
+      "marketPrice": 19645.0,
+      "storedEv": 1486.53,
+      "calcEv": 1486.53,
+      "roi": -92.43303639602954
+    },
+    {
+      "id": "639e32d8-aa88-5c64-9f1f-455c4bde54fd",
+      "productUuid": "639e32d8-aa88-5c64-9f1f-455c4bde54fd",
+      "name": "Core Set 2021 Planeswalker Deck Liliana",
+      "setCode": "M21",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 43.290000915527344,
+      "storedEv": 3.29,
+      "calcEv": 3.29,
+      "roi": -92.4000925608206
+    },
+    {
+      "id": "8dfdec72-abe6-51e8-b383-22267a0cdf30",
+      "productUuid": "8dfdec72-abe6-51e8-b383-22267a0cdf30",
+      "name": "Dragons of Tarkir Intro Pack Furious Forces",
+      "setCode": "DTK",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 49.9900016784668,
+      "storedEv": 3.82,
+      "calcEv": 3.76,
+      "roi": -92.35847195091121
+    },
+    {
+      "id": "4a3ca7c6-f912-54b4-90ab-be34089ff5e0",
+      "productUuid": "4a3ca7c6-f912-54b4-90ab-be34089ff5e0",
+      "name": "Shards of Alara Intro Pack Primordial Jund",
+      "setCode": "ALA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 41.9900016784668,
+      "storedEv": 3.22,
+      "calcEv": 3.22,
+      "roi": -92.33150780831888
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "338f1f46-3973-5b8b-aafa-ddc9f478609f",
@@ -11300,9 +13792,15 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 105.48999786376953,
+<<<<<<< HEAD
       "storedEv": 8.27,
       "calcEv": 8.27,
       "roi": -92.16039419141904
+=======
+      "storedEv": 8.17,
+      "calcEv": 8.17,
+      "roi": -92.25518990857238
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "f28081c6-2a72-566b-ae47-fc397f80f14d",
@@ -11312,9 +13810,27 @@
       "category": "booster_box",
       "archetype": "pure_randomized",
       "marketPrice": 3809.93994140625,
+<<<<<<< HEAD
       "storedEv": 299.56,
       "calcEv": 297.71999999999997,
       "roi": -92.13740886714785
+=======
+      "storedEv": 295.08,
+      "calcEv": 294.12,
+      "roi": -92.25499602255972
+    },
+    {
+      "id": "a1ea3da8-2816-5441-b4c2-a83c51238b15",
+      "productUuid": "a1ea3da8-2816-5441-b4c2-a83c51238b15",
+      "name": "Urzas Destiny Booster Box",
+      "setCode": "UDS",
+      "category": "booster_box",
+      "archetype": "pure_randomized",
+      "marketPrice": 8499.990234375,
+      "storedEv": 661.4,
+      "calcEv": 662.04,
+      "roi": -92.21881458963074
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "0c47809b-6fb9-5f53-9d28-f9f868de627b",
@@ -11324,9 +13840,39 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 28.8799991607666,
+<<<<<<< HEAD
       "storedEv": 2.29,
       "calcEv": 2.29,
       "roi": -92.07063688869161
+=======
+      "storedEv": 2.25,
+      "calcEv": 2.25,
+      "roi": -92.2091410478411
+    },
+    {
+      "id": "dad99af2-08f8-516e-88b6-59962c77a5de",
+      "productUuid": "dad99af2-08f8-516e-88b6-59962c77a5de",
+      "name": "The Lord of the Rings Tales of Middle earth Commander Deck The Hosts of Mordor",
+      "setCode": "LTC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 126.66000366210938,
+      "storedEv": 10.04,
+      "calcEv": 10.04,
+      "roi": -92.0732672432383
+    },
+    {
+      "id": "7b328444-6d9d-53d7-ac75-81fbe8a9a637",
+      "productUuid": "7b328444-6d9d-53d7-ac75-81fbe8a9a637",
+      "name": "Revised Edition Starter Deck Display",
+      "setCode": "3ED",
+      "category": "limited_aid_case",
+      "archetype": "pure_randomized",
+      "marketPrice": 13249.974609375,
+      "storedEv": 1053.87,
+      "calcEv": 1046.2,
+      "roi": -92.0462489093803
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "65ddf478-6441-56a4-baf5-cce456d3286e",
@@ -11336,9 +13882,51 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 29.8700008392334,
+<<<<<<< HEAD
       "storedEv": 2.37,
       "calcEv": 2.37,
       "roi": -92.06561789952455
+=======
+      "storedEv": 2.38,
+      "calcEv": 2.38,
+      "roi": -92.03213949403732
+    },
+    {
+      "id": "76990768-d07f-50bc-8c66-be9f429ca8ba",
+      "productUuid": "76990768-d07f-50bc-8c66-be9f429ca8ba",
+      "name": "Ixalan Booster Battle Pack",
+      "setCode": "XLN",
+      "category": "multiple_decks",
+      "archetype": "pure_randomized",
+      "marketPrice": 55.70000076293945,
+      "storedEv": 4.5,
+      "calcEv": 4.5,
+      "roi": -91.92100549665679
+    },
+    {
+      "id": "6496110e-a633-55d3-abe8-05755f799134",
+      "productUuid": "6496110e-a633-55d3-abe8-05755f799134",
+      "name": "Dark Ascension Intro Pack Set of 5",
+      "setCode": "DKA",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 145.82000732421875,
+      "storedEv": 11.85,
+      "calcEv": 11.899999999999999,
+      "roi": -91.8735431320803
+    },
+    {
+      "id": "548d09b6-7904-5447-a92d-1a867049198d",
+      "productUuid": "548d09b6-7904-5447-a92d-1a867049198d",
+      "name": "Torment Fat Pack",
+      "setCode": "TOR",
+      "category": "bundle",
+      "archetype": "pure_randomized",
+      "marketPrice": 724.9949951171875,
+      "storedEv": 59.16,
+      "calcEv": 59.27,
+      "roi": -91.83994366879217
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "a7fa406e-78f9-5bee-ae80-0059efd9ace4",
@@ -11389,6 +13977,7 @@
       "roi": -91.747937330603
     },
     {
+<<<<<<< HEAD
       "id": "b89670b7-5c08-5599-94a0-5e92f7609248",
       "productUuid": "b89670b7-5c08-5599-94a0-5e92f7609248",
       "name": "Zendikar Intro Pack Black Rise of the Vampires",
@@ -11567,6 +14156,18 @@
       "storedEv": 14.19,
       "calcEv": 14.22,
       "roi": -91.12570322598869
+=======
+      "id": "9f9d93b9-2314-5886-ad9a-f61da75df04f",
+      "productUuid": "9f9d93b9-2314-5886-ad9a-f61da75df04f",
+      "name": "Renaissance German Booster Pack",
+      "setCode": "REN",
+      "category": "booster_pack",
+      "archetype": "pure_randomized",
+      "marketPrice": 39.9900016784668,
+      "storedEv": 3.3,
+      "calcEv": 3.3,
+      "roi": -91.747937330603
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "5fdf5953-01e3-5d03-92f7-bd4845274e86",
@@ -11599,10 +14200,205 @@
       "setCode": "NPH",
       "category": "deck",
       "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 94.94000244140625,
       "storedEv": 8.51,
       "calcEv": 8.51,
       "roi": -91.03644430043903
+=======
+      "marketPrice": 98.87000274658203,
+      "storedEv": 8.2,
+      "calcEv": 8.2,
+      "roi": -91.70628120541497
+    },
+    {
+      "id": "fded2dc3-e7ba-512e-b5a2-a6712d75cf6e",
+      "productUuid": "fded2dc3-e7ba-512e-b5a2-a6712d75cf6e",
+      "name": "Dragons of Tarkir Intro Pack Relentless Rush",
+      "setCode": "DTK",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 44.95000076293945,
+      "storedEv": 3.74,
+      "calcEv": 3.76,
+      "roi": -91.67964419016525
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+    },
+    {
+      "id": "b89670b7-5c08-5599-94a0-5e92f7609248",
+      "productUuid": "b89670b7-5c08-5599-94a0-5e92f7609248",
+      "name": "Zendikar Intro Pack Black Rise of the Vampires",
+      "setCode": "ZEN",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 79.98999786376953,
+      "storedEv": 6.7,
+      "calcEv": 6.7,
+      "roi": -91.6239527704317
+    },
+    {
+<<<<<<< HEAD
+=======
+      "id": "1a9e97c4-91bd-5f6b-82b4-d35142da19a1",
+      "productUuid": "1a9e97c4-91bd-5f6b-82b4-d35142da19a1",
+      "name": "Worldwake Intro Pack Mysterious Realms",
+      "setCode": "WWK",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 80.0,
+      "storedEv": 6.71,
+      "calcEv": 6.71,
+      "roi": -91.61250000000001
+    },
+    {
+      "id": "4670fdd0-dfce-5b03-9b96-9c004ce4f483",
+      "productUuid": "4670fdd0-dfce-5b03-9b96-9c004ce4f483",
+      "name": "Foundations Collector Booster Box Case",
+      "setCode": "FDN",
+      "category": "booster_case",
+      "archetype": "pure_randomized",
+      "marketPrice": 24999.990234375,
+      "storedEv": 2099.87,
+      "calcEv": 2103.12,
+      "roi": -91.60051671895185
+    },
+    {
+      "id": "c66330e1-e3fa-532e-bed2-f35c70746463",
+      "productUuid": "c66330e1-e3fa-532e-bed2-f35c70746463",
+      "name": "Dark Ascension Intro Pack Monstrous Surprise",
+      "setCode": "DKA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 28.094999313354492,
+      "storedEv": 2.38,
+      "calcEv": 2.38,
+      "roi": -91.52874156195936
+    },
+    {
+      "id": "7a941771-db73-5364-b7c5-231cc451a9b2",
+      "productUuid": "7a941771-db73-5364-b7c5-231cc451a9b2",
+      "name": "Core Set 2020 Planeswalker Deck Ajani",
+      "setCode": "M20",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 39.09000015258789,
+      "storedEv": 3.33,
+      "calcEv": 3.33,
+      "roi": -91.48119727039821
+    },
+    {
+      "id": "ae7292de-aa07-53d6-bd70-bca58da9fad2",
+      "productUuid": "ae7292de-aa07-53d6-bd70-bca58da9fad2",
+      "name": "Beta Starter Deck",
+      "setCode": "LEB",
+      "category": "limited_aid_tool",
+      "archetype": "pure_randomized",
+      "marketPrice": 41950.0,
+      "storedEv": 3590.43,
+      "calcEv": 3590.43,
+      "roi": -91.44116805721096
+    },
+    {
+      "id": "fc4e8ac6-b8dc-5ec3-b113-dd8e1e02221c",
+      "productUuid": "fc4e8ac6-b8dc-5ec3-b113-dd8e1e02221c",
+      "name": "Mirrodin Besieged Intro Pack Doom Inevitable",
+      "setCode": "MBS",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 49.95000076293945,
+      "storedEv": 4.3,
+      "calcEv": 4.3,
+      "roi": -91.39139152287983
+    },
+    {
+      "id": "a7f266ef-0417-51e0-a22e-e9c528cd3943",
+      "productUuid": "a7f266ef-0417-51e0-a22e-e9c528cd3943",
+      "name": "2010 Core Set Intro Pack We Are Legion",
+      "setCode": "M10",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 49.525001525878906,
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -91.33770849505518
+    },
+    {
+      "id": "e51b5d7f-3a60-5f3e-93c5-0519e67f0da5",
+      "productUuid": "e51b5d7f-3a60-5f3e-93c5-0519e67f0da5",
+      "name": "Innistrad 3 Booster Draft Pack",
+      "setCode": "ISD",
+      "category": "limited_aid_tool",
+      "archetype": "pure_randomized",
+      "marketPrice": 99.98999786376953,
+      "storedEv": 8.87,
+      "calcEv": 8.91,
+      "roi": -91.12911272176957
+    },
+    {
+      "id": "3d1ca390-37df-5da1-afa7-65ca63242200",
+      "productUuid": "3d1ca390-37df-5da1-afa7-65ca63242200",
+      "name": "Invasion Booster Box",
+      "setCode": "INV",
+      "category": "booster_box",
+      "archetype": "pure_randomized",
+      "marketPrice": 1956.9949951171875,
+      "storedEv": 175.01,
+      "calcEv": 175.32,
+      "roi": -91.0572075842473
+    },
+    {
+      "id": "e965bc0c-286d-53db-b169-ac1728bc18a3",
+      "productUuid": "e965bc0c-286d-53db-b169-ac1728bc18a3",
+      "name": "New Phyrexia Intro Pack Feast of Flesh",
+      "setCode": "NPH",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 94.94000244140625,
+      "storedEv": 8.5,
+      "calcEv": 8.5,
+      "roi": -91.0469772683586
+    },
+    {
+      "id": "7dcfedad-5e00-5e21-904f-5d9cce7451ce",
+      "productUuid": "7dcfedad-5e00-5e21-904f-5d9cce7451ce",
+      "name": "2011 Core Set Intro Pack Breath of Fire",
+      "setCode": "M11",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 45.0,
+      "storedEv": 4.03,
+      "calcEv": 4.03,
+      "roi": -91.04444444444444
+    },
+    {
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+      "id": "25678807-54ae-5d16-8712-f7e1d7c2b41b",
+      "productUuid": "25678807-54ae-5d16-8712-f7e1d7c2b41b",
+      "name": "2012 Core Set 3 Booster Draft Pack",
+      "setCode": "M12",
+      "category": "limited_aid_tool",
+      "archetype": "pure_randomized",
+      "marketPrice": 108.87999725341797,
+<<<<<<< HEAD
+      "storedEv": 9.84,
+      "calcEv": 9.93,
+      "roi": -90.96252732529243
+=======
+      "storedEv": 9.8,
+      "calcEv": 9.84,
+      "roi": -90.99926501909206
+    },
+    {
+      "id": "62791e4c-ff36-5700-932e-bdd1b4965807",
+      "productUuid": "62791e4c-ff36-5700-932e-bdd1b4965807",
+      "name": "Guilds of Ravnica Planeswalker Deck Display",
+      "setCode": "GRN",
+      "category": "deck_box",
+      "archetype": "mixed_composite",
+      "marketPrice": 159.89999389648438,
+      "storedEv": 14.4,
+      "calcEv": 14.34,
+      "roi": -90.99437113842403
     },
     {
       "id": "0a55dd27-2536-5490-990e-4d96e167a860",
@@ -11612,21 +14408,33 @@
       "category": "deck",
       "archetype": "mixed_composite",
       "marketPrice": 73.4800033569336,
-      "storedEv": 6.62,
-      "calcEv": 6.62,
-      "roi": -90.99074619275267
+      "storedEv": 6.7,
+      "calcEv": 6.7,
+      "roi": -90.88187303496117
     },
     {
-      "id": "25678807-54ae-5d16-8712-f7e1d7c2b41b",
-      "productUuid": "25678807-54ae-5d16-8712-f7e1d7c2b41b",
-      "name": "2012 Core Set 3 Booster Draft Pack",
-      "setCode": "M12",
-      "category": "limited_aid_tool",
+      "id": "317c19da-c86d-549c-a3ee-aad9c6cfbe57",
+      "productUuid": "317c19da-c86d-549c-a3ee-aad9c6cfbe57",
+      "name": "Innistrad Booster Box Case",
+      "setCode": "ISD",
+      "category": "booster_case",
       "archetype": "pure_randomized",
-      "marketPrice": 108.87999725341797,
-      "storedEv": 9.84,
-      "calcEv": 9.93,
-      "roi": -90.96252732529243
+      "marketPrice": 7000.0,
+      "storedEv": 640.46,
+      "calcEv": 641.52,
+      "roi": -90.85057142857143
+    },
+    {
+      "id": "5fdf5953-01e3-5d03-92f7-bd4845274e86",
+      "productUuid": "5fdf5953-01e3-5d03-92f7-bd4845274e86",
+      "name": "Rivals of Ixalan Planeswalker Decks Set of 2",
+      "setCode": "RIX",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 61.9900016784668,
+      "storedEv": 5.68,
+      "calcEv": 5.68,
+      "roi": -90.8372320596774
     },
     {
       "id": "c8ca8844-ca64-5968-81eb-055aeda52d43",
@@ -11635,6 +14443,20 @@
       "setCode": "LTC",
       "category": "deck",
       "archetype": "mixed_composite",
+      "marketPrice": 108.75,
+      "storedEv": 10.04,
+      "calcEv": 10.04,
+      "roi": -90.76781609195403
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
+    },
+    {
+      "id": "c8ca8844-ca64-5968-81eb-055aeda52d43",
+      "productUuid": "c8ca8844-ca64-5968-81eb-055aeda52d43",
+      "name": "The Lord of the Rings Tales of Middle earth Commander Deck Food and Fellowship",
+      "setCode": "LTC",
+      "category": "deck",
+      "archetype": "mixed_composite",
+<<<<<<< HEAD
       "marketPrice": 108.75,
       "storedEv": 9.92,
       "calcEv": 9.92,
@@ -11651,6 +14473,12 @@
       "storedEv": 4.6,
       "calcEv": 4.62,
       "roi": -90.79447691089074
+=======
+      "marketPrice": 46.279998779296875,
+      "storedEv": 4.29,
+      "calcEv": 4.29,
+      "roi": -90.73033683415068
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "aadb04f0-36cf-564a-b105-5466938faff7",
@@ -11660,6 +14488,7 @@
       "category": "limited_aid_tool",
       "archetype": "pure_randomized",
       "marketPrice": 186.27000427246094,
+<<<<<<< HEAD
       "storedEv": 17.29,
       "calcEv": 17.29,
       "roi": -90.71777548535965
@@ -11759,20 +14588,50 @@
       "storedEv": 2.37,
       "calcEv": 2.37,
       "roi": -90.41262109291543
+=======
+      "storedEv": 17.41,
+      "calcEv": 17.41,
+      "roi": -90.65335287450038
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
-      "id": "e45aa0c7-35b9-59b6-88eb-9bdba320097e",
-      "productUuid": "e45aa0c7-35b9-59b6-88eb-9bdba320097e",
-      "name": "War of the Spark Planeswalker Deck Jace",
-      "setCode": "WAR",
+      "id": "bc6972ef-2fc6-5e37-a628-3ce15df6387f",
+      "productUuid": "bc6972ef-2fc6-5e37-a628-3ce15df6387f",
+      "name": "Alara Reborn Intro Pack Rumbler",
+      "setCode": "ARB",
       "category": "deck",
       "archetype": "mixed_composite",
-      "marketPrice": 30.489999771118164,
-      "storedEv": 2.93,
-      "calcEv": 2.93,
-      "roi": -90.39029182684527
+      "marketPrice": 34.689998626708984,
+      "storedEv": 3.26,
+      "calcEv": 3.26,
+      "roi": -90.60247872858082
     },
     {
+      "id": "3ba53b4d-9c33-5018-9941-185264fcdff9",
+      "productUuid": "3ba53b4d-9c33-5018-9941-185264fcdff9",
+      "name": "Magic Origins Intro Pack Hunting Pack",
+      "setCode": "ORI",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 49.970001220703125,
+      "storedEv": 4.73,
+      "calcEv": 4.66,
+      "roi": -90.53432082358984
+    },
+    {
+      "id": "899d7a93-0e77-5375-9813-099591dcbd4e",
+      "productUuid": "899d7a93-0e77-5375-9813-099591dcbd4e",
+      "name": "Core Set 2020 Planeswalker Deck Yanling",
+      "setCode": "M20",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 34.970001220703125,
+      "storedEv": 3.33,
+      "calcEv": 3.33,
+      "roi": -90.4775525199909
+    },
+    {
+<<<<<<< HEAD
       "id": "a598f9ce-12cf-5a24-9442-0305527400f0",
       "productUuid": "a598f9ce-12cf-5a24-9442-0305527400f0",
       "name": "Core Set 2021 Planeswalker Deck Chandra",
@@ -11807,6 +14666,18 @@
       "storedEv": 9.59,
       "calcEv": 9.59,
       "roi": -90.30039472682068
+=======
+      "id": "2eed6c87-2ecd-5dfc-b6f0-1e7bf551a552",
+      "productUuid": "2eed6c87-2ecd-5dfc-b6f0-1e7bf551a552",
+      "name": "Dark Ascension Intro Pack Swift Justice",
+      "setCode": "DKA",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 24.959999084472656,
+      "storedEv": 2.38,
+      "calcEv": 2.38,
+      "roi": -90.46474323999246
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "ca847e9a-858c-5f34-9a97-b5cdfe719985",
@@ -11816,9 +14687,15 @@
       "category": "booster_pack",
       "archetype": "pure_randomized",
       "marketPrice": 67.51000213623047,
+<<<<<<< HEAD
       "storedEv": 6.56,
       "calcEv": 6.56,
       "roi": -90.2829213562127
+=======
+      "storedEv": 6.45,
+      "calcEv": 6.45,
+      "roi": -90.44586017493475
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     {
       "id": "2ed10c40-998f-5157-a323-e785b4b98b0b",
@@ -11828,6 +14705,7 @@
       "category": "kit",
       "archetype": "mixed_composite",
       "marketPrice": 99.94999694824219,
+<<<<<<< HEAD
       "storedEv": 9.81,
       "calcEv": 9.79,
       "roi": -90.18509224659607
@@ -11855,6 +14733,107 @@
       "storedEv": 931.78,
       "calcEv": 947.8799999999999,
       "roi": -90.08744680851063
+=======
+      "storedEv": 9.57,
+      "calcEv": 9.610000000000001,
+      "roi": -90.42521231395766
+    },
+    {
+      "id": "4fd1fa84-5f0c-58c9-a970-58825f08138a",
+      "productUuid": "4fd1fa84-5f0c-58c9-a970-58825f08138a",
+      "name": "Worldwake Intro Pack Fangs of the Bloodchief",
+      "setCode": "WWK",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 69.98999786376953,
+      "storedEv": 6.71,
+      "calcEv": 6.71,
+      "roi": -90.41291583825945
+    },
+    {
+      "id": "1cecd7b3-25f5-5e07-ad86-e3b139669c7e",
+      "productUuid": "1cecd7b3-25f5-5e07-ad86-e3b139669c7e",
+      "name": "Guilds of Ravnica Planeswalker Deck Ral",
+      "setCode": "GRN",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 24.719999313354492,
+      "storedEv": 2.39,
+      "calcEv": 2.39,
+      "roi": -90.33171494180078
+    },
+    {
+      "id": "43785037-dcbd-5d3d-b04d-ee9406978b41",
+      "productUuid": "43785037-dcbd-5d3d-b04d-ee9406978b41",
+      "name": "Avacyn Restored Intro Pack Bound by Strength",
+      "setCode": "AVR",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 42.0,
+      "storedEv": 4.09,
+      "calcEv": 4.09,
+      "roi": -90.26190476190476
+    },
+    {
+      "id": "9129ff20-b07b-5d94-bb48-0f1dd9c7e5c0",
+      "productUuid": "9129ff20-b07b-5d94-bb48-0f1dd9c7e5c0",
+      "name": "Khans of Tarkir Intro Pack Set of 5",
+      "setCode": "KTK",
+      "category": "subset",
+      "archetype": "mixed_composite",
+      "marketPrice": 299.989990234375,
+      "storedEv": 29.29,
+      "calcEv": 29.4,
+      "roi": -90.23634089353567
+    },
+    {
+      "id": "e45aa0c7-35b9-59b6-88eb-9bdba320097e",
+      "productUuid": "e45aa0c7-35b9-59b6-88eb-9bdba320097e",
+      "name": "War of the Spark Planeswalker Deck Jace",
+      "setCode": "WAR",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 30.489999771118164,
+      "storedEv": 2.98,
+      "calcEv": 2.98,
+      "roi": -90.22630363276414
+    },
+    {
+      "id": "a598f9ce-12cf-5a24-9442-0305527400f0",
+      "productUuid": "a598f9ce-12cf-5a24-9442-0305527400f0",
+      "name": "Core Set 2021 Planeswalker Deck Chandra",
+      "setCode": "M21",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 33.459999084472656,
+      "storedEv": 3.29,
+      "calcEv": 3.29,
+      "roi": -90.16736374769732
+    },
+    {
+      "id": "e634446e-4111-5781-ba46-1161cb3abb5a",
+      "productUuid": "e634446e-4111-5781-ba46-1161cb3abb5a",
+      "name": "Invasion Booster Pack",
+      "setCode": "INV",
+      "category": "booster_pack",
+      "archetype": "pure_randomized",
+      "marketPrice": 49.31999969482422,
+      "storedEv": 4.87,
+      "calcEv": 4.87,
+      "roi": -90.12570959015828
+    },
+    {
+      "id": "d4e272d1-115b-5e97-98e2-39c855ddc0b6",
+      "productUuid": "d4e272d1-115b-5e97-98e2-39c855ddc0b6",
+      "name": "Amonkhet Planeswalker Deck Liliana",
+      "setCode": "AKH",
+      "category": "deck",
+      "archetype": "mixed_composite",
+      "marketPrice": 59.9900016784668,
+      "storedEv": 5.99,
+      "calcEv": 6.06,
+      "roi": -90.01500277978806
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     }
   ]
 }

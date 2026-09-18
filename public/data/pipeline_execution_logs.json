@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "lastUpdated": "2026-09-18T21:00:20.834596+00:00",
   "runs": [
     {
@@ -7,6 +8,16 @@
       "trigger": "scheduled_pipeline",
       "status": "success",
       "durationSeconds": 2563.39,
+=======
+  "lastUpdated": "2026-09-18T22:58:39.004167+00:00",
+  "runs": [
+    {
+      "id": "run-2026-09-18-222136",
+      "timestamp": "2026-09-18T22:21:36.238647+00:00",
+      "trigger": "scheduled_pipeline",
+      "status": "success",
+      "durationSeconds": 2222.77,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
       "quickTestLimit": null,
       "quickTestSet": null,
       "stages": [
@@ -14,7 +25,11 @@
           "name": "download.py",
           "description": "Download mtgjson data + sync MySQL",
           "status": "success",
+<<<<<<< HEAD
           "duration": 484.15,
+=======
+          "duration": 380.49,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "=================================================================",
@@ -30,7 +45,11 @@
           "name": "download_prices_today.py",
           "description": "Stream AllPricesToday.sql into MySQL",
           "status": "success",
+<<<<<<< HEAD
           "duration": 216.47,
+=======
+          "duration": 151.72,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "=================================================================",
@@ -46,7 +65,11 @@
           "name": "lowest_prices.py",
           "description": "Calculate lowest prices across sources",
           "status": "success",
+<<<<<<< HEAD
           "duration": 42.43,
+=======
+          "duration": 40.4,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "[INFO] Indexing prices table from MTGJSON...",
@@ -60,15 +83,24 @@
           "name": "sync_live_sealed_prices.py",
           "description": "Sync live TCGplayer sealed product prices",
           "status": "success",
+<<<<<<< HEAD
           "duration": 552.46,
+=======
+          "duration": 719.93,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "======================================================================",
             "Starting Live TCGplayer Market Price Sync for 3358 products",
             "======================================================================",
             "======================================================================",
+<<<<<<< HEAD
             "[SUCCESS] Market price fetch: 3078/3358 priced, 280 missing, 552s",
             "[SUMMARY] Missing price examples: ZEN:Zendikar 3 Booster Draft Pack | ZEN:Zendikar Booster Box Case | ZEN:Zendikar Intro Packs Set of 5 | WWK:Worldwake Booster Box | WOE:Wilds of Eldraine Bundle Case | WC99:1999 World Championship Deck Jakub Slemr | WC97:1997 World Championship Deck Paul McCabe | WC04:2004 World Championship Deck Aeo Paquette | WC04:2004 World Championship Deck Box | WC02:2002 World Championship Deck Brian Kibler",
+=======
+            "[SUCCESS] Market price fetch: 3079/3358 priced, 279 missing, 719s",
+            "[SUMMARY] Missing price examples: ZEN:Zendikar 3 Booster Draft Pack | ZEN:Zendikar Booster Box Case | ZEN:Zendikar Intro Packs Set of 5 | WOE:Wilds of Eldraine Bundle Case | WC99:1999 World Championship Deck Jakub Slemr | WC97:1997 World Championship Deck Paul McCabe | WC04:2004 World Championship Deck Aeo Paquette | WC04:2004 World Championship Deck Box | WC02:2002 World Championship Deck Brian Kibler | WC02:2002 World Championship Deck Carlos Romao",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
             "======================================================================"
           ]
         },
@@ -76,7 +108,11 @@
           "name": "populate_booster_ev_to_db.py",
           "description": "Build price data from synced card data",
           "status": "success",
+<<<<<<< HEAD
           "duration": 857.04,
+=======
+          "duration": 589.31,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_all_cheapest.json",
@@ -85,24 +121,40 @@
             "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_cardmarket.json",
             "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_manapool.json",
             "-> Wrote audit samples to backend/audit_output/znr_theme-w_cheapest_reprint_tcgplayer.json",
+<<<<<<< HEAD
             "-> theme-w        | Direct EV: $  5.09 | Mid 90%: $  4.89 | Valid: continuous_sampled%",
             "[SUCCESS] Completed all sets in 00:14:16 and stored to MySQL table `booster_ev_results`!"
+=======
+            "-> theme-w        | Direct EV: $  5.14 | Mid 90%: $  4.94 | Valid: continuous_sampled%",
+            "[SUCCESS] Completed all sets in 00:09:48 and stored to MySQL table `booster_ev_results`!"
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           ]
         },
         {
           "name": "export_app_data.py",
           "description": "Export MySQL data to React JSON format",
           "status": "success",
+<<<<<<< HEAD
           "duration": 6.09,
+=======
+          "duration": 4.89,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             ">> 3b. Exporting pricing_reliability.json...",
             "[OK] Exported reliability for 8 vendor/mode combinations",
             ">> 4. Exporting arbitrage_leaderboard.json...",
+<<<<<<< HEAD
             "[OK] Exported 2009 product arbitrage opportunities",
             "[OK] Exported 2009 complete-product metric records",
             ">> 5. Exporting single_card_prices.json from MTGJSON prices table...",
             "[OK] Exported single_card_prices.json with 509 cards updated from MTGJSON DB (332 total indexed)",
+=======
+            "[OK] Exported 2010 product arbitrage opportunities",
+            "[OK] Exported 2010 complete-product metric records",
+            ">> 5. Exporting single_card_prices.json from MTGJSON prices table...",
+            "[OK] Exported single_card_prices.json with 510 cards updated from MTGJSON DB (332 total indexed)",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
             "[SUCCESS] Pipeline export complete. Ready for React frontend deployment!"
           ]
         },
@@ -110,7 +162,11 @@
           "name": "load_deck_tables.py",
           "description": "Load preconstructed decks into MySQL",
           "status": "success",
+<<<<<<< HEAD
           "duration": 3.64,
+=======
+          "duration": 2.87,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "OK Loaded 878 decks and 5039 deck cards into MySQL"
@@ -120,7 +176,11 @@
           "name": "export_product_chase_cards.py",
           "description": "Export vendor-aware product TOP 5 chase cards",
           "status": "success",
+<<<<<<< HEAD
           "duration": 114.47,
+=======
+          "duration": 86.85,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "OK Exported chase cards for 4137 products to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data/product_chase_cards.json"
@@ -130,12 +190,20 @@
           "name": "composite_evaluator.py",
           "description": "Evaluate composite products & quantiles (10,000 MC samples)",
           "status": "success",
+<<<<<<< HEAD
           "duration": 272.2,
+=======
+          "duration": 232.84,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese",
             "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese Rainbow Foil",
+<<<<<<< HEAD
             "[OK] Evaluated 3042 sealed products in 269.16s (88.5ms/product)",
+=======
+            "[OK] Evaluated 3042 sealed products in 229.72s (75.5ms/product)",
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
             "[OK] Successfully saved enriched sealed_products.json to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data",
             "[OK] Synchronized pre-computed quantiles into arbitrage_leaderboard.json",
             "======================================================================",
@@ -147,7 +215,11 @@
           "name": "export_product_metrics.py",
           "description": "Export complete-product metrics by vendor",
           "status": "success",
+<<<<<<< HEAD
           "duration": 1.42,
+=======
+          "duration": 1.34,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "[SUCCESS] Exported 17922 complete-product vendor metrics"
@@ -157,7 +229,11 @@
           "name": "test_product_metrics_contract.py",
           "description": "Validate complete-product metrics contract",
           "status": "success",
+<<<<<<< HEAD
           "duration": 0.68,
+=======
+          "duration": 0.54,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "OK validated 17922 product metric records across 14 categories"
@@ -167,7 +243,11 @@
           "name": "export_jumpstart_validation_report.py",
           "description": "Export Jumpstart collation validation report",
           "status": "success",
+<<<<<<< HEAD
           "duration": 6.86,
+=======
+          "duration": 6.78,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "[PASS] Exported Jumpstart validation report: 10 sets, 530 configurations, 0 warnings"
@@ -177,7 +257,11 @@
           "name": "validate_pricing_and_ev.py",
           "description": "Run automated quality and pricing/EV validation audit",
           "status": "success",
+<<<<<<< HEAD
           "duration": 1.71,
+=======
+          "duration": 1.58,
+>>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
           "exitCode": 0,
           "summary": [
             "==============================================================================",

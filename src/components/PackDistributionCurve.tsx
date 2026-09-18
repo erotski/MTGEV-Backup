@@ -60,6 +60,7 @@ interface PackDistributionCurveProps {
   priceMode: 'direct' | 'cheapest_reprint';
   vendor: string;
   isPreconstructed: boolean;
+  isConfigurationProduct?: boolean;
   preconSinglesEv?: number;
   fixedBaseEv: number;
   variableEv?: number;
@@ -79,6 +80,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   priceMode,
   vendor,
   isPreconstructed,
+  isConfigurationProduct = false,
   preconSinglesEv,
   fixedBaseEv,
   variableEv,
@@ -327,7 +329,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const isDiscreteFixedConfigurationChart = Boolean(
     // Only a standalone booster pack gets a configuration/theme x-axis.
     // Boxes, cases, bundles, and multipacks still use product-level Monte Carlo quantiles.
-    isSingleBoosterLeaf &&
+    (isSingleBoosterLeaf || isConfigurationProduct) &&
     selectedDiscreteRecord?.distributionType === 'discrete_fixed_configurations' &&
     selectedDiscreteRecord?.configurationOutcomes?.length
   );
