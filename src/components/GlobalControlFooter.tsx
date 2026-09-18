@@ -34,7 +34,6 @@ export const GlobalControlFooter: React.FC<GlobalControlFooterProps> = ({
 
   const getVendorLabel = (v: Vendor) => {
     switch (v) {
-      case 'all':
       case 'all_cheapest':
         return 'All Vendors (Cheapest)';
       case 'all_average':

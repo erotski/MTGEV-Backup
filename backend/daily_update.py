@@ -59,7 +59,6 @@ TELEMETRY_OUTPUTS = (
 SNAPSHOT_MANIFEST = "snapshot_manifest.json"
 PUBLISHED_SNAPSHOT_FILES = (
     *REQUIRED_OUTPUTS,
-    "pricing_validator_diagnostics.json",
     *TELEMETRY_OUTPUTS,
 )
 

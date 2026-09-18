@@ -68,9 +68,13 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const showRelatedProducts = debugMode !== 'booster-only' && debugMode !== 'no-related';
   const showCurves = debugMode !== 'booster-only' && debugMode !== 'no-curves';
   const currentSet = availableSets.find((s) => s.code === selectedSetCode) || availableSets[0];
+
+  const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
+  const [selectedProductOverride, setSelectedProductOverride] = useState<CatalogPackProduct | null>(null);
   
   // Calculate dynamically adjusted booster records based on priceMode & vendor
-  const rawSetBoosters = boosterRecords.filter((b) => b.setCode.toUpperCase() === selectedSetCode.toUpperCase());
+  const boosterSetCode = selectedProductOverride?.setCode?.toUpperCase() || selectedSetCode.toUpperCase();
+  const rawSetBoosters = boosterRecords.filter((b) => b.setCode.toUpperCase() === boosterSetCode);
   const normVendor = normalizeVendor(vendor);
 
   // Search & sorting state for MTG Sets dropdown
@@ -140,10 +144,6 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       estimatedEv: p.estimatedEv,
     }));
   }, [selectedSetCode]);
-
-  // Dynamic products loaded from database/pipeline (e.g. sealed products with contents)
-  const [dbProducts, setDbProducts] = useState<CatalogPackProduct[]>([]);
-  const [selectedProductOverride, setSelectedProductOverride] = useState<CatalogPackProduct | null>(null);
 
   // Authoritative datasets for full recursive child resolution
   const [allRawProducts, setAllRawProducts] = useState<any[]>([]);

@@ -136,7 +136,7 @@ export function findBoosterEv(
   setCode: string,
   boosterName: string,
   priceMode = 'direct',
-  vendor: Vendor | string = 'all'
+  vendor: Vendor | string = 'all_cheapest'
 ): BoosterEVRecord | undefined {
   const sUpper = (setCode || '').toUpperCase().trim();
   const records = boosterEvMap[sUpper] || [];
@@ -169,12 +169,12 @@ export function findBoosterEv(
   );
   if (match) return match;
 
-  // 3. Fallback to 'all' or 'tcgplayer'
+  // 3. Fallback to canonical default aggregate vendor
   match = records.find(
     (r) =>
       matchesCode(r.boosterName) &&
       (r.priceMode || 'direct').toLowerCase() === targetMode &&
-      normalizeVendor(r.vendor) === 'all'
+      normalizeVendor(r.vendor) === 'all_cheapest'
   );
   if (match) return match;
 

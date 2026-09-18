@@ -380,7 +380,6 @@ export interface SetOption {
 export type PriceMode = 'direct' | 'cheapest_reprint';
 export type EvBasis = 'min' | 'mid90' | 'avg' | 'max';
 export type Vendor =
-  | 'all'
   | 'all_cheapest'
   | 'all_average'
   | 'tcgplayer'

@@ -79,6 +79,51 @@ def bucket_weights(bucket_count: int = 100, simulated_packs: int = 5000) -> List
 
 BUCKET_WEIGHTS_100 = bucket_weights()
 
+
+def build_diagnostics(
+    booster_skew_issues: List[Dict[str, Any]],
+    ev_mismatch_issues: List[Dict[str, Any]],
+    roi_anomaly_issues: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Build one canonical report so counts cannot diverge from issue lists."""
+    return {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "boosterSkewCount": len(booster_skew_issues),
+        "evMismatchCount": len(ev_mismatch_issues),
+        "roiAnomalyCount": len(roi_anomaly_issues),
+        "boosterSkewIssues": booster_skew_issues,
+        "evMismatchIssues": ev_mismatch_issues,
+        "roiAnomalyIssues": roi_anomaly_issues,
+    }
+
+
+def normalize_deck_name(value: Any) -> str:
+    return " ".join(str(value or "").replace("_", " ").split()).strip().lower()
+
+
+def build_precon_index(precon_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Index both compact slug keys and display names from precon_decks.json."""
+    if not isinstance(precon_data, dict):
+        return {}
+
+    records = precon_data.get("decks") if isinstance(precon_data.get("decks"), dict) else precon_data
+    index: Dict[str, Dict[str, Any]] = {}
+    for key, record in records.items():
+        if not isinstance(record, dict):
+            continue
+        for candidate in (key, record.get("deckName"), record.get("name")):
+            normalized = normalize_deck_name(candidate)
+            if normalized:
+                index[normalized] = record
+
+    aliases = precon_data.get("aliases") if isinstance(precon_data.get("aliases"), dict) else {}
+    for alias, target in aliases.items():
+        target_record = records.get(target)
+        if isinstance(target_record, dict):
+            index[normalize_deck_name(alias)] = target_record
+    return index
+
+
 def load_json(filepath: Path) -> Any:
     if not filepath.exists():
         print(f"[ERROR] {filepath} does not exist.")
@@ -96,6 +141,7 @@ def run_audit(fix_mode: bool = False):
     single_prices = load_json(PUBLIC_DATA_DIR / "single_card_prices.json") or {}
     precon_decks = load_json(PUBLIC_DATA_DIR / "precon_decks.json") or {}
     arbitrage_leaderboard = load_json(PUBLIC_DATA_DIR / "arbitrage_leaderboard.json") or []
+    precon_index = build_precon_index(precon_decks)
 
     print(f"Loaded {len(sealed_products):,} sealed products")
     print(f"Loaded {len(booster_evs):,} booster EV records")
@@ -217,9 +263,13 @@ def run_audit(fix_mode: bool = False):
         if "deck" in contents:
             for dk in contents["deck"]:
                 d_name = dk.get("name")
-                matched_deck = precon_decks.get(d_name) or next(
-                    (d for k, d in precon_decks.items() if d_name and d_name.lower() in k.lower()), None
-                )
+                matched_deck = precon_index.get(normalize_deck_name(d_name))
+                if matched_deck is None and d_name:
+                    normalized_name = normalize_deck_name(d_name)
+                    matched_deck = next(
+                        (d for key, d in precon_index.items() if normalized_name in key or key in normalized_name),
+                        None,
+                    )
                 d_ev = float(matched_deck.get("totalValue") or matched_deck.get("deckEv") or 0) if matched_deck else 0.0
                 d_cards = int(matched_deck.get("cardCount") or 100) if matched_deck else 100
                 total_ev += d_ev
@@ -332,29 +382,26 @@ def run_audit(fix_mode: bool = False):
     else:
         print("[PASS] No extreme arbitrage pricing outliers detected.")
 
+    diagnostics = build_diagnostics(
+        booster_skew_issues,
+        ev_mismatch_issues,
+        roi_anomaly_issues,
+    )
+
     # ---------------------------------------------------------
     # SUMMARY & RECOMMENDATIONS
     # ---------------------------------------------------------
     print("\n" + "=" * 78)
     print("VALIDATOR DIAGNOSTIC SUMMARY")
     print("=" * 78)
-    print(f"1. Booster Quantile Outlier Skews:    {len(booster_skew_issues)} records")
-    print(f"2. Product Contents vs EV Mismatches:  {len(ev_mismatch_issues)} records")
-    print(f"3. Extreme ROI Pricing Anomalies:      {len(roi_anomaly_issues)} records")
+    print(f"1. Booster Quantile Outlier Skews:    {diagnostics['boosterSkewCount']} records")
+    print(f"2. Product Contents vs EV Mismatches:  {diagnostics['evMismatchCount']} records")
+    print(f"3. Extreme ROI Pricing Anomalies:      {diagnostics['roiAnomalyCount']} records")
     print("-" * 78)
 
     # Persist the full (untruncated) issue lists for offline DEV-25 triage, since
     # the console only prints the top few per category.
     diagnostics_path = PUBLIC_DATA_DIR / "pricing_validator_diagnostics.json"
-    diagnostics = {
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "boosterSkewCount": len(booster_skew_issues),
-        "evMismatchCount": len(ev_mismatch_issues),
-        "roiAnomalyCount": len(roi_anomaly_issues),
-        "boosterSkewIssues": booster_skew_issues,
-        "evMismatchIssues": ev_mismatch_issues,
-        "roiAnomalyIssues": roi_anomaly_issues,
-    }
     try:
         with open(diagnostics_path, "w", encoding="utf-8") as f:
             json.dump(diagnostics, f, indent=2)
@@ -363,10 +410,10 @@ def run_audit(fix_mode: bool = False):
         print(f"[WARN] Could not write {diagnostics_path}: {e}")
 
     return {
-        "booster_skew_count": len(booster_skew_issues),
-        "ev_mismatch_count": len(ev_mismatch_issues),
-        "roi_anomaly_count": len(roi_anomaly_issues),
-        "top_mismatches": ev_mismatch_issues[:15],
+        "booster_skew_count": diagnostics["boosterSkewCount"],
+        "ev_mismatch_count": diagnostics["evMismatchCount"],
+        "roi_anomaly_count": diagnostics["roiAnomalyCount"],
+        "top_mismatches": diagnostics["evMismatchIssues"][:15],
     }
 
 if __name__ == "__main__":

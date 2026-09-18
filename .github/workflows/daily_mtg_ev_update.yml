@@ -89,7 +89,8 @@ jobs:
             test_jumpstart_collation \
             test_jumpstart_validation_report \
             test_product_chase_cards \
-            test_product_metrics_contract
+            test_product_metrics_contract \
+            test_daily_update_contract
 
       - name: Execute Daily Update Pipeline & JSON Export
         env:

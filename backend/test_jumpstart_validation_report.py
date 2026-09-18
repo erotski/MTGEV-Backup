@@ -31,6 +31,29 @@ class JumpstartValidationReportTests(unittest.TestCase):
     def test_allocation_preserves_requested_sample_count(self):
         self.assertEqual(sum(allocate_counts([1] * 121, 5000)), 5000)
 
+    def test_fixed_card_manifest_must_match_declared_picks(self):
+        booster = {
+            "boosters": [{"weight": 1, "contents": {"theme": 4}}],
+            "sheets": {"theme": {"fixed": True, "cards": {"a": 3}}},
+        }
+
+        report = classify_set("TST", booster, {"fixedSheets": ["theme"]}, 10, "mtgjson")
+
+        self.assertEqual(report["status"], "warning")
+        self.assertIn("manifest contains 3 cards instead of 4", report["issues"][0])
+
+    def test_fixed_card_manifest_records_zero_variance(self):
+        booster = {
+            "boosters": [{"weight": 1, "contents": {"theme": 4}}],
+            "sheets": {"theme": {"fixed": True, "cards": {"a": 4}}},
+        }
+
+        report = classify_set("TST", booster, {"fixedSheets": ["theme"]}, 10, "mtgjson")
+
+        content = report["configurations"][0]["contents"][0]
+        self.assertEqual(content["fixedCardCount"], 4)
+        self.assertEqual(content["fixedCardVariance"], 0)
+
     def test_mtgjson_fallback_note_does_not_create_warning(self):
         booster = {
             "boosters": [

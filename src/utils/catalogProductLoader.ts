@@ -4,6 +4,38 @@ import { CatalogPackProduct, ProductPackagingType, ECOMMERCE_CATALOG_PACKS } fro
  * Builds a unified catalog from the pipeline-generated sealed products snapshot.
  * Curated frontend catalog entries are intentionally not treated as a competing source of truth.
  */
+function readFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function readString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed !== '' ? trimmed : undefined;
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => readString(entry))
+    .filter((entry): entry is string => typeof entry === 'string');
+}
+
 export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProduct[] {
   const result: CatalogPackProduct[] = [];
   const seenIds = new Set<string>();
@@ -17,20 +49,18 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
   }
 
   for (const sp of sealedRaw) {
-    const rawId = String(sp.id || sp.uuid || '').trim();
-    const rawUuid = String(sp.uuid || '').trim();
+    const rawId = readString(sp.id) ?? readString(sp.uuid) ?? '';
+    const rawUuid = readString(sp.uuid) ?? '';
     if (rawId && seenIds.has(rawId.toLowerCase())) continue;
     if (rawUuid && seenUuids.has(rawUuid.toLowerCase())) continue;
 
-    const setCode = String(sp.setCode || sp.set_code || 'SET').toUpperCase();
-    const displayName = sp.displayName || sp.name || 'Sealed Product';
-    const lowerName = displayName.toLowerCase();
-    const cat = (sp.category || '').toLowerCase();
-    const sub = (sp.subtype || '').toLowerCase();
-    let metadataSource: 'pipeline' | 'inferred' = 'pipeline';
+    const setCode = (readString(sp.setCode) ?? readString(sp.set_code) ?? 'SET').toUpperCase();
+    const displayName = readString(sp.displayName) ?? readString(sp.name) ?? 'Sealed Product';
+    const cat = (readString(sp.category) ?? '').toLowerCase();
+    const sub = (readString(sp.subtype) ?? '').toLowerCase();
+    const metadataSource: 'pipeline' | 'inferred' = 'pipeline';
 
-    // Map packaging type accurately
-    let packagingType: ProductPackagingType = 'box';
+    let packagingType: ProductPackagingType = 'other';
     if (cat === 'booster_box') {
       packagingType = 'box';
     } else if (cat === 'booster_pack' || cat === 'draft_pack') {
@@ -49,29 +79,24 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
       packagingType = 'box_set';
     } else if (cat === 'kit') {
       packagingType = 'kit';
-    } else {
-      metadataSource = 'inferred';
-      // Fallback based on product title
-      if (lowerName.includes('booster pack') || lowerName.includes('draft pack') || lowerName.includes('play booster') || lowerName.includes('collector booster')) {
-        packagingType = 'pack';
-      } else if (lowerName.includes('bundle') || lowerName.includes('fat pack') || lowerName.includes('gift edition')) {
-        packagingType = 'bundle';
-      } else if (lowerName.includes('case')) {
-        packagingType = 'case';
-      } else if (lowerName.includes('prerelease') || lowerName.includes('pre-release')) {
-        packagingType = 'prerelease';
-      } else if (lowerName.includes('commander') || lowerName.includes('deck') || lowerName.includes('challenger')) {
-        packagingType = 'starter_deck';
-      } else if (lowerName.includes('box') || lowerName.includes('display')) {
-        packagingType = 'box';
-      }
     }
 
-    const defaultPacks = packagingType === 'box' ? 36 : packagingType === 'bundle' ? 9 : packagingType === 'case' ? 216 : packagingType === 'prerelease' ? 6 : 1;
-    const packsCount = Number(sp.packsCount || defaultPacks);
-    const marketPrice = Number(sp.marketPrice || sp.price || sp.tcgplayer_price || 0);
-    const estimatedEv = Number(sp.totalEvAvg || sp.estimatedEv || sp.ev || 0);
+    const packsCount = readFiniteNumber(sp.packsCount) ?? 0;
+    const marketPrice = readFiniteNumber(sp.marketPrice) ?? 0;
+    const estimatedEv = readFiniteNumber(sp.totalEvAvg) ?? 0;
+    const boosterName = readString(sp.boosterName) ?? (sub !== '' ? sub : undefined);
     const id = rawId || `${setCode}-${displayName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+
+    const setName = readString(sp.setName) ?? setCode;
+    const releaseDate = readString(sp.releaseDate) ?? '';
+    const block = readString(sp.block) ?? '';
+    const imageUrl = readString(sp.imageUrl) ?? readString(sp.image_url) ?? undefined;
+    const cardCount = readFiniteNumber(sp.cardCount);
+    const specialFeatures = readStringArray(sp.specialFeatures);
+    const tcgplayerLink = readString(sp.purchaseUrl) ?? readString(sp.tcgplayerLink) ?? undefined;
+    const contents = sp.contents;
+    const category = readString(sp.category);
+    const subtype = readString(sp.subtype);
 
     result.push({
       id,
@@ -80,22 +105,22 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
       rawCategory: sp.category,
       rawSubtype: sp.subtype,
       setCode,
-      setName: sp.setName || setCode,
-      releaseDate: sp.releaseDate || '',
-      block: sp.block || '',
+      setName,
+      releaseDate,
+      block,
       packagingType,
-      boosterName: sp.boosterName || sub || 'play',
+      boosterName,
       displayName,
       marketPrice,
       estimatedEv,
       packsCount,
-      imageUrl: sp.imageUrl || sp.image_url || undefined,
-      cardCount: sp.cardCount,
-      specialFeatures: sp.specialFeatures || [],
-      tcgplayerLink: sp.purchaseUrl || sp.tcgplayerLink,
-      contents: sp.contents,
-      category: sp.category,
-      subtype: sp.subtype,
+      imageUrl,
+      cardCount,
+      specialFeatures,
+      tcgplayerLink,
+      contents,
+      category,
+      subtype,
       metadataSource,
       totalEvAvg: sp.totalEvAvg,
       totalEvMid90: sp.totalEvMid90,
