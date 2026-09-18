@@ -45,8 +45,10 @@ export interface ProductMetricsRecord {
   category?: string;
   marketPrice: number;
   totalEvMin: number;
+  totalEvMin5: number;
   totalEvAvg: number;
   totalEvMid90: number;
+  totalEvMax5: number;
   totalEvMax: number;
   effectiveEv: number;
   effectiveEvByBasis?: Record<string, number>;
@@ -54,7 +56,8 @@ export interface ProductMetricsRecord {
   profitUsdByBasis?: Record<string, number>;
   roiPct: number;
   roiPctByBasis?: Record<string, number>;
-  evScore?: number | null;
+  evScore: number;
+  breakevenPercentile: number;
   packCount: number;
   cardCount: number;
   vendor: Vendor | string;

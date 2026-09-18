@@ -9,12 +9,16 @@ REQUIRED_FIELDS = {
     "productUuid",
     "marketPrice",
     "totalEvMin",
+    "totalEvMin5",
     "totalEvAvg",
     "totalEvMid90",
+    "totalEvMax5",
     "totalEvMax",
     "effectiveEv",
     "profitUsd",
     "roiPct",
+    "evScore",
+    "breakevenPercentile",
     "packCount",
     "cardCount",
     "vendor",
@@ -48,12 +52,17 @@ def main() -> None:
         assert record["provenance"].get("schemaVersion") == 1
 
         minimum = record["totalEvMin"]
+        p05 = record["totalEvMin5"]
         average = record["totalEvAvg"]
         mid90 = record["totalEvMid90"]
+        p95 = record["totalEvMax5"]
         maximum = record["totalEvMax"]
-        values = [minimum, average, mid90, maximum]
+        values = [minimum, p05, average, mid90, p95, maximum]
         assert all(isinstance(value, (int, float)) for value in values)
-        assert minimum <= mid90 <= maximum and minimum <= average <= maximum, f"invalid EV bounds: {identity}"
+        assert minimum <= p05 <= mid90 <= p95 <= maximum, f"invalid percentile bounds: {identity}"
+        assert minimum <= average <= maximum, f"invalid average bounds: {identity}"
+        assert isinstance(record["evScore"], int) and 0 <= record["evScore"] <= 100
+        assert isinstance(record["breakevenPercentile"], int) and 1 <= record["breakevenPercentile"] <= 100
         assert record["packCount"] >= 0 and record["cardCount"] >= 0
         categories.add(record.get("category"))
 

@@ -56,6 +56,16 @@ def bucket_weights(bucket_count: int = 100, simulated_packs: int = BOOSTER_SIMUL
     return [endpoint_weight] + [interior_weight] * (bucket_count - 2) + [endpoint_weight]
 
 
+def calculate_profit_metrics(quantiles, market_price):
+    """Return backend-owned breakeven percentile and EV score for one curve."""
+    if market_price <= 0:
+        return 1, 100
+    for index, value in enumerate(quantiles):
+        if value >= market_price:
+            return index + 1, 100 - index
+    return 100, 0
+
+
 def load_data():
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "r", encoding="utf-8") as f:
         sealed_products = json.load(f)
@@ -727,22 +737,7 @@ def run_composite_evaluator(target_set=None):
             p["fixedPricingByVendor"] = fixed_pricing_by_vendor
         primary_quantiles = primary_stats["quantiles"]
 
-        # Calculate exact breakeven percentile and EV Score (0-100 probability of profit)
-        breakeven_p = 100
-        ev_score = 0
-        if market_price > 0:
-            found = False
-            for idx, q_val in enumerate(primary_quantiles):
-                if q_val >= market_price:
-                    breakeven_p = idx + 1
-                    ev_score = 100 - idx
-                    found = True
-                    break
-            if not found:
-                ev_score = 0 if market_price > primary_stats["max"] else 1
-        else:
-            breakeven_p = 1
-            ev_score = 100
+        breakeven_p, ev_score = calculate_profit_metrics(primary_quantiles, market_price)
 
         # Attach computed fields to product
         p.pop("quantiles", None)
@@ -754,17 +749,19 @@ def run_composite_evaluator(target_set=None):
         p["totalEvMin"] = primary_stats["min"]
         p["totalEvMax"] = primary_stats["max"]
         p["quantilesByVendor"] = quantiles_by_vendor
-        p["metricsByVendor"] = {
-            vendor: {
+        p["metricsByVendor"] = {}
+        for vendor, stats in vendor_stats.items():
+            vendor_breakeven, vendor_ev_score = calculate_profit_metrics(stats["quantiles"], market_price)
+            p["metricsByVendor"][vendor] = {
                 "mean": stats["mean"],
                 "median": stats["median"],
                 "p05": stats["p05"],
                 "p95": stats["p95"],
                 "min": stats["min"],
                 "max": stats["max"],
+                "breakevenPercentile": vendor_breakeven,
+                "evScore": vendor_ev_score,
             }
-            for vendor, stats in vendor_stats.items()
-        }
         p["breakevenPercentile"] = breakeven_p
         p["evScore"] = ev_score
 

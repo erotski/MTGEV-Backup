@@ -29,6 +29,8 @@ def export_product_metrics() -> None:
             total_avg = float(stats.get("mean") or 0)
             total_mid90 = float(stats.get("median") or 0)
             total_min = float(stats.get("min") or 0)
+            total_min5 = float(stats["p05"])
+            total_max5 = float(stats["p95"])
             total_max = float(stats.get("max") or 0)
             profit = round(total_avg - market_price, 2)
             roi = round((profit / market_price) * 100, 2) if market_price > 0 else 0.0
@@ -54,8 +56,10 @@ def export_product_metrics() -> None:
                 "category": product.get("category"),
                 "marketPrice": market_price,
                 "totalEvMin": total_min,
+                "totalEvMin5": total_min5,
                 "totalEvAvg": total_avg,
                 "totalEvMid90": total_mid90,
+                "totalEvMax5": total_max5,
                 "totalEvMax": total_max,
                 "effectiveEv": total_avg,
                 "effectiveEvByBasis": basis_values,
@@ -63,7 +67,8 @@ def export_product_metrics() -> None:
                 "profitUsdByBasis": profit_by_basis,
                 "roiPct": roi,
                 "roiPctByBasis": roi_by_basis,
-                "evScore": product.get("evScore") if vendor == "all_cheapest" else None,
+                "evScore": stats.get("evScore"),
+                "breakevenPercentile": stats.get("breakevenPercentile"),
                 "packCount": int(product.get("packsCount") or 0),
                 "cardCount": int(product.get("cardCount") or 0),
                 "vendor": vendor,

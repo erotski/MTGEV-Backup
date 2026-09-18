@@ -159,7 +159,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     initialProductId || setCatalogProducts[0]?.id || ''
   );
   const [activeBoosterName, setActiveBoosterName] = useState<string>(
-    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || 'play'
+    setCatalogProducts[0]?.boosterName || currentBoosters[0]?.boosterName || ''
   );
 
   useEffect(() => {
@@ -358,7 +358,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     );
     if (prods.length > 0 && !selectedProductId) {
       setSelectedProductId(prods[0].id);
-      setActiveBoosterName(prods[0].boosterName || 'play');
+      setActiveBoosterName(prods[0].boosterName || '');
     } else if (currentBoosters.length > 0 && !activeBoosterName) {
       setActiveBoosterName(currentBoosters[0].boosterName);
     }
@@ -513,9 +513,9 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         fixedBaseEv: undefined as number | undefined,
         variableEv: undefined as number | undefined,
         minEv: gatewayMetrics.totalEvMin,
-        min5Ev: gatewayMetrics.totalEvMin,
+        min5Ev: gatewayMetrics.totalEvMin5,
         mid90Ev: gatewayMetrics.totalEvMid90,
-        max5Ev: gatewayMetrics.totalEvMax,
+        max5Ev: gatewayMetrics.totalEvMax5,
         maxEv: gatewayMetrics.totalEvMax,
         marketPrice: gatewayMetrics.marketPrice,
         effectiveEv: gatewayMetrics.effectiveEvByBasis?.[evBasis] ?? gatewayMetrics.effectiveEv,

@@ -150,7 +150,9 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     : 'sealed_products.json.quantilesByVendor';
   const curveDiagnostics = useMemo(() => {
     const selectedKey = vendor === 'all' ? 'all_cheapest' : vendor;
-    const values = quantilesByVendor?.[selectedKey] || vendorRecords[selectedKey]?.quantiles;
+    const values = isSingleBoosterLeaf
+      ? vendorRecords[selectedKey]?.quantiles
+      : quantilesByVendor?.[selectedKey];
     return {
       productTitle,
       setCode: activeBooster?.setCode || '',

@@ -195,6 +195,8 @@ point 100     exact maximum sample
 
 Raw samples are retained in audit artifacts when audit mode is enabled. Percentile indexes are zero-based in code, so `quantiles[0]` is point 1 and `quantiles[99]` is point 100.
 
+For every product/vendor record, `totalEvMin`, `totalEvMin5`, `totalEvMid90`, `totalEvMax5`, and `totalEvMax` must describe that same vendor's empirical curve. In particular, `totalEvMin == quantilesByVendor[vendor][0]`, `totalEvMin5 == quantilesByVendor[vendor][4]`, `totalEvMax5 == quantilesByVendor[vendor][94]`, and `totalEvMax == quantilesByVendor[vendor][99]`. A missing vendor metric or curve remains unavailable; the frontend must not borrow another vendor, another booster type, a top-level primary-vendor value, or a neighboring percentile.
+
 ### Provenance
 
 Card prices may have explicit statuses:
@@ -574,6 +576,32 @@ The most recent full pipeline run's `validate_pricing_and_ev.py` stage surfaced 
 
 Next action for each: extend `validate_pricing_and_ev.py`'s output (or a follow-up script) to dump the top N offending records per category with enough context (product ID, set, vendor, price mode, contents summary) to distinguish real bugs from expected outliers (e.g., intentionally low-value curated bundles). **Done for this session**: the validator now writes the full untruncated lists (not just top 8–10) to `public/data/pricing_validator_diagnostics.json` — use that file directly instead of re-deriving one. Note that this local diagnostics file is not automatically the deployed `data-sync` artifact; the deployed source of truth is the generated bundle committed by the workflow. The corrected local diagnostic counts are 0 booster skew, 584 contents/EV mismatches, and 186 ROI anomalies; they require a future normal pipeline publication before becoming deployed counts.
 
+### 2026-09-18 FIN product-curve investigation
+
+The production UI showed **Final Fantasy Collector Booster Pack** with a first curve point near `$0.90`, while its summary cards reported a minimum around `$4.23`; Minimum and Bottom 5% were also identical. The curve diagnostic for **Final Fantasy Prerelease Pack** identified the active source as `FIN/play`, despite the selected product not being a Play Booster. The screenshot's six first-point values closely matched the corresponding FIN Play Booster vendor minima, proving that the rendered curve belonged to the wrong booster identity rather than to the selected Collector product.
+
+The checked local snapshot was internally consistent before frontend selection: FIN Collector `all_cheapest/direct` had `min=$4.17`, `p05=$8.85`, with `quantiles[0]=$4.17` and `quantiles[4]=$8.85`. This isolated the mismatch to frontend data plumbing and an incomplete product-metrics schema, not Monte Carlo endpoint generation.
+
+Confirmed root causes:
+
+1. `RelatedProductsHierarchy.tsx` assigned `sp.boosterName || 'play'`, but raw `sealed_products.json` records do not normally carry top-level `boosterName`. Collector, prerelease, and other products could therefore be mislabeled as Play Boosters.
+2. The hierarchy's mapped selected-product object discarded `quantilesByVendor` and the backend `metricsByVendor` summaries. The detail view consequently lost the product-owned curve and percentile values during selection.
+3. `PackDistributionCurve.tsx` diagnostics allowed a fallback to `booster_ev.json` even when reporting `source=sealed_products.json.quantilesByVendor`; rendering did not allow the same fallback for composite products. A diagnostic could therefore say `status=valid` for 100 Play Booster points while the selected product curve was unavailable.
+4. `product_metrics.json` omitted p05/p95. `BoosterDetailExplorer.tsx` compensated by assigning `min5Ev = totalEvMin` and `max5Ev = totalEvMax`, directly causing identical Minimum/Bottom-5% values and conflating percentile statistics.
+5. Product `evScore` and `breakevenPercentile` were generated only as top-level primary-curve values. Frontend code manually exposed them only for `all_cheapest`, leaking backend primary-vendor policy into presentation code.
+
+Implemented corrections:
+
+- Direct pack identity is derived from authoritative `contents.pack[0].code`; an absent identity remains empty rather than defaulting to `play`.
+- Product selection passes only the selected product's `quantilesByVendor`; no booster curve is substituted for missing product quantiles.
+- Selected-vendor min/p05/median/p95/max values come only from `metricsByVendor[selectedVendor]`; top-level primary-vendor values are not used as vendor fallbacks.
+- `composite_evaluator.py` computes EV score and breakeven percentile for every vendor curve. `export_product_metrics.py` exports those values together with explicit `totalEvMin5` and `totalEvMax5` fields for every vendor.
+- `daily_update.py` and `test_product_metrics_contract.py` require and validate the expanded percentile/score contract.
+- Curve diagnostics now inspect the same source used by rendering: booster quantiles only for a verified single-booster leaf, otherwise product `quantilesByVendor`.
+- Packaging badges remain presentation-only labels/icons. They do not select curves, calculate EV, or authorize pricing fallback; name-based badge refinements must never be used as product identity or valuation input.
+
+Local validation completed: the Vite production build passes, the focused EV-statistics unit tests pass with the repository interpreter/import path, the per-vendor profit-metric helper passed runtime assertions, and all modified Python files compile. The generated snapshots have not been manually edited. A normal full pipeline run is still required to regenerate and publish `sealed_products.json` and `product_metrics.json`, then verify FIN Collector and Prerelease values in the deployed UI.
+
 ### 2026-09-17 roadmap re-verification session
 
 A full re-read of the Numbered Roadmap against the actual source tree, triggered by suspected data/commit loss from recent git operations. Findings:
@@ -616,7 +644,7 @@ Statuses:
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
 | DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-17) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, and report classification. Remaining: full audited daily run and stronger fixed-card manifest audit. |
-| DEV-21 | Curve snapshot integrity | P0 | PARTIALLY_FIXED | The published curve data still needs continued cross-layer validation. | GitHub Actions review found no frontend curve-selection mismatches. Note: a separate, real curve-integrity bug was found and fixed at the backend vendor-discovery layer — see DEV-23. |
+| DEV-21 | Curve snapshot integrity | P0 | IN PROGRESS | The published curve data still needs cross-layer validation. | The 2026-09-18 FIN investigation found a real frontend curve-selection mismatch: raw sealed products without top-level `boosterName` defaulted to `play`, selected-product mapping dropped product curves/statistics, and diagnostics inspected a different fallback source than rendering. Fixed locally under DEV-35; pending full pipeline publication and deployed FIN verification. |
 | DEV-22 | Chase-card visibility | P0 | IN PROGRESS | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Root cause (booster-sheet cards never priced, legacy `all` key) found and fixed in source (see DEV-05, DEV-23). Pending: a full non-quick-test pipeline run to confirm chase-card coverage improves broadly, not just for spot-checked products. |
 | DEV-23 | Booster vendor discovery integrity | P0 | IN PROGRESS | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | `NAMED_VENDORS` allowlist added to `populate_booster_ev_to_db.py` and `export_product_chase_cards.py`; DELETE query fixed to target `'all'` instead of `'all_cheapest'`. Pending: full pipeline run confirming MKM (and any other affected sets) now produce a real `all_cheapest` row. |
 | DEV-24 | Quick-test pipeline mode | P0 | DONE | Add an optional fast test-run mode that limits the two heaviest stages to N sets/products, never publishing. | `QUICK_TEST_LIMIT` implemented in `daily_update.py`, `populate_booster_ev_to_db.py`, `sync_live_sealed_prices.py`; workflow input added; publish/deploy steps gated off in quick-test mode. Validated via `--dry-run`; not yet exercised in a real GitHub Actions run. |
@@ -630,6 +658,7 @@ Statuses:
 | DEV-32 | Frontend anti-pattern sweep (dataService.ts / productUtils.ts) | P0 | FIXED (2026-09-17) | `dataService.ts`'s `injectSldFallbackDecks()` hardcoded 8 Secret Lair decks (16 with foil editions) with forced $0 price/EV, all of which already exist correctly in `precon_decks.json` — and because of insertion-order-dependent index building in `productUtils.ts`'s `getOrBuildPreconIndex()` (`bySetExactName.set()` has no `if (!has())` guard), the fake $0 entries were silently overwriting the real ones for every one of those 8 decks in every consumer of `findMatchingPreconDeck`. Separately, `productUtils.ts`'s `resolveRecursiveProductAudit()` accumulated `totalMinEv`/`totalMid90Ev`/`totalMax5Ev`/`totalMaxEv` for multi-pack contents by linearly multiplying a single pack's order-statistic value by pack count — mathematically invalid for anything but the mean (same root-cause class as DEV-28, on the frontend structural-audit side). | Removed `injectSldFallbackDecks()` and all 3 call sites entirely (all 8 decks already have correct backend data, confirmed by direct `precon_decks.json` lookup). Removed the linear min/mid90/max scaling for random (pack/variable-slot) content in both the direct-packs section and the unmapped-sealed-subitem section of `resolveRecursiveProductAudit()`, replaced with comments pointing to the real backend source (`product_metrics.json`/arbitrage record, already preferred per DEV-29); deterministic content (cards/decks, where min=avg=max is mathematically correct) is unaffected. `tsc --noEmit` clean after both changes. |
 | DEV-33 | ROI validator authority correction | P1 | FIXED LOCALLY (2026-09-17) | `validate_pricing_and_ev.py` must calculate ROI anomalies from the backend authoritative complete-product `storedEv`, not from a partial recursive contents walk that can omit decks or nested sealed products. | Changed the validator to use `storedEv` for ROI and retain `calcEv` only as diagnostic context. Against the current local snapshot, ROI anomalies dropped from 569 to 186 and contents/EV mismatches from 755 to 584; the remaining 186 require genuine triage. This correction is not yet reflected in deployed `data-sync` because no new pipeline publication has been run. |
 | DEV-34 | Frontend snapshot identity warnings | P0 | FIXED LOCALLY (2026-09-17) | `dataService.getSnapshotIntegrityReport()` must inspect product metrics identity in addition to checking that snapshots are non-empty. | Added checks for missing `pipelineRunId`/`id` in `latest_pipeline_run.json`, missing `product_metrics.json`, absent product-metrics `pipelineRunId`, conflicting product-metrics run IDs, and disagreement with the latest run ID. TypeScript validation passes. Current generated snapshots do not yet carry shared run IDs, so the frontend now reports that limitation explicitly rather than silently treating mixed generations as valid; backend metadata publication remains part of DEV-07. |
+| DEV-35 | Product curve identity and vendor metrics | P0 | FIXED LOCALLY (2026-09-18) | Product selection must preserve the selected sealed product's empirical curve and vendor statistics without defaulting an unknown booster identity to `play`, substituting a booster/vendor curve, or aliasing min/max to p05/p95. | FIN evidence and all five root causes are recorded in Section 11. `RelatedProductsHierarchy.tsx` derives direct pack identity from `contents.pack[].code`, passes only product-owned `quantilesByVendor`, and preserves selected-vendor statistics without top-level fallback. `PackDistributionCurve.tsx` diagnostics use the renderer's source. `composite_evaluator.py` and `product_metrics.json` now provide p05, p95, EV score, and breakeven percentile for every vendor; validators require the expanded contract. Vite build, focused EV-statistics tests, helper assertions, and Python compilation pass. Pending: full pipeline regeneration and deployed FIN verification. |
 
 ### Frontend single-source-of-truth validation
 
@@ -646,12 +675,13 @@ For each representative product, validate:
 2. Its vendor and price-mode record exists where required.
 3. The selected curve has exactly 100 points.
 4. Curve point 1 and point 100 match the backend minimum and maximum.
-5. Displayed EV equals the selected backend snapshot value.
-6. Displayed market price is not used as singles EV.
-7. Chase cards match `product_chase_cards.json`.
-8. Deck cards and prices match `precon_decks.json` and `single_card_prices.json`.
-9. All loaded files share the same `pipelineRunId` and `schemaVersion`.
-10. Missing values produce an explicit unavailable state, never a synthetic estimate.
+5. Curve points 5 and 95 match the selected vendor's backend p05 and p95 values.
+6. Displayed EV, EV score, and breakeven percentile equal the selected vendor's backend snapshot values.
+7. Displayed market price is not used as singles EV.
+8. Chase cards match `product_chase_cards.json`.
+9. Deck cards and prices match `precon_decks.json` and `single_card_prices.json`.
+10. All loaded files share the same `pipelineRunId` and `schemaVersion`.
+11. Missing values produce an explicit unavailable state, never a synthetic estimate or another booster/vendor's data.
 
 Recommended representative fixtures: one single booster; one booster box or bundle; one nested case; one preconstructed deck; one variable-content product; one product with a missing vendor or quantile record.
 
@@ -741,6 +771,7 @@ Delete only after reference and history checks:
 - The uncalled synthetic product factory in `RelatedProductsHierarchy.tsx` (after final reference validation).
 - Obsolete product candidate functions in `chaseCardsService.ts`.
 - **New finding (2026-09-17, see DEV-32):** `dataService.ts`'s `injectSldFallbackDecks()` already removed this session — all 8 Secret Lair decks it hardcoded already have correct `precon_decks.json` entries, and the fake $0 entries were silently shadowing the real ones. No further action needed here.
+- **Name-guess pack-count fallbacks — confirmed unexercised (2026-09-18).** `productUtils.ts`'s "unmapped sealed subitem" branch and `RelatedProductsHierarchy.tsx`'s `resolveRecursivePacks()` name-guess branch both only run when a `contents.sealed[]` entry has no `uuid` resolvable in `productMap`/`rawProductMap`. A full scan of `public/data/sealed_products.json` (3,599 `contents.sealed` references across 4,127 products) found **zero** unresolved/missing-uuid entries — this code path is currently dead in practice, not an active data-completeness gap. Kept as a defensive fallback (a future MTGJSON schema change could plausibly omit a uuid) but instrumented with a `console.warn` at both call sites so it becomes observable instead of silently guessing if it ever does fire. Re-verify after any pipeline/schema change that touches `contents.sealed` before assuming this is still unreachable.
 
 
 Do not delete yet: `types.ts`, `ecommerceBoosterData.ts`, `productUtils.ts`, `chaseCardsService.ts`, `dataService.ts`, `setHierarchyUtils.ts`, generated JSON files required by the frontend.

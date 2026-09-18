@@ -255,9 +255,10 @@ def validate_output_semantics() -> tuple[bool, str]:
     if not isinstance(product_metrics, list):
         return False, "product_metrics.json must contain an array"
     metric_keys = {
-        "productUuid", "marketPrice", "totalEvMin", "totalEvAvg", "totalEvMid90",
-        "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount",
+        "productUuid", "marketPrice", "totalEvMin", "totalEvMin5", "totalEvAvg", "totalEvMid90",
+        "totalEvMax5", "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount",
         "vendor", "priceMode", "provenance", "effectiveEvByBasis", "profitUsdByBasis", "roiPctByBasis",
+        "evScore", "breakevenPercentile",
     }
     metric_identity_keys = set()
     for index, metric in enumerate(product_metrics):
@@ -268,9 +269,13 @@ def validate_output_semantics() -> tuple[bool, str]:
             return False, f"product_metrics.json[{index}] is missing {sorted(missing)}"
         if not metric.get("productUuid") or not metric.get("vendor") or not metric.get("priceMode"):
             return False, f"product_metrics.json[{index}] is missing product identity or vendor/mode"
-        for field in ("marketPrice", "totalEvMin", "totalEvAvg", "totalEvMid90", "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount"):
+        for field in ("marketPrice", "totalEvMin", "totalEvMin5", "totalEvAvg", "totalEvMid90", "totalEvMax5", "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount"):
             if not isinstance(metric[field], (int, float)):
                 return False, f"product_metrics.json[{index}].{field} is not numeric"
+        if not isinstance(metric["evScore"], int) or not 0 <= metric["evScore"] <= 100:
+            return False, f"product_metrics.json[{index}].evScore is invalid"
+        if not isinstance(metric["breakevenPercentile"], int) or not 1 <= metric["breakevenPercentile"] <= 100:
+            return False, f"product_metrics.json[{index}].breakevenPercentile is invalid"
         provenance = metric["provenance"]
         if not isinstance(provenance, dict) or provenance.get("source") != "pipeline" or not provenance.get("schemaVersion"):
             return False, f"product_metrics.json[{index}] has invalid provenance"

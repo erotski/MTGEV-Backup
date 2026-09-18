@@ -1064,9 +1064,17 @@ export function resolveRecursiveProductAudit(
           raw: sub,
         });
       } else {
-        // Unmapped sealed subitem (e.g. unknown UUID)
+        // Unmapped sealed subitem (e.g. unknown UUID). Verified 2026-09-18: zero
+        // entries in public/data/sealed_products.json currently reach this branch
+        // (every contents.sealed[].uuid resolves via lookupProduct above) — this is
+        // a defensive fallback for a future data gap, not an actively exercised path.
+        // Surface it if it ever does fire, since it guesses booster identity from
+        // display name rather than authoritative product/category data.
         const sName = (sub.name || '').toLowerCase();
-        
+        if (typeof console !== 'undefined') {
+          console.warn(`[productUtils] Unmapped sealed sub-item "${sub.name}" (uuid=${sub.uuid || 'none'}) — inferring booster identity from name.`);
+        }
+
         // CHECK IF IT'S A BOOSTER PACK
         const bCodeMatch = sName.match(/(play|collector|draft|set|theme|vip|box-topper|promo)/i);
         if ((sName.includes('booster') || sName.includes('pack')) && bCodeMatch && !sName.includes('box') && !sName.includes('case')) {

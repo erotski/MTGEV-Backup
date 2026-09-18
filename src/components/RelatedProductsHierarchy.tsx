@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BoosterEVRecord, ProductMetricsRecord, PriceMode, Vendor, EvBasis } from '../types';
 import { dataService } from '../services/dataService';
-import { resolveCardPrice, findBoosterEv } from '../utils/vendorUtils';
+import { resolveCardPrice } from '../utils/vendorUtils';
 import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
 import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
 import {
@@ -160,6 +160,14 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 if (child) {
                   total += sCount * resolveRecursivePacks(child, new Set(visited));
                 } else {
+                  // Verified 2026-09-18: zero contents.sealed entries in
+                  // public/data/sealed_products.json currently lack a resolvable
+                  // uuid — this name-guess is a defensive fallback for a future
+                  // data gap, not an actively exercised path. Surface it if it
+                  // ever fires instead of silently guessing a pack count.
+                  if (typeof console !== 'undefined') {
+                    console.warn(`[RelatedProductsHierarchy] Sealed sub-item "${s.name}" has no resolvable uuid — guessing pack count from name.`);
+                  }
                   const sName = lower(s.name);
                   if (sName.includes('pack') || sName.includes('booster')) total += sCount * 1;
                   else if (sName.includes('box')) total += sCount * 36;
@@ -228,7 +236,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               );
               const pCount = metric?.packCount ?? 0;
               const determinedCardCount = metric?.cardCount ?? Number(sp.cardCount || 0);
-              const determinedBoosterName = sp.boosterName || 'play';
+              const ownPackCode = Array.isArray(sp.contents?.pack) ? sp.contents.pack[0]?.code : undefined;
+              const determinedBoosterName = lower(sp.boosterName || ownPackCode).trim();
+              const vendorStats = sp.metricsByVendor?.[selectedVendor];
               const mPrice = metric?.marketPrice ?? Number(sp.marketPrice || sp.cardmarket_price || sp.tcgplayer_price || 0);
               const ev = metric?.effectiveEvByBasis?.[evBasis] ?? metric?.effectiveEv ?? 0;
 
@@ -251,13 +261,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 badgeText = 'Fixed Deck';
               }
 
-              const matchedBooster = findBoosterEv(boosterMap, sCode, determinedBoosterName, priceMode, vendor);
-              let quantiles = matchedBooster?.quantiles;
-
               const productQuantiles = sp.quantilesByVendor?.[selectedVendor];
-              if (productQuantiles && productQuantiles.length >= 100) {
-                quantiles = productQuantiles;
-              }
 
               return {
                 id: sp.uuid || sp.id || `db-${sCode}-${lower(pName).replace(/\s+/g, '-')}`,
@@ -275,7 +279,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 estimatedEvMin: metric?.totalEvMin ?? 0,
                 estimatedEvMid90: metric?.totalEvMid90 ?? 0,
                 estimatedEvMax: metric?.totalEvMax ?? 0,
-                quantiles: quantiles,
+                quantiles: productQuantiles,
+                quantilesByVendor: sp.quantilesByVendor,
+                totalEvAvg: vendorStats?.mean,
+                totalEvMid90: vendorStats?.median,
+                totalEvMin5: vendorStats?.p05,
+                totalEvMax5: vendorStats?.p95,
+                totalEvMin: vendorStats?.min,
+                totalEvMax: vendorStats?.max,
+                evScore: typeof metric?.evScore === 'number' ? metric.evScore : undefined,
+                archetype: sp.archetype,
                 cardCount: determinedCardCount,
                 packsCount: pCount,
                 badge: badgeText,
@@ -368,7 +381,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
           (p.uuid && lower(p.uuid) === lower(prodId)) ||
           (p.id && lower(p.id) === lower(prodId))
       );
-      onSelectProduct(prodId, boosterName || found?.boosterName || 'play', found);
+      onSelectProduct(prodId, boosterName || found?.boosterName || '', found);
     }
   };
 
