@@ -633,6 +633,22 @@ export function resolveRecursiveProductAudit(
       evBasis === 'max' ? res.unitEvMax :
       res.unitEvAvg;
     const leafEv = Number((count * effectiveUnitEv).toFixed(2));
+    const packItem = {
+      packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
+      code: res.boosterCode,
+      set: res.setCode,
+      count,
+      cardsPerPack,
+      totalCards: count * cardsPerPack,
+      unitEv: effectiveUnitEv,
+      unitMid90: res.unitEvMid90,
+      unitMin: res.unitEvMin,
+      unitMin5: res.unitEvMin5,
+      unitMax5: res.unitEvMax5,
+      unitMax: res.unitEvMax,
+      subtotalEv: leafEv,
+      quantiles: res.quantiles,
+    };
     return {
       totalCards: count * cardsPerPack,
       totalPacks: count,
@@ -647,8 +663,19 @@ export function resolveRecursiveProductAudit(
       totalMax5Ev: Number((count * res.unitEvMax5).toFixed(2)),
       totalMaxEv: Number((count * res.unitEvMax).toFixed(2)),
       quantiles: res.quantiles,
-      items: [],
-      packItems: [],
+      items: [{
+        type: 'pack',
+        name: packItem.packName,
+        count,
+        cardsPerUnit: cardsPerPack,
+        totalCards: packItem.totalCards,
+        unitEv: effectiveUnitEv,
+        subtotalEv: leafEv,
+        set: res.setCode,
+        code: res.boosterCode,
+        raw: pk,
+      }],
+      packItems: [packItem],
       cardItems: [],
       sealedItems: [],
       deckItems: [],

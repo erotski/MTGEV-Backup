@@ -1,19 +1,16 @@
 import { CatalogPackProduct, ProductPackagingType, ECOMMERCE_CATALOG_PACKS } from '../ecommerceBoosterData';
 
 /**
- * Builds a unified, deduplicated list of all sealed products
- * combining ECOMMERCE_CATALOG_PACKS and the complete MTGJSON sealed products database.
+ * Builds a unified catalog from the pipeline-generated sealed products snapshot.
+ * Curated frontend catalog entries are intentionally not treated as a competing source of truth.
  */
 export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProduct[] {
-  const result: CatalogPackProduct[] = [...ECOMMERCE_CATALOG_PACKS];
+  const result: CatalogPackProduct[] = [];
   const seenIds = new Set<string>();
   const seenUuids = new Set<string>();
 
-  // Index pre-curated catalog products
-  for (const p of ECOMMERCE_CATALOG_PACKS) {
-    if (p.id) seenIds.add(p.id.toLowerCase());
-    if (p.uuid) seenUuids.add(p.uuid.toLowerCase());
-  }
+  // The backend-generated public/data snapshot is authoritative.
+  // Curated UI metadata is intentionally omitted to avoid overriding pipeline values.
 
   if (!Array.isArray(sealedRaw) || sealedRaw.length === 0) {
     return result;
