@@ -40,6 +40,29 @@ export function calculateEvScore(
   return null;
 }
 
+export interface DiscreteEvOutcome {
+  ev: number | null;
+  probability: number;
+  complete?: boolean;
+}
+
+export function calculateDiscreteOutcomeEvScore(
+  marketPrice: number,
+  outcomes?: DiscreteEvOutcome[]
+): number | null {
+  if (!marketPrice || marketPrice <= 0) return null;
+  if (!outcomes || outcomes.length === 0) return null;
+
+  const profitableProbability = outcomes.reduce((sum, outcome) => {
+    if (outcome.complete === false || outcome.ev == null || outcome.ev < marketPrice) {
+      return sum;
+    }
+    return sum + Number(outcome.probability || 0);
+  }, 0);
+
+  return Math.max(0, Math.min(100, Math.round(profitableProbability * 100)));
+}
+
 export function getEvScoreColorClass(score: number | null | undefined): string {
   if (score == null) return 'text-slate-400';
   if (score >= 70) return 'text-emerald-600';

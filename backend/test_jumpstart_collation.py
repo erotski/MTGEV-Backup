@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+from composite_evaluator import calculate_discrete_profit_metrics
 from populate_booster_ev_to_db import (
     allocate_booster_indices,
     build_configuration_outcomes,
@@ -191,6 +192,18 @@ class JumpstartCollationTests(unittest.TestCase):
 
         self.assertEqual(distribution_type, "continuous_sampled")
         self.assertEqual(outcomes, {"direct": {"all_cheapest": []}})
+
+    def test_discrete_profit_metrics_use_probability_mass(self):
+        outcomes = [
+            {"ev": 5.0, "probability": 0.25, "complete": True},
+            {"ev": 10.0, "probability": 0.50, "complete": True},
+            {"ev": 20.0, "probability": 0.25, "complete": True},
+        ]
+
+        breakeven, score = calculate_discrete_profit_metrics(outcomes, 10.0)
+
+        self.assertEqual(score, 75)
+        self.assertEqual(breakeven, 26)
 
 
 if __name__ == "__main__":

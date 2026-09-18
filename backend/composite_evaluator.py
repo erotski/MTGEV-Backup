@@ -66,6 +66,23 @@ def calculate_profit_metrics(quantiles, market_price):
     return 100, 0
 
 
+def calculate_discrete_profit_metrics(outcomes, market_price, fixed_ev=0.0):
+    """Return breakeven/score from exact outcome probability mass."""
+    if market_price <= 0:
+        return 1, 100
+    if not outcomes:
+        return None
+    profitable_probability = 0.0
+    for outcome in outcomes:
+        value = outcome.get("ev")
+        if outcome.get("complete") is False or value is None:
+            continue
+        if float(value) + fixed_ev >= market_price:
+            profitable_probability += float(outcome.get("probability") or 0.0)
+    ev_score = max(0, min(100, round(profitable_probability * 100)))
+    return max(1, min(100, 101 - ev_score)), ev_score
+
+
 def load_data():
     with open(PUBLIC_DATA_DIR / "sealed_products.json", "r", encoding="utf-8") as f:
         sealed_products = json.load(f)
@@ -133,7 +150,9 @@ def build_booster_lookup(booster_ev_list):
                 "evAverage": avg,
                 "evMid90": float(b.get("evMid90") or avg),
                 "evMin": float(b.get("evMin") or 0.0),
-                "evMax": float(b.get("evMax") or 0.0)
+                "evMax": float(b.get("evMax") or 0.0),
+                "distributionType": b.get("distributionType"),
+                "configurationOutcomes": b.get("configurationOutcomes") or [],
             }
     return lookup
 
@@ -690,6 +709,7 @@ def run_composite_evaluator(target_set=None):
                 )
                 fixed_pricing_by_vendor[v] = fixed_provenance
             pack_specs = []
+            discrete_single_pack_outcomes = None
 
             for (p_set, p_code), count in packs_dict.items():
                 # Look up booster quantiles for the exact pack code only. A pack code with
@@ -705,6 +725,17 @@ def run_composite_evaluator(target_set=None):
                 )
                 if booster_entry and booster_entry.get("quantiles"):
                     pack_specs.append((count, booster_entry["quantiles"], booster_entry["evAverage"]))
+                    if (
+                        count == 1
+                        and len(packs_dict) == 1
+                        and fixed_ev <= 0
+                        and booster_entry.get("distributionType") in (
+                            "discrete_fixed_configurations",
+                            "discrete_enumerated_mixed",
+                        )
+                        and booster_entry.get("configurationOutcomes")
+                    ):
+                        discrete_single_pack_outcomes = booster_entry["configurationOutcomes"]
 
             variable_slots_for_vendor = []
             for slot in variables:
@@ -721,6 +752,13 @@ def run_composite_evaluator(target_set=None):
                 variable_slots=variable_slots_for_vendor,
                 iterations=10000
             )
+            if not variable_slots_for_vendor and discrete_single_pack_outcomes:
+                discrete_metrics = calculate_discrete_profit_metrics(
+                    discrete_single_pack_outcomes,
+                    market_price,
+                )
+                if discrete_metrics:
+                    stats["breakevenPercentile"], stats["evScore"] = discrete_metrics
             quantiles_by_vendor[v] = stats["quantiles"]
             vendor_stats[v] = stats
 
@@ -737,7 +775,11 @@ def run_composite_evaluator(target_set=None):
             p["fixedPricingByVendor"] = fixed_pricing_by_vendor
         primary_quantiles = primary_stats["quantiles"]
 
-        breakeven_p, ev_score = calculate_profit_metrics(primary_quantiles, market_price)
+        breakeven_p, ev_score = (
+            (primary_stats["breakevenPercentile"], primary_stats["evScore"])
+            if "evScore" in primary_stats and "breakevenPercentile" in primary_stats
+            else calculate_profit_metrics(primary_quantiles, market_price)
+        )
 
         # Attach computed fields to product
         p.pop("quantiles", None)
@@ -751,7 +793,11 @@ def run_composite_evaluator(target_set=None):
         p["quantilesByVendor"] = quantiles_by_vendor
         p["metricsByVendor"] = {}
         for vendor, stats in vendor_stats.items():
-            vendor_breakeven, vendor_ev_score = calculate_profit_metrics(stats["quantiles"], market_price)
+            vendor_breakeven, vendor_ev_score = (
+                (stats["breakevenPercentile"], stats["evScore"])
+                if "evScore" in stats and "breakevenPercentile" in stats
+                else calculate_profit_metrics(stats["quantiles"], market_price)
+            )
             p["metricsByVendor"][vendor] = {
                 "mean": stats["mean"],
                 "median": stats["median"],

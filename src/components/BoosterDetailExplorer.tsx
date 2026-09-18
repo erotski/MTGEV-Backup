@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
 import { RelatedProductsHierarchy } from './RelatedProductsHierarchy';
-import { calculateEvScore } from '../utils/evScore';
+import { calculateDiscreteOutcomeEvScore, calculateEvScore } from '../utils/evScore';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
 
 interface BoosterDetailExplorerProps {
@@ -648,13 +648,28 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       return productEstimatedEv >= productMarketPrice ? 100 : 0;
     }
 
-    // 2. Default pricing: if backend precomputed score exists, use it
-    if (isDefaultPricing && activeProduct?.evScore != null) {
-      return activeProduct.evScore;
+    // Standalone exact-enumerated boosters: score is probability mass whose
+    // fixed/configuration outcome EV is at least the sealed product price.
+    if (
+      productPacksCount === 1 &&
+      activeBooster?.configurationOutcomes?.length &&
+      (activeBooster.distributionType === 'discrete_fixed_configurations' ||
+        activeBooster.distributionType === 'discrete_enumerated_mixed')
+    ) {
+      const score = calculateDiscreteOutcomeEvScore(
+        productMarketPrice,
+        activeBooster.configurationOutcomes
+      );
+      if (score != null) return score;
     }
 
     // 3. Empirical quantiles by vendor from the backend snapshot
     const vendorKey = vendor === 'all' ? 'all_cheapest' : vendor;
+
+    // 2. Default pricing: if backend precomputed score exists, use it
+    if (isDefaultPricing && activeProduct?.evScore != null) {
+      return activeProduct.evScore;
+    }
     const rawQuantiles = activeProduct?.quantilesByVendor?.[vendorKey];
     if (rawQuantiles && rawQuantiles.length >= 100) {
       const score = calculateEvScore(

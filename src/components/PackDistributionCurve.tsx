@@ -29,6 +29,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { BoosterEVRecord } from '../types';
+import { calculateDiscreteOutcomeEvScore } from '../utils/evScore';
 
 const CURVE_VENDORS = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'] as const;
 type CurveVendor = (typeof CURVE_VENDORS)[number];
@@ -426,8 +427,21 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   }, [vendor]);
 
   const breakevenPoint = useMemo(() => {
-    if (!vendorKey || allCurveData.length === 0) return null;
+    if (!vendorKey) return null;
     const activeVendorVal = scaledAverages[vendorKey];
+    if (isDiscreteFixedConfigurationChart) {
+      const evScore = calculateDiscreteOutcomeEvScore(sealedPrice, discreteConfigurationData);
+      const profitablePct = evScore ?? 0;
+      return {
+        percentile: `${profitablePct}%`,
+        percentileNum: profitablePct,
+        profitablePct,
+        isDeterministic: false,
+        diff: Number((activeVendorVal - sealedPrice).toFixed(2)),
+        diffPct: Number((((activeVendorVal - sealedPrice) / sealedPrice) * 100).toFixed(1)),
+      };
+    }
+    if (allCurveData.length === 0) return null;
     if (isPreconstructed) {
       const isProfitable = activeVendorVal >= sealedPrice;
       return {
@@ -449,7 +463,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       diff: Number((activeVendorVal - sealedPrice).toFixed(2)),
       diffPct: Number((((activeVendorVal - sealedPrice) / sealedPrice) * 100).toFixed(1)),
     };
-  }, [isPreconstructed, scaledAverages, vendorKey, sealedPrice, allCurveData]);
+  }, [isPreconstructed, isDiscreteFixedConfigurationChart, discreteConfigurationData, scaledAverages, vendorKey, sealedPrice, allCurveData]);
 
   // Quick Sealed Price Adjustment buttons
   const stepAmount = scale > 1 || isPreconstructed ? Math.max(1, Math.round((isPreconstructed ? fixedDeckEv : scale) * 0.05)) : 0.5;
