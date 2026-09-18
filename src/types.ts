@@ -13,6 +13,17 @@ export interface BoosterEVRecord {
   evMin5: number;
   evMax5: number;
   quantiles?: number[];
+  distributionType?: 'continuous_sampled' | 'discrete_fixed_configurations' | string;
+  configurationOutcomes?: Array<{
+    configurationIndex: number;
+    label: string;
+    sheetNames?: string[];
+    weight: number;
+    probability: number;
+    ev: number | null;
+    complete: boolean;
+    statusCounts?: Record<string, number>;
+  }>;
   quantilesByVendor?: Record<string, number[]>;
   completeBoosterPct: number;
   exactMatchPct: number;

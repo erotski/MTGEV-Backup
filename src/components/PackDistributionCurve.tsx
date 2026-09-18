@@ -3,6 +3,8 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart as RechartsBarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -30,6 +32,15 @@ import { BoosterEVRecord } from '../types';
 
 const CURVE_VENDORS = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'] as const;
 type CurveVendor = (typeof CURVE_VENDORS)[number];
+
+const VENDOR_COLORS: Record<CurveVendor, string> = {
+  all_cheapest: '#2563eb',
+  all_average: '#6366f1',
+  tcgplayer: '#16a34a',
+  cardmarket: '#eab308',
+  cardkingdom: '#ea580c',
+  manapool: '#be123c',
+};
 
 export interface CompositePackItem {
   packName?: string;
@@ -140,6 +151,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
   const isSingleBoosterLeaf =
     !isPreconstructed &&
     !isMixedProduct &&
+    scale === 1 &&
     effectivePackItems.length === 1 &&
     effectivePackItems[0].count === 1;
 
@@ -310,6 +322,26 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
     }
     return null;
   }, [vendor]);
+  const selectedDiscreteRecord = currentVendorKey ? (vendorRecords[currentVendorKey] || activeBooster) : activeBooster;
+  const isDiscreteFixedConfigurationChart = Boolean(
+    // Only a standalone booster pack gets a configuration/theme x-axis.
+    // Boxes, cases, bundles, and multipacks still use product-level Monte Carlo quantiles.
+    isSingleBoosterLeaf &&
+    selectedDiscreteRecord?.distributionType === 'discrete_fixed_configurations' &&
+    selectedDiscreteRecord?.configurationOutcomes?.length
+  );
+  const discreteConfigurationData = useMemo(() => {
+    if (!isDiscreteFixedConfigurationChart || !selectedDiscreteRecord?.configurationOutcomes) {
+      return [];
+    }
+    return selectedDiscreteRecord.configurationOutcomes
+      .map((outcome) => ({
+        ...outcome,
+        displayLabel: outcome.label || `Configuration ${outcome.configurationIndex}`,
+        value: outcome.ev == null ? 0 : Number(outcome.ev),
+      }))
+      .sort((a, b) => a.configurationIndex - b.configurationIndex);
+  }, [isDiscreteFixedConfigurationChart, selectedDiscreteRecord]);
 
   const q0 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[0]?.[currentVendorKey] : 0) || 0);
   const q5 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[4]?.[currentVendorKey] : 0) || 0);
@@ -453,11 +485,13 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           <div className="flex items-center gap-2">
             {isPreconstructed ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : isDiscreteFixedConfigurationChart ? (
+              <Sparkles className="w-5 h-5 text-blue-600 shrink-0" />
             ) : (
               <TrendingUp className="w-5 h-5 text-indigo-600 shrink-0" />
             )}
             <h3 className="text-lg font-bold text-slate-900">
-              {productTitle} – {isPreconstructed ? 'Preconstructed Fixed Singles Value & Arbitrage' : 'Price Quantile Curve & Value Distribution'}
+              {productTitle} – {isPreconstructed ? 'Preconstructed Fixed Singles Value & Arbitrage' : isDiscreteFixedConfigurationChart ? 'Fixed Theme EV Outcomes' : 'Price Quantile Curve & Value Distribution'}
             </h3>
             {isPreconstructed && (
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -468,6 +502,8 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
           <p className="text-xs text-slate-500 mt-1">
             {isPreconstructed
               ? `Deterministic fixed collation${cardCount ? ` (${cardCount} cards)` : ''} with 0% lottery variance across copies vs. Sealed Product Price.`
+              : isDiscreteFixedConfigurationChart
+              ? `${discreteConfigurationData.length} fixed booster configurations, each rendered as its own deterministic theme outcome vs. Pack Sealed Market Price.`
               : 'Simulated 5,000 packs reduced to 100 empirical percentile buckets (1% floor → 100% top hit) vs. Pack Sealed Market Price.'}
           </p>
         </div>
@@ -553,6 +589,35 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       )}
 
       {/* Mixed Collation Banner (Solid Base Value + Variable Booster Upside) */}
+      {isDiscreteFixedConfigurationChart && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-blue-950 flex items-center gap-2">
+                <span>Discrete Fixed Booster Themes</span>
+                <span className="bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded text-[10px] font-mono font-black">
+                  {discreteConfigurationData.length} Outcomes
+                </span>
+              </div>
+              <p className="text-blue-700 text-[11px] mt-0.5">
+                Every theme is fixed once selected, so the chart uses booster configuration on the x-axis instead of stretching discrete outcomes over 100 percentile buckets.
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-blue-200 shadow-2xs">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500 font-bold uppercase">Theme Probability</div>
+              <div className="font-mono font-black text-sm text-blue-700">
+                {(100 / Math.max(1, discreteConfigurationData.length)).toFixed(2)}% each
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMixedProduct && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
@@ -703,7 +768,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
       </div>
 
       {/* Main Interactive Chart Canvas */}
-      {!isPreconstructed && (!allCurveData || allCurveData.length === 0) ? (
+      {!isPreconstructed && !isDiscreteFixedConfigurationChart && (!allCurveData || allCurveData.length === 0) ? (
         <div className="w-full h-[320px] flex flex-col items-center justify-center p-8 bg-rose-50 border-2 border-dashed border-rose-300 rounded-2xl text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
             <Info className="w-6 h-6" />
@@ -717,6 +782,96 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
               {curveDiagnostics.productTitle} | {curveDiagnostics.setCode}/{curveDiagnostics.boosterName} | {curveDiagnostics.vendor}/{curveDiagnostics.priceMode} | source={curveDiagnostics.source} | run={curveDiagnostics.pipelineRunId} | points={curveDiagnostics.pointCount} | status={curveDiagnostics.status}
             </p>
           </div>
+        </div>
+      ) : isDiscreteFixedConfigurationChart && currentVendorKey ? (
+        <div className="w-full h-[440px] pt-2" data-testid="curve-diagnostics" data-curve-source="booster_ev.json.configurationOutcomes" data-curve-vendor={currentVendorKey} data-curve-price-mode={priceMode} data-curve-pipeline-run={curveDiagnostics.pipelineRunId} data-curve-point-count={discreteConfigurationData.length}>
+          <ResponsiveContainer width="100%" height="100%">
+            <RechartsBarChart data={discreteConfigurationData} margin={{ top: 25, right: 35, left: 15, bottom: 70 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis
+                dataKey="displayLabel"
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={82}
+                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                label={{
+                  value: 'Fixed Booster Theme / Configuration',
+                  position: 'insideBottom',
+                  offset: -58,
+                  fill: '#64748b',
+                  fontSize: 11,
+                }}
+              />
+              <YAxis
+                domain={[0, yCeiling]}
+                allowDataOverflow={true}
+                tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
+                tickFormatter={(v) => `$${v}`}
+                label={{
+                  value: 'Fixed Theme EV ($ USD)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: '#64748b',
+                  fontSize: 11,
+                }}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const row = payload[0]?.payload;
+                    return (
+                      <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1.5 backdrop-blur-md">
+                        <div className="font-bold text-blue-300 border-b border-slate-800 pb-1">
+                          {label}
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-300">Fixed Theme EV:</span>
+                          <span className="font-mono font-bold text-white">${Number(payload[0].value).toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-slate-300">Probability:</span>
+                          <span className="font-mono font-bold text-white">{((row?.probability || 0) * 100).toFixed(2)}%</span>
+                        </div>
+                        <div className="pt-1 border-t border-slate-800 flex items-center justify-between text-[11px] text-rose-400 font-bold">
+                          <span>Sealed Cost:</span>
+                          <span className="font-mono">${sealedPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="value" fill={VENDOR_COLORS[currentVendorKey]} name="Fixed Theme EV" radius={[3, 3, 0, 0]} />
+              {showAverages && (
+                <ReferenceLine
+                  y={scaledAverages[currentVendorKey]}
+                  stroke={VENDOR_COLORS[currentVendorKey]}
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: `Average: $${scaledAverages[currentVendorKey].toFixed(2)}`,
+                    fill: VENDOR_COLORS[currentVendorKey],
+                    fontSize: 10,
+                    position: 'insideBottomLeft',
+                  }}
+                />
+              )}
+              <ReferenceLine
+                y={sealedPrice}
+                stroke="#dc2626"
+                strokeWidth={2.5}
+                label={{
+                  value: `Sealed Ref: $${sealedPrice.toFixed(2)}`,
+                  fill: '#dc2626',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  position: 'insideTopRight',
+                }}
+              />
+            </RechartsBarChart>
+          </ResponsiveContainer>
         </div>
       ) : (
         <div className="w-full h-[440px] pt-2" data-testid="curve-diagnostics" data-curve-source={curveDiagnostics.source} data-curve-vendor={curveDiagnostics.vendor} data-curve-price-mode={curveDiagnostics.priceMode} data-curve-pipeline-run={curveDiagnostics.pipelineRunId} data-curve-point-count={curveDiagnostics.pointCount}>

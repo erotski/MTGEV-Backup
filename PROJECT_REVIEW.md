@@ -399,6 +399,7 @@ For Scryfall artwork, use `cardIdentifiers.scryfallId` for the front face. `scry
 - The pre-migration cleanup `DELETE FROM booster_ev_results WHERE ... vendor = 'all'` must target the legacy `'all'` key, not `'all_cheapest'` — a prior version of this query had the values swapped, which deleted the correct canonical rows instead of the legacy ones.
 - Respects `QUICK_TEST_LIMIT` / `--limit N` by truncating the list of distinct set/booster configurations before simulation.
 - Bucket contract (shared with composite evaluation via `ev_statistics.py`): simulate pack totals → round to cents → sort → preserve exact min/max as points 1/100 → divide the rest into 98 equal empirical groups → average each group, round to cents.
+- Fully fixed booster configurations also emit `distributionType = "discrete_fixed_configurations"` and per-configuration `configurationOutcomes` in `booster_ev.json`. The 100-point quantile array remains for compatibility, but frontend charting should render these as fixed-theme outcomes on a configuration/theme x-axis instead of as a smooth percentile curve.
 - Audit output: `backend/audit_output/<set>_<booster>_<price_mode>_<vendor>.json` (git-ignored, uploaded as a workflow artifact only when `audit_enabled=true`).
 - Known risk: memory-heavy simulation (retains all valid pack totals until statistics are calculated). `simulate_and_store()` mixes too many responsibilities (matrix building, simulation, statistics, persistence, audit writing) — highest-priority refactor target, not yet done. **Verified 2026-09-17:** the function builds, per sheet, a full `matrix[mode][vendor]` price array (2 modes × (2 aggregates + N named vendors) × card count) plus a parallel `status_matrix`, all held in memory simultaneously for every sheet in the booster before any sampling starts; then `valid_packs[mode][vendor]` accumulates one float per simulated pack (default 5,000) for every mode/vendor combination before quantiles are computed. For large sheets (e.g. Collector boosters with big card pools) this is O(cards × vendors × modes) resident memory that could be streamed/aggregated incrementally instead. See DEV-31.
 
@@ -487,7 +488,7 @@ Authoritative frontend data files: `sets.json`, `sealed_products.json`, `booster
 
 - **`ArbitrageLeaderboard.tsx`** (Products Overview) — displays backend complete-product metrics + reliability; must not recompute product EV, divide totals into unit EV, multiply booster EV by pack count, inspect product contents for valuation, or invent product terminology. `packs` and `cards` are display-only backend-derived counts.
 - **`BoosterDetailExplorer.tsx`** (Booster Explorer) — displays booster records/curves/slots/chase cards. `booster_ev.json` is authoritative. A missing vendor/mode record must render unavailable, never borrow an unrelated mode. **State declaration order matters**: `activeBoosterName` (and any other `useState` referenced by an effect's setter) must be declared before the effect that calls its setter — a prior ordering bug caused a production `ReferenceError: Cannot access 'X' before initialization` that blanked the whole page.
-- **`PackDistributionCurve.tsx`** — renders empirical 100-bucket curves from backend quantiles only. Returns an empty points array (triggering an explicit "missing data" UI) rather than fabricating a flat/synthetic curve when quantiles are absent.
+- **`PackDistributionCurve.tsx`** — renders empirical 100-bucket curves from backend quantiles only. Returns an empty points array (triggering an explicit "missing data" UI) rather than fabricating a flat/synthetic curve when quantiles are absent. For boosters marked `distributionType = "discrete_fixed_configurations"`, renders per-theme fixed EV bars from backend `configurationOutcomes` instead of a percentile x-axis.
 - **`BoosterSlotViewer.tsx`** — converts DB booster records into UI models; must not fabricate odds or pricing.
 - **`ProductBreakdownTable.tsx`, `ProductHierarchyInspector.tsx`, `RelatedProductsHierarchy.tsx`** — structural contents/fixed-cards/decks/nested-products display via `productUtils.ts`; product-level EV comes from the backend metrics snapshot.
 - **`ProductChaseCardsViewer.tsx`** — loads the direct-price record from `product_chase_cards.json` for the selected product/vendor. Resolves the product's chase-card record by matching `id`/`uuid`/`productUuid` against the snapshot's keys (case-insensitive fallback), and surfaces a specific diagnostic message (missing snapshot vs. no record for this vendor vs. no key match at all) instead of a generic empty state.
@@ -647,7 +648,7 @@ Statuses:
 | DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | SQLite/EV path and two unreferenced prototypes are removed; remaining work is the one-off ingestion review, `src/data.ts` migration, and local-artifact cleanup. |
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
-| DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-17) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, and report classification. Remaining: full audited daily run and stronger fixed-card manifest audit. |
+| DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-18) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; only wildcard/variable slots are sampled. Fully fixed Jumpstart-style boosters expose discrete fixed-theme outcomes for frontend charting. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, and report classification. Backend now emits `distributionType`/`configurationOutcomes` for fully fixed boosters and the frontend renders those as fixed-theme bars. Remaining: full audited daily run and stronger fixed-card manifest audit. |
 | DEV-21 | Curve snapshot integrity | P0 | IN PROGRESS | The published curve data still needs cross-layer validation. | The 2026-09-18 FIN investigation found a real frontend curve-selection mismatch: raw sealed products without top-level `boosterName` defaulted to `play`, selected-product mapping dropped product curves/statistics, and diagnostics inspected a different fallback source than rendering. Fixed locally under DEV-35; pending full pipeline publication and deployed FIN verification. |
 | DEV-22 | Chase-card visibility | P0 | PARTIALLY_FIXED | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Full audited run exported chase data for 4,137 products. Backend coverage is regenerated; remaining work is browser-level representative-product verification. |
 | DEV-23 | Booster vendor discovery integrity | P0 | DONE (2026-09-18) | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | Full audited output contains 10 MKM `all_cheapest` booster rows after the allowlist and cleanup fixes. |
@@ -679,17 +680,30 @@ For each representative product, validate:
 2. Its vendor and price-mode record exists where required.
 3. The selected curve has exactly 100 points.
 4. Curve point 1 and point 100 match the backend minimum and maximum.
-5. Curve points 5 and 95 match the selected vendor's backend p05 and p95 values.
-6. Displayed EV, EV score, and breakeven percentile equal the selected vendor's backend snapshot values.
-7. Displayed market price is not used as singles EV.
-8. Chase cards match `product_chase_cards.json`.
-9. Deck cards and prices match `precon_decks.json` and `single_card_prices.json`.
-10. All loaded files share the same `pipelineRunId` and `schemaVersion`.
-11. Missing values produce an explicit unavailable state, never a synthetic estimate or another booster/vendor's data.
+5. Fully fixed booster products render backend `configurationOutcomes` by fixed theme/configuration rather than a percentile x-axis.
+6. Curve points 5 and 95 match the selected vendor's backend p05 and p95 values.
+7. Displayed EV, EV score, and breakeven percentile equal the selected vendor's backend snapshot values.
+8. Displayed market price is not used as singles EV.
+9. Chase cards match `product_chase_cards.json`.
+10. Deck cards and prices match `precon_decks.json` and `single_card_prices.json`.
+11. All loaded files share the same `pipelineRunId` and `schemaVersion`.
+12. Missing values produce an explicit unavailable state, never a synthetic estimate or another booster/vendor's data.
 
 Recommended representative fixtures: one single booster; one booster box or bundle; one nested case; one preconstructed deck; one variable-content product; one product with a missing vendor or quantile record.
 
 ### DEV-20 investigation order: Jumpstart collation
+
+Current fully fixed Jumpstart-style booster products that should render fixed-theme/configuration outcomes for the standalone booster pack only:
+
+| Set | Configurations | Fixed-chart condition |
+|---|---:|---|
+| `J22` | 121 | One 20-card fixed sheet per configuration. |
+| `J25` | 121 | One 20-card fixed sheet per configuration. |
+| `JMP` | 121 | One 20-card fixed sheet per configuration. |
+| `MSH` | 51 | One 20-card fixed sheet per configuration. |
+| `TLE` | 66 | One 20-card fixed sheet per configuration. |
+
+For these sets, the standalone booster pack x-axis is booster theme/configuration, not percentile. Boxes, cases, bundles, and multipacks must **not** use this chart mode; they still use backend product-level Monte Carlo quantiles because they contain multiple independently selected fixed-theme boosters.
 
 1. Enumerate all current Jumpstart set codes from `public/data/booster_ev.json` and the raw MTGJSON JSON source.
 2. Review each Jumpstart sheet mix and classify sheets as `fixed`, `variable`, or `unknown`.

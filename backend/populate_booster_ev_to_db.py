@@ -83,6 +83,66 @@ def select_sheet_indices(sheet_info, pick_count: int, sheet_name: str = 'unknown
   )
 
 
+def build_configuration_outcomes(boosters, sheet_data, modes, vendors):
+  all_configurations_fixed = all(
+      all(
+          pick_count <= 0 or (
+              sheet_name in sheet_data and sheet_data[sheet_name].get('fixed', False)
+          )
+          for sheet_name, pick_count in booster['contents'].items()
+      )
+      for booster in boosters
+  )
+  distribution_type = (
+      'discrete_fixed_configurations'
+      if all_configurations_fixed
+      else 'continuous_sampled'
+  )
+  configuration_outcomes = {
+      mode: {vendor: [] for vendor in vendors} for mode in modes
+  }
+  if not all_configurations_fixed:
+    return distribution_type, configuration_outcomes
+
+  total_config_weight = sum(float(booster.get('weight', 0)) for booster in boosters) or float(len(boosters) or 1)
+  for booster_index, booster in enumerate(boosters):
+    contents = booster['contents']
+    sheet_names = [
+        sheet_name for sheet_name, pick_count in contents.items() if pick_count > 0
+    ]
+    label = ' + '.join(sheet_names) if sheet_names else f'Configuration {booster_index}'
+    for mode in modes:
+      for vendor in vendors:
+        value = 0.0
+        complete = True
+        status_counts = defaultdict(int)
+        for sheet_name, pick_count in contents.items():
+          if sheet_name not in sheet_data or pick_count <= 0:
+            continue
+          sheet_info = sheet_data[sheet_name]
+          picked_indices = select_sheet_indices(sheet_info, pick_count, sheet_name)
+          for idx in picked_indices:
+            price = sheet_info['matrix'][mode][vendor][idx]
+            status = sheet_info['status'][mode][vendor][idx]
+            status_counts[status] += 1
+            if price is None:
+              complete = False
+            elif complete:
+              value += price
+        configuration_outcomes[mode][vendor].append({
+            'configurationIndex': booster_index,
+            'label': label,
+            'sheetNames': sheet_names,
+            'weight': float(booster.get('weight', 0)),
+            'probability': round(float(booster.get('weight', 0)) / total_config_weight, 10),
+            'ev': round(value, 2) if complete else None,
+            'complete': complete,
+            'statusCounts': dict(status_counts),
+        })
+
+  return distribution_type, configuration_outcomes
+
+
 class DatabaseBoosterEVEngine:
 
   def __init__(self, db_config, sample_size=5000, hi_lo_ratio=0.05, audit_config=None):
@@ -153,6 +213,8 @@ class DatabaseBoosterEVEngine:
                 ev_min5 DECIMAL(10, 2) NOT NULL,
                 ev_max5 DECIMAL(10, 2) NOT NULL,
                 quantiles JSON DEFAULT NULL,
+                distribution_type VARCHAR(64) DEFAULT 'continuous_sampled',
+                configuration_outcomes JSON DEFAULT NULL,
                 
                 complete_booster_pct DECIMAL(5, 2),
                 exact_match_pct DECIMAL(5, 2),
@@ -169,6 +231,15 @@ class DatabaseBoosterEVEngine:
                 INDEX idx_mode (price_mode)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
+    for statement in (
+      "ALTER TABLE booster_ev_results ADD COLUMN distribution_type VARCHAR(64) DEFAULT 'continuous_sampled' AFTER quantiles",
+      "ALTER TABLE booster_ev_results ADD COLUMN configuration_outcomes JSON DEFAULT NULL AFTER distribution_type",
+    ):
+      try:
+        self.cursor.execute(statement)
+      except mysql.connector.Error as exc:
+        if exc.errno != 1060:
+          raise
     self.conn.commit()
 
   def close(self):
@@ -484,6 +555,9 @@ class DatabaseBoosterEVEngine:
 
     all_vendors_list = ['all_cheapest', 'all_average'] + sellers
     modes = ['direct', 'cheapest_reprint']
+    distribution_type, configuration_outcomes = build_configuration_outcomes(
+        boosters, sheet_data, modes, all_vendors_list
+    )
 
     valid_packs = {
         mode: {v: [] for v in all_vendors_list} for mode in modes
@@ -548,9 +622,10 @@ class DatabaseBoosterEVEngine:
             INSERT INTO booster_ev_results 
                 (set_code, booster_name, price_mode, vendor, 
                  ev_average, ev_mid90, ev_min, ev_max, ev_min5, ev_max5, quantiles,
+               distribution_type, configuration_outcomes,
                  complete_booster_pct, exact_match_pct, different_finish_pct, different_vendor_pct, 
                  failed_boosters, simulated_packs)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 ev_average = VALUES(ev_average),
                 ev_mid90 = VALUES(ev_mid90),
@@ -559,6 +634,8 @@ class DatabaseBoosterEVEngine:
                 ev_min5 = VALUES(ev_min5),
                 ev_max5 = VALUES(ev_max5),
                 quantiles = VALUES(quantiles),
+                distribution_type = VALUES(distribution_type),
+                configuration_outcomes = VALUES(configuration_outcomes),
                 complete_booster_pct = VALUES(complete_booster_pct),
                 exact_match_pct = VALUES(exact_match_pct),
                 different_finish_pct = VALUES(different_finish_pct),
@@ -629,6 +706,8 @@ class DatabaseBoosterEVEngine:
             ev_min5,
             ev_max5,
             __import__('json').dumps(quantiles),
+            distribution_type,
+            __import__('json').dumps(configuration_outcomes[mode][v]) if distribution_type == 'discrete_fixed_configurations' else None,
             complete_pct,
             exact_pct,
             finish_pct,

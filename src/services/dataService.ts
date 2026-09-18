@@ -463,6 +463,17 @@ class DataService {
                 evMin5: Number(item.evMin5 || item.ev_min5 || 0),
                 evMax5: Number(item.evMax5 || item.ev_max5 || 0),
                 quantiles: Array.isArray(item.quantiles) && item.quantiles.length > 0 ? item.quantiles.map(Number) : undefined,
+                distributionType: item.distributionType || item.distribution_type,
+                configurationOutcomes: Array.isArray(item.configurationOutcomes || item.configuration_outcomes)
+                  ? (item.configurationOutcomes || item.configuration_outcomes).map((outcome: any) => ({
+                    ...outcome,
+                    configurationIndex: Number(outcome.configurationIndex ?? outcome.configuration_index ?? 0),
+                    weight: Number(outcome.weight || 0),
+                    probability: Number(outcome.probability || 0),
+                    ev: outcome.ev == null ? null : Number(outcome.ev),
+                    complete: Boolean(outcome.complete),
+                  }))
+                  : undefined,
                 completeBoosterPct: Number(item.completeBoosterPct || item.complete_booster_pct || 100),
                 exactMatchPct: Number(item.exactMatchPct || item.exact_match_pct || 100),
                 differentFinishPct: Number(item.differentFinishPct || item.different_finish_pct || 0),

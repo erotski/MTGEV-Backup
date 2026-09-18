@@ -104,6 +104,8 @@ def export_all():
                 ev_min5 as evMin5,
                 ev_max5 as evMax5,
                 quantiles,
+                distribution_type as distributionType,
+                configuration_outcomes as configurationOutcomes,
                 complete_booster_pct as completeBoosterPct,
                 exact_match_pct as exactMatchPct,
                 different_finish_pct as differentFinishPct,
@@ -121,6 +123,11 @@ def export_all():
                     r["quantiles"] = json.loads(r["quantiles"])
                 except Exception:
                     r["quantiles"] = []
+            if r.get("configurationOutcomes") and isinstance(r["configurationOutcomes"], str):
+                try:
+                    r["configurationOutcomes"] = json.loads(r["configurationOutcomes"])
+                except Exception:
+                    r["configurationOutcomes"] = []
 
         with open(OUTPUT_DIR / "booster_ev.json", "w", encoding="utf-8") as f:
             json.dump(ev_results, f, indent=2, default=str)
