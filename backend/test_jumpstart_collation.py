@@ -100,6 +100,7 @@ class JumpstartCollationTests(unittest.TestCase):
                     "configurationIndex": 0,
                     "label": "themeA",
                     "sheetNames": ["themeA"],
+                    "fixedSheetNames": ["themeA"],
                     "weight": 1.0,
                     "probability": 0.25,
                     "ev": 4.0,
@@ -110,6 +111,7 @@ class JumpstartCollationTests(unittest.TestCase):
                     "configurationIndex": 1,
                     "label": "themeB",
                     "sheetNames": ["themeB"],
+                    "fixedSheetNames": ["themeB"],
                     "weight": 3.0,
                     "probability": 0.75,
                     "ev": 10.0,
@@ -119,8 +121,65 @@ class JumpstartCollationTests(unittest.TestCase):
             ],
         )
 
-    def test_variable_configuration_keeps_sampled_distribution_type(self):
-        boosters = [{"weight": 1, "contents": {"theme": 1, "rare": 1}}]
+    def test_single_variable_pick_emits_enumerated_mixed_outcomes(self):
+        boosters = [{"weight": 1, "contents": {"theme": 2, "rare": 1}}]
+        sheet_data = {
+            "theme": {
+                "fixed": True,
+                "fixed_indices": np.array([0, 1]),
+                "matrix": {"direct": {"all_cheapest": [1.0, 2.0]}},
+                "status": {"direct": {"all_cheapest": ["exact", "exact"]}},
+            },
+            "rare": {
+                "fixed": False,
+                "uuids": ["rare-a", "rare-b"],
+                "weights": np.array([0.75, 0.25]),
+                "matrix": {"direct": {"all_cheapest": [10.0, 20.0]}},
+                "status": {"direct": {"all_cheapest": ["exact", "vendor_fallback"]}},
+            },
+        }
+
+        distribution_type, outcomes = build_configuration_outcomes(
+            boosters, sheet_data, ["direct"], ["all_cheapest"]
+        )
+
+        self.assertEqual(distribution_type, "discrete_enumerated_mixed")
+        self.assertEqual(
+            outcomes["direct"]["all_cheapest"],
+            [
+                {
+                    "configurationIndex": 0,
+                    "label": "theme + rare #1",
+                    "sheetNames": ["theme", "rare"],
+                    "fixedSheetNames": ["theme"],
+                    "variableSheetName": "rare",
+                    "variableCardIndex": 0,
+                    "variableCardUuid": "rare-a",
+                    "weight": 1.0,
+                    "probability": 0.75,
+                    "ev": 13.0,
+                    "complete": True,
+                    "statusCounts": {"exact": 3},
+                },
+                {
+                    "configurationIndex": 0,
+                    "label": "theme + rare #2",
+                    "sheetNames": ["theme", "rare"],
+                    "fixedSheetNames": ["theme"],
+                    "variableSheetName": "rare",
+                    "variableCardIndex": 1,
+                    "variableCardUuid": "rare-b",
+                    "weight": 1.0,
+                    "probability": 0.25,
+                    "ev": 23.0,
+                    "complete": True,
+                    "statusCounts": {"exact": 2, "vendor_fallback": 1},
+                },
+            ],
+        )
+
+    def test_multi_variable_pick_keeps_sampled_distribution_type(self):
+        boosters = [{"weight": 1, "contents": {"theme": 1, "rare": 2}}]
         sheet_data = {
             "theme": {"fixed": True},
             "rare": {"fixed": False},

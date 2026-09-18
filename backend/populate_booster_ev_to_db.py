@@ -35,6 +35,7 @@ IGNORED_SHEET_KEYWORDS = (
 # Any other provider string discovered from AllPricesToday (typos, aggregate
 # or reserved labels such as "all") must never be treated as a real seller.
 NAMED_VENDORS = {'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'}
+MAX_EXACT_CONFIGURATION_OUTCOMES = 25000
 
 COLLATION_OVERRIDE_PATH = (
   Path(__file__).resolve().parents[1]
@@ -83,7 +84,7 @@ def select_sheet_indices(sheet_info, pick_count: int, sheet_name: str = 'unknown
   )
 
 
-def build_configuration_outcomes(boosters, sheet_data, modes, vendors):
+def build_configuration_outcomes(boosters, sheet_data, modes, vendors, max_outcomes=MAX_EXACT_CONFIGURATION_OUTCOMES):
   all_configurations_fixed = all(
       all(
           pick_count <= 0 or (
@@ -93,15 +94,37 @@ def build_configuration_outcomes(boosters, sheet_data, modes, vendors):
       )
       for booster in boosters
   )
-  distribution_type = (
-      'discrete_fixed_configurations'
-      if all_configurations_fixed
-      else 'continuous_sampled'
-  )
+  exact_enumerable = True
+  estimated_outcomes = 0
+  for booster in boosters:
+    variable_sheets = []
+    for sheet_name, pick_count in booster['contents'].items():
+      if sheet_name not in sheet_data or pick_count <= 0:
+        continue
+      sheet_info = sheet_data[sheet_name]
+      if not sheet_info.get('fixed', False):
+        variable_sheets.append((sheet_name, pick_count))
+    variable_picks = sum(pick_count for _, pick_count in variable_sheets)
+    if variable_picks > 1 or any(pick_count != 1 for _, pick_count in variable_sheets):
+      exact_enumerable = False
+      break
+    if variable_sheets:
+      variable_sheet = sheet_data[variable_sheets[0][0]]
+      estimated_outcomes += len(variable_sheet.get('uuids', []))
+    else:
+      estimated_outcomes += 1
+
+  exact_enumerable = exact_enumerable and estimated_outcomes <= max_outcomes
+  if all_configurations_fixed:
+    distribution_type = 'discrete_fixed_configurations'
+  elif exact_enumerable:
+    distribution_type = 'discrete_enumerated_mixed'
+  else:
+    distribution_type = 'continuous_sampled'
   configuration_outcomes = {
       mode: {vendor: [] for vendor in vendors} for mode in modes
   }
-  if not all_configurations_fixed:
+  if distribution_type == 'continuous_sampled':
     return distribution_type, configuration_outcomes
 
   total_config_weight = sum(float(booster.get('weight', 0)) for booster in boosters) or float(len(boosters) or 1)
@@ -110,35 +133,74 @@ def build_configuration_outcomes(boosters, sheet_data, modes, vendors):
     sheet_names = [
         sheet_name for sheet_name, pick_count in contents.items() if pick_count > 0
     ]
-    label = ' + '.join(sheet_names) if sheet_names else f'Configuration {booster_index}'
+    fixed_sheet_names = [
+      sheet_name
+      for sheet_name in sheet_names
+      if sheet_name in sheet_data and sheet_data[sheet_name].get('fixed', False)
+    ]
+    label = ' + '.join(fixed_sheet_names or sheet_names) if sheet_names else f'Configuration {booster_index}'
     for mode in modes:
       for vendor in vendors:
-        value = 0.0
-        complete = True
-        status_counts = defaultdict(int)
+        fixed_value = 0.0
+        fixed_complete = True
+        fixed_status_counts = defaultdict(int)
+        variable_sheets = []
         for sheet_name, pick_count in contents.items():
           if sheet_name not in sheet_data or pick_count <= 0:
             continue
           sheet_info = sheet_data[sheet_name]
+          if not sheet_info.get('fixed', False):
+            variable_sheets.append((sheet_name, pick_count))
+            continue
           picked_indices = select_sheet_indices(sheet_info, pick_count, sheet_name)
           for idx in picked_indices:
             price = sheet_info['matrix'][mode][vendor][idx]
             status = sheet_info['status'][mode][vendor][idx]
-            status_counts[status] += 1
+            fixed_status_counts[status] += 1
             if price is None:
-              complete = False
-            elif complete:
-              value += price
-        configuration_outcomes[mode][vendor].append({
-            'configurationIndex': booster_index,
-            'label': label,
-            'sheetNames': sheet_names,
-            'weight': float(booster.get('weight', 0)),
-            'probability': round(float(booster.get('weight', 0)) / total_config_weight, 10),
-            'ev': round(value, 2) if complete else None,
-            'complete': complete,
-            'statusCounts': dict(status_counts),
-        })
+              fixed_complete = False
+            elif fixed_complete:
+              fixed_value += price
+
+        config_probability = float(booster.get('weight', 0)) / total_config_weight
+        if not variable_sheets:
+          configuration_outcomes[mode][vendor].append({
+              'configurationIndex': booster_index,
+              'label': label,
+              'sheetNames': sheet_names,
+              'fixedSheetNames': fixed_sheet_names,
+              'weight': float(booster.get('weight', 0)),
+              'probability': round(config_probability, 10),
+              'ev': round(fixed_value, 2) if fixed_complete else None,
+              'complete': fixed_complete,
+              'statusCounts': dict(fixed_status_counts),
+          })
+          continue
+
+        variable_sheet_name, _pick_count = variable_sheets[0]
+        variable_sheet = sheet_data[variable_sheet_name]
+        for idx, variable_weight in enumerate(variable_sheet.get('weights', [])):
+          status_counts = defaultdict(int, fixed_status_counts)
+          price = variable_sheet['matrix'][mode][vendor][idx]
+          status = variable_sheet['status'][mode][vendor][idx]
+          status_counts[status] += 1
+          complete = fixed_complete and price is not None
+          value = fixed_value + (price or 0.0)
+          variable_probability = config_probability * float(variable_weight)
+          configuration_outcomes[mode][vendor].append({
+              'configurationIndex': booster_index,
+              'label': f'{label} + {variable_sheet_name} #{idx + 1}',
+              'sheetNames': sheet_names,
+              'fixedSheetNames': fixed_sheet_names,
+              'variableSheetName': variable_sheet_name,
+              'variableCardIndex': idx,
+              'variableCardUuid': variable_sheet['uuids'][idx],
+              'weight': float(booster.get('weight', 0)),
+              'probability': round(variable_probability, 10),
+              'ev': round(value, 2) if complete else None,
+              'complete': complete,
+              'statusCounts': dict(status_counts),
+          })
 
   return distribution_type, configuration_outcomes
 
@@ -580,49 +642,69 @@ class DatabaseBoosterEVEngine:
         for mode in modes
     }
 
-    for b_idx in chosen_booster_indices:
-      contents = boosters[b_idx]['contents']
+    if distribution_type in ('discrete_fixed_configurations', 'discrete_enumerated_mixed'):
+      for mode in modes:
+        for v in all_vendors_list:
+          outcomes = configuration_outcomes[mode][v]
+          outcome_indices = allocate_booster_indices(
+              [{'weight': outcome.get('probability', 0)} for outcome in outcomes],
+              self.sample_size,
+          )
+          for outcome_index in outcome_indices:
+            outcome = outcomes[int(outcome_index)]
+            status_counts = outcome.get('statusCounts', {})
+            slots = sum(int(count) for count in status_counts.values())
+            telemetry_status[mode][v]['total_slots'] += slots
+            for status, count in status_counts.items():
+              telemetry_status[mode][v][status] += int(count)
+            if outcome.get('complete') and outcome.get('ev') is not None:
+              valid_packs[mode][v].append(float(outcome['ev']))
+            else:
+              telemetry_status[mode][v]['failed_boosters'] += 1
+    else:
+      for b_idx in chosen_booster_indices:
+        contents = boosters[b_idx]['contents']
 
-      pack_sums = {
-          mode: {v: 0.0 for v in all_vendors_list} for mode in modes
-      }
-      pack_valid = {
-          mode: {v: True for v in all_vendors_list} for mode in modes
-      }
+        pack_sums = {
+            mode: {v: 0.0 for v in all_vendors_list} for mode in modes
+        }
+        pack_valid = {
+            mode: {v: True for v in all_vendors_list} for mode in modes
+        }
 
-      for sheet_name, pick_count in contents.items():
-        if sheet_name not in sheet_data or pick_count <= 0:
-          continue
+        for sheet_name, pick_count in contents.items():
+          if sheet_name not in sheet_data or pick_count <= 0:
+            continue
 
-        s_info = sheet_data[sheet_name]
-        picked_indices = select_sheet_indices(s_info, pick_count, sheet_name)
+          s_info = sheet_data[sheet_name]
+          picked_indices = select_sheet_indices(s_info, pick_count, sheet_name)
+
+          for mode in modes:
+            for v in all_vendors_list:
+              telemetry_status[mode][v]['total_slots'] += pick_count
+              for idx in picked_indices:
+                p = s_info['matrix'][mode][v][idx]
+                st = s_info['status'][mode][v][idx]
+                telemetry_status[mode][v][st] += 1
+
+                if p is None:
+                  pack_valid[mode][v] = False
+                elif pack_valid[mode][v]:
+                  pack_sums[mode][v] += p
 
         for mode in modes:
           for v in all_vendors_list:
-            telemetry_status[mode][v]['total_slots'] += pick_count
-            for idx in picked_indices:
-              p = s_info['matrix'][mode][v][idx]
-              st = s_info['status'][mode][v][idx]
-              telemetry_status[mode][v][st] += 1
-
-              if p is None:
-                pack_valid[mode][v] = False
-              elif pack_valid[mode][v]:
-                pack_sums[mode][v] += p
-
-      for mode in modes:
-        for v in all_vendors_list:
-          if pack_valid[mode][v]:
-            valid_packs[mode][v].append(round(pack_sums[mode][v], 2))
-          else:
-            telemetry_status[mode][v]['failed_boosters'] += 1
+            if pack_valid[mode][v]:
+              valid_packs[mode][v].append(round(pack_sums[mode][v], 2))
+            else:
+              telemetry_status[mode][v]['failed_boosters'] += 1
 
     # Insert / Update records into MySQL
     insert_sql = """
             INSERT INTO booster_ev_results 
                 (set_code, booster_name, price_mode, vendor, 
                  ev_average, ev_mid90, ev_min, ev_max, ev_min5, ev_max5, quantiles,
-               distribution_type, configuration_outcomes,
+                 distribution_type, configuration_outcomes,
                  complete_booster_pct, exact_match_pct, different_finish_pct, different_vendor_pct, 
                  failed_boosters, simulated_packs)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -707,7 +789,7 @@ class DatabaseBoosterEVEngine:
             ev_max5,
             __import__('json').dumps(quantiles),
             distribution_type,
-            __import__('json').dumps(configuration_outcomes[mode][v]) if distribution_type == 'discrete_fixed_configurations' else None,
+            __import__('json').dumps(configuration_outcomes[mode][v]) if distribution_type in ('discrete_fixed_configurations', 'discrete_enumerated_mixed') else None,
             complete_pct,
             exact_pct,
             finish_pct,

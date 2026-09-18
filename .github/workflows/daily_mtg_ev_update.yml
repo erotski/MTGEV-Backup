@@ -79,16 +79,17 @@ jobs:
           rsync -a --exclude='.git' --exclude='node_modules' ./ ../mtgev-pipeline-workspace/
 
       - name: Run focused backend regression tests
+        working-directory: backend
         run: |
           set -e
           python -m unittest \
-            backend.test_pricing_validator \
-            backend.test_ev_statistics \
-            backend.test_pipeline_bucket_contract \
-            backend.test_jumpstart_collation \
-            backend.test_jumpstart_validation_report \
-            backend.test_product_chase_cards \
-            backend.test_product_metrics_contract
+            test_pricing_validator \
+            test_ev_statistics \
+            test_pipeline_bucket_contract \
+            test_jumpstart_collation \
+            test_jumpstart_validation_report \
+            test_product_chase_cards \
+            test_product_metrics_contract
 
       - name: Execute Daily Update Pipeline & JSON Export
         env:

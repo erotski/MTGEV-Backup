@@ -468,6 +468,7 @@ class DataService {
                   ? (item.configurationOutcomes || item.configuration_outcomes).map((outcome: any) => ({
                     ...outcome,
                     configurationIndex: Number(outcome.configurationIndex ?? outcome.configuration_index ?? 0),
+                    fixedSheetNames: Array.isArray(outcome.fixedSheetNames) ? outcome.fixedSheetNames : outcome.fixed_sheet_names,
                     weight: Number(outcome.weight || 0),
                     probability: Number(outcome.probability || 0),
                     ev: outcome.ev == null ? null : Number(outcome.ev),

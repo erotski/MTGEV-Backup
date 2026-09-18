@@ -13,11 +13,12 @@ export interface BoosterEVRecord {
   evMin5: number;
   evMax5: number;
   quantiles?: number[];
-  distributionType?: 'continuous_sampled' | 'discrete_fixed_configurations' | string;
+  distributionType?: 'continuous_sampled' | 'discrete_fixed_configurations' | 'discrete_enumerated_mixed' | string;
   configurationOutcomes?: Array<{
     configurationIndex: number;
     label: string;
     sheetNames?: string[];
+    fixedSheetNames?: string[];
     weight: number;
     probability: number;
     ev: number | null;
