@@ -462,7 +462,7 @@ The frontend never connects directly to MySQL. Its runtime inputs are generated 
 
 ### Application shell
 
-- **`App.tsx`** — owns top-level tabs, selected set/product, vendor, price mode, EV basis. Loads sets/arbitrage/booster-EV/reliability through `dataService`. Initial arrays from `src/data.ts` are empty startup scaffolding, not a production data source.
+- **`App.tsx`** — owns top-level tabs, selected set/product, vendor, price mode, EV basis. Loads sets/arbitrage/booster-EV/reliability through `dataService`; local empty arrays are only pre-load fallbacks.
 - **`types.ts`** — shared interfaces/unions for vendors, price modes, products, boosters, decks, chase cards, provenance. Changes here are cross-layer contract changes requiring backend JSON + frontend build validation.
 
 ### Data loading and caching
@@ -532,7 +532,7 @@ Recommended rule: any card-price lookup may produce an explicit borrowed-data re
 ### Frontend
 
 Fallbacks requiring explicit policy:
-- Empty initial arrays in `src/data.ts` (startup scaffolding only).
+- Empty pre-load fallback arrays now live beside their four consumers; the obsolete `src/data.ts` module was removed after migration.
 - Static catalog products when generated products are unavailable.
 - Title-based packaging inference (marked `inferred`).
 - Scryfall hierarchy fallback mappings (offline/startup recovery only).
@@ -576,10 +576,12 @@ The most recent full pipeline run's `validate_pricing_and_ev.py` stage surfaced 
 | Category | Count (last observed run) | Meaning | Status |
 |---|---:|---|---|
 | Booster Quantile Outlier Skews | **0 on audited run `run-2026-09-18-103326`** | Quantile mean deviates >35% or <70% from the analytical `evAverage` for that booster/vendor/mode. | Closed for the current published run. The prior findings were caused by the validator's naive arithmetic mean over endpoint-preserving buckets; weighted validation now passes. |
-| Product Contents vs EV Mismatches | **584 on audited run `run-2026-09-18-103326`** | A sealed product's stored total EV does not reconcile with the EV implied by walking its `contents` (packs/cards/decks/variable slots). | Still open. Group by category, archetype, deck lookup, nested-product resolution, and coverage before changing valuation logic. |
-| Extreme ROI Pricing Anomalies | **184 in the run summary; 186 in `pricing_validator_diagnostics.json` for audited run `run-2026-09-18-103326`** | Product ROI (EV vs. market price) is an extreme outlier, e.g. -99%+ or implausibly high. | Still open. First resolve the count discrepancy, then classify low-EV products by deck coverage, fixed-card coverage, market-price freshness, and intentionally premium sealed pricing. |
+| Product Contents vs EV Mismatches | **584 on audited run `run-2026-09-18-103326`** | A sealed product's stored total EV does not reconcile with the EV implied by walking its `contents` (packs/cards/decks/variable slots). | Triage found compact `precon_decks.json` display-name lookups resolving to zero; validator coverage fix added for slugs, names, and aliases. Re-run the validator to measure the reduced count; remaining mismatches still need category-level review. |
+| Extreme ROI Pricing Anomalies | **183 on the current local validator run** | Product ROI (EV vs. market price) is an extreme outlier, e.g. -99%+ or implausibly high. | Count discrepancy fixed by using one canonical diagnostics object for console, return, and JSON output. Triage found mostly deck/mixed-composite products with stored EV matching contents but implausible market prices; snapshots have no price-freshness timestamps, so stale-price attribution remains unproven. |
 
-Next action for each: use the published `pricing_validator_diagnostics.json` to classify the 584 EV mismatches and 186 ROI records. The remaining validator work is data-quality triage, not evidence that the pipeline failed; the audited run itself completed successfully.
+Next action for each: rerun the validator after the compact-deck coverage fix, then classify the residual EV mismatches. The remaining validator work is data-quality triage, not evidence that the pipeline failed; the audited run itself completed successfully.
+
+**2026-09-19 triage update:** The ROI count mismatch is resolved by `build_diagnostics()` in `validate_pricing_and_ev.py`; the current local run reports 183 ROI records and the serialized issue list also contains 183. The validator now indexes compact preconstructed-deck slugs, display names, and aliases, addressing a confirmed source of false EV mismatches. `dataService` contract validation now covers required files, vendors, price modes, curve lengths/endpoints, p05/p95 fields, and cross-file product IDs. The Jumpstart report now records fixed-card manifest counts and zero variance, with focused regression tests added. These source changes still require a post-change audited workflow before generated snapshots are considered updated.
 
 ### 2026-09-18 FIN product-curve investigation
 
@@ -634,10 +636,10 @@ Statuses:
 | DEV-03 | Publication safety | P0 | DONE | Generated data is staged and published atomically. | Failed workflow preserves the previous root `public/data/` snapshot. |
 | DEV-04 | Frontend fallback removal | P0 | FIXED (2026-09-17, see DEV-29) | Synthetic multipliers, invented card prices, market-price-as-EV, and browser simulations removed from active paths. | Was regressed earlier in this session: `BoosterDetailExplorer.tsx` (~line 579) fell back to `Number((activeBooster.evAverage * productPacksCount).toFixed(2))` whenever `gatewayMetrics` was unavailable. Fixed in DEV-29 — see that row for the exact change and verification. |
 | DEV-05 | Chase-card ownership | P0 | DONE | Product TOP 5 cards come from `product_chase_cards.json`, resolved directly from MySQL price tables; curated Special Chases remain editorial. | Viewer renders backend snapshot with explicit diagnostics when missing; exporter rewritten to price booster-sheet candidates, not just `single_card_prices.json` entries. |
-| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation; `pricing_validator_diagnostics.json` is now required and published. Remaining: triage the 584 EV mismatches and ROI anomalies in Section 11. |
+| DEV-06 | Output validation | P0 | IN PROGRESS | Validate generated JSON shape, endpoints, cross-file references, telemetry, decks, reliability, and chase cards. | Daily runner passes `output_bundle`, `output_semantics`, and telemetry validation; `pricing_validator_diagnostics.json` is required and published. ROI reporting is now count-consistent; compact precon lookup coverage was fixed locally. Remaining: rerun and triage residual EV mismatches. |
 | DEV-07 | Snapshot identity | P0 | DONE (2026-09-18) | Add shared `pipelineRunId`, source commit, generated timestamp, and schema version to generated outputs. | Audited run `run-2026-09-18-103326` published `snapshot_manifest.json` with `pipelineRunId`, `sourceCommit` matching `main` (`dbdec7a...`), `generatedAt`, `schemaVersion`, and `auditEnabled: true`; `dataService` compares the manifest with `latest_pipeline_run.json`. |
 | DEV-08 | Frontend data gateway | P0 | DONE | Add a backend-generated complete-product metrics snapshot and make every valuation view consume it through `dataService`, with no browser-side recursive EV calculation. | `product_metrics.json` is loaded through the frontend data boundary; Products Overview and detailed product views select snapshot records by product/vendor/mode. |
-| DEV-09 | Frontend contract validation | P1 | IN PROGRESS | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | `dataService` now reports missing or mismatched snapshot-manifest identity alongside existing non-empty snapshot checks. Remaining: broaden schema and cross-file assertions beyond the identity gate. |
+| DEV-09 | Frontend contract validation | P1 | FIXED LOCALLY | Validate JSON schemas and cross-file IDs at the `dataService` boundary. | `dataService` now checks required files, snapshot identity, vendors, price modes, 100-point curves, endpoints, p05/p95 fields, and product IDs across `product_metrics.json` and `sealed_products.json`. |
 | DEV-10 | End-to-end value checks | P1 | NEXT | Compare UI EV, market price, curve, and chase cards against generated JSON. | Playwright checks assert `displayed value === snapshot value` for representative products. |
 | DEV-11 | Recursive EV consolidation | P1 | FIXED (2026-09-17, see DEV-29) | Remove recursive product valuation from React. Retain only structural containment/card/deck display helpers; backend owns complete-product EV. | Was regressed earlier in this session: `BoosterDetailExplorer.tsx:465` and `ProductBreakdownTable.tsx:533` used `resolveRecursiveProductAudit`'s EV totals as a live fallback/first-choice value instead of only structural display data. Fixed in DEV-29 — both files now only use the recursive audit for structural containment/card/deck breakdown display; EV totals come from the canonical backend record only. `ArbitrageLeaderboard.tsx` (Products Overview) was already clean and required no change. |
 | DEV-12 | Reproducibility | P1 | NEXT | Record source versions, commit SHA, sample count, audit flag, and seed policy. | `latest_pipeline_run.json` contains reproducibility metadata. |
@@ -645,10 +647,10 @@ Statuses:
 | DEV-14 | Catalog provenance | P1 | DONE | Mark generated catalog metadata as `pipeline` or `inferred`; avoid invented dates/blocks. | Catalog loader tests distinguish inferred metadata. |
 | DEV-15 | Performance measurement | P2 | NEXT | Measure startup, JSON parse time, simulation memory, and stage duration. | Optimization decisions are based on recorded measurements. |
 | DEV-16 | Backend decomposition | P2 | NEXT | Split simulation, statistics, audit writing, and MySQL persistence. | Focused tests preserve summary, sample, and bucket behavior. |
-| DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | SQLite/EV path and two unreferenced prototypes are removed; remaining work is the one-off ingestion review, `src/data.ts` migration, and local-artifact cleanup. |
+| DEV-17 | Legacy deletion | P2 | IN PROGRESS | Remove unreferenced ingestion scripts, SQLite paths, prototype tests, and empty files after history checks. | SQLite/EV path and confirmed dead candidates are removed; `src/data.ts` was migrated and deleted. Remaining work is the one-off ingestion review and local-artifact cleanup. |
 | DEV-18 | Operational dashboard | P2 | NEXT | Display latest pipeline status, snapshot identity, fallback rates, and unresolved counts in Admin Portal. | Admin Portal explains stale, missing, failed, and deployed states. |
 | DEV-19 | Vendor lifecycle | P1 | NEXT | Centralize vendor definitions and make add/remove operations contract-driven. | A vendor change updates backend resolution, generated outputs, frontend controls, validation, provenance, and documentation without scattered edits. |
-| DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-18) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; one-card variable slots can be exact-enumerated; larger random slots remain sampled. Fully fixed Jumpstart-style boosters expose discrete fixed-theme outcomes for frontend charting. | Weekly corpus sync validates 622 fixed sheets across 869 sets and writes the compact overlay to `collation-metadata`; daily workflow fetches the overlay before simulation. Focused tests pass for fixed metadata extraction, corpus mode, Jumpstart sampling, report classification, fully fixed outcomes, exact mixed outcomes, and sampled fallback for multi-variable picks. Backend now emits `distributionType`/`configurationOutcomes` for fully fixed boosters and exact-enumerable mixed boosters; standalone fully fixed packs render fixed-theme bars. Remaining: full audited daily run and stronger fixed-card manifest audit. |
+| DEV-20 | Jumpstart collation | P0 | IN PROGRESS (2026-09-18) | Interpret MTGJSON Jumpstart `fixed` sheet metadata correctly through a centralized `booster_collation_overrides.json` workaround because the MySQL schema omits the optional field. Fixed card counts are deterministic; one-card variable slots can be exact-enumerated; larger random slots remain sampled. Fully fixed Jumpstart-style boosters expose discrete fixed-theme outcomes for frontend charting. | Weekly corpus sync validates 622 fixed sheets across 869 sets; the audited report contains 530 configurations and 0 warnings. Added fixed-card manifest multiplicity and zero-variance assertions to the exporter/tests. Remaining: execute the focused tests and regenerate after source changes. |
 | DEV-21 | Curve snapshot integrity | P0 | IN PROGRESS | The published curve data still needs cross-layer validation. | The 2026-09-18 FIN investigation found a real frontend curve-selection mismatch: raw sealed products without top-level `boosterName` defaulted to `play`, selected-product mapping dropped product curves/statistics, and diagnostics inspected a different fallback source than rendering. Fixed locally under DEV-35; pending full pipeline publication and deployed FIN verification. |
 | DEV-22 | Chase-card visibility | P0 | PARTIALLY_FIXED | Ensure every product that has backend TOP 5 chase data displays it without silent empty states or stale vendor-mode mismatches. | Full audited run exported chase data for 4,137 products. Backend coverage is regenerated; remaining work is browser-level representative-product verification. |
 | DEV-23 | Booster vendor discovery integrity | P0 | DONE (2026-09-18) | Prevent unfiltered/garbage seller strings from AllPricesToday becoming fake booster vendors; fix the backwards legacy-row cleanup query. | Full audited output contains 10 MKM `all_cheapest` booster rows after the allowlist and cleanup fixes. |
@@ -719,11 +721,11 @@ Mixed Jumpstart-style boosters with a fixed theme plus exactly one variable card
 
 ## 13. Next 5 Steps
 
-1. **Resolve the published diagnostics discrepancy**: the validator output is now required and force-added to `data-sync`; confirm the next run reports identical ROI counts in telemetry and diagnostics.
-2. **Inspect the generated product-metrics snapshot** for representative single boosters, boxes/bundles, nested cases, preconstructed decks, variable-content products, and missing vendor/quantile records.
-3. **Verify publication and deployment**: confirm `data-sync` contains the source plus generated snapshots, Vercel serves the manifest run ID, and the frontend loads the same product-metrics records.
-4. **Add end-to-end frontend checks** that compare displayed EV, market price, curve endpoints, and chase cards against the selected published snapshots.
-5. **Triage the remaining validator diagnostics**: classify the 584 contents-versus-EV mismatches and remaining ROI anomalies.
+1. **Rerun the validator after compact-deck coverage repair** and record the residual EV mismatch count.
+2. **Add Playwright checks** for representative EV, market price, curve endpoints, and chase-card snapshots.
+3. **Verify deployed FIN curves** against the latest audited manifest and selected product metrics.
+4. **Refactor `simulate_and_store()`** with focused curve-contract tests and memory measurements.
+5. **Run the final focused suite and audited workflow** after the source changes are published.
 
 ## 14. Vendor Add/Remove Procedure
 
@@ -779,7 +781,7 @@ Keep commits focused. A useful sequence: backend-first migration → frontend cl
 
 Delete only after reference and history checks:
 
-- **`src/data.ts`** — **verified 2026-09-17: NOT yet safe to delete.** Still actively imported by 4 components (`App.tsx`, `AdminPortal.tsx`, `BoosterFoilPackMockup.tsx`, `PackagingAssetManager.tsx`) for `INITIAL_SETS`/`INITIAL_BOOSTER_EV_DATA`/`INITIAL_BOX_ARBITRAGE`/`CHASE_CARDS_BY_SET`. Migrate those 4 call sites first, then delete.
+- **`src/data.ts`** — **removed 2026-09-19.** It contained only empty startup arrays; the four consumers now own their pre-load fallbacks and production data continues to load through `dataService`.
 - **Duplicate data module resolved 2026-09-17:** `src/data/index.ts` had no consumers, while all four imports resolved to `src/data.ts`; the two modules also differed because only `src/data.ts` seeds `CHASE_CARDS_BY_SET` from `CURATED_CHASE_CARDS`. Removed the unused `src/data/index.ts`; `src/data.ts` is now the single canonical startup-data module.
 - **`scripts/ingest-wpn.ts` — deleted 2026-09-17.** `package.json`'s `ingest-wpn` script and all in-app help text point at `scripts/ingest-wpn.js`; the TypeScript importer had no consumer.
 - Unreferenced ingestion scripts.
@@ -815,7 +817,7 @@ This is the cleanup map for the repository. It is intentionally based on referen
 | `index.html`, `src/main.tsx`, `src/App.tsx`, `src/index.css` | 5 / 5 / 5 / 4 | Keep. Application entrypoint, top-level runtime shell, and global Tailwind import. |
 | `package.json`, `bun.lock`, `tsconfig.json`, `vite.config.ts` | 5 | Keep. Build, dependency, and TypeScript contracts. |
 | `src/types.ts`, `src/ecommerceBoosterData.ts` | 5 / 4 | Keep. Shared contracts and catalog metadata used across many views. |
-| `src/data.ts` | 2 | Keep temporarily. It contains only empty startup arrays; migrate its four imports, then delete. |
+| `src/data.ts` | 1 | Removed 2026-09-19 after migrating its four empty fallback consumers. |
 | `.env.example`, `.gitignore`, `.vercelignore`, `metadata.json` | 3 / 4 | Keep. Environment/deployment boundaries; review `metadata.json` if no tool consumes it. |
 | `PROJECT_REVIEW.md`, `public/products/README.md` | 4 / 3 | Keep. Operational rules and asset-ingestion instructions. |
 | Root `dist/`, `node_modules/`, `.venv/`, `backend/__pycache__/`, `scripts/__pycache__/`, local `*.log` | 1 | Local/generated clutter. Never commit; remove locally when stale. |
@@ -895,5 +897,5 @@ This is the cleanup map for the repository. It is intentionally based on referen
 1. Remove local artifacts (`*.log`, `dist/`, `__pycache__/`, unknown root `t`) after confirming they are untracked or reproducible.
 2. **Remove confirmed dead frontend candidates:** `src/services/scryfallApi.ts` and `src/components/CubeBuilderStudio.tsx`, after the final history/manual-use check.
 3. Decide whether the one-off ingestion scripts are a supported reproducibility surface; archive them as a unit if not.
-4. Migrate the four `src/data.ts` imports, then delete the empty startup-data module.
+4. Keep the migrated consumers on `dataService`; do not reintroduce a duplicate startup-data module.
 5. Refactor large active modules only after the deletion candidates are settled; do not mix cleanup with valuation-contract changes.

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
-import { INITIAL_SETS } from '../data';
 import { dataService } from '../services/dataService';
 import {
   loadSavedAssetMappings,
@@ -12,6 +11,8 @@ import {
   getProductEffectiveAssetSlots,
   GuessMatchResult,
 } from '../utils/productAssetMatcher';
+
+const INITIAL_SETS: Array<{ code: string; name: string }> = [];
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { CatalogSetSummary, buildUnifiedCatalogProducts, extractAllCatalogSets } from '../utils/catalogProductLoader';
 import {

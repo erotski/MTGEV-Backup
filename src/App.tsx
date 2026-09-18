@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { INITIAL_BOX_ARBITRAGE, INITIAL_SETS, INITIAL_BOOSTER_EV_DATA } from './data';
 import { PriceMode, Vendor, SetOption, BoxArbitrageRecord, BoosterEVRecord, ProductMetricsRecord, EvBasis, PricingReliability } from './types';
 import { resolveToMainSetCode } from './utils/setHierarchyUtils';
 import { dataService } from './services/dataService';
@@ -10,6 +9,10 @@ import { AdminPortal } from './components/AdminPortal';
 import { GlobalControlFooter } from './components/GlobalControlFooter';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TrendingUp, Layers, Sparkles, Box, Sliders, Package, Database, Award } from 'lucide-react';
+
+const EMPTY_SETS: SetOption[] = [];
+const EMPTY_BOOSTER_EV_DATA: Record<string, BoosterEVRecord[]> = {};
+const EMPTY_BOX_ARBITRAGE: BoxArbitrageRecord[] = [];
 
 function getLatestReleasedSet(sets: SetOption[]): SetOption | undefined {
   const today = new Date().toISOString().slice(0, 10);
@@ -32,9 +35,9 @@ export default function App() {
   const [evBasis, setEvBasis] = useState<EvBasis>('avg');
 
   // Dynamic state loaded from pipeline JSON files
-  const [availableSets, setAvailableSets] = useState<SetOption[]>(INITIAL_SETS);
-  const [arbitrageRecords, setArbitrageRecords] = useState<BoxArbitrageRecord[]>(INITIAL_BOX_ARBITRAGE);
-  const [boosterEvMap, setBoosterEvMap] = useState<Record<string, BoosterEVRecord[]>>(INITIAL_BOOSTER_EV_DATA);
+  const [availableSets, setAvailableSets] = useState<SetOption[]>(EMPTY_SETS);
+  const [arbitrageRecords, setArbitrageRecords] = useState<BoxArbitrageRecord[]>(EMPTY_BOX_ARBITRAGE);
+  const [boosterEvMap, setBoosterEvMap] = useState<Record<string, BoosterEVRecord[]>>(EMPTY_BOOSTER_EV_DATA);
   const [pricingReliability, setPricingReliability] = useState<Record<string, PricingReliability>>({});
   const [productMetrics, setProductMetrics] = useState<ProductMetricsRecord[]>([]);
   const [isLiveDatabase, setIsLiveDatabase] = useState<boolean>(false);

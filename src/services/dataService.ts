@@ -211,6 +211,35 @@ class DataService {
       this.getProductMetricsSnapshot().catch(() => []),
     ]);
 
+    const requiredSnapshotFiles = [
+      'sets.json',
+      'sealed_products.json',
+      'booster_ev.json',
+      'product_metrics.json',
+      'single_card_prices.json',
+      'precon_decks.json',
+      'product_chase_cards.json',
+      'pricing_reliability.json',
+      'latest_pipeline_run.json',
+      'snapshot_manifest.json',
+    ];
+    const requiredFileResults = await Promise.all(requiredSnapshotFiles.map(async (file) => {
+      try {
+        const response = await fetch(`/data/${file}`, { cache: 'no-cache' });
+        if (!response.ok) return { file, ok: false };
+        const value = await response.json();
+        const nonEmpty = Array.isArray(value)
+          ? value.length > 0
+          : Boolean(value && typeof value === 'object' && Object.keys(value).length > 0);
+        return { file, ok: nonEmpty };
+      } catch {
+        return { file, ok: false };
+      }
+    }));
+    requiredFileResults
+      .filter(({ ok }) => !ok)
+      .forEach(({ file }) => warnings.push(`Required snapshot file is missing or empty: /data/${file}.`));
+
     if (!sets.sets || sets.sets.length === 0) {
       warnings.push('Sets snapshot did not load or is empty.');
     }
@@ -241,6 +270,42 @@ class DataService {
       warnings.push('Product metrics snapshot contains conflicting pipelineRunId values.');
     } else if (metadataRunId && !snapshotRunIds.has(metadataRunId)) {
       warnings.push(`Snapshot identity mismatch: latest run ${metadataRunId} does not match product metrics ${Array.from(snapshotRunIds)[0]}.`);
+    }
+
+    const boosterRecords = Object.values(boosterEv).flat() as Array<BoosterEVRecord & Record<string, any>>;
+    const invalidBoosterRecords = boosterRecords.filter((record) => {
+      const hasValidVendor = typeof record.vendor === 'string' && record.vendor.length > 0;
+      const hasValidPriceMode = record.priceMode === 'direct' || record.priceMode === 'cheapest_reprint';
+      const hasValidCurve = !record.quantiles || record.quantiles.length === 100;
+      const endpointsMatch = !record.quantiles || (
+        Math.abs(Number(record.quantiles[0]) - Number(record.evMin)) < 0.02 &&
+        Math.abs(Number(record.quantiles[99]) - Number(record.evMax)) < 0.02
+      );
+      return !hasValidVendor || !hasValidPriceMode || !hasValidCurve || !endpointsMatch;
+    });
+    if (invalidBoosterRecords.length > 0) {
+      warnings.push(`Booster EV contract has ${invalidBoosterRecords.length} invalid vendor, price-mode, curve-length, or endpoint records.`);
+    }
+
+    const invalidMetricRecords = productMetrics.filter((record: any) => (
+      !record.productUuid ||
+      !record.vendor ||
+      (record.priceMode !== 'direct' && record.priceMode !== 'cheapest_reprint') ||
+      !Number.isFinite(Number(record.totalEvMin)) ||
+      !Number.isFinite(Number(record.totalEvMin5)) ||
+      !Number.isFinite(Number(record.totalEvAvg)) ||
+      !Number.isFinite(Number(record.totalEvMax5)) ||
+      !Number.isFinite(Number(record.totalEvMax)) ||
+      (record.quantiles !== undefined && (!Array.isArray(record.quantiles) || record.quantiles.length !== 100))
+    ));
+    if (invalidMetricRecords.length > 0) {
+      warnings.push(`Product metrics contract has ${invalidMetricRecords.length} invalid vendor, price-mode, p05/p95, or curve records.`);
+    }
+
+    const sealedProductIds = new Set(sealedProducts.map((product: any) => product.id || product.uuid).filter(Boolean));
+    const orphanedMetricIds = productMetrics.filter((record: any) => record.productUuid && !sealedProductIds.has(record.productUuid));
+    if (orphanedMetricIds.length > 0) {
+      warnings.push(`Product metrics contains ${orphanedMetricIds.length} product IDs missing from sealed_products.json.`);
     }
 
     const report: SnapshotIntegrityReport = {

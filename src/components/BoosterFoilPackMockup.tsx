@@ -1,7 +1,8 @@
 import React from 'react';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { Sparkles } from 'lucide-react';
-import { INITIAL_SETS } from '../data';
+
+const INITIAL_SETS: Array<{ code: string; name: string }> = [];
 
 export type FoilPackLayoutVariant = 'standard' | 'collector' | 'auto';
 

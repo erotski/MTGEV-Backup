@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ECOMMERCE_CATALOG_PACKS, CatalogPackProduct, ProductPackagingType } from '../ecommerceBoosterData';
-import { INITIAL_SETS } from '../data';
 import { dataService } from '../services/dataService';
 import { buildUnifiedCatalogProducts, extractAllCatalogSets } from '../utils/catalogProductLoader';
 import { ProductPackagingImage } from './ProductPackagingImage';
@@ -55,6 +54,8 @@ import {
   Smartphone,
   ShieldAlert
 } from 'lucide-react';
+
+const INITIAL_SETS: Array<{ code: string; name: string }> = [];
 import { AdminSecurityGate } from './AdminSecurityGate';
 import { AdminUserManagement } from './AdminUserManagement';
 import { adminAuthService } from '../services/adminAuthService';

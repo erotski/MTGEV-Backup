@@ -81,12 +81,24 @@ def classify_set(set_code, booster, override, sample_size, source, source_meta=N
             if source == "mtgjson" and treatment == "variable" and sheet.get("fixed") is True:
                 issues.append(f"Override treats {sheet_name} as variable but MTGJSON marks it fixed.")
             total_picks += int(picks)
+            card_manifest = sheet.get("cards") or {}
+            fixed_card_count = sum(int(count) for count in card_manifest.values()) if isinstance(card_manifest, dict) else 0
+            fixed_card_variance = 0 if treatment == "fixed" else None
+            if treatment == "fixed":
+                if not isinstance(card_manifest, dict) or not card_manifest:
+                    issues.append(f"Fixed sheet {sheet_name} has no card manifest.")
+                elif fixed_card_count != int(picks):
+                    issues.append(
+                        f"Fixed sheet {sheet_name} manifest contains {fixed_card_count} cards instead of {int(picks)}."
+                    )
             content_report.append({
                 "sheetName": sheet_name,
                 "picks": int(picks),
                 "treatment": treatment,
                 "foil": bool(sheet.get("foil", False)),
                 "cardCount": sheet.get("cardCount") or len(sheet.get("cards") or {}),
+                "fixedCardCount": fixed_card_count if treatment == "fixed" else None,
+                "fixedCardVariance": fixed_card_variance,
                 "totalWeight": sheet.get("totalWeight"),
                 "sourceFixed": sheet.get("fixed") if source == "mtgjson" else None,
             })
