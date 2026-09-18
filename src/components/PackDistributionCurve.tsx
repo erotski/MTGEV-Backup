@@ -341,7 +341,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
         displayLabel: outcome.label || `Configuration ${outcome.configurationIndex}`,
         value: outcome.ev == null ? 0 : Number(outcome.ev),
       }))
-      .sort((a, b) => a.configurationIndex - b.configurationIndex);
+      .sort((a, b) => a.value - b.value || a.configurationIndex - b.configurationIndex);
   }, [isDiscreteFixedConfigurationChart, selectedDiscreteRecord]);
 
   const q0 = isPreconstructed ? fixedDeckEv : Number((currentVendorKey ? allCurveData[0]?.[currentVendorKey] : 0) || 0);
@@ -803,19 +803,11 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
             <RechartsBarChart data={discreteConfigurationData} margin={{ top: 25, right: 35, left: 15, bottom: 70 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis
-                dataKey="displayLabel"
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={82}
-                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
-                label={{
-                  value: 'Fixed Booster Theme / Configuration',
-                  position: 'insideBottom',
-                  offset: -58,
-                  fill: '#64748b',
-                  fontSize: 11,
-                }}
+                dataKey="configurationIndex"
+                tick={false}
+                tickLine={false}
+                axisLine={{ stroke: '#cbd5e1' }}
+                height={20}
               />
               <YAxis
                 domain={[0, yCeiling]}
@@ -837,7 +829,7 @@ export const PackDistributionCurve: React.FC<PackDistributionCurveProps> = ({
                     return (
                       <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1.5 backdrop-blur-md">
                         <div className="font-bold text-blue-300 border-b border-slate-800 pb-1">
-                          {label}
+                          {row?.displayLabel || `Configuration ${label}`}
                         </div>
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-slate-300">Fixed Theme EV:</span>
