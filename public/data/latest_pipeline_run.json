@@ -1,32 +1,191 @@
 {
-  "id": "run-2026-09-17-141920",
-  "timestamp": "2026-09-17T14:19:20.733498+00:00",
+  "id": "run-2026-09-18-092656",
+  "timestamp": "2026-09-18T09:26:56.083266+00:00",
   "trigger": "scheduled_pipeline",
-  "status": "failed",
-  "durationSeconds": 0.22,
+  "status": "success",
+  "durationSeconds": 932.74,
   "quickTestLimit": null,
-  "quickTestSet": null,
+  "quickTestSet": "FIN",
   "stages": [
     {
       "name": "download.py",
       "description": "Download mtgjson data + sync MySQL",
-      "status": "failed",
-      "duration": 0.22,
-      "exitCode": 1,
+      "status": "success",
+      "duration": 485.22,
+      "exitCode": 0,
       "summary": [
-        "Traceback (most recent call last):",
-        "File \"C:\\gitev\\MTGEV\\backend\\download.py\", line 5, in <module>",
-        "from tqdm import tqdm",
-        "ModuleNotFoundError: No module named 'tqdm'"
+        "=================================================================",
+        "MTGJSON Direct Streaming & Import",
+        "Source URL : https://mtgjson.com/api/v5/AllPrintings.sql.bz2",
+        "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+        "=================================================================",
+        "[INFO] Download finished. Finalizing database tables & indices...",
+        "[SUCCESS] MTGJSON database successfully updated!"
+      ]
+    },
+    {
+      "name": "download_prices_today.py",
+      "description": "Stream AllPricesToday.sql into MySQL",
+      "status": "success",
+      "duration": 215.48,
+      "exitCode": 0,
+      "summary": [
+        "=================================================================",
+        "MTGJSON AllPricesToday Direct Streaming & Import",
+        "Source URL : https://mtgjson.com/api/v5/AllPricesToday.sql.bz2",
+        "Database   : test_for_cards on 127.0.0.1:3306 (User: root)",
+        "=================================================================",
+        "[INFO] Finalizing and committing price tables...",
+        "[SUCCESS] card_prices_today updated!"
+      ]
+    },
+    {
+      "name": "lowest_prices.py",
+      "description": "Calculate lowest prices across sources",
+      "status": "success",
+      "duration": 40.8,
+      "exitCode": 0,
+      "summary": [
+        "[INFO] Indexing prices table from MTGJSON...",
+        "[INFO] Building lowest_prices table...",
+        "[INFO] Computing minimum prices per card name & provider...",
+        "[INFO] Populating lowest_prices...",
+        "[SUCCESS] Lowest prices computed and indexed successfully!"
+      ]
+    },
+    {
+      "name": "sync_live_sealed_prices.py",
+      "description": "Sync live TCGplayer sealed product prices",
+      "status": "success",
+      "duration": 3.29,
+      "exitCode": 0,
+      "summary": [
+        "======================================================================",
+        "Starting Live TCGplayer Market Price Sync for 23 products",
+        "======================================================================",
+        "======================================================================",
+        "[SUCCESS] Market price fetch: 23/23 priced, 0 missing, 2s",
+        "======================================================================"
+      ]
+    },
+    {
+      "name": "populate_booster_ev_to_db.py",
+      "description": "Build price data from synced card data",
+      "status": "success",
+      "duration": 10.31,
+      "exitCode": 0,
+      "summary": [
+        "-> chocobo-bundle | Direct EV: $203.41 | Mid 90%: $202.20 | Valid: 100.0%",
+        "-> chocobo-bundle-scene | Direct EV: $  8.81 | Mid 90%: $  7.59 | Valid: 100.0%",
+        "-> collector      | Direct EV: $ 66.58 | Mid 90%: $ 44.52 | Valid: 99.96%",
+        "-> collector-sample | Direct EV: $ 14.11 | Mid 90%: $  8.50 | Valid: 100.0%",
+        "-> play           | Direct EV: $  5.22 | Mid 90%: $  3.70 | Valid: 100.0%",
+        "-> play-arena     | Direct EV: $  5.41 | Mid 90%: $  4.06 | Valid: 100.0%",
+        "-> prerelease     | Direct EV: $  8.16 | Mid 90%: $  6.39 | Valid: 100.0%",
+        "[SUCCESS] Completed all sets in 00:00:10 and stored to MySQL table `booster_ev_results`!"
+      ]
+    },
+    {
+      "name": "export_app_data.py",
+      "description": "Export MySQL data to React JSON format",
+      "status": "success",
+      "duration": 0.97,
+      "exitCode": 0,
+      "summary": [
+        ">> 3b. Exporting pricing_reliability.json...",
+        "[OK] Exported reliability for 8 vendor/mode combinations",
+        ">> 4. Exporting arbitrage_leaderboard.json...",
+        "[OK] Exported 21 product arbitrage opportunities",
+        "[OK] Exported 21 complete-product metric records",
+        ">> 5. Exporting single_card_prices.json from MTGJSON prices table...",
+        "[OK] Exported single_card_prices.json with 1 cards updated from MTGJSON DB (332 total indexed)",
+        "[SUCCESS] Pipeline export complete. Ready for React frontend deployment!"
+      ]
+    },
+    {
+      "name": "load_deck_tables.py",
+      "description": "Load preconstructed decks into MySQL",
+      "status": "success",
+      "duration": 3.6,
+      "exitCode": 0,
+      "summary": [
+        "OK Loaded 878 decks and 5039 deck cards into MySQL"
+      ]
+    },
+    {
+      "name": "export_product_chase_cards.py",
+      "description": "Export vendor-aware product TOP 5 chase cards",
+      "status": "success",
+      "duration": 114.38,
+      "exitCode": 0,
+      "summary": [
+        "OK Exported chase cards for 4137 products to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data/product_chase_cards.json"
+      ]
+    },
+    {
+      "name": "composite_evaluator.py",
+      "description": "Evaluate composite products & quantiles (10,000 MC samples)",
+      "status": "success",
+      "duration": 50.0,
+      "exitCode": 0,
+      "summary": [
+        "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese",
+        "[INFO] Applying overrides for product: Secret Lair Drop Secret Lair x Hatsune Miku Winter Diva Japanese Rainbow Foil",
+        "[OK] Evaluated 1339 sealed products in 49.02s (36.6ms/product)",
+        "[OK] Successfully saved enriched sealed_products.json to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data",
+        "[OK] Synchronized pre-computed quantiles into arbitrage_leaderboard.json",
+        "======================================================================",
+        "COMPOSITE EVALUATION COMPLETE",
+        "======================================================================"
+      ]
+    },
+    {
+      "name": "export_product_metrics.py",
+      "description": "Export complete-product metrics by vendor",
+      "status": "success",
+      "duration": 0.63,
+      "exitCode": 0,
+      "summary": [
+        "[SUCCESS] Exported 6874 complete-product vendor metrics"
+      ]
+    },
+    {
+      "name": "test_product_metrics_contract.py",
+      "description": "Validate complete-product metrics contract",
+      "status": "success",
+      "duration": 0.3,
+      "exitCode": 0,
+      "summary": [
+        "OK validated 6874 product metric records across 14 categories"
+      ]
+    },
+    {
+      "name": "export_jumpstart_validation_report.py",
+      "description": "Export Jumpstart collation validation report",
+      "status": "success",
+      "duration": 5.66,
+      "exitCode": 0,
+      "summary": [
+        "[PASS] Exported Jumpstart validation report: 10 sets, 530 configurations, 0 warnings"
+      ]
+    },
+    {
+      "name": "validate_pricing_and_ev.py",
+      "description": "Run automated quality and pricing/EV validation audit",
+      "status": "success",
+      "duration": 0.45,
+      "exitCode": 0,
+      "summary": [
+        "==============================================================================",
+        "VALIDATOR DIAGNOSTIC SUMMARY",
+        "==============================================================================",
+        "1. Booster Quantile Outlier Skews:    0 records",
+        "2. Product Contents vs EV Mismatches:  362 records",
+        "3. Extreme ROI Pricing Anomalies:      0 records",
+        "------------------------------------------------------------------------------",
+        "Full diagnostic detail written to /home/runner/work/MTGEV/mtgev-pipeline-workspace/public/data/pricing_validator_diagnostics.json"
       ]
     }
   ],
-  "errors": [
-    {
-      "stage": "download.py",
-      "exitCode": 1,
-      "timestamp": "2026-09-17T14:19:20.952171+00:00",
-      "errorTrace": "Traceback (most recent call last):\n  File \"C:\\gitev\\MTGEV\\backend\\download.py\", line 5, in <module>\n    from tqdm import tqdm\nModuleNotFoundError: No module named 'tqdm'"
-    }
-  ]
+  "errors": []
 }
