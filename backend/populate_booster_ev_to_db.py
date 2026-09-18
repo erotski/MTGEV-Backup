@@ -2,6 +2,7 @@ from collections import defaultdict
 import json
 import os
 from pathlib import Path
+import re
 import time
 import warnings
 import mysql.connector
@@ -46,8 +47,10 @@ COLLATION_OVERRIDE_PATH = (
 
 
 def is_ignored_sheet(sheet_name: str) -> bool:
-  s_lower = sheet_name.lower()
-  return any(kw in s_lower for kw in IGNORED_SHEET_KEYWORDS)
+  # Match whole camelCase words only; naive substring matching false-positives on
+  # real sheet names like "pymParticles" (contains "art") or "squadron" (contains "ad").
+  words = [w.lower() for w in re.findall(r'[A-Z]+(?![a-z])|[A-Z]?[a-z0-9]+', sheet_name)]
+  return any(kw in words for kw in IGNORED_SHEET_KEYWORDS)
 
 
 def allocate_booster_indices(boosters, sample_size: int):
