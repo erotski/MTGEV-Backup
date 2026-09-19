@@ -1,10 +1,6 @@
 {
   "schemaVersion": 1,
-<<<<<<< HEAD
-  "generatedAt": "2026-09-18T21:00:15.301881+00:00",
-=======
   "generatedAt": "2026-09-18T22:58:34.161393+00:00",
->>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
   "status": "pass",
   "sources": {
     "boosterSlots": "public/data/booster_slots.json",
@@ -26,7 +22,7 @@
       "notes": [],
       "sampleSize": 5000,
       "configurationCount": 10,
-      "totalConfigurationWeight": 10.0,
+      "totalConfigurationWeight": 10,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "infantry1",
@@ -418,7 +414,7 @@
       "notes": [],
       "sampleSize": 5000,
       "configurationCount": 10,
-      "totalConfigurationWeight": 10.0,
+      "totalConfigurationWeight": 10,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "arcaneMischief",
@@ -815,7 +811,7 @@
       ],
       "sampleSize": 5000,
       "configurationCount": 121,
-      "totalConfigurationWeight": 121.0,
+      "totalConfigurationWeight": 121,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "blink1",
@@ -3020,7 +3016,7 @@
       ],
       "sampleSize": 5000,
       "configurationCount": 121,
-      "totalConfigurationWeight": 121.0,
+      "totalConfigurationWeight": 121,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "angels1",
@@ -5225,7 +5221,7 @@
       ],
       "sampleSize": 5000,
       "configurationCount": 121,
-      "totalConfigurationWeight": 121.0,
+      "totalConfigurationWeight": 121,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "aboveTheClouds1",
@@ -7425,7 +7421,7 @@
       "notes": [],
       "sampleSize": 5000,
       "configurationCount": 10,
-      "totalConfigurationWeight": 10.0,
+      "totalConfigurationWeight": 10,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "courageous1",
@@ -7717,7 +7713,7 @@
       "notes": [],
       "sampleSize": 5000,
       "configurationCount": 10,
-      "totalConfigurationWeight": 10.0,
+      "totalConfigurationWeight": 10,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "brood1",
@@ -8114,7 +8110,7 @@
       ],
       "sampleSize": 5000,
       "configurationCount": 51,
-      "totalConfigurationWeight": 51.0,
+      "totalConfigurationWeight": 51,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "agentsOfSHIELD",
@@ -9054,7 +9050,7 @@
       "notes": [],
       "sampleSize": 5000,
       "configurationCount": 10,
-      "totalConfigurationWeight": 10.0,
+      "totalConfigurationWeight": 10,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "corruption1",
@@ -9451,7 +9447,7 @@
       ],
       "sampleSize": 5000,
       "configurationCount": 66,
-      "totalConfigurationWeight": 66.0,
+      "totalConfigurationWeight": 66,
       "metadataMode": "exactFixedSheets",
       "fixedSheets": [
         "aang",

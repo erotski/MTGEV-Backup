@@ -4,7 +4,7 @@
       "vendor": "cardkingdom",
       "priceMode": "direct",
       "simulatedPacks": 3225000,
-      "completeBoosterPct": 100.0,
+      "completeBoosterPct": 100,
       "differentFinishPct": 1.05,
       "differentVendorPct": 3.29,
       "sourceRows": 645,
@@ -28,17 +28,10 @@
       "simulatedPacks": 3240000,
       "completeBoosterPct": 99.87,
       "differentFinishPct": 0.05,
-<<<<<<< HEAD
-      "differentVendorPct": 1.79,
-      "sourceRows": 648,
-      "directExactPct": 98.15,
-      "nonExactPct": 1.85
-=======
       "differentVendorPct": 1.78,
       "sourceRows": 648,
       "directExactPct": 98.16,
       "nonExactPct": 1.84
->>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
     },
     "tcgplayer:direct": {
       "vendor": "tcgplayer",
@@ -55,45 +48,45 @@
       "vendor": "cardkingdom",
       "priceMode": "cheapest_reprint",
       "simulatedPacks": 3225000,
-      "completeBoosterPct": 100.0,
+      "completeBoosterPct": 100,
       "differentFinishPct": 0.35,
       "differentVendorPct": 0.06,
       "sourceRows": 645,
-      "reprintResolvedPct": 100.0,
-      "unresolvedPct": 0.0
+      "reprintResolvedPct": 100,
+      "unresolvedPct": 0
     },
     "cardmarket:cheapest_reprint": {
       "vendor": "cardmarket",
       "priceMode": "cheapest_reprint",
       "simulatedPacks": 3245000,
-      "completeBoosterPct": 100.0,
+      "completeBoosterPct": 100,
       "differentFinishPct": 0.01,
-      "differentVendorPct": 0.0,
+      "differentVendorPct": 0,
       "sourceRows": 649,
-      "reprintResolvedPct": 100.0,
-      "unresolvedPct": 0.0
+      "reprintResolvedPct": 100,
+      "unresolvedPct": 0
     },
     "manapool:cheapest_reprint": {
       "vendor": "manapool",
       "priceMode": "cheapest_reprint",
       "simulatedPacks": 3240000,
-      "completeBoosterPct": 100.0,
+      "completeBoosterPct": 100,
       "differentFinishPct": 0.02,
       "differentVendorPct": 0.01,
       "sourceRows": 648,
-      "reprintResolvedPct": 100.0,
-      "unresolvedPct": 0.0
+      "reprintResolvedPct": 100,
+      "unresolvedPct": 0
     },
     "tcgplayer:cheapest_reprint": {
       "vendor": "tcgplayer",
       "priceMode": "cheapest_reprint",
       "simulatedPacks": 3235000,
-      "completeBoosterPct": 100.0,
+      "completeBoosterPct": 100,
       "differentFinishPct": 0.02,
       "differentVendorPct": 0.01,
       "sourceRows": 647,
-      "reprintResolvedPct": 100.0,
-      "unresolvedPct": 0.0
+      "reprintResolvedPct": 100,
+      "unresolvedPct": 0
     }
   }
 }

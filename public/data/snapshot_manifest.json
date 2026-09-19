@@ -1,14 +1,8 @@
 {
   "schemaVersion": 1,
-<<<<<<< HEAD
-  "pipelineRunId": "run-2026-09-18-201737",
-  "sourceCommit": "6d0fed11d2ec5def8ed9fddc779a7bd297805f9f",
-  "generatedAt": "2026-09-18T20:17:37.439380+00:00",
-=======
   "pipelineRunId": "run-2026-09-18-222136",
   "sourceCommit": "bd7eb6d6e3e899c95562aea829324a5adab2e1b0",
   "generatedAt": "2026-09-18T22:21:36.238647+00:00",
->>>>>>> 07e227ca4251190781c9b5bd1476ebb59b7637ee
   "auditEnabled": true,
   "files": [
     "sets.json",
