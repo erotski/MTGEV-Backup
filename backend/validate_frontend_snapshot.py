@@ -8,6 +8,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from product_taxonomy import validate_product_taxonomy_contract
+
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "public" / "data"
 VALID_VENDORS = {"all_cheapest", "all_average", "tcgplayer", "cardmarket", "cardkingdom", "manapool"}
@@ -24,6 +26,12 @@ def validate():
     product_metrics = load("product_metrics.json")
     booster_evs = load("booster_ev.json")
     chase_cards = load("product_chase_cards.json")
+    arbitrage_records = load("arbitrage_leaderboard.json")
+
+    validate_product_taxonomy_contract(sealed_products, {
+        "product_metrics.json": product_metrics,
+        "arbitrage_leaderboard.json": arbitrage_records,
+    })
 
     product_ids = [product.get("id") or product.get("uuid") for product in sealed_products]
     if any(not product_id for product_id in product_ids):

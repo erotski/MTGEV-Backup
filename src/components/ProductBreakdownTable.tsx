@@ -540,7 +540,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     (a.productUuid && a.productUuid === uid) ||
     (lower(a.boxName || a.displayName).trim() === lower(product.displayName || product.name).trim())
   );
-  const rawMarketPrice = product.marketPrice || product.price || 0;
+  const rawMarketPrice = product.marketPrice ?? 0;
   // Complete-product EV is backend-owned. The recursive audit is structural display data only.
   const canonicalContentsEv = computeProductContentsEv(product);
   const rawTotalEv = canonicalContentsEv;

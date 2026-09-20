@@ -4,13 +4,11 @@ import { Sparkles, DollarSign, Store, Tag, AlertCircle, ExternalLink, ShieldChec
 
 interface SingleCardBreakdownViewerProps {
   product: CatalogPackProduct;
-  priceMode?: string;
   vendor?: string;
 }
 
 export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps> = ({
   product,
-  priceMode = 'direct',
   vendor = 'tcgplayer',
 }) => {
   const rawCards = product.rawContents?.card || [];
@@ -22,22 +20,36 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
   const primaryCard = cards[0];
 
   // Helper to compute card vendor price
-  const getCardPrice = (c: any, vend: string) => {
-    if (!c) return 0;
+  const getCardPrice = (c: any, vend: string): number | null => {
+    if (!c) return null;
     const prices = c.prices || {};
     const selectedVendor = vend === 'all' ? 'all_cheapest' : vend;
-    return Number(prices[selectedVendor] || 0);
+    const value = prices[selectedVendor];
+    return typeof value === 'number' && value > 0 ? value : null;
   };
 
-  // Compute total singles value across all cards
-  const totalSinglesValue = Number(
-    cards.reduce((sum: number, c: any) => sum + getCardPrice(c, vendor), 0).toFixed(2)
-  );
+  const cardPrices = cards.map((card: any) => getCardPrice(card, vendor));
+  const hasCompletePricing = cards.length > 0 && cardPrices.every((value): value is number => value !== null);
+  const totalSinglesValue = hasCompletePricing
+    ? Number(cardPrices.reduce((sum, value) => sum + value, 0).toFixed(2))
+    : null;
 
   const sealedPrice = product.marketPrice;
-  const activeSinglesPrice = isMultiCard ? totalSinglesValue : getCardPrice(primaryCard, vendor);
-  const profit = Number((activeSinglesPrice - sealedPrice).toFixed(2));
-  const roiPct = sealedPrice > 0 ? Number(((profit / sealedPrice) * 100).toFixed(1)) : 0;
+  const activeSinglesPrice = isMultiCard ? totalSinglesValue : cardPrices[0] ?? null;
+  const profit = activeSinglesPrice !== null && sealedPrice > 0
+    ? Number((activeSinglesPrice - sealedPrice).toFixed(2))
+    : null;
+  const roiPct = profit !== null ? Number(((profit / sealedPrice) * 100).toFixed(1)) : null;
+
+  if (cards.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+        <AlertCircle className="w-8 h-8 mx-auto mb-3 text-slate-400" />
+        <h4 className="text-base font-bold text-slate-800">Card contents unavailable</h4>
+        <p className="mt-1 text-xs text-slate-500">No authoritative card contents or vendor prices were published for this product.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" id="single-card-breakdown-viewer">
@@ -96,23 +108,21 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
               <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-200">
                 <div className="text-[10px] font-bold text-indigo-600 uppercase">Total Singles Value</div>
                 <div className="text-lg font-black text-indigo-700 font-mono">
-                  ${totalSinglesValue.toFixed(2)}
+                  {totalSinglesValue !== null ? `$${totalSinglesValue.toFixed(2)}` : 'N/A'}
                 </div>
               </div>
 
               <div
                 className={`p-3 rounded-xl border ${
-                  profit >= 0
+                  profit !== null && profit >= 0
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                     : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}
               >
                 <div className="text-[10px] font-bold uppercase opacity-80">Net Margin</div>
                 <div className="text-lg font-black font-mono">
-                  {profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
-                  <span className="text-xs font-normal ml-1">
-                    ({profit >= 0 ? `+${roiPct}%` : `${roiPct}%`})
-                  </span>
+                  {profit === null ? 'N/A' : profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
+                  {roiPct !== null && <span className="text-xs font-normal ml-1">({profit! >= 0 ? `+${roiPct}%` : `${roiPct}%`})</span>}
                 </div>
               </div>
             </div>
@@ -177,10 +187,10 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
 
                     <div className="text-right shrink-0">
                       <div className="text-sm font-black font-mono text-emerald-600">
-                        ${cardPrice.toFixed(2)}
+                        {cardPrice !== null ? `$${cardPrice.toFixed(2)}` : 'N/A'}
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono">
-                        {((cardPrice / (totalSinglesValue || 1)) * 100).toFixed(1)}% of total
+                        {totalSinglesValue !== null && cardPrice !== null ? `${((cardPrice / totalSinglesValue) * 100).toFixed(1)}% of total` : 'Unavailable'}
                       </div>
                     </div>
                   </div>
@@ -191,7 +201,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
             {/* Total Footer Banner */}
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between font-mono text-xs">
               <span className="font-bold">Total Singles Market Value ({cards.length} Cards)</span>
-              <span className="text-base font-black text-amber-400">${totalSinglesValue.toFixed(2)}</span>
+              <span className="text-base font-black text-amber-400">{totalSinglesValue !== null ? `$${totalSinglesValue.toFixed(2)}` : 'N/A'}</span>
             </div>
           </div>
         </div>
@@ -249,10 +259,10 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
 
               {(() => {
                 const cardPrices = primaryCard?.prices || {};
-                const tcgPrice = cardPrices.tcgplayer ?? (product.estimatedEv > 0 ? product.estimatedEv : null);
-                const ckPrice = cardPrices.cardkingdom ?? (tcgPrice ? Number((tcgPrice * 1.15).toFixed(2)) : null);
-                const cmPrice = cardPrices.cardmarket ?? (tcgPrice ? Number((tcgPrice * 0.94).toFixed(2)) : null);
-                const cmEur = cardPrices.cardmarketEur ?? (cmPrice ? Number((cmPrice / 1.09).toFixed(2)) : null);
+                const tcgPrice = typeof cardPrices.tcgplayer === 'number' ? cardPrices.tcgplayer : null;
+                const ckPrice = typeof cardPrices.cardkingdom === 'number' ? cardPrices.cardkingdom : null;
+                const cmPrice = typeof cardPrices.cardmarket === 'number' ? cardPrices.cardmarket : null;
+                const cmEur = typeof cardPrices.cardmarketEur === 'number' ? cardPrices.cardmarketEur : null;
                 const isFoil = primaryCard?.foil || (primaryCard?.finishes && primaryCard.finishes.includes('foil'));
 
                 return (
@@ -338,27 +348,29 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
 
                 <div className="p-2.5 bg-white rounded-lg border border-slate-200">
                   <div className="text-[10px] font-semibold text-indigo-500 uppercase">Singles Card EV</div>
-                  <div className="text-base font-black text-indigo-700 font-mono">
-                    ${activeSinglesPrice.toFixed(2)}
+                    <div className="text-base font-black text-indigo-700 font-mono">
+                    {activeSinglesPrice !== null ? `$${activeSinglesPrice.toFixed(2)}` : 'N/A'}
                   </div>
                 </div>
 
                 <div
                   className={`p-2.5 rounded-lg border ${
-                    profit >= 0
+                    profit !== null && profit >= 0
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                       : 'bg-rose-50 border-rose-200 text-rose-800'
                   }`}
                 >
                   <div className="text-[10px] font-semibold uppercase opacity-80">Net Spread</div>
                   <div className="text-base font-black font-mono">
-                    {profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
+                    {profit === null ? 'N/A' : profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
                   </div>
                 </div>
               </div>
 
               <div className="text-[11px] text-slate-500 leading-snug">
-                {profit < 0 ? (
+                {profit === null ? (
+                  <span>Vendor price or sealed market price is unavailable, so margin is not calculated.</span>
+                ) : profit < 0 ? (
                   <span>
                     💡 <strong>Unopened Collector Premium:</strong> Buying this product factory-sealed costs{' '}
                     <strong className="text-slate-800">${sealedPrice.toFixed(2)}</strong>, which is{' '}

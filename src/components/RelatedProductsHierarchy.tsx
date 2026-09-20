@@ -16,6 +16,13 @@ import { PackagingStockAssetGuide } from './PackagingStockAssetGuide';
 import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
 import { ProductBreakdownTable } from './ProductBreakdownTable';
 import {
+  formatBoosterSubtypeLabel,
+  getProductBoosterSubtype,
+  matchesProductDetailCategory,
+  PRODUCT_DETAIL_CATEGORY_GROUPS,
+  ProductCategoryIcon,
+} from '../config/productCategories';
+import {
   Layers,
   Package,
   Box as BoxIcon,
@@ -258,6 +265,8 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 id: sp.uuid || sp.id || `db-${sCode}-${lower(pName).replace(/\s+/g, '-')}`,
                 rawCategory: category,
                 rawSubtype: subtype,
+                primaryCategory: sp.primaryCategory || category,
+                categoryTags: sp.categoryTags || [sp.primaryCategory || category],
                 setCode: sCode,
                 setName: sp.setName || setName,
                 releaseDate: sp.releaseDate || '2024-01-01',
@@ -506,107 +515,23 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   // Category filtering & View Mode (Flat Grid and List)
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeBoosterSubtype, setActiveBoosterSubtype] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [gridCardStyle, setGridCardStyle] = useState<'split' | 'top_media' | 'compact'>('top_media');
 
+  const getCategoryGroupIcon = (icon: ProductCategoryIcon) => {
+    if (icon === 'pack') return Package;
+    if (icon === 'case') return Archive;
+    if (icon === 'bundle') return Gift;
+    if (icon === 'deck') return Layers3;
+    if (icon === 'box_set') return Sparkles;
+    if (icon === 'kit') return Shield;
+    if (icon === 'all') return Layers;
+    return BoxIcon;
+  };
+
   // Strictly database-driven category groupings (No fragile title-string matching!)
   const productSubtypeGroups = useMemo(() => {
-    const categoryConfigs: Record<
-      string,
-      { title: string; subtitle: string; badge: string; icon: any }
-    > = {
-      booster_box: {
-        title: 'Booster Boxes',
-        subtitle: 'Factory-sealed booster display boxes',
-        badge: 'Booster Boxes',
-        icon: BoxIcon,
-      },
-      booster_pack: {
-        title: 'Booster Packs',
-        subtitle: 'Individual sealed booster packs & blister packs',
-        badge: 'Booster Packs',
-        icon: Package,
-      },
-      booster_case: {
-        title: 'Booster Cases',
-        subtitle: 'Wholesale master cases of sealed booster boxes',
-        badge: 'Master Cases',
-        icon: Archive,
-      },
-      bundle: {
-        title: 'Bundles & Fat Packs',
-        subtitle: 'Curated boxes containing booster packs, foil promos, and storage boxes',
-        badge: 'Bundles',
-        icon: Gift,
-      },
-      bundle_case: {
-        title: 'Bundle Cases',
-        subtitle: 'Wholesale master cases of sealed bundles',
-        badge: 'Bundle Cases',
-        icon: Archive,
-      },
-      box_set: {
-        title: 'Box Sets & Secret Lairs',
-        subtitle: 'Curated box sets, Secret Lair drops, and superdrop collections',
-        badge: 'Box Sets',
-        icon: Sparkles,
-      },
-      deck: {
-        title: 'Preconstructed Decks',
-        subtitle: 'Ready-to-play preconstructed decks (Commander, Challenger, Planeswalker)',
-        badge: 'Precons',
-        icon: Layers3,
-      },
-      multiple_decks: {
-        title: 'Multi-Deck Sets',
-        subtitle: 'Multi-player sets containing two or more complete decks',
-        badge: 'Multi-Deck Sets',
-        icon: Layers,
-      },
-      limited_aid_tool: {
-        title: 'Prerelease & Limited Kits',
-        subtitle: 'Prerelease packs, seed packs, and tournament kits',
-        badge: 'Prerelease',
-        icon: Shield,
-      },
-      kit: {
-        title: 'Toolkits & Stations',
-        subtitle: "Deck Builder's Toolkits, Land Stations, and Guild Kits",
-        badge: 'Toolkits',
-        icon: Wrench,
-      },
-      other: {
-        title: 'Other Products',
-        subtitle: 'Specialty and ancillary sealed products',
-        badge: 'Other Products',
-        icon: BoxIcon,
-      },
-    };
-
-    const normalizeCat = (p: CatalogPackProduct): string => {
-      const raw = lower(p.rawCategory);
-      if (raw && categoryConfigs[raw]) return raw;
-      if (p.packagingType === 'box') return 'booster_box';
-      if (p.packagingType === 'pack') return 'booster_pack';
-      if (p.packagingType === 'case') return 'booster_case';
-      if (p.packagingType === 'bundle') return 'bundle';
-      if (p.packagingType === 'bundle_case') return 'bundle_case';
-      if (p.packagingType === 'box_set') return 'box_set';
-      if (p.packagingType === 'starter_deck') return 'deck';
-      if (p.packagingType === 'limited_aid_tool' || p.packagingType === 'prerelease') return 'limited_aid_tool';
-      if (p.packagingType === 'kit') return 'kit';
-      return 'other';
-    };
-
-    const groupedMap = new Map<string, CatalogPackProduct[]>();
-    for (const p of setProducts) {
-      const cat = normalizeCat(p);
-      if (!groupedMap.has(cat)) {
-        groupedMap.set(cat, []);
-      }
-      groupedMap.get(cat)!.push(p);
-    }
-
     const groups: {
       id: string;
       title: string;
@@ -616,44 +541,16 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       products: CatalogPackProduct[];
     }[] = [];
 
-    const orderedKeys = [
-      'booster_box',
-      'booster_pack',
-      'booster_case',
-      'bundle',
-      'bundle_case',
-      'box_set',
-      'deck',
-      'multiple_decks',
-      'limited_aid_tool',
-      'kit',
-      'other',
-    ];
-
-    for (const key of orderedKeys) {
-      const prods = groupedMap.get(key);
-      if (prods && prods.length > 0) {
-        const conf = categoryConfigs[key] || categoryConfigs.other;
+    for (const config of PRODUCT_DETAIL_CATEGORY_GROUPS) {
+      const products = setProducts.filter((product) => matchesProductDetailCategory(product, config.id));
+      if (products.length > 0) {
         groups.push({
-          id: key,
-          title: `${conf.title} (${prods.length})`,
-          subtitle: conf.subtitle,
-          badge: conf.badge,
-          icon: conf.icon,
-          products: prods,
-        });
-      }
-    }
-
-    for (const [key, prods] of groupedMap.entries()) {
-      if (!orderedKeys.includes(key) && prods.length > 0) {
-        groups.push({
-          id: key,
-          title: `${key.replace(/_/g, ' ')} (${prods.length})`,
-          subtitle: 'Sealed product collection',
-          badge: key,
-          icon: BoxIcon,
-          products: prods,
+          id: config.id,
+          title: `${config.title} (${products.length})`,
+          subtitle: config.subtitle,
+          badge: config.badge,
+          icon: getCategoryGroupIcon(config.icon),
+          products,
         });
       }
     }
@@ -699,6 +596,41 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       .sort((a, b) => (a.code === setCode.toUpperCase() ? -1 : b.code === setCode.toUpperCase() ? 1 : a.name.localeCompare(b.name)));
   }, [setProducts, setCode]);
 
+  const boosterSubtypeOptions = useMemo(() => {
+    if (activeCategory !== 'booster_pack' && activeCategory !== 'booster_box') return [];
+
+    const productsInAssociatedSet = associatedSetFilter === 'all'
+      ? displayedProducts
+      : displayedProducts.filter((product) => String(product.setCode || '').toUpperCase() === associatedSetFilter);
+    const counts = new Map<string, number>();
+    for (const product of productsInAssociatedSet) {
+      const subtype = getProductBoosterSubtype(product);
+      counts.set(subtype, (counts.get(subtype) || 0) + 1);
+    }
+
+    const preferredOrder = ['draft', 'classic', 'set', 'play', 'collector', 'jumpstart'];
+    return Array.from(counts, ([id, count]) => ({ id, count, label: formatBoosterSubtypeLabel(id) }))
+      .sort((left, right) => {
+        const leftIndex = preferredOrder.indexOf(left.id);
+        const rightIndex = preferredOrder.indexOf(right.id);
+        if (leftIndex !== -1 || rightIndex !== -1) {
+          if (leftIndex === -1) return 1;
+          if (rightIndex === -1) return -1;
+          return leftIndex - rightIndex;
+        }
+        return left.label.localeCompare(right.label);
+      });
+  }, [activeCategory, associatedSetFilter, displayedProducts]);
+
+  useEffect(() => {
+    if (
+      activeBoosterSubtype !== 'all' &&
+      !boosterSubtypeOptions.some((option) => option.id === activeBoosterSubtype)
+    ) {
+      setActiveBoosterSubtype('all');
+    }
+  }, [activeBoosterSubtype, boosterSubtypeOptions]);
+
   // When a specific product is targeted via prop (e.g. from Arbitrage "Inspect Set"):
   // Select it and switch category to 'all' so it is actively visible. The list stays
   // collapsed (visibleProducts pins the active product below the fold) so navigating
@@ -715,6 +647,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       if (match) {
         setSelectedProductId(match.id);
         setActiveCategory('all');
+        setActiveBoosterSubtype('all');
       }
     }
   }, [propSelectedProductId, setProducts]);
@@ -725,6 +658,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     if (associatedSetFilter !== 'all') {
       prods = prods.filter((p) => String(p.setCode || '').toUpperCase() === associatedSetFilter);
     }
+    if (activeBoosterSubtype !== 'all') {
+      prods = prods.filter((product) => getProductBoosterSubtype(product) === activeBoosterSubtype);
+    }
     if (searchQuery.trim()) {
       const q = lower(searchQuery).trim();
       prods = prods.filter((p) =>
@@ -734,7 +670,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       );
     }
     return prods;
-  }, [displayedProducts, searchQuery, associatedSetFilter]);
+  }, [displayedProducts, searchQuery, associatedSetFilter, activeBoosterSubtype]);
 
   // Smooth scroll into view when a product is targeted from props
   useEffect(() => {
@@ -906,6 +842,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                       key={cat.id}
                       onClick={() => {
                         setActiveCategory(cat.id);
+                        setActiveBoosterSubtype('all');
                         setIsListCollapsed(true);
                       }}
                       className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer border flex items-center gap-1.5 ${
@@ -937,6 +874,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 value={associatedSetFilter}
                 onChange={(e) => {
                   setAssociatedSetFilter(e.target.value);
+                  setActiveBoosterSubtype('all');
                   setIsListCollapsed(true);
                 }}
                 title="Filter products to only those containing cards from a specific associated set"
@@ -955,6 +893,35 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
               </select>
               <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none">
                 <Filter className={`h-3.5 w-3.5 ${associatedSetFilter !== 'all' ? 'text-amber-600' : 'text-slate-400'}`} />
+              </span>
+              <ChevronDown className="absolute inset-y-0 right-2 my-auto h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            </div>
+          )}
+
+          {boosterSubtypeOptions.length > 1 && (
+            <div className="relative w-full md:w-48 shrink-0">
+              <select
+                value={activeBoosterSubtype}
+                onChange={(event) => {
+                  setActiveBoosterSubtype(event.target.value);
+                  setIsListCollapsed(true);
+                }}
+                title="Filter this booster product category by subtype"
+                className={`w-full appearance-none pl-8 pr-8 py-1.5 text-xs font-semibold rounded-xl border cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  activeBoosterSubtype !== 'all'
+                    ? 'bg-sky-100 border-sky-400 text-sky-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <option value="all">All Booster Types</option>
+                {boosterSubtypeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label} · {option.count}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none">
+                <Sliders className={`h-3.5 w-3.5 ${activeBoosterSubtype !== 'all' ? 'text-sky-600' : 'text-slate-400'}`} />
               </span>
               <ChevronDown className="absolute inset-y-0 right-2 my-auto h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             </div>

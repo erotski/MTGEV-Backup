@@ -49,13 +49,16 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
   }
 
   for (const sp of sealedRaw) {
-    const rawId = readString(sp.id) ?? readString(sp.uuid) ?? '';
+    const rawId = readString(sp.id) ?? readString(sp.uuid);
     const rawUuid = readString(sp.uuid) ?? '';
+    const setCodeValue = readString(sp.setCode) ?? readString(sp.set_code);
+    const displayNameValue = readString(sp.displayName) ?? readString(sp.name);
+    if (!rawId || !setCodeValue || !displayNameValue) continue;
     if (rawId && seenIds.has(rawId.toLowerCase())) continue;
     if (rawUuid && seenUuids.has(rawUuid.toLowerCase())) continue;
 
-    const setCode = (readString(sp.setCode) ?? readString(sp.set_code) ?? 'SET').toUpperCase();
-    const displayName = readString(sp.displayName) ?? readString(sp.name) ?? 'Sealed Product';
+    const setCode = setCodeValue.toUpperCase();
+    const displayName = displayNameValue;
     const cat = (readString(sp.category) ?? '').toLowerCase();
     const sub = (readString(sp.subtype) ?? '').toLowerCase();
     const metadataSource: 'pipeline' | 'inferred' = 'pipeline';
@@ -84,10 +87,10 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
     const packsCount = readFiniteNumber(sp.packsCount) ?? 0;
     const marketPrice = readFiniteNumber(sp.marketPrice) ?? 0;
     const estimatedEv = readFiniteNumber(sp.totalEvAvg) ?? 0;
-    const boosterName = readString(sp.boosterName) ?? (sub !== '' ? sub : undefined);
-    const id = rawId || `${setCode}-${displayName.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+    const boosterName = readString(sp.boosterName) ?? '';
+    const id = rawId;
 
-    const setName = readString(sp.setName) ?? setCode;
+    const setName = readString(sp.setName);
     const releaseDate = readString(sp.releaseDate) ?? '';
     const block = readString(sp.block) ?? '';
     const imageUrl = readString(sp.imageUrl) ?? readString(sp.image_url) ?? undefined;
@@ -100,10 +103,12 @@ export function buildUnifiedCatalogProducts(sealedRaw?: any[]): CatalogPackProdu
 
     result.push({
       id,
-      uuid: rawUuid || id,
+      uuid: rawUuid || undefined,
       dbId: rawId,
       rawCategory: sp.category,
       rawSubtype: sp.subtype,
+      primaryCategory: readString(sp.primaryCategory) ?? readString(sp.category) ?? 'other',
+      categoryTags: readStringArray(sp.categoryTags),
       setCode,
       setName,
       releaseDate,

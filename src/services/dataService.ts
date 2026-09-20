@@ -37,7 +37,11 @@ export interface DbBoosterData {
  * Strictly preserves exact database sheet names, collation weights, and options.
  */
 export function convertDbBoosterToVariations(dbBooster: DbBoosterData): BoosterVariation[] {
-  const totalW = dbBooster.boostersTotalWeight || 1;
+  const totalW = dbBooster.boostersTotalWeight;
+  if (!Number.isFinite(totalW) || totalW <= 0 || !Array.isArray(dbBooster.boosters) || dbBooster.boosters.length === 0) {
+    return [];
+  }
+
   return (dbBooster.boosters || []).map((b) => {
     const weightPct = (b.weight / totalW) * 100;
     const weightPctStr = weightPct < 0.01 ? weightPct.toExponential(2) : weightPct.toFixed(3);
@@ -401,11 +405,11 @@ class DataService {
               code: sCode,
               name: scryfallNode?.name || s.name,
               tokenSetCode: s.tokenSetCode,
-              releaseDate: scryfallNode?.releaseDate || s.releaseDate || '2025-01-01',
-              type: scryfallNode?.setType ? scryfallNode.setType.charAt(0).toUpperCase() + scryfallNode.setType.slice(1) : s.type || 'Expansion',
-              totalSetSize: scryfallNode?.cardCount || s.totalSetSize || s.baseSetSize || 280,
-              boosterCount: Number(s.boosterTypesCount || 2),
-              boosters: ['play', 'collector'],
+              releaseDate: scryfallNode?.releaseDate || s.releaseDate || undefined,
+              type: scryfallNode?.setType ? scryfallNode.setType.charAt(0).toUpperCase() + scryfallNode.setType.slice(1) : s.type || undefined,
+              totalSetSize: scryfallNode?.cardCount || s.totalSetSize || s.baseSetSize || undefined,
+              boosterCount: Number(s.boosterTypesCount || 0),
+              boosters: Array.isArray(s.boosters) ? s.boosters : [],
               isCommanderSubSet: isCommanderSubSet(sCode),
               parentCode: parent || undefined,
               childSets: childSets.length > 0 ? childSets : undefined,
@@ -442,16 +446,13 @@ class DataService {
           const raw = await response.json();
           if (Array.isArray(raw) && raw.length > 0) {
             const sealedProducts = await this.getSealedProducts();
-            const cardCountByUuid = new Map<string, number>();
+            const canonicalProductByUuid = new Map<string, any>();
             const productsWithoutExactEv = new Set<string>();
             if (Array.isArray(sealedProducts)) {
               for (const product of sealedProducts) {
                 const uuid = product.id || product.uuid;
+                if (uuid) canonicalProductByUuid.set(uuid, product);
                 const rawCount = product.cardCount;
-                const cardCount = rawCount !== null && rawCount !== undefined ? Number(rawCount) : NaN;
-                if (uuid && Number.isFinite(cardCount) && cardCount > 0) {
-                  cardCountByUuid.set(uuid, cardCount);
-                }
                 const packCodes = Array.isArray(product.contents?.pack)
                   ? product.contents.pack.map((pack: any) => String(pack.code || '').toLowerCase()).filter(Boolean)
                   : [];
@@ -463,13 +464,22 @@ class DataService {
             }
 
             this.arbitrageCache = raw.filter((record: BoxArbitrageRecord) => !productsWithoutExactEv.has(record.productUuid)).map((record: BoxArbitrageRecord) => {
-              const authoritativeCardCount = cardCountByUuid.get(record.productUuid);
+              const product = canonicalProductByUuid.get(record.productUuid);
+              const rawCount = product?.cardCount;
+              const authoritativeCardCount = rawCount !== null && rawCount !== undefined ? Number(rawCount) : undefined;
               const resolvedCardCount = authoritativeCardCount !== undefined && authoritativeCardCount > 0
                 ? authoritativeCardCount
                 : (typeof record.cardCount === 'number' && record.cardCount > 0 ? record.cardCount : undefined);
-              return resolvedCardCount !== undefined
-                ? { ...record, cardCount: resolvedCardCount }
-                : record;
+              return {
+                ...record,
+                boxName: product?.displayName || record.boxName,
+                setCode: product?.setCode || record.setCode,
+                category: product?.primaryCategory || product?.category || record.category,
+                primaryCategory: product?.primaryCategory || product?.category || record.primaryCategory || record.category,
+                categoryTags: product?.categoryTags || record.categoryTags || [product?.primaryCategory || product?.category || record.category],
+                contents: product?.contents || record.contents,
+                ...(resolvedCardCount !== undefined ? { cardCount: resolvedCardCount } : {}),
+              };
             });
             return this.arbitrageCache;
           }
@@ -513,20 +523,37 @@ class DataService {
                 return;
               }
               if (!grouped[setCode]) grouped[setCode] = [];
+              const rawVendor = item.vendor;
+              const vendor = rawVendor === 'all' ? 'all_cheapest' : rawVendor;
+              const priceMode = item.priceMode || item.price_mode;
+              const requiredNumericFields = [
+                item.evAverage ?? item.ev_average,
+                item.evMid90 ?? item.ev_mid90,
+                item.evMin ?? item.ev_min,
+                item.evMax ?? item.ev_max,
+                item.evMin5 ?? item.ev_min5,
+                item.evMax5 ?? item.ev_max5,
+              ];
+              const validVendor = ['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(vendor);
+              const validPriceMode = priceMode === 'direct' || priceMode === 'cheapest_reprint';
+              if (!validVendor || !validPriceMode || requiredNumericFields.some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
+                console.warn('Skipping malformed booster EV identity or summary:', item);
+                return;
+              }
               grouped[setCode].push({
                 id: item.id || 0,
                 setCode: setCode,
                 setName: item.setName || setCode,
                 boosterName,
                 fullBoosterName: `${boosterName} Booster`,
-                priceMode: item.priceMode || item.price_mode || 'direct',
-                vendor: item.vendor === 'all' ? 'all_cheapest' : (item.vendor || 'all_cheapest'),
-                evAverage: Number(item.evAverage || item.ev_average || 0),
-                evMid90: Number(item.evMid90 || item.ev_mid90 || 0),
-                evMin: Number(item.evMin || item.ev_min || 0),
-                evMax: Number(item.evMax || item.ev_max || 0),
-                evMin5: Number(item.evMin5 || item.ev_min5 || 0),
-                evMax5: Number(item.evMax5 || item.ev_max5 || 0),
+                priceMode,
+                vendor,
+                evAverage: Number(item.evAverage ?? item.ev_average),
+                evMid90: Number(item.evMid90 ?? item.ev_mid90),
+                evMin: Number(item.evMin ?? item.ev_min),
+                evMax: Number(item.evMax ?? item.ev_max),
+                evMin5: Number(item.evMin5 ?? item.ev_min5),
+                evMax5: Number(item.evMax5 ?? item.ev_max5),
                 quantiles: Array.isArray(item.quantiles) && item.quantiles.length > 0 ? item.quantiles.map(Number) : undefined,
                 distributionType: item.distributionType || item.distribution_type,
                 configurationOutcomes: Array.isArray(item.configurationOutcomes || item.configuration_outcomes)
@@ -540,13 +567,13 @@ class DataService {
                     complete: Boolean(outcome.complete),
                   }))
                   : undefined,
-                completeBoosterPct: Number(item.completeBoosterPct || item.complete_booster_pct || 100),
-                exactMatchPct: Number(item.exactMatchPct || item.exact_match_pct || 100),
-                differentFinishPct: Number(item.differentFinishPct || item.different_finish_pct || 0),
-                differentVendorPct: Number(item.differentVendorPct || item.different_vendor_pct || 0),
-                failedBoosters: Number(item.failedBoosters || item.failed_boosters || 0),
-                simulatedPacks: Number(item.simulatedPacks || item.simulated_packs || 5000),
-                updatedAt: item.updatedAt || item.updated_at || new Date().toISOString(),
+                completeBoosterPct: Number(item.completeBoosterPct ?? item.complete_booster_pct ?? 0),
+                exactMatchPct: Number(item.exactMatchPct ?? item.exact_match_pct ?? 0),
+                differentFinishPct: Number(item.differentFinishPct ?? item.different_finish_pct ?? 0),
+                differentVendorPct: Number(item.differentVendorPct ?? item.different_vendor_pct ?? 0),
+                failedBoosters: Number(item.failedBoosters ?? item.failed_boosters ?? 0),
+                simulatedPacks: Number(item.simulatedPacks ?? item.simulated_packs ?? 0),
+                updatedAt: item.updatedAt || item.updated_at || '',
               });
             });
             this.boosterEvCache = grouped;
@@ -772,45 +799,6 @@ class DataService {
       return this.boosterSlotsCache[upperCode];
     }
 
-    // On-demand fetch from MTGJSON API if set not yet in local JSON
-    try {
-      const res = await fetch(`https://mtgjson.com/api/v5/${upperCode}.json`);
-      if (res.ok) {
-        const json = await res.json();
-        const boosterObj = json.data?.booster;
-        if (boosterObj) {
-          const formatted: Record<string, DbBoosterData> = {};
-          for (const [bName, bInfo] of Object.entries<any>(boosterObj)) {
-            formatted[bName] = {
-              boosterName: bName,
-              boostersTotalWeight: Number(bInfo.boostersTotalWeight || 0),
-              boosters: (bInfo.boosters || []).map((b: any, idx: number) => ({
-                boosterIndex: idx,
-                weight: Number(b.weight || 0),
-                contents: b.contents || {},
-              })),
-              sheets: Object.fromEntries(
-                Object.entries<any>(bInfo.sheets || {}).map(([sName, sData]) => [
-                  sName,
-                  {
-                    sheetName: sName,
-                    foil: Boolean(sData.foil),
-                    totalWeight: sData.totalWeight ? Number(sData.totalWeight) : undefined,
-                    cardCount: sData.cards ? Object.keys(sData.cards).length : undefined,
-                    balanceColors: Boolean(sData.balanceColors),
-                  },
-                ])
-              ),
-            };
-          }
-          this.boosterSlotsCache[upperCode] = formatted;
-          return formatted;
-        }
-      }
-    } catch (e) {
-      console.warn(`Could not fetch booster slots for set ${upperCode}:`, e);
-    }
-
     return null;
   }
 
@@ -828,50 +816,7 @@ class DataService {
       return null;
     }
 
-    const availableTypes = Object.keys(setBoosters);
-    const searchTarget = `${boosterType || ''} ${productName || ''}`.toLowerCase();
-
-    // 1. Direct type match
-    if (boosterType && setBoosters[boosterType]) {
-      return setBoosters[boosterType];
-    }
-
-    // 2. Infer booster type from product naming
-    if (searchTarget.includes('collector-sample') || searchTarget.includes('sample')) {
-      if (setBoosters['collector-sample']) return setBoosters['collector-sample'];
-    }
-    if (searchTarget.includes('collector')) {
-      if (setBoosters['collector']) return setBoosters['collector'];
-    }
-    if (searchTarget.includes('play')) {
-      if (setBoosters['play']) return setBoosters['play'];
-    }
-    if (searchTarget.includes('draft')) {
-      if (setBoosters['draft']) return setBoosters['draft'];
-    }
-    if (searchTarget.includes('set booster') || searchTarget.includes('set-booster')) {
-      if (setBoosters['set']) return setBoosters['set'];
-    }
-    if (searchTarget.includes('jumpstart')) {
-      if (setBoosters['jumpstart']) return setBoosters['jumpstart'];
-    }
-    if (searchTarget.includes('prerelease')) {
-      if (setBoosters['prerelease']) return setBoosters['prerelease'];
-    }
-
-    // 3. Match any key contained in searchTarget
-    for (const type of availableTypes) {
-      if (searchTarget.includes(type)) {
-        return setBoosters[type];
-      }
-    }
-
-    // 4. Default fallbacks in order of preference: play, draft, collector, set, first available
-    if (setBoosters['play']) return setBoosters['play'];
-    if (setBoosters['draft']) return setBoosters['draft'];
-    if (setBoosters['collector']) return setBoosters['collector'];
-    if (setBoosters['set']) return setBoosters['set'];
-    return setBoosters[availableTypes[0]] || null;
+    return boosterType ? setBoosters[boosterType] || null : null;
   }
 }
 

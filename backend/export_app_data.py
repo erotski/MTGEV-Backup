@@ -8,10 +8,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 import mysql.connector
 from config import DB_CONFIG
+from product_taxonomy import PRIMARY_CATEGORY_ALIASES, apply_product_taxonomy, validate_taxonomy_overrides
 
 # Target output directory: public/data in root
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "public" / "data"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_taxonomy_overrides():
+    path = OUTPUT_DIR / "product_taxonomy_overrides.json"
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as handle:
+        overrides = json.load(handle)
+    if not isinstance(overrides, dict):
+        raise ValueError("product_taxonomy_overrides.json must contain an object keyed by product UUID")
+    return overrides
 
 def export_all():
     print("=" * 70)
@@ -75,12 +87,15 @@ def export_all():
             ORDER BY sp.setCode, sp.category, sp.name;
         """)
         products = cursor.fetchall()
+        taxonomy_overrides = load_taxonomy_overrides()
+        validate_taxonomy_overrides(products, taxonomy_overrides)
         for p in products:
             if p.get("contents") and isinstance(p["contents"], str):
                 try:
                     p["contents"] = json.loads(p["contents"])
                 except Exception:
                     pass
+            apply_product_taxonomy(p, taxonomy_overrides)
         with open(OUTPUT_DIR / "sealed_products.json", "w", encoding="utf-8") as f:
             json.dump(products, f, indent=2, default=str)
         print(f"  [OK] Exported {len(products)} sealed products")
@@ -188,8 +203,9 @@ def export_all():
     # 4. Generate & Export Full Arbitrage Leaderboard (Box, Pack, Bundle, Decks)
     print(">> 4. Exporting arbitrage_leaderboard.json...")
     try:
-        # Pre-load quantiles from existing sealed_products.json if available
+        # Pre-load canonical product metadata and quantiles from sealed_products.json.
         sp_quantiles_lookup = {}
+        canonical_products = {}
         sp_file = OUTPUT_DIR / "sealed_products.json"
         if sp_file.exists():
             try:
@@ -198,6 +214,7 @@ def export_all():
                     for sp_item in sp_list:
                         sp_id = sp_item.get("id") or sp_item.get("uuid")
                         if sp_id:
+                            canonical_products[sp_id] = sp_item
                             sp_quantiles_lookup[sp_id] = {
                                 "quantilesByVendor": sp_item.get("quantilesByVendor"),
                                 "archetype": sp_item.get("archetype"),
@@ -434,6 +451,9 @@ def export_all():
             if sp_card_count is not None and str(sp_card_count).isdigit() and int(sp_card_count) > 0:
                 card_count = int(sp_card_count)
 
+            canonical_product = canonical_products.get(a.get("productUuid"), {})
+            primary_category = canonical_product.get("primaryCategory") or PRIMARY_CATEGORY_ALIASES.get(sp_cat, "other")
+
             # Non-booster products (like single-card promos, box sets, or decks):
             if pack_count <= 0:
                 if contents and isinstance(contents, dict) and contents.get("card"):
@@ -443,7 +463,9 @@ def export_all():
                         a.pop('spCategory', None)
                         a.pop('spSubtype', None)
                         a.pop('spCardCount', None)
-                        a['category'] = sp_cat if sp_cat in ["box_set", "deck"] else "other"
+                        a['category'] = primary_category
+                        a['primaryCategory'] = primary_category
+                        a['categoryTags'] = canonical_product.get("categoryTags", [primary_category])
                         a['boosterName'] = "single_card"
                         a['packCount'] = 0
                         a['cardCount'] = len(cards)
@@ -514,7 +536,9 @@ def export_all():
             a.pop('spSubtype', None)
             a.pop('spCardCount', None)
 
-            a['category'] = sp_cat if sp_cat in ["booster_box", "booster_case", "booster_pack", "bundle", "deck", "box_set"] else "other"
+            a['category'] = primary_category
+            a['primaryCategory'] = primary_category
+            a['categoryTags'] = canonical_product.get("categoryTags", [primary_category])
             a['boosterName'] = matched_booster
             a['packCount'] = pack_count
             a['unitEvMin'] = pack_min

@@ -20,3 +20,4 @@ public/data/*
 !public/data/precon_decks.json
 !public/data/booster_slots.json
 !public/data/product_overrides.json
+!public/data/product_taxonomy_overrides.json

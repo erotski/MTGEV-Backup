@@ -4,7 +4,7 @@ Status: initial inventory, 2026-09-20
 
 This document records the cleanup boundary for MTGEV. It is based on the workspace scan of 1,541 files: 1,537 tracked files plus 4 non-ignored untracked files. No files were deleted by this inventory pass.
 
-The project rules in [PROJECT_REVIEW.md](../PROJECT_REVIEW.md) are authoritative. `public/data/` contains three tracked pipeline inputs plus generated or published data; generated files are not tracked on `main` and must not be hand-edited. A cleanup decision is not permission to delete a file until its references and owning validation have been checked.
+The project rules in [PROJECT_REVIEW.md](../PROJECT_REVIEW.md) are authoritative. `public/data/` contains four tracked pipeline inputs plus generated or published data; generated files are not tracked on `main` and must not be hand-edited. A cleanup decision is not permission to delete a file until its references and owning validation have been checked.
 
 ## Decision key
 

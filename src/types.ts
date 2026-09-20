@@ -55,6 +55,8 @@ export interface ProductMetricsRecord {
   setCode?: string;
   setName?: string;
   category?: string;
+  primaryCategory?: string;
+  categoryTags?: string[];
   marketPrice: number;
   totalEvMin: number;
   totalEvMin5: number;
@@ -150,6 +152,8 @@ export interface BoxArbitrageRecord {
   productUuid: string;
   boxName: string;
   category: 'booster_box' | 'booster_pack' | 'booster_case' | 'bundle' | 'commander_deck' | 'other' | string;
+  primaryCategory?: string;
+  categoryTags?: string[];
   setCode: string;
   setName: string;
   boosterName: string;
@@ -390,11 +394,14 @@ export type ProductCategory =
   | 'all'
   | 'booster_box'
   | 'booster_pack'
-  | 'booster_case'
+  | 'case'
   | 'bundle'
-  | 'deck'
   | 'commander_deck'
-  | 'box_set'
+  | 'preconstructed_deck'
+  | 'prerelease'
+  | 'sample_promo_topper'
+  | 'secret_lair'
+  | 'special_collection'
   | 'other';
 
 export interface DraftCartItem {

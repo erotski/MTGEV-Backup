@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 
 from ev_statistics import empirical_quantiles
+from product_taxonomy import apply_product_taxonomy, validate_taxonomy_overrides
 
 try:
     import numpy as np
@@ -98,7 +99,17 @@ def load_data():
         except Exception as e:
             print(f"[WARN] Error reading product_overrides.json: {e}")
     
-    # Apply overrides
+    taxonomy_overrides = {}
+    taxonomy_overrides_path = PUBLIC_DATA_DIR / "product_taxonomy_overrides.json"
+    if taxonomy_overrides_path.exists():
+        with taxonomy_overrides_path.open("r", encoding="utf-8") as f:
+            taxonomy_overrides = json.load(f)
+        if not isinstance(taxonomy_overrides, dict):
+            raise ValueError("product_taxonomy_overrides.json must contain an object keyed by product UUID")
+
+    validate_taxonomy_overrides(sealed_products, taxonomy_overrides)
+
+    # Apply content and taxonomy overrides.
     for sp in sealed_products:
         sp_id = sp.get("id") or sp.get("uuid")
         if sp_id and sp_id in overrides:
@@ -106,6 +117,7 @@ def load_data():
             # Simple deep update for contents
             if "contents" in overrides[sp_id]:
                 sp["contents"] = overrides[sp_id]["contents"]
+        apply_product_taxonomy(sp, taxonomy_overrides)
 
     with open(PUBLIC_DATA_DIR / "booster_ev.json", "r", encoding="utf-8") as f:
         booster_ev = json.load(f)
@@ -877,7 +889,7 @@ def run_composite_evaluator(target_set=None):
                 u = r.get("productUuid") or r.get("id")
                 if u and u in prod_lookup:
                     up = prod_lookup[u]
-                    for k in ["quantilesByVendor", "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "breakevenPercentile", "archetype"]:
+                    for k in ["primaryCategory", "categoryTags", "classificationSource", "classificationSignals", "classificationWarnings", "quantilesByVendor", "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5", "totalEvMin", "totalEvMax", "breakevenPercentile", "archetype"]:
                         if k in up:
                             r[k] = up[k]
                         elif k in r:
@@ -886,6 +898,7 @@ def run_composite_evaluator(target_set=None):
                                 r[k] = 0.0
                             else:
                                 r.pop(k, None)
+                    r["category"] = up.get("primaryCategory") or up.get("category") or "other"
 
             with open(arb_path, "w", encoding="utf-8") as af:
                 json.dump(arb_records, af, indent=2, default=str)

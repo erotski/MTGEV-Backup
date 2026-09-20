@@ -116,6 +116,7 @@ def main():
         cards_by_type = {}
         types_summary = {}
         total_ev = 0.0
+        pricing_incomplete = False
 
         for c in main_board:
             c_name = c.get("name", "Unknown")
@@ -127,7 +128,8 @@ def main():
             vendor_prices = resolve_card_prices(c_uuid, want_foil=is_foil)
             unit_price = vendor_prices.get("all_cheapest")
             if unit_price is None:
-                continue
+                pricing_incomplete = True
+                unit_price = 0.0
             unit_price = round(unit_price, 2)
             total_ev += unit_price * count
 
@@ -214,15 +216,16 @@ def main():
             "format": "casual",
             "cardCount": total_cards_count,
             "totalCards": total_cards_count,
-            "totalSinglesEv": total_ev,
-            "singlesEv": total_ev,
-            "estimatedEv": total_ev,
+            "totalSinglesEv": total_ev if not pricing_incomplete else None,
+            "singlesEv": total_ev if not pricing_incomplete else None,
+            "estimatedEv": total_ev if not pricing_incomplete else None,
             "keyCards": sorted_chases,
             "cards": processed_cards,
             "typesSummary": types_summary,
             "cardsByType": cards_by_type,
             "sealedProductUuids": [UNSANCTIONED_PROD_ID],
             "isCommander": False,
+            "pricingComplete": not pricing_incomplete,
         }
 
         # Multiple robust index keys

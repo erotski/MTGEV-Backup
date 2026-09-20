@@ -123,28 +123,9 @@ export function getCardsPerPack(code?: string, category?: string, subtype?: stri
   const sub = (subtype || '').toLowerCase();
   const cat = (category || '').toLowerCase();
 
-  if (c.includes('sample') || sub.includes('sample') || cat.includes('sample')) {
-    return 2;
-  }
-  if (c.includes('prerelease') || sub.includes('prerelease')) {
-    // Prerelease promo pack typically contains 2 foil stamped cards (or 1 promo + 1 promo planeswalker/rare)
-    return 2;
-  }
-  if (c.includes('collector') || sub.includes('collector')) {
-    return 15;
-  }
-  if (c.includes('play') || c.includes('draft') || c.includes('set') || c.includes('default') || c === 'booster') {
-    return 15;
-  }
-  if (c.includes('jumpstart')) {
-    return 20;
-  }
-  if (c.includes('theme')) {
-    return 35;
-  }
-  if (c.includes('box-topper') || c.includes('topper')) {
-    return 1;
-  }
+  void c;
+  void sub;
+  void cat;
   return 0;
 }
 
@@ -198,7 +179,7 @@ export function resolveSingleCardEv(
     byNameSet?: Record<string, any>;
     byName?: Record<string, any>;
   },
-  vendor: Vendor | string = 'all',
+  vendor: Vendor | string = 'all_cheapest',
   priceMode: PriceMode | string = 'direct'
 ) {
   if (!cd) {
@@ -209,7 +190,7 @@ export function resolveSingleCardEv(
       foil: false,
       price: 0,
       ev: 0,
-      prices: { tcgplayer: 0, cardkingdom: 0, cardmarket: 0, all: 0 },
+      prices: { tcgplayer: 0, cardkingdom: 0, cardmarket: 0, all_cheapest: 0, all_average: 0 },
       isEstimated: false,
       uuid: '',
     };
@@ -224,61 +205,23 @@ export function resolveSingleCardEv(
     (parentProduct?.displayName && parentProduct.displayName.toLowerCase().includes('foil') && !parentProduct.displayName.toLowerCase().includes('non-foil'))
   );
 
-  const cardPricesByUuid = singleCardPrices?.byUuid || {};
-  const cardPricesByNameSet = singleCardPrices?.byNameSet || {};
-  const cardPricesByName = singleCardPrices?.byName || {};
-
   const priceIdx =
-    (cd.uuid && cardPricesByUuid[cd.uuid]) ||
-    cardPricesByNameSet[`${String(rawName || '').toLowerCase()}___${cardSet.toLowerCase()}`] ||
-    cardPricesByNameSet[`${String(rawName || '').toLowerCase()}_${cardSet.toLowerCase()}`] ||
-    cardPricesByName[String(rawName || '').toLowerCase()];
-
-  let rawPrice = 0;
-  let isEstimated = false;
-
-  if (priceIdx) {
-    rawPrice = isFoil && priceIdx.foilPrice ? priceIdx.foilPrice : (priceIdx.price || priceIdx.foilPrice || 0);
-  }
-  
-  if (!rawPrice || rawPrice <= 0) {
-    if (cd.prices?.tcgplayer && Number(cd.prices.tcgplayer) > 0) {
-      rawPrice = Number(cd.prices.tcgplayer);
-    } else if (cd.prices?.cardmarket && Number(cd.prices.cardmarket) > 0) {
-      rawPrice = Number(cd.prices.cardmarket);
-    } else if (cd.price && Number(cd.price) > 0) {
-      rawPrice = Number(cd.price);
-    } else if (cd.ev && Number(cd.ev) > 0) {
-      rawPrice = Number(cd.ev);
-    }
-  }
-
-  // Adjust by vendor
-  let vendorPrice = rawPrice;
-  if (priceIdx?.vendorPrices) {
-    const vp = priceIdx.vendorPrices;
-    if (vendor === 'cardmarket' && vp.cardmarket) vendorPrice = vp.cardmarket;
-    else if (vendor === 'cardkingdom' && vp.cardkingdom) vendorPrice = vp.cardkingdom;
-    else if (vendor === 'tcgplayer' && vp.tcgplayer) vendorPrice = vp.tcgplayer;
-    else if (vendor === 'manapool' && vp.manapool) vendorPrice = vp.manapool || vp.tcgplayer;
-    else if (vendor === 'all_average') {
-      const vals = [vp.tcgplayer, vp.cardmarket, vp.cardkingdom, vp.manapool].filter(Boolean);
-      if (vals.length > 0) vendorPrice = vals.reduce((a, b) => a + b, 0) / vals.length;
-    } else if (vendor === 'all_cheapest' || vendor === 'all') {
-      const vals = [vp.tcgplayer, vp.cardmarket, vp.cardkingdom, vp.manapool].filter(Boolean);
-      if (vals.length > 0) vendorPrice = Math.min(...vals);
-    }
-  }
+    (cd.uuid && singleCardPrices?.byUuid?.[cd.uuid]) ||
+    singleCardPrices?.byNameSet?.[`${String(rawName || '').toLowerCase()}___${cardSet.toLowerCase()}`] ||
+    singleCardPrices?.byNameSet?.[`${String(rawName || '').toLowerCase()}_${cardSet.toLowerCase()}`] ||
+    singleCardPrices?.byName?.[String(rawName || '').toLowerCase()];
+  const prices = priceIdx?.prices || cd.prices || {};
+  const vendorPrice = resolveCardPrice({ prices }, vendor, isFoil);
 
   return {
     name: rawName,
     number: rawNumber,
     set: cardSet,
     foil: isFoil,
-    price: Number(rawPrice.toFixed(2)),
+    price: Number(vendorPrice.toFixed(2)),
     ev: Number(vendorPrice.toFixed(2)),
-    prices: cd.prices || (priceIdx ? { tcgplayer: priceIdx.price } : {}),
-    isEstimated,
+    prices,
+    isEstimated: false,
     uuid: cd.uuid,
   };
 }

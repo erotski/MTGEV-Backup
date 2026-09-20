@@ -24,6 +24,8 @@ REQUIRED_FIELDS = {
     "vendor",
     "priceMode",
     "provenance",
+    "primaryCategory",
+    "categoryTags",
 }
 
 
@@ -37,6 +39,11 @@ def main() -> None:
     sealed = load("sealed_products.json")
     assert isinstance(metrics, list) and metrics, "product_metrics.json is empty"
     sealed_ids = {p.get("id") or p.get("uuid") for p in sealed if isinstance(p, dict)}
+    sealed_taxonomy = {
+        p.get("id") or p.get("uuid"): (p.get("primaryCategory"), p.get("categoryTags"))
+        for p in sealed
+        if isinstance(p, dict)
+    }
     seen = set()
     categories = set()
 
@@ -47,6 +54,7 @@ def main() -> None:
         assert identity not in seen, f"duplicate metric identity: {identity}"
         seen.add(identity)
         assert record["productUuid"] in sealed_ids, f"unknown product: {record['productUuid']}"
+        assert (record["primaryCategory"], record["categoryTags"]) == sealed_taxonomy[record["productUuid"]]
         assert record["priceMode"] == "direct", "unexpected product metric price mode"
         assert record["provenance"].get("source") == "pipeline"
         assert record["provenance"].get("schemaVersion") == 1

@@ -62,6 +62,8 @@ export interface CatalogPackProduct {
   uuid?: string;
   rawCategory?: string;
   rawSubtype?: string;
+  primaryCategory?: string;
+  categoryTags?: string[];
   setCode: string;
   setName: string;
   releaseDate: string;

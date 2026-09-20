@@ -16,6 +16,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from product_taxonomy import validate_product_taxonomy_contract
+
 LOG_FILE = Path(__file__).parent / "daily_update.log"
 TELEMETRY_JSON = Path(__file__).parent.parent / "public" / "data" / "pipeline_execution_logs.json"
 LATEST_RUN_JSON = Path(__file__).parent.parent / "public" / "data" / "latest_pipeline_run.json"
@@ -302,11 +304,22 @@ def validate_output_semantics() -> tuple[bool, str]:
     product_metrics = load_required("product_metrics.json")
     if not isinstance(product_metrics, list):
         return False, "product_metrics.json must contain an array"
+    arbitrage_records = load_required("arbitrage_leaderboard.json")
+    if not isinstance(arbitrage_records, list):
+        return False, "arbitrage_leaderboard.json must contain an array"
+    try:
+        validate_product_taxonomy_contract(sealed_products, {
+            "product_metrics.json": product_metrics,
+            "arbitrage_leaderboard.json": arbitrage_records,
+        })
+    except ValueError as error:
+        return False, str(error)
     metric_keys = {
         "productUuid", "marketPrice", "totalEvMin", "totalEvMin5", "totalEvAvg", "totalEvMid90",
         "totalEvMax5", "totalEvMax", "effectiveEv", "profitUsd", "roiPct", "packCount", "cardCount",
         "vendor", "priceMode", "provenance", "effectiveEvByBasis", "profitUsdByBasis", "roiPctByBasis",
         "evScore", "breakevenPercentile",
+        "primaryCategory", "categoryTags",
     }
     metric_identity_keys = set()
     for index, metric in enumerate(product_metrics):

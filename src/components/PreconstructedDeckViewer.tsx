@@ -202,16 +202,9 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
     if (provenance?.status === 'unpriced') return 0;
     if (vendorMode === 'cardkingdom' && c.prices?.cardkingdom) return c.prices.cardkingdom;
     if (vendorMode === 'cardmarket' && c.prices?.cardmarket) return c.prices.cardmarket;
-    if (vendorMode === 'tcgplayer' && (c.prices?.tcgplayer || c.price)) return c.prices?.tcgplayer || c.price;
+    if (vendorMode === 'tcgplayer' && c.prices?.tcgplayer) return c.prices.tcgplayer;
     if (vendorMode === 'all_average') {
       if (c.prices?.all_average) return c.prices.all_average;
-      const vals: number[] = [];
-      if (c.prices?.tcgplayer || c.price) vals.push(c.prices?.tcgplayer || c.price);
-      if (c.prices?.cardmarket) vals.push(c.prices.cardmarket);
-      if (c.prices?.cardkingdom) vals.push(c.prices.cardkingdom);
-      if (vals.length > 0) {
-        return vals.reduce((sum, v) => sum + v, 0) / vals.length;
-      }
       return 0;
     }
     return 0;

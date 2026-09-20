@@ -1,6 +1,6 @@
 """Fixed-deck card pricing with explicit vendor/finish provenance."""
 
-VENDORS = ("tcgplayer", "cardkingdom", "cardmarket")
+VENDORS = ("tcgplayer", "cardkingdom", "cardmarket", "manapool")
 FINISHES = ("normal", "foil", "etched")
 
 

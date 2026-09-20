@@ -8,7 +8,7 @@ import { ProductChaseCardsViewer } from './ProductChaseCardsViewer';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { SingleCardBreakdownViewer } from './SingleCardBreakdownViewer';
 import { ProductBreakdownTable } from './ProductBreakdownTable';
-import { calculateEvScore, getEvScoreBadgeClass } from '../utils/evScore';
+import { getEvScoreBadgeClass } from '../utils/evScore';
 import {
   X,
   Package,
@@ -157,12 +157,7 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
     product.rawCategory === 'multiple_decks' ||
     product.rawCategory === 'deck' ||
     product.rawCategory === 'starter_deck' ||
-    product.rawCategory === 'commander_deck' ||
-    (product.displayName || '').toLowerCase().includes('commander deck') ||
-    (product.displayName || '').toLowerCase().includes('precon') ||
-    (product.displayName || '').toLowerCase().includes('clash pack') ||
-    (product.displayName || '').toLowerCase().includes('starter kit') ||
-    (product.displayName || '').toLowerCase().includes('duel deck');
+    product.rawCategory === 'commander_deck';
 
   const isSingleCard =
     product.boosterName === 'single_card' ||
@@ -189,27 +184,11 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
     (product.variations && product.variations.length > 0)
   );
 
-  const isDeterministic = Boolean(
-    isSingleCard ||
-    isDeck ||
-    product.packagingType === 'starter_deck' ||
-    (((displayProduct as any).packsCount === 0 || (displayProduct as any).packCount === 0) && (!displayProduct.variations || displayProduct.variations.length === 0)) ||
-    (displayProduct as any).archetype === 'pure_precon'
-  );
-
   const profit = Number((displayProduct.estimatedEv - displayProduct.marketPrice).toFixed(2));
   const roiPct = displayProduct.marketPrice > 0 ? Number(((profit / displayProduct.marketPrice) * 100).toFixed(1)) : 0;
   const productEvScore = typeof (displayProduct as any).evScore === 'number'
     ? (displayProduct as any).evScore
-    : calculateEvScore(
-        displayProduct.marketPrice,
-        displayProduct.estimatedEv,
-        (displayProduct as any).evMin ?? displayProduct.estimatedEv * 0.25,
-        (displayProduct as any).evMid90 ?? displayProduct.estimatedEv,
-        (displayProduct as any).evMax ?? displayProduct.estimatedEv * 3.5,
-        isDeterministic,
-        (displayProduct as any).quantilesByVendor?.all_cheapest
-      );
+    : null;
 
   return (
     <div
@@ -395,7 +374,6 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
               {isSingleCard ? (
                 <SingleCardBreakdownViewer
                   product={displayProduct}
-                  priceMode={priceMode}
                   vendor={vendor}
                 />
               ) : isDeck ? (

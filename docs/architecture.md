@@ -35,7 +35,7 @@ Important files:
 
 ### Published data
 
-Runtime data lives in `public/data/`. Generated snapshots are ignored on `main`, built and validated by the pipeline, and published as a complete bundle to the `data-sync` branch. `main` retains only the pipeline inputs `precon_decks.json`, `booster_slots.json`, and `product_overrides.json`.
+Runtime data lives in `public/data/`. Generated snapshots are ignored on `main`, built and validated by the pipeline, and published as a complete bundle to the `data-sync` branch. `main` retains only the pipeline inputs `precon_decks.json`, `booster_slots.json`, `product_overrides.json`, and `product_taxonomy_overrides.json`.
 
 ## Ownership boundaries
 
@@ -61,10 +61,11 @@ The published bundle must retain shared snapshot identity, valid JSON, unique pr
 | `public/data/precon_decks.json` | Tracked pipeline input; deck ingestion tooling and pipeline stages may update it | Preconstructed-deck views |
 | `public/data/booster_slots.json` | Tracked pipeline input | Booster slot fallback data |
 | `public/data/product_overrides.json` | Tracked optional pipeline input | Product export and evaluation overrides |
+| `public/data/product_taxonomy_overrides.json` | Tracked optional pipeline input | Per-product category and tag overrides |
 | `public/data/scryfall_set_hierarchy.json` | `backend/export_set_hierarchy.py` | Set hierarchy utilities |
 | Remaining `public/data/*.json` | Pipeline stages, static catalog inputs, or telemetry producers | `src/services/dataService.ts` and related loaders |
 
-All files under `public/data/` are runtime data. The three tracked input files are source/configuration data; generated files must be changed through their producer and publication workflow, never by hand. A local checkout without generated snapshots is expected to have an empty or degraded frontend until a pipeline bundle is supplied.
+All files under `public/data/` are runtime data. The four tracked input files are source/configuration data; generated files must be changed through their producer and publication workflow, never by hand. A local checkout without generated snapshots is expected to have an empty or degraded frontend until a pipeline bundle is supplied.
 
 ## Canonical vendor contract
 

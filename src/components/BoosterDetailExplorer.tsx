@@ -287,7 +287,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
         const ownPackCode = Array.isArray(sp.contents?.pack) ? sp.contents.pack[0]?.code : undefined;
         const primaryBoosterName = ownPackCode
           ? String(ownPackCode).toLowerCase()
-          : normalizeBoosterCode(sp.subtype || sp.category || pName);
+          : '';
         const metrics = {
           marketPrice: metric?.marketPrice ?? Number(sp.marketPrice || sp.tcgplayer_price || 0),
           primaryBoosterName,
@@ -383,8 +383,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   const activeBooster = useMemo(() => {
     return (
       currentBoosters.find((b) => b.boosterName === activeBoosterName) ||
-      currentBoosters[0] ||
-      boosterRecords[0]
+      currentBoosters[0]
     );
   }, [currentBoosters, activeBoosterName, boosterRecords]);
 
@@ -670,7 +669,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
 
   // EV score number (0 - 100): Probability of opening value >= sealed market price
   const productEvScore = useMemo(() => {
-    if (productMarketPrice <= 0) return 100;
+    if (productMarketPrice <= 0) return null;
 
     // 1. Deterministic/preconstructed products: probability is strictly binary (100% or 0%)
     if (isPreconProduct || (activeProduct?.packsCount === 0 && (productAudit?.totalPacks ?? 0) === 0 && !isConfigurationProduct)) {
@@ -724,7 +723,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
       isPreconProduct,
       undefined,
       productPacksCount
-    ) ?? 0;
+    );
   }, [
     isDefaultPricing,
     activeProduct,
@@ -1224,10 +1223,10 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
               <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex flex-col items-center justify-center shrink-0">
                 <span
                   className={`text-xl font-black font-mono leading-none ${
-                    productEvScore >= 60 ? 'text-emerald-400' : productEvScore >= 35 ? 'text-amber-400' : 'text-rose-400'
+                    productEvScore == null ? 'text-slate-400' : productEvScore >= 60 ? 'text-emerald-400' : productEvScore >= 35 ? 'text-amber-400' : 'text-rose-400'
                   }`}
                 >
-                  {productEvScore}
+                  {productEvScore ?? 'N/A'}
                 </span>
                 <span className="text-[8px] font-bold text-slate-500 font-mono mt-0.5">/100</span>
               </div>
@@ -1236,18 +1235,20 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-300">EV Score</span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      productEvScore >= 60
+                      productEvScore == null
+                        ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                        : productEvScore >= 60
                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                         : productEvScore >= 35
                         ? 'bg-amber-950 text-amber-300 border border-amber-800'
                         : 'bg-rose-950 text-rose-300 border border-rose-800'
                     }`}
                   >
-                    {productEvScore >= 75 ? 'High Profit Probability' : productEvScore >= 50 ? 'Positive Risk/Reward' : productEvScore >= 25 ? 'Moderate Dud Risk' : 'Heavy Loss Expected'}
+                    {productEvScore == null ? 'Unavailable' : productEvScore >= 75 ? 'High Profit Probability' : productEvScore >= 50 ? 'Positive Risk/Reward' : productEvScore >= 25 ? 'Moderate Dud Risk' : 'Heavy Loss Expected'}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Estimated <strong className="text-white font-mono">{productEvScore}%</strong> chance that this sealed product yields singles valued equal to or above its <strong className="text-white font-mono">${productMarketPrice.toFixed(2)}</strong> market price.
+                  {productEvScore == null ? 'EV score unavailable because market price data is missing.' : <>Estimated <strong className="text-white font-mono">{productEvScore}%</strong> chance that this sealed product yields singles valued equal to or above its <strong className="text-white font-mono">${productMarketPrice.toFixed(2)}</strong> market price.</>}
                 </p>
               </div>
             </div>

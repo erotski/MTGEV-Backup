@@ -5,6 +5,7 @@ import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
+import { matchesProductOverviewCategory, PRODUCT_OVERVIEW_CATEGORY_FILTERS, ProductCategoryIcon } from '../config/productCategories';
 import {
   TrendingUp,
   TrendingDown,
@@ -115,22 +116,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
     });
   }, [records, productMetrics, vendor, priceMode, evBasis]);
 
-  const isCategoryMatch = (record: BoxArbitrageRecord, category: ProductCategory): boolean => {
-    if (category === 'all') return true;
-    const cat = (record.category || '').toLowerCase();
-
-    if (category === 'deck' || category === 'commander_deck') {
-      return cat === 'commander_deck' || cat === 'deck' || cat === 'starter_deck' || cat === 'multiple_decks';
-    }
-    if (category === 'box_set') {
-      return cat === 'box_set';
-    }
-    if (category === 'other') {
-      return !['booster_box', 'booster_pack', 'booster_case', 'bundle', 'deck', 'commander_deck', 'box_set'].includes(cat);
-    }
-    return cat === category;
-  };
-
   const filteredRecords = useMemo(() => {
     return adjustedRecords
       .filter((r) => {
@@ -138,7 +123,7 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
           r.boxName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           r.setCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
           r.setName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCat = isCategoryMatch(r, selectedCategory);
+        const matchesCat = matchesProductOverviewCategory(r.category, selectedCategory, r.categoryTags);
         return matchesSearch && matchesCat;
       })
       .sort((a, b) => {
@@ -267,6 +252,18 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
       return <Gift className="w-4 h-4 text-rose-500" />;
     }
     return <HelpCircle className="w-4 h-4 text-slate-400" />;
+  };
+
+  const getFilterIcon = (icon: ProductCategoryIcon, className: string) => {
+    const props = { className: `w-3.5 h-3.5 ${className}` };
+    if (icon === 'all') return <Layers {...props} />;
+    if (icon === 'pack') return <Package {...props} />;
+    if (icon === 'box') return <Box {...props} />;
+    if (icon === 'case') return <Archive {...props} />;
+    if (icon === 'bundle') return <Gift {...props} />;
+    if (icon === 'deck') return <Shield {...props} />;
+    if (icon === 'box_set') return <Sparkles {...props} />;
+    return <HelpCircle {...props} />;
   };
 
   const mapCategoryToPackagingType = (cat: string, name?: string): ProductPackagingType => {
@@ -546,101 +543,20 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
       {/* 4. ORDERED FORMAT FILTER PILLS (Underneath Search Bar) */}
       <div id="category-pills" className="flex flex-wrap items-center gap-2">
-        <button
-          id="category-pill-all"
-          onClick={() => setSelectedCategory('all')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'all'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" /> All Sealed Formats
-        </button>
-
-        <button
-          id="category-pill-pack"
-          onClick={() => setSelectedCategory('booster_pack')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'booster_pack'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Package className="w-3.5 h-3.5 text-emerald-500" /> Single Booster Packs
-        </button>
-
-        <button
-          id="category-pill-box"
-          onClick={() => setSelectedCategory('booster_box')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'booster_box'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Box className="w-3.5 h-3.5 text-amber-500" /> Booster Boxes (24-36 Packs)
-        </button>
-
-        <button
-          id="category-pill-case"
-          onClick={() => setSelectedCategory('booster_case')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'booster_case'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Archive className="w-3.5 h-3.5 text-indigo-500" /> Booster Cases (6+ Boxes)
-        </button>
-
-        <button
-          id="category-pill-bundle"
-          onClick={() => setSelectedCategory('bundle')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'bundle'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Gift className="w-3.5 h-3.5 text-rose-500" /> Bundles & Gift Sets
-        </button>
-
-        <button
-          id="category-pill-commander"
-          onClick={() => setSelectedCategory('deck')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'deck' || selectedCategory === 'commander_deck'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Shield className="w-3.5 h-3.5 text-violet-500" /> Preconstructed Decks
-        </button>
-
-        <button
-          id="category-pill-boxset"
-          onClick={() => setSelectedCategory('box_set')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'box_set'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Box Sets & Secret Lairs
-        </button>
-
-        <button
-          id="category-pill-other"
-          onClick={() => setSelectedCategory('other')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-            selectedCategory === 'other'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          <HelpCircle className="w-3.5 h-3.5 text-slate-400" /> Other
-        </button>
+        {PRODUCT_OVERVIEW_CATEGORY_FILTERS.map((filter) => (
+          <button
+            key={filter.id}
+            id={`category-pill-${filter.id.replace('booster_', '')}`}
+            onClick={() => setSelectedCategory(filter.id)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              selectedCategory === filter.id
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            {getFilterIcon(filter.icon, filter.iconClassName)} {filter.label}
+          </button>
+        ))}
       </div>
 
       {/* 5. PRODUCTS OVERVIEW TABLE */}

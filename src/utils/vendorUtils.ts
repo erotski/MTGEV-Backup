@@ -58,6 +58,16 @@ export function normalizeVendor(vendor?: string | null): Vendor {
   return 'all_cheapest';
 }
 
+export function normalizeVendorStrict(vendor?: string | null): Vendor | undefined {
+  if (!vendor) return undefined;
+  const value = String(vendor).toLowerCase().trim();
+  if (value === 'all') return 'all_cheapest';
+  if (['all_cheapest', 'all_average', 'tcgplayer', 'cardmarket', 'cardkingdom', 'manapool'].includes(value)) {
+    return value as Vendor;
+  }
+  return undefined;
+}
+
 export function getVendorLabel(vendor: Vendor | string): string {
   const norm = normalizeVendor(vendor);
   const found = VENDOR_OPTIONS.find((opt) => opt.value === norm);
@@ -81,7 +91,8 @@ export function resolveCardPrice(
 ): number {
   if (!card) return 0;
   const prices = card.prices || {};
-  const v = normalizeVendor(vendor);
+  const v = normalizeVendorStrict(vendor);
+  if (!v) return 0;
 
   if (v === 'all_cheapest') {
     if (prices.all_cheapest !== undefined && prices.all_cheapest > 0) return prices.all_cheapest;
@@ -89,7 +100,7 @@ export function resolveCardPrice(
     const vals = [prices.tcgplayer, prices.cardmarket, prices.cardkingdom, prices.manapool].filter(
       (p): p is number => typeof p === 'number' && p > 0
     );
-    return vals.length > 0 ? Math.min(...vals) : (isFoil ? (card.foilPrice || card.price || 0) : (card.price || 0));
+    return vals.length > 0 ? Math.min(...vals) : 0;
   }
 
   if (v === 'all_average') {
@@ -99,7 +110,7 @@ export function resolveCardPrice(
     );
     return vals.length > 0
       ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2))
-      : (isFoil ? (card.foilPrice || card.price || 0) : (card.price || 0));
+      : 0;
   }
 
   if (prices[v] !== undefined && prices[v] > 0) {
@@ -113,7 +124,7 @@ export function resolveCardPrice(
  * Normalizes full booster/pack display names (e.g. "Final Fantasy Play Booster Pack") into canonical booster codes.
  */
 export function normalizeBoosterCode(rawName?: string): string {
-  if (!rawName) return 'play';
+  if (!rawName) return '';
   const n = String(rawName || '').toLowerCase().trim();
   if (n.includes('collector') && n.includes('sample')) return 'collector-sample';
   if (n.includes('collector')) return 'collector';
@@ -145,7 +156,8 @@ export function findBoosterEv(
   const rawTarget = (boosterName || '').toLowerCase().trim();
   const normTarget = normalizeBoosterCode(rawTarget);
   const targetMode = (priceMode || 'direct').toLowerCase().trim();
-  const vNorm = normalizeVendor(vendor);
+  const vNorm = normalizeVendorStrict(vendor);
+  if (!vNorm) return undefined;
 
   const matchesCode = (rBoosterName: string) => {
     const rLower = (rBoosterName || '').toLowerCase().trim();

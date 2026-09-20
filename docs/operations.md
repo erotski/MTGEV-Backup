@@ -73,7 +73,7 @@ Jumpstart does not have a separate release-blocking audit workflow. Its existing
 
 ## Safe cleanup rules
 
-- Generated data under `public/data/` is intentionally not tracked on `main`. It may be removed from a local checkout and regenerated, but do not remove the three tracked pipeline inputs: `precon_decks.json`, `booster_slots.json`, or `product_overrides.json`.
+- Generated data under `public/data/` is intentionally not tracked on `main`. It may be removed from a local checkout and regenerated, but do not remove the four tracked pipeline inputs: `precon_decks.json`, `booster_slots.json`, `product_overrides.json`, or `product_taxonomy_overrides.json`.
 - The complete validated runtime bundle is published to `data-sync`; verify that production deploys from that branch before changing publication behavior.
 - Keep source docs separate from generated snapshots.
 - Move legacy notes or experiments to `docs/archive/` instead of leaving them in active docs.

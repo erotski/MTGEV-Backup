@@ -135,6 +135,7 @@ def main():
         types_summary = {}
 
         total_ev = 0.0
+        pricing_incomplete = False
 
         for c in all_deck_cards:
             c_name = c.get("name", "Unknown")
@@ -147,7 +148,8 @@ def main():
             vendor_prices = resolve_card_prices(c_uuid, want_foil=is_foil)
             unit_price = vendor_prices.get("all_cheapest")
             if unit_price is None:
-                continue
+                pricing_incomplete = True
+                unit_price = 0.0
             unit_price = round(unit_price, 2)
             total_ev += unit_price * count
 
@@ -226,9 +228,9 @@ def main():
             "format": "commander" if is_cmd else (deck_data.get("type") or "casual").lower(),
             "cardCount": sum(c["count"] for c in processed_cards),
             "totalCards": sum(c["count"] for c in processed_cards),
-            "singlesEv": total_ev,
-            "totalSinglesEv": total_ev,
-            "estimatedEv": total_ev,
+            "singlesEv": total_ev if not pricing_incomplete else None,
+            "totalSinglesEv": total_ev if not pricing_incomplete else None,
+            "estimatedEv": total_ev if not pricing_incomplete else None,
             "topChases": sorted_chases,
             "keyCards": sorted_chases,
             "cards": processed_cards,
@@ -236,6 +238,7 @@ def main():
             "cardsByType": cards_by_type,
             "sealedProductUuids": sealed_uuids,
             "isCommander": is_cmd,
+            "pricingComplete": not pricing_incomplete,
         }
 
         # Index under multiple lookup keys for robust matching
@@ -289,9 +292,11 @@ def main():
 
         if matched_deck and isinstance(matched_deck, dict):
             deck_ev = float(matched_deck.get("singlesEv") or matched_deck.get("estimatedEv") or 0.0)
-            if deck_ev > 0:
+            if matched_deck.get("pricingComplete", True) and deck_ev > 0:
                 p["estimatedEv"] = deck_ev
                 updated_sealed_count += 1
+            elif not matched_deck.get("pricingComplete", True):
+                p.pop("estimatedEv", None)
 
     print(f"  ✔ Populated estimatedEv for {updated_sealed_count} preconstructed products in sealed_products.json.")
 

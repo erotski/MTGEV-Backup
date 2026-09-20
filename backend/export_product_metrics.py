@@ -58,6 +58,8 @@ def build_product_metrics(products) -> list[dict]:
                 "setCode": product.get("setCode"),
                 "setName": product.get("setName"),
                 "category": product.get("category"),
+                "primaryCategory": product.get("primaryCategory") or product.get("category") or "other",
+                "categoryTags": product.get("categoryTags") or [product.get("primaryCategory") or product.get("category") or "other"],
                 "marketPrice": market_price,
                 "totalEvMin": total_min,
                 "totalEvMin5": total_min5,
