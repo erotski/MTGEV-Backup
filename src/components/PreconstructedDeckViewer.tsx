@@ -107,42 +107,28 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
       return propDeckDetail;
     }
 
-    const cleanId = (productId || '').toLowerCase().trim();
-    const cleanName = (productName || '').toLowerCase().trim();
-    const cleanSet = (setCode || '').toUpperCase().trim();
-
     const availableDecks = preconDecks || allDecks;
     if (availableDecks) {
       const matched = findMatchingPreconDeck(availableDecks, productName, setCode, productId);
       if (matched) return matched;
     }
 
-    const isCommanderProduct = Boolean(
-      (cleanName.includes('commander deck') ||
-        cleanName.includes('edh') ||
-        (cleanName.includes('commander') && !cleanName.includes('unsanctioned')) ||
-        cleanId.includes('commander')) &&
-      !cleanName.includes('clash') &&
-      !cleanName.includes('intro') &&
-      !cleanName.includes('game night')
-    );
-
-    // Default synthesized precon deck structure if not in prebuilt json
     return {
-      deckName: productName || (isCommanderProduct ? 'Preconstructed Commander Deck' : 'Preconstructed Deck'),
-      setCode: setCode || 'MTG',
-      theme: isCommanderProduct
-        ? 'Factory-Sealed 100-Card Ready-to-Play Commander Deck'
-        : 'Factory-Sealed Ready-to-Play Preconstructed Deck',
-      cardCount: isCommanderProduct ? 100 : 60,
-      totalSinglesEv: estimatedEv || marketPrice * 1.15 || 0,
-      commander: undefined,
+      deckName: productName || 'Decklist unavailable',
+      setCode,
+      theme: 'Authoritative decklist data is unavailable for this product.',
+      cardCount: 0,
+      totalSinglesEv: 0,
       colors: [],
       cards: [],
       keyCards: [],
-      isCommander: isCommanderProduct,
+      isCommander: false,
     };
-  }, [allDecks, preconDecks, propDeckDetail, productId, productName, setCode, estimatedEv, marketPrice]);
+  }, [allDecks, preconDecks, propDeckDetail, productId, productName, setCode]);
+
+  const hasAuthoritativeDecklist = Boolean(
+    deckDetail.cards?.length || deckDetail.fullDecklist?.length || deckDetail.keyCards?.length
+  );
 
   // All cards array with normalized isCommander flag
   const rawCards: DeckCardItem[] = useMemo(() => {
@@ -392,6 +378,18 @@ export const PreconstructedDeckViewer: React.FC<PreconstructedDeckViewerProps> =
         <h4 className="text-base font-bold text-white">Loading Complete Decklist...</h4>
         <p className="text-xs text-slate-400 mt-1 max-w-md">
           Retrieving complete card collation, live singles valuation, and card hierarchy.
+        </p>
+      </div>
+    );
+  }
+
+  if (!hasAuthoritativeDecklist) {
+    return (
+      <div className={`bg-white rounded-2xl border border-slate-200 p-8 text-center ${className}`}>
+        <Package className="w-8 h-8 mx-auto mb-3 text-slate-400" />
+        <h4 className="text-base font-bold text-slate-800">Decklist unavailable</h4>
+        <p className="mt-1 text-xs text-slate-500">
+          This product has no authoritative preconstructed deck record, so card counts and singles value are not estimated.
         </p>
       </div>
     );

@@ -462,7 +462,7 @@ def export_all():
                         roi = round((profit / box_price) * 100, 2) if box_price > 0 else 0.0
                         a['profitUsd'] = profit
                         a['roiPct'] = roi
-                        a['vendor'] = 'tcgplayer'
+                        a['vendor'] = 'all_cheapest'
                         a['priceMode'] = 'direct'
                         valid_arbs.append(a)
                 continue
@@ -530,7 +530,7 @@ def export_all():
             a['totalEvMax'] = box_ev_max
             a['profitUsd'] = profit_usd
             a['roiPct'] = roi_pct
-            a['vendor'] = 'tcgplayer'
+            a['vendor'] = 'all_cheapest'
             a['priceMode'] = 'direct'
 
             # Attach pre-computed quantiles if available

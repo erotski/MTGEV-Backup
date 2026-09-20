@@ -1,0 +1,60 @@
+name: Weekly Published Snapshot Validation
+
+on:
+  schedule:
+    # Sunday at 05:30 UTC, after the daily data publication window.
+    - cron: '30 5 * * 0'
+  workflow_dispatch:
+
+jobs:
+  validate-published-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout published data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data-sync
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run focused contract tests
+        working-directory: backend
+        run: |
+          set -e
+          python -m unittest \
+            test_pricing_validator \
+            test_ev_statistics \
+            test_pipeline_bucket_contract \
+            test_jumpstart_collation \
+            test_jumpstart_validation_report \
+            test_product_chase_cards \
+            test_product_metrics_contract \
+            test_daily_update_contract \
+            test_frontend_snapshot
+
+      - name: Validate all frontend snapshot records
+        run: |
+          set -e
+          python backend/validate_frontend_snapshot.py
+
+      - name: Validate every published set and product
+        run: |
+          set -e
+          python -c "import sys; sys.path.insert(0, 'backend'); import daily_update; checks = (daily_update.validate_output_bundle(), daily_update.validate_output_semantics(), daily_update.validate_telemetry_outputs()); print(checks); assert all(ok for ok, _ in checks), checks"
+
+      - name: Run pricing and EV audit against published data
+        run: |
+          set -e
+          python backend/validate_pricing_and_ev.py
+
+      - name: Verify audit report is internally consistent
+        run: |
+          set -e
+          python -c "import json; from pathlib import Path; p=json.loads(Path('public/data/pricing_validator_diagnostics.json').read_text(encoding='utf-8')); assert p['boosterSkewCount'] == len(p['boosterSkewIssues']); assert p['evMismatchCount'] == len(p['evMismatchIssues']); assert p['roiAnomalyCount'] == len(p['roiAnomalyIssues']); print({'boosterSkew': p['boosterSkewCount'], 'evMismatch': p['evMismatchCount'], 'roiAnomaly': p['roiAnomalyCount']})"

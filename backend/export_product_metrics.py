@@ -11,11 +11,9 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "public" / "data"
 
 
-def export_product_metrics() -> None:
-    with (DATA_DIR / "sealed_products.json").open("r", encoding="utf-8") as handle:
-        products = json.load(handle)
-
+def build_product_metrics(products) -> list[dict]:
     metrics = []
+    seen_keys = set()
     for product in products:
         product_id = product.get("id") or product.get("uuid") or product.get("productUuid")
         vendor_stats = product.get("metricsByVendor") or {}
@@ -23,9 +21,15 @@ def export_product_metrics() -> None:
             continue
 
         market_price = float(product.get("marketPrice") or 0)
+        if market_price <= 0:
+            continue
         for vendor, stats in vendor_stats.items():
             if not isinstance(stats, dict):
                 continue
+            metric_key = (product_id, vendor, "direct")
+            if metric_key in seen_keys:
+                raise ValueError(f"Duplicate product metric identity: {metric_key}")
+            seen_keys.add(metric_key)
             total_avg = float(stats.get("mean") or 0)
             total_mid90 = float(stats.get("median") or 0)
             total_min = float(stats.get("min") or 0)
@@ -81,6 +85,14 @@ def export_product_metrics() -> None:
                 },
             })
 
+    return metrics
+
+
+def export_product_metrics() -> None:
+    with (DATA_DIR / "sealed_products.json").open("r", encoding="utf-8") as handle:
+        products = json.load(handle)
+
+    metrics = build_product_metrics(products)
     with (DATA_DIR / "product_metrics.json").open("w", encoding="utf-8") as handle:
         json.dump(metrics, handle, indent=2, allow_nan=False)
     print(f"[SUCCESS] Exported {len(metrics)} complete-product vendor metrics")

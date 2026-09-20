@@ -3,7 +3,7 @@ import { BoosterEVRecord, PriceMode, SetOption, Vendor, ChildSetInfo, Preconstru
 import { dataService } from '../services/dataService';
 import { normalizeVendor, normalizeBoosterCode } from '../utils/vendorUtils';
 import { resolveRecursiveProductAudit } from '../utils/productUtils';
-import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildCommanderSetCodes, getChildSets, getScryfallNode } from '../utils/setHierarchyUtils';
+import { resolveToMainSetCode, getAllRelatedSetCodes, isCommanderSubSet, getChildSets, isRootSetCode, buildSetTree, setTreeNodeMatchesQuery, SetTreeNode } from '../utils/setHierarchyUtils';
 import { SetSymbolIcon } from './SetSymbolIcon';
 import { 
   ShieldCheck, 
@@ -24,6 +24,7 @@ import {
   Compass,
   Search,
   ChevronDown,
+  ChevronRight,
   X
 } from 'lucide-react';
 import { PackDistributionCurve } from './PackDistributionCurve';
@@ -80,6 +81,16 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
   // Search & sorting state for MTG Sets dropdown
   const [setSearchQuery, setSetSearchQuery] = useState<string>('');
   const [isSetDropdownOpen, setIsSetDropdownOpen] = useState<boolean>(false);
+  const [expandedSetCodes, setExpandedSetCodes] = useState<Set<string>>(new Set());
+
+  const toggleSetExpanded = (code: string) => {
+    setExpandedSetCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
 
   // Sets sorted by release date descending (newest first)
   const sortedSets = useMemo(() => {
@@ -91,26 +102,31 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     });
   }, [availableSets]);
 
-  const filteredSets = useMemo(() => {
-    if (!setSearchQuery.trim()) {
-      // By default, only show primary/main sets (exclude child commander sets that belong under parent sets)
-      return sortedSets.filter((s) => !s.isCommanderSubSet && !isCommanderSubSet(s.code));
-    }
-    const q = setSearchQuery.toLowerCase().trim();
-    return sortedSets.filter((s) => {
-      const setName = String(s.name || '');
-      const setCode = String(s.code || '');
-      const matchesSelf =
-        setName.toLowerCase().includes(q) ||
-        setCode.toLowerCase().includes(q) ||
-        String(s.block || '').toLowerCase().includes(q);
-
-      // Also match if a child commander set code or name matches query
-      const childCodes = getChildCommanderSetCodes(setCode);
-      const matchesChild = childCodes.some((cc) => String(cc || '').toLowerCase().includes(q));
-      return matchesSelf || matchesChild;
+  // Only top-level (root) sets appear in the dropdown by default. Sub-sets (Commander decks,
+  // Jumpstart, tokens, promos, art series, etc.) are nested underneath their root as an
+  // expandable multi-tier tree instead of being listed as their own top-level rows.
+  const rootSetTrees = useMemo(() => {
+    const roots = sortedSets.filter((s) => isRootSetCode(s.code) && !isCommanderSubSet(s.code));
+    return roots.map((s) => {
+      const tree = buildSetTree(s.code);
+      if (tree) return tree;
+      // Fallback for sets missing from the Scryfall hierarchy cache: a leaf node, single tier.
+      const fallback: SetTreeNode = {
+        code: s.code.toUpperCase(),
+        name: s.name,
+        cardCount: s.regularCardCount || s.totalSetSize || 0,
+        releaseDate: s.releaseDate,
+        children: [],
+      };
+      return fallback;
     });
-  }, [sortedSets, setSearchQuery]);
+  }, [sortedSets]);
+
+  const filteredSetTrees = useMemo(() => {
+    const q = setSearchQuery.toLowerCase().trim();
+    if (!q) return rootSetTrees;
+    return rootSetTrees.filter((tree) => setTreeNodeMatchesQuery(tree, q));
+  }, [rootSetTrees, setSearchQuery]);
 
   // Group by boosterName and keep only the requested vendor/mode. Missing records must remain
   // unavailable instead of silently switching to an aggregate or unrelated vendor.
@@ -800,6 +816,80 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
     return list;
   }, [currentSet, selectedSetCode]);
 
+  // Recursively renders one tier of the set hierarchy tree in the search dropdown.
+  // Root sets are collapsed by default; each tier reveals its own sub-sets via a chevron toggle.
+  // While searching, matching branches auto-expand so the result path is visible (e.g. FDN > J25 > FJ25).
+  const renderSetTreeRow = (node: SetTreeNode, depth: number): React.ReactNode => {
+    const q = setSearchQuery.toLowerCase().trim();
+    const isSearching = q.length > 0;
+    const selfMatches = `${node.name} ${node.code}`.toLowerCase().includes(q);
+    const hasMatchingDescendant = node.children.some((c) => setTreeNodeMatchesQuery(c, q));
+
+    if (isSearching && !selfMatches && !hasMatchingDescendant) return null;
+
+    const isSelected = node.code === selectedSetCode.toUpperCase();
+    const hasChildren = node.children.length > 0;
+    const isExpanded = isSearching ? hasMatchingDescendant : expandedSetCodes.has(node.code);
+
+    return (
+      <div key={node.code}>
+        <div
+          onClick={() => {
+            onSelectSetCode(resolveToMainSetCode(node.code));
+            setIsSetDropdownOpen(false);
+            setSetSearchQuery('');
+          }}
+          style={{ paddingLeft: `${depth * 18 + 12}px` }}
+          className={`pr-3 py-2.5 flex items-center justify-between gap-2.5 cursor-pointer text-xs transition ${
+            isSelected ? 'bg-indigo-50/90 text-indigo-950 font-bold' : 'hover:bg-slate-50 text-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSetExpanded(node.code);
+                }}
+                className="shrink-0 p-0.5 text-slate-400 hover:text-indigo-600 transition"
+                title={isExpanded ? 'Collapse sub-sets' : 'Expand sub-sets'}
+              >
+                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+              </button>
+            ) : (
+              <span className="w-3.5 h-3.5 shrink-0" />
+            )}
+            <div className="w-6 h-6 shrink-0 flex items-center justify-center bg-white rounded border border-slate-200/80 p-0.5">
+              <SetSymbolIcon setCode={node.code} iconSvgUri={node.iconSvgUri} size="sm" className="w-full h-full object-contain" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate flex items-center gap-1.5">
+                <span>{node.name}</span>
+                <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  {node.code}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>{node.releaseDate || 'N/A'}</span>
+                {node.setType && <span className="capitalize">• {node.setType}</span>}
+                {hasChildren && (
+                  <span className="text-indigo-600 font-medium">
+                    • {node.children.length} sub-set{node.children.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          {isSelected && <span className="text-indigo-600 text-xs shrink-0 font-bold">✓</span>}
+        </div>
+        {hasChildren && isExpanded && (
+          <div>{node.children.map((child) => renderSetTreeRow(child, depth + 1))}</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div id="booster-explorer-container" className="space-y-6">
       {/* Set Selector Header Bar & Generic Set Information */}
@@ -905,64 +995,14 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
                     )}
                   </div>
 
-                  {/* Scrollable Set Options List */}
+                  {/* Scrollable Set Options Tree (root sets, expandable into nested sub-set tiers) */}
                   <div className="overflow-y-auto divide-y divide-slate-100 max-h-72">
-                    {filteredSets.length === 0 ? (
+                    {filteredSetTrees.length === 0 ? (
                       <div className="p-4 text-center text-xs text-slate-400">
                         No sets matching &ldquo;{setSearchQuery}&rdquo;
                       </div>
                     ) : (
-                      filteredSets.map((s) => {
-                        const isSelected = s.code.toUpperCase() === selectedSetCode.toUpperCase();
-                        const childCmds = getChildCommanderSetCodes(s.code);
-                        const childCount = s.childSets ? s.childSets.length : getChildSets(s.code).length;
-                        return (
-                          <div
-                            key={s.code}
-                            onClick={() => {
-                              onSelectSetCode(resolveToMainSetCode(s.code));
-                              setIsSetDropdownOpen(false);
-                              setSetSearchQuery('');
-                            }}
-                            className={`px-3 py-2.5 flex items-center justify-between gap-2.5 cursor-pointer text-xs transition ${
-                              isSelected
-                                ? 'bg-indigo-50/90 text-indigo-950 font-bold'
-                                : 'hover:bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-6 h-6 shrink-0 flex items-center justify-center bg-white rounded border border-slate-200/80 p-0.5">
-                                <SetSymbolIcon setCode={s.code} size="sm" className="w-full h-full object-contain" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="truncate flex items-center gap-1.5">
-                                  <span>{s.name}</span>
-                                  <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                    {s.code}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                  <span>{s.releaseDate || 'N/A'}</span>
-                                  {s.type && <span className="capitalize">• {s.type}</span>}
-                                  {childCount > 0 && !s.isCommanderSubSet && !s.parentCode && (
-                                    <span className="text-indigo-600 font-medium">
-                                      • {childCount} linked sub-sets
-                                    </span>
-                                  )}
-                                  {(s.isCommanderSubSet || s.parentCode) && (
-                                    <span className="text-purple-600 font-medium">
-                                      • Sub-set ↳ {s.parentCode || resolveToMainSetCode(s.code)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <span className="text-indigo-600 text-xs shrink-0 font-bold">✓</span>
-                            )}
-                          </div>
-                        );
-                      })
+                      filteredSetTrees.map((tree) => renderSetTreeRow(tree, 0))
                     )}
                   </div>
                 </div>
@@ -1057,7 +1097,7 @@ export const BoosterDetailExplorer: React.FC<BoosterDetailExplorerProps> = ({
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                  Child & Associated Sub-Sets
+                  Associated Sub-Set(s)
                 </span>
                 <span className="text-[10px] font-bold font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded border border-slate-200">
                   {childSetsList.length} linked sets

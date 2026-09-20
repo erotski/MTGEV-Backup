@@ -14,7 +14,7 @@ MTGEV compares sealed MTG product pricing against the expected value of the card
 
 - `backend/` — Python pipeline for pricing, EV simulation, validation, and export
 - `src/` — React frontend for product exploration and controls
-- `public/data/` — generated snapshot data used by the app at runtime
+- `public/data/` — local/published runtime snapshots plus the small set of pipeline inputs
 - `scripts/` — one-off ingestion and maintenance scripts
 - `docs/` — current operational and architecture docs
 
@@ -33,6 +33,8 @@ npm run dev
 - [docs/architecture.md](docs/architecture.md) — structural overview
 - [docs/operations.md](docs/operations.md) — runbook and command guide
 
-## Important rule
+## Data workflow
 
-The active app data is generated and published under `public/data/`; source code and documentation should stay separate from generated snapshots.
+The app reads runtime snapshots from `public/data/`. Generated snapshots are not tracked on `main`; the daily pipeline builds and validates them, then publishes the complete bundle to the `data-sync` branch used for production deployment. `main` tracks only the pipeline inputs `precon_decks.json`, `booster_slots.json`, and `product_overrides.json`.
+
+Do not hand-edit generated snapshots. Run the pipeline or update its producers instead. A fresh local checkout of `main` requires a generated data bundle for the frontend to show live data.

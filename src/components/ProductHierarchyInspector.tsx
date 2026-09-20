@@ -360,23 +360,11 @@ export const ProductHierarchyInspector: React.FC<ProductHierarchyInspectorProps>
   // Helper to resolve pack details and individual pack EV
   const resolvePack = (pk: any, parentSetCode: string) => {
     const pkSet = (pk.set || parentSetCode || '').toUpperCase();
-    const pkCode = (pk.code || 'play').toLowerCase();
+    const pkCode = (pk.code || '').toLowerCase();
 
     // 1. Pack EV from boosterEvMap with vendor and priceMode resolution
     const normVendor = normalizeVendor(vendor);
-    const setBoosters = boosterEvMap[pkSet] || [];
-    let matchedBooster = findBoosterEv(boosterEvMap, pkSet, pkCode, priceMode, normVendor);
-
-    if (!matchedBooster) {
-      matchedBooster = setBoosters.find(
-        (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
-      );
-    }
-    if (!matchedBooster) {
-      matchedBooster = setBoosters.find(
-        (b) => (b.boosterName || '').toLowerCase() === pkCode
-      );
-    }
+    const matchedBooster = findBoosterEv(boosterEvMap, pkSet, pkCode, priceMode, normVendor);
 
     let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
     let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;

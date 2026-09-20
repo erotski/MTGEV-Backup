@@ -17,15 +17,7 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
   const isMultiCard = rawCards.length > 1;
 
   // Normalize all cards
-  const cards = rawCards.length > 0 ? rawCards : [
-    {
-      name: product.displayName.replace(/Secret Lair Drop|Secret Lair Promo/gi, '').trim(),
-      foil: true,
-      finishes: ['foil'],
-      price: 0,
-      prices: {},
-    }
-  ];
+  const cards = rawCards;
 
   const primaryCard = cards[0];
 
@@ -33,17 +25,8 @@ export const SingleCardBreakdownViewer: React.FC<SingleCardBreakdownViewerProps>
   const getCardPrice = (c: any, vend: string) => {
     if (!c) return 0;
     const prices = c.prices || {};
-    const tcg = prices.tcgplayer ?? (c.price ? Number(c.price) : null);
-    const ck = prices.cardkingdom ?? null;
-    const cm = prices.cardmarket ?? null;
-    const avg = prices.all_average ?? prices.all_cheapest ?? prices.all ?? (tcg ?? 0);
-
-    let price = avg;
-    if (vend === 'cardkingdom') price = ck ?? avg;
-    else if (vend === 'cardmarket') price = cm ?? avg;
-    else price = tcg ?? avg;
-
-    return Number(price || 0);
+    const selectedVendor = vend === 'all' ? 'all_cheapest' : vend;
+    return Number(prices[selectedVendor] || 0);
   };
 
   // Compute total singles value across all cards

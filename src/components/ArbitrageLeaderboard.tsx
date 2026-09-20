@@ -5,7 +5,6 @@ import { SetSymbolIcon } from './SetSymbolIcon';
 import { ProductPackagingImage } from './ProductPackagingImage';
 import { ProductPackagingType } from '../ecommerceBoosterData';
 import { getEvScoreBadgeClass, getEvScoreDarkBadgeClass } from '../utils/evScore';
-import { findMatchingPreconDeck } from '../utils/productUtils';
 import {
   TrendingUp,
   TrendingDown,
@@ -64,8 +63,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
   const [sortBy, setSortBy] = useState<'roi' | 'profit' | 'boxPrice' | 'boxEv' | 'evScore' | 'packs' | 'cards'>('roi');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [highlightTab, setHighlightTab] = useState<'best' | 'worst'>('best');
-  const [preconDecks, setPreconDecks] = useState<Record<string, any>>({});
-  const [singleCardPrices, setSingleCardPrices] = useState<any>({ byUuid: {}, byName: {}, byNameSet: {} });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
   const [pipelineRunId, setPipelineRunId] = useState<string>('unavailable');
@@ -73,19 +70,6 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    // Defer loading heavy auxiliary precon & single card indexes until main thread is idle
-    const timer = setTimeout(() => {
-      Promise.all([
-        dataService.getPreconDecks(),
-        dataService.getSingleCardPrices(),
-      ]).then(([pd, sc]) => {
-        if (isMounted) {
-          if (pd) setPreconDecks(pd);
-          if (sc) setSingleCardPrices(sc);
-        }
-      }).catch(() => {});
-    }, 300);
-
     // Same provenance gateway as dataService.getProductMetrics(), surfaced once for the whole table
     dataService.getLatestPipelineRun().then((run) => {
       if (!isMounted || !run) return;
@@ -95,97 +79,10 @@ export const ArbitrageLeaderboard: React.FC<ArbitrageLeaderboardProps> = ({
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
   }, []);
 
-  const recordByUuid = useMemo(() => new Map(records.map((r) => [r.productUuid, r])), [records]);
-  const recordByUuidObj = useMemo(() => {
-    const obj: Record<string, any> = {};
-    records.forEach((r) => {
-      if (r.productUuid) obj[r.productUuid] = r;
-      if (r.id) obj[r.id] = r;
-    });
-    return obj;
-  }, [records]);
-
-  const getCardCount = (box: BoxArbitrageRecord, visited = new Set<string>()): number => {
-    const uid = box.productUuid || '';
-    if (uid) {
-      if (visited.has(uid)) return 0;
-      visited.add(uid);
-    }
-    const contents = box.contents;
-    const hasStructuredContents = Boolean(
-      contents &&
-      (
-        (contents.pack && contents.pack.length > 0) ||
-        (contents.sealed && contents.sealed.length > 0) ||
-        (contents.card && contents.card.length > 0) ||
-        (contents.deck && contents.deck.length > 0) ||
-        (contents.variable && contents.variable.length > 0)
-      )
-    );
-
-    if (hasStructuredContents && contents) {
-      let sum = 0;
-      if (contents.pack) {
-        contents.pack.forEach((pk: any) => {
-          const count = pk.count || 1;
-          const code = (pk.code || '').toLowerCase();
-          const cardsPerPack = (code.includes('sample') || code.includes('prerelease')) ? 2 : (code.includes('jumpstart') ? 20 : (code.includes('theme') ? 35 : 15));
-          sum += count * cardsPerPack;
-        });
-      }
-      if (contents.card) {
-        sum += contents.card.reduce((cAcc: number, c: any) => cAcc + (c.count || 1), 0);
-      }
-      if (contents.deck) {
-        if (typeof box.cardCount === 'number' && box.cardCount > 0) {
-          sum += box.cardCount;
-        } else {
-          contents.deck.forEach((dk: any) => {
-            const matchedDeck = preconDecks ? findMatchingPreconDeck(preconDecks, dk.name, dk.set || (box as any).setCode, (box as any).id || (box as any).uuid) : undefined;
-            const isCmd = Boolean(
-              matchedDeck?.isCommander ||
-              matchedDeck?.format === 'commander' ||
-              Boolean(matchedDeck?.commander && matchedDeck.commander.name && matchedDeck.commander.name.toLowerCase().trim() !== 'face commander') ||
-              (box.category || '').toLowerCase() === 'commander_deck' ||
-              (box.boxName || '').toLowerCase().includes('commander') ||
-              (dk.name || '').toLowerCase().includes('commander')
-            );
-            const dCount = matchedDeck?.totalCards || matchedDeck?.cardCount || (matchedDeck?.cards ? matchedDeck.cards.reduce((s: number, c: any) => s + (c.count || 1), 0) : 0) || (isCmd ? 100 : 60);
-            sum += dCount;
-          });
-        }
-      }
-      if (contents.sealed) {
-        contents.sealed.forEach((s: any) => {
-          const count = s.count || 1;
-          const child = s.uuid ? recordByUuid.get(s.uuid) : null;
-          if (child) {
-            sum += count * getCardCount(child, new Set(visited));
-          } else {
-            const sName = (s.name || '').toLowerCase();
-            const childCards = sName.includes('sample') ? 2 : (sName.includes('booster box') ? 36 * 15 : (sName.includes('deck') ? 100 : 15));
-            sum += count * childCards;
-          }
-        });
-      }
-      if (contents.variable) {
-        sum += contents.variable.length;
-      }
-      if (sum > 0) return sum;
-    }
-
-    if (typeof box.cardCount === 'number' && box.cardCount > 0) return box.cardCount;
-    const cat = (box.category || '').toLowerCase();
-    if (cat === 'commander_deck' || box.boxName.toLowerCase().includes('commander')) return 100;
-    if (box.packCount > 0) {
-      return box.packCount * 15;
-    }
-    return 0;
-  };
+  const getCardCount = (box: BoxArbitrageRecord): number => box.cardCount ?? 0;
 
   // Products Overview displays backend-owned complete-product metrics only.
   const adjustedRecords = useMemo(() => {

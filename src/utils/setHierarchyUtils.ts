@@ -308,3 +308,81 @@ export function getAllRelatedSetCodes(setCode?: string | null): string[] {
   });
   return Array.from(new Set(related));
 }
+
+/**
+ * Returns true if the given set code is a top-level root set (no parent), as opposed
+ * to a sub-set/child set nested under another set's hierarchy.
+ */
+export function isRootSetCode(setCode?: string | null): boolean {
+  if (!setCode) return false;
+  const upper = setCode.toUpperCase();
+
+  const node = SCRYFALL_HIERARCHY_CACHE[upper];
+  if (node) {
+    return node.isRoot && !node.parentCode;
+  }
+
+  return !FALLBACK_PARENT_MAP[upper];
+}
+
+export interface SetTreeNode {
+  code: string;
+  name: string;
+  setType?: string;
+  cardCount: number;
+  releaseDate?: string;
+  iconSvgUri?: string;
+  children: SetTreeNode[];
+}
+
+/**
+ * Builds a fully nested tree (arbitrary depth) of a root set and all its descendants,
+ * e.g. FDN -> J25 -> FJ25, FDN -> FDC -> TFDC, recursing through the Scryfall hierarchy cache.
+ */
+export function buildSetTree(rootSetCode: string): SetTreeNode | null {
+  const upper = rootSetCode.toUpperCase();
+  const node = SCRYFALL_HIERARCHY_CACHE[upper];
+  if (!node) return null;
+
+  const buildChildren = (code: string, visited: Set<string>): SetTreeNode[] => {
+    const parentNode = SCRYFALL_HIERARCHY_CACHE[code];
+    if (!parentNode || !Array.isArray(parentNode.childSets)) return [];
+    return parentNode.childSets
+      .filter((c) => !visited.has(c.code.toUpperCase()))
+      .map((c) => {
+        const childCode = c.code.toUpperCase();
+        const nextVisited = new Set(visited);
+        nextVisited.add(childCode);
+        return {
+          code: childCode,
+          name: c.name,
+          setType: c.setType,
+          cardCount: c.cardCount,
+          releaseDate: SCRYFALL_HIERARCHY_CACHE[childCode]?.releaseDate,
+          iconSvgUri: c.iconSvgUri,
+          children: buildChildren(childCode, nextVisited),
+        };
+      });
+  };
+
+  return {
+    code: node.code.toUpperCase(),
+    name: node.name,
+    setType: node.setType,
+    cardCount: node.cardCount,
+    releaseDate: node.releaseDate,
+    iconSvgUri: node.iconSvgUri,
+    children: buildChildren(upper, new Set([upper])),
+  };
+}
+
+/**
+ * Returns true if the query matches this node's own name/code, or any descendant's.
+ */
+export function setTreeNodeMatchesQuery(node: SetTreeNode, query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const haystack = `${node.name} ${node.code}`.toLowerCase();
+  if (haystack.includes(q)) return true;
+  return node.children.some((c) => setTreeNodeMatchesQuery(c, q));
+}

@@ -144,36 +144,11 @@ export const ProductBreakdownModal: React.FC<ProductBreakdownModalProps> = ({
     return internalPreconDecks || dataService.getPreconDecksSync() || {};
   }, [preconDecks, internalPreconDecks]);
 
-  // Enrich product with real non-zero marketPrice and estimatedEv if missing
+  // Preserve the selected product's published values; missing values remain unavailable.
   const effectiveProduct = useMemo(() => {
     if (!product) return null;
-    const pId = product.id || (product as any).uuid || '';
-    const arb = effectiveArbitrageMap[pId] || Object.values(effectiveArbitrageMap).find((a: any) =>
-      (a.productUuid && a.productUuid === pId) ||
-      ((a.boxName || a.displayName || '').toLowerCase().trim() === (product.displayName || '').toLowerCase().trim())
-    );
-    const mapped = pId
-      ? effectiveProductMap instanceof Map
-        ? effectiveProductMap.get(pId)
-        : (effectiveProductMap as any)?.[pId]
-      : null;
-
-    let resMarket = product.marketPrice;
-    if (!resMarket || resMarket <= 0) {
-      resMarket = arb?.marketPrice || mapped?.marketPrice || (product as any).price || 0;
-    }
-
-    let resEv = product.estimatedEv;
-    if (!resEv || resEv <= 0) {
-      resEv = arb?.totalEvAvg || mapped?.estimatedEv || 0;
-    }
-
-    return {
-      ...product,
-      marketPrice: resMarket,
-      estimatedEv: resEv,
-    };
-  }, [product, effectiveArbitrageMap, effectiveProductMap]);
+    return product;
+  }, [product]);
 
   const displayProduct = effectiveProduct || product;
 

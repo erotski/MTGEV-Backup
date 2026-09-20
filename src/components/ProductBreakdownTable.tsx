@@ -333,20 +333,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   const resolvePack = useCallback(
     (pk: any, parentSetCode: string) => {
       const pkSet = (pk.set || parentSetCode || '').toUpperCase();
-      const pkCode = (pk.code || 'play').toLowerCase();
+      const pkCode = (pk.code || '').toLowerCase();
 
       const normVendor = normalizeVendor(vendor);
-      const setBoosters = effectiveBoosterEvMap[pkSet] || [];
-      let matchedBooster = findBoosterEv(effectiveBoosterEvMap, pkSet, pkCode, priceMode, normVendor);
-
-      if (!matchedBooster) {
-        matchedBooster = setBoosters.find(
-          (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
-        );
-      }
-      if (!matchedBooster) {
-        matchedBooster = setBoosters.find((b) => (b.boosterName || '').toLowerCase() === pkCode);
-      }
+      const matchedBooster = findBoosterEv(effectiveBoosterEvMap, pkSet, pkCode, priceMode, normVendor);
 
       let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
       let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
@@ -550,13 +540,10 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     (a.productUuid && a.productUuid === uid) ||
     (lower(a.boxName || a.displayName).trim() === lower(product.displayName || product.name).trim())
   );
-  const rawMarketPrice = product.marketPrice || (arb ? arb.marketPrice : 0) || product.price || 0;
-  // Canonical product_metrics.json record (composite evaluator) must win over the
-  // recursive structural audit and the arbitrage snapshot, which can disagree with it
-  // for the same product/vendor/mode (see PROJECT_REVIEW.md Section 11, "Product
-  // Contents vs EV Mismatches"). The recursive audit total is a display-only fallback.
+  const rawMarketPrice = product.marketPrice || product.price || 0;
+  // Complete-product EV is backend-owned. The recursive audit is structural display data only.
   const canonicalContentsEv = computeProductContentsEv(product);
-  const rawTotalEv = canonicalContentsEv > 0 ? canonicalContentsEv : (arb ? arb.totalEvAvg : (audit.totalEv > 0 ? audit.totalEv : 0));
+  const rawTotalEv = canonicalContentsEv;
 
   const isDark = theme === 'dark';
 
@@ -569,9 +556,9 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
   const totalOtherQty = audit.otherItems.reduce((acc, o) => acc + o.count, 0);
   const totalQty = totalPackQty + totalCardQty + totalSealedQty + totalDeckQty + totalVariableQty + totalOtherQty;
 
-  const totalPackCards = audit.packItems.reduce((acc, p) => acc + (p.totalCards || (p.count * (p.cardsPerPack || 15))), 0);
+  const totalPackCards = audit.packItems.reduce((acc, p) => acc + p.totalCards, 0);
   const totalCardCards = audit.cardItems.reduce((acc, c) => acc + c.count, 0);
-  const totalSealedCards = audit.sealedItems.reduce((acc, s) => acc + (s.totalCards || (s.count * 15)), 0);
+  const totalSealedCards = audit.sealedItems.reduce((acc, s) => acc + s.totalCards, 0);
   const totalDeckCards = audit.deckItems.reduce((acc, d) => acc + (d.totalCards || (d.count * (d.cardCount || 0))), 0);
   const totalVariableCards = audit.variableItems.reduce((acc, v) => acc + (v.configs[0]?.items?.reduce((s, it) => s + (it.count || 1), 0) || 1), 0);
   const calculatedTotalCards = audit.totalCards > 0 
@@ -586,8 +573,8 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
     audit.variableItems.reduce((acc, v) => acc + v.slotEv, 0)
   ).toFixed(2));
 
-  const totalEv = rawTotalEv > 0 ? rawTotalEv : subtotalEvSum;
-  const displayedTotalEv = totalEv > 0 ? totalEv : subtotalEvSum;
+  const totalEv = rawTotalEv;
+  const displayedTotalEv = totalEv;
   const marketPrice = rawMarketPrice > 0 ? rawMarketPrice : 0;
   const netSpread = displayedTotalEv > 0 && marketPrice > 0 ? Number((displayedTotalEv - marketPrice).toFixed(2)) : 0;
   const roiPct = marketPrice > 0 ? Number(((netSpread / marketPrice) * 100).toFixed(1)) : 0;
@@ -665,7 +652,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         marketPrice: matchedCatalogProd?.marketPrice || p.unitEv || 0,
         estimatedEv: p.unitEv || matchedCatalogProd?.estimatedEv || 0,
         packsCount: 1,
-        cardCount: p.cardsPerPack || getCardsPerPack(packCode, 'booster_pack', packCode) || 15,
+        cardCount: p.cardsPerPack || getCardsPerPack(packCode, 'booster_pack', packCode),
         rawCategory: 'booster_pack',
         rawSubtype: packCode,
         rawContents: {
@@ -673,7 +660,7 @@ export const ProductBreakdownTable: React.FC<ProductBreakdownTableProps> = ({
         },
         releaseDate: matchedCatalogProd?.releaseDate || product?.releaseDate || '',
         block: matchedCatalogProd?.block || product?.block || '',
-        specialFeatures: ['Authentic Booster Collation', `${p.cardsPerPack || 15} Cards per Pack`],
+        specialFeatures: ['Authentic Booster Collation'],
       };
 
       setInspectedProduct(inspected);

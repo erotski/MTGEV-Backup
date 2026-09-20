@@ -88,6 +88,7 @@ SCRIPTS = [
     ("sync_live_sealed_prices.py",       "Sync live TCGplayer sealed product prices"),
     ("populate_booster_ev_to_db.py",     "Build price data from synced card data"),
     ("export_app_data.py",               "Export MySQL data to React JSON format"),
+    ("export_set_hierarchy.py",           "Rebuild Scryfall-style set/sub-set hierarchy tree"),
     ("load_deck_tables.py",               "Load preconstructed decks into MySQL"),
     ("export_product_chase_cards.py", "Export vendor-aware product TOP 5 chase cards"),
     ("composite_evaluator.py",           "Evaluate composite products & quantiles (10,000 MC samples)"),

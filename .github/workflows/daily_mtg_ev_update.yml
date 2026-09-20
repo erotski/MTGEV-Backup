@@ -188,7 +188,8 @@ jobs:
             public/data/snapshot_manifest.json \
             public/data/precon_decks.json \
             public/data/pipeline_execution_logs.json \
-            public/data/latest_pipeline_run.json
+            public/data/latest_pipeline_run.json \
+            public/data/scryfall_set_hierarchy.json
           if git diff --staged --quiet; then
             echo "No data changes to commit."
           else

@@ -145,7 +145,7 @@ export function getCardsPerPack(code?: string, category?: string, subtype?: stri
   if (c.includes('box-topper') || c.includes('topper')) {
     return 1;
   }
-  return 15; // Standard default MTG booster pack
+  return 0;
 }
 
 /**
@@ -159,20 +159,10 @@ export function resolveBoosterPackEv(
   priceMode: PriceMode | string = 'direct'
 ) {
   const pkSet = (pk.set || parentSetCode || '').toUpperCase();
-  const pkCode = (pk.code || 'play').toLowerCase();
+  const pkCode = (pk.code || '').toLowerCase();
 
   const normVendor = normalizeVendor(vendor);
-  const setBoosters = boosterEvMap[pkSet] || [];
-  let matchedBooster = findBoosterEv(boosterEvMap, pkSet, pkCode, priceMode, normVendor);
-
-  if (!matchedBooster) {
-    matchedBooster = setBoosters.find(
-      (b) => (b.boosterName || '').toLowerCase() === pkCode && (b.priceMode === priceMode || b.priceMode === 'direct')
-    );
-  }
-  if (!matchedBooster) {
-    matchedBooster = setBoosters.find((b) => (b.boosterName || '').toLowerCase() === pkCode);
-  }
+  const matchedBooster = findBoosterEv(boosterEvMap, pkSet, pkCode, priceMode, normVendor);
 
   let unitEvAvg = matchedBooster ? matchedBooster.evAverage : 0;
   let unitEvMid90 = matchedBooster ? matchedBooster.evMid90 : unitEvAvg;
@@ -826,11 +816,7 @@ export function resolveRecursiveProductAudit(
 
       const deckCardCount = matchedDeckCardsCount > 0
         ? matchedDeckCardsCount
-        : fixedConfigurationCardCount > 0
-          ? fixedConfigurationCardCount
-        : (product.cardCount && prodContents.deck && prodContents.deck.length > 0
-            ? Math.max(1, Math.floor(product.cardCount / prodContents.deck.length))
-            : (isCommander ? 100 : (product.subtype === 'secret_lair' ? 5 : 60)));
+        : fixedConfigurationCardCount;
       const deckCardsTotal = count * deckCardCount;
 
       const isCollectorDeck = Boolean(
@@ -923,17 +909,6 @@ export function resolveRecursiveProductAudit(
           cards.reduce((sum: number, c: any) => sum + (c.totalPrice || c.price || 0), 0).toFixed(2)
         );
         if (calculatedCardSum > 0) singlesEv = calculatedCardSum;
-      }
-
-      // Fallback singlesEv if still 0
-      if (singlesEv <= 0) {
-        if (matchedDeck?.totalSinglesEv > 0) singlesEv = matchedDeck.totalSinglesEv;
-        else if (matchedDeck?.singlesEv > 0) singlesEv = matchedDeck.singlesEv;
-        else if (matchedDeck?.estimatedEv > 0) singlesEv = matchedDeck.estimatedEv;
-        else if (product.estimatedEv > 0) {
-          const hasSample = prodContents.sealed && prodContents.sealed.some((s: any) => (s.name || '').toLowerCase().includes('sample'));
-          singlesEv = Math.max(0, Number((product.estimatedEv - (hasSample ? 9.73 : 0)).toFixed(2)));
-        }
       }
 
       const subtotalSinglesEv = Number((count * singlesEv).toFixed(2));
@@ -1109,107 +1084,29 @@ export function resolveRecursiveProductAudit(
           raw: sub,
         });
       } else {
-        // Unmapped sealed subitem (e.g. unknown UUID). Verified 2026-09-18: zero
-        // entries in public/data/sealed_products.json currently reach this branch
-        // (every contents.sealed[].uuid resolves via lookupProduct above) — this is
-        // a defensive fallback for a future data gap, not an actively exercised path.
-        // Surface it if it ever does fire, since it guesses booster identity from
-        // display name rather than authoritative product/category data.
-        const sName = (sub.name || '').toLowerCase();
         if (typeof console !== 'undefined') {
-          console.warn(`[productUtils] Unmapped sealed sub-item "${sub.name}" (uuid=${sub.uuid || 'none'}) — inferring booster identity from name.`);
+          console.warn(`[productUtils] Unmapped sealed sub-item "${sub.name}" (uuid=${sub.uuid || 'none'}).`);
         }
-
-        // CHECK IF IT'S A BOOSTER PACK
-        const bCodeMatch = sName.match(/(play|collector|draft|set|theme|vip|box-topper|promo)/i);
-        if ((sName.includes('booster') || sName.includes('pack')) && bCodeMatch && !sName.includes('box') && !sName.includes('case')) {
-          const matchedCode = sub.code || bCodeMatch[1].toLowerCase();
-          const res = resolveBoosterPackEv({ code: matchedCode }, sub.set || parentSet, boosterEvMap, vendor, priceMode);
-          const cardsPerPack = getCardsPerPack(res.boosterCode, product.category, product.subtype);
-          const packCardsTotal = count * cardsPerPack;
-          const subtotalEv = Number((count * res.unitEvAvg).toFixed(2));
-
-          totalCards += packCardsTotal;
-          totalPacks += count;
-          totalVariableEv += subtotalEv;
-          totalEv += subtotalEv;
-          // See the direct-packs section above: min/mid90/max are intentionally
-          // not linearly scaled by pack count here.
-
-          const pEntry = {
-            packName: `${res.boosterCode.toUpperCase()} Booster Pack`,
-            code: res.boosterCode,
-            set: res.setCode,
-            count,
-            cardsPerPack,
-            totalCards: packCardsTotal,
-            unitEv: res.unitEvAvg,
-            unitMid90: res.unitEvMid90,
-            unitMin: res.unitEvMin,
-            unitMin5: res.unitEvMin5,
-            unitMax5: res.unitEvMax5,
-            unitMax: res.unitEvMax,
-            subtotalEv,
-            quantiles: res.quantiles,
-          };
-          packItems.push(pEntry);
-          items.push({
-            type: 'pack',
-            name: pEntry.packName,
-            count,
-            cardsPerUnit: cardsPerPack,
-            totalCards: packCardsTotal,
-            unitEv: res.unitEvAvg,
-            subtotalEv,
-            set: res.setCode,
-            code: res.boosterCode,
-            raw: sub,
-          });
-        } else {
-          let estimatedCards = 15;
-          if (sName.includes('sample')) estimatedCards = 2;
-          else if (sName.includes('booster box')) estimatedCards = 36 * 15;
-          else if (sName.includes('case')) estimatedCards = 6 * 36 * 15;
-          else if (sName.includes('secret lair drop') || sName.includes('secret lair')) estimatedCards = 5;
-          else if (sName.includes('commander')) estimatedCards = 100;
-          else if (sName.includes('jumpstart')) estimatedCards = 20;
-          else if (sName.includes('starter') || sName.includes('half-deck')) estimatedCards = 30;
-          else if (sName.includes('deck')) estimatedCards = 60;
-  
-          const subCardsTotal = count * estimatedCards;
-          totalCards += subCardsTotal;
-  
-          let unitEv = 0;
-          if (childArb && childArb.totalEvAvg > 0) {
-            unitEv = Number(childArb.totalEvAvg.toFixed(2));
-          }
-  
-          const subtotalEv = Number((count * unitEv).toFixed(2));
-          totalFixedEv += subtotalEv;
-          totalEv += subtotalEv;
-  
-          sealedItems.push({
-            name: sub.name,
-            count,
-            set: (sub.set || parentSet).toUpperCase(),
-            uuid: sub.uuid,
-            totalCards: subCardsTotal,
-            unitEv,
-            subtotalEv,
-          });
-  
-          items.push({
-            type: 'sealed',
-            name: sub.name,
-            count,
-            cardsPerUnit: estimatedCards,
-            totalCards: subCardsTotal,
-            unitEv,
-            subtotalEv,
-            set: (sub.set || parentSet).toUpperCase(),
-            raw: sub,
-          });
-        }
+        sealedItems.push({
+          name: sub.name,
+          count,
+          set: (sub.set || parentSet).toUpperCase(),
+          uuid: sub.uuid,
+          totalCards: 0,
+          unitEv: 0,
+          subtotalEv: 0,
+        });
+        items.push({
+          type: 'sealed',
+          name: sub.name,
+          count,
+          cardsPerUnit: 0,
+          totalCards: 0,
+          unitEv: 0,
+          subtotalEv: 0,
+          set: (sub.set || parentSet).toUpperCase(),
+          raw: sub,
+        });
       }
     });
   }

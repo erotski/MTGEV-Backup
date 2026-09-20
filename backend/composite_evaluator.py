@@ -161,18 +161,19 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
     if visited is None:
         visited = set()
     if prod_id in visited:
-        return {"packs": {}, "cards": [], "decks": [], "variables": []}
+        return {"packs": {}, "cards": [], "decks": [], "variables": [], "complete": False}
     visited.add(prod_id)
 
     prod = product_map.get(prod_id)
     if not prod:
-        return {"packs": {}, "cards": [], "decks": [], "variables": []}
+        return {"packs": {}, "cards": [], "decks": [], "variables": [], "complete": False}
 
     c = prod.get("contents") or {}
     packs = {}
     cards = list(c.get("card", []))
     decks = list(c.get("deck", []))
     variables = list(c.get("variable", []))
+    complete = True
 
     # 1. Sealed items (e.g. packs, sub-boxes, display cases, nested secret lair drops)
     for s in c.get("sealed", []):
@@ -191,6 +192,7 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
 
         if child_prod:
             sub = resolve_product_contents(child_prod["id"], product_map, visited.copy(), name_map)
+            complete = complete and sub["complete"]
             for (p_set, p_code), cnt in sub["packs"].items():
                 k = (p_set, p_code)
                 packs[k] = packs.get(k, 0) + cnt * s_count
@@ -198,34 +200,19 @@ def resolve_product_contents(prod_id, product_map, visited=None, name_map=None):
             decks.extend(sub["decks"] * s_count)
             variables.extend(sub["variables"] * s_count)
         else:
-            # Infer booster type from child name if no child product in database
-            b_code = "play"
-            if "collector" in child_name:
-                b_code = "collector"
-            elif "play" in child_name:
-                b_code = "play"
-            elif "draft" in child_name:
-                b_code = "draft"
-            elif "set" in child_name and "booster" in child_name:
-                b_code = "set"
-            elif "topper" in child_name:
-                b_code = "box-topper"
-            elif "prerelease" in child_name:
-                b_code = "prerelease"
-            elif "jumpstart" in child_name:
-                b_code = "jumpstart"
-            elif "sample" in child_name:
-                b_code = "collector-sample"
-            packs[(child_set, b_code)] = packs.get((child_set, b_code), 0) + s_count
+            complete = False
 
     # 2. Direct pack array
     for pk in c.get("pack", []):
         pk_cnt = int(pk.get("count", 1) or 1)
         pk_set = (pk.get("set") or prod.get("setCode") or "").upper()
-        pk_code = (pk.get("code") or "play").lower()
+        pk_code = (pk.get("code") or "").lower()
+        if not pk_code:
+            complete = False
+            continue
         packs[(pk_set, pk_code)] = packs.get((pk_set, pk_code), 0) + pk_cnt
 
-    return {"packs": packs, "cards": cards, "decks": decks, "variables": variables}
+    return {"packs": packs, "cards": cards, "decks": decks, "variables": variables, "complete": complete}
 
 def find_matched_precon_deck(d, precon_decks):
     """Resolves a contents.deck entry to its authoritative precon_decks.json record."""
@@ -287,7 +274,7 @@ def get_cards_per_pack(code):
         return 35
     if "topper" in c:
         return 1
-    return 15
+    return None
 
 
 def resolve_total_card_count(cards, decks, packs_dict, precon_decks):
@@ -295,6 +282,7 @@ def resolve_total_card_count(cards, decks, packs_dict, precon_decks):
     resolved cards/decks/packs — this is the sole authority consumed by the frontend
     (product_metrics.json cardCount); no frontend fallback/estimation should override it."""
     total = 0
+    complete = True
     for cd in cards:
         total += int(cd.get("count", 1) or 1)
 
@@ -302,16 +290,18 @@ def resolve_total_card_count(cards, decks, packs_dict, precon_decks):
         matched_deck = find_matched_precon_deck(d, precon_decks)
         deck_cards = int((matched_deck or {}).get("cardCount") or 0)
         if deck_cards <= 0:
-            dname = (d.get("name") or "").lower()
-            category = ((matched_deck or {}).get("category") or "").lower()
-            is_commander = "commander" in dname or "commander" in category
-            deck_cards = 100 if is_commander else 60
+            complete = False
+            continue
         total += deck_cards
 
     for (_p_set, p_code), cnt in packs_dict.items():
-        total += cnt * get_cards_per_pack(p_code)
+        cards_per_pack = get_cards_per_pack(p_code)
+        if cards_per_pack is None:
+            complete = False
+            continue
+        total += cnt * cards_per_pack
 
-    return total
+    return total, complete
 
 
 def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_cheapest", prod=None, provenance=None):
@@ -321,7 +311,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
     by_name = single_prices.get("byName", {})
 
     if provenance is None:
-        provenance = {"expectedCards": 0, "exactCards": 0, "fallbackCards": 0, "missingCards": 0, "observedEv": 0.0, "fallbackCompletedEv": 0.0}
+        provenance = {"expectedCards": 0, "exactCards": 0, "fallbackCards": 0, "missingCards": 0, "observedEv": 0.0, "fallbackCompletedEv": 0.0, "cardResolutions": []}
     else:
         provenance.setdefault("expectedCards", 0)
         provenance.setdefault("exactCards", 0)
@@ -329,6 +319,7 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
         provenance.setdefault("missingCards", 0)
         provenance.setdefault("observedEv", 0.0)
         provenance.setdefault("fallbackCompletedEv", 0.0)
+        provenance.setdefault("cardResolutions", [])
     
     # 1. Evaluate direct fixed cards
     for cd in cards:
@@ -352,14 +343,28 @@ def calculate_fixed_ev(cards, decks, single_prices, precon_decks, vendor="all_ch
         if requested > 0:
             c_price = requested
             status = "exact"
+            resolved_vendor = vendor
         else:
-            alternatives = [float(prices_dict.get(other) or 0.0) for other in VENDORS if float(prices_dict.get(other) or 0.0) > 0]
-            c_price = alternatives[0] if alternatives else 0.0
-            status = "vendor_fallback" if alternatives else "unpriced"
+            candidate_vendors = [
+                other for other in VENDORS
+                if other not in {vendor, "all_cheapest", "all_average"}
+                and float(prices_dict.get(other) or 0.0) > 0
+            ]
+            resolved_vendor = candidate_vendors[0] if candidate_vendors else None
+            c_price = float(prices_dict.get(resolved_vendor) or 0.0) if resolved_vendor else 0.0
+            status = "vendor_fallback" if resolved_vendor else "unpriced"
         provenance["expectedCards"] += count
         provenance["observedEv"] += requested * count
         provenance["fallbackCompletedEv"] += c_price * count
         provenance["exactCards" if status == "exact" else "fallbackCards" if status == "vendor_fallback" else "missingCards"] += count
+        provenance["cardResolutions"].append({
+            "uuid": u,
+            "name": cd.get("name"),
+            "count": count,
+            "status": status,
+            "requestedVendor": vendor,
+            "resolvedVendor": resolved_vendor,
+        })
 
         total_fixed += max(0.0, c_price * count)
 
@@ -432,16 +437,13 @@ def resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, ven
             pk_set = (pk.get("set") or "SLD").upper()
             pk_code = (pk.get("code") or "play").lower()
             cnt = int(pk.get("count", 1) or 1)
-            booster_entry = (
-                booster_lookup.get((pk_set, pk_code, vendor, "direct")) or
-                booster_lookup.get((pk_set, pk_code, "all_cheapest", "direct")) or
-                booster_lookup.get((pk_set, "play", vendor, "direct")) or
-                booster_lookup.get((pk_set, "default", vendor, "direct"))
-            )
+            booster_entry = booster_lookup.get((pk_set, pk_code, vendor, "direct"))
             if booster_entry and booster_entry.get("quantiles"):
                 pack_specs.append((cnt, booster_entry["quantiles"], booster_entry["evAverage"]))
             elif booster_entry and booster_entry.get("evAverage"):
                 fixed_val += float(booster_entry["evAverage"]) * cnt
+            else:
+                return None
 
         desc_parts = []
         for cd in cards:
@@ -643,6 +645,17 @@ def run_composite_evaluator(target_set=None):
             updated_products.append(p)
             continue
 
+        if market_price <= 0:
+            for key in [
+                "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5",
+                "totalEvMin", "totalEvMax", "quantiles", "quantilesByVendor",
+                "metricsByVendor", "fixedPricingByVendor", "evScore",
+                "breakevenPercentile", "archetype",
+            ]:
+                p.pop(key, None)
+            updated_products.append(p)
+            continue
+
         resolved = resolve_product_contents(prod_id, product_map, name_map=name_map)
         packs_dict = resolved["packs"]
         cards = resolved["cards"]
@@ -657,9 +670,22 @@ def run_composite_evaluator(target_set=None):
         else:
             p.pop("packsCount", None)
 
-        total_card_count = resolve_total_card_count(cards, decks, packs_dict, precon_decks)
-        if total_card_count > 0:
+        total_card_count, cardinality_complete = resolve_total_card_count(cards, decks, packs_dict, precon_decks)
+        if resolved["complete"] and cardinality_complete and total_card_count > 0:
             p["cardCount"] = total_card_count
+
+        if not resolved["complete"] or not cardinality_complete:
+            for key in [
+                "totalEvAvg", "totalEvMid90", "totalEvMin5", "totalEvMax5",
+                "totalEvMin", "totalEvMax", "quantiles", "quantilesByVendor",
+                "metricsByVendor", "fixedPricingByVendor", "evScore",
+                "breakevenPercentile", "archetype", "packsCount", "cardCount",
+            ]:
+                p.pop(key, None)
+            p["contentResolutionStatus"] = "incomplete"
+            updated_products.append(p)
+            continue
+        p.pop("contentResolutionStatus", None)
 
         has_packs = len(packs_dict) > 0
         has_fixed = len(cards) > 0 or len(decks) > 0
@@ -711,6 +737,7 @@ def run_composite_evaluator(target_set=None):
             pack_specs = []
             discrete_single_pack_outcomes = None
 
+            unresolved_pack = False
             for (p_set, p_code), count in packs_dict.items():
                 # Look up booster quantiles for the exact pack code only. A pack code with
                 # no simulated booster_ev record (e.g. "prerelease", which MTGJSON does not
@@ -719,10 +746,7 @@ def run_composite_evaluator(target_set=None):
                 # previously fabricated an extra phantom Play Booster draw on top of any
                 # genuinely-contained play boosters (see PROJECT_REVIEW.md DEV-11/DEV-28
                 # "no invented substitute data" rule).
-                booster_entry = (
-                    booster_lookup.get((p_set, p_code, v, "direct")) or
-                    booster_lookup.get((p_set, p_code, "all_cheapest", "direct"))
-                )
+                booster_entry = booster_lookup.get((p_set, p_code, v, "direct"))
                 if booster_entry and booster_entry.get("quantiles"):
                     pack_specs.append((count, booster_entry["quantiles"], booster_entry["evAverage"]))
                     if (
@@ -736,12 +760,25 @@ def run_composite_evaluator(target_set=None):
                         and booster_entry.get("configurationOutcomes")
                     ):
                         discrete_single_pack_outcomes = booster_entry["configurationOutcomes"]
+                else:
+                    unresolved_pack = True
+                    break
+
+            if unresolved_pack:
+                continue
 
             variable_slots_for_vendor = []
+            unresolved_variable = False
             for slot in variables:
                 opts = resolve_variable_slot(slot, single_prices, booster_lookup, precon_decks, vendor=v)
+                if opts is None:
+                    unresolved_variable = True
+                    break
                 if opts:
                     variable_slots_for_vendor.append(opts)
+
+            if unresolved_variable:
+                continue
 
             if len(pack_specs) == 0 and len(variable_slots_for_vendor) == 0 and fixed_ev <= 0:
                 continue

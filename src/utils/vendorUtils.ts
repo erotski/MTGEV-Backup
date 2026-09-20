@@ -142,7 +142,7 @@ export function findBoosterEv(
   const records = boosterEvMap[sUpper] || [];
   if (records.length === 0) return undefined;
 
-  const rawTarget = (boosterName || 'play').toLowerCase().trim();
+  const rawTarget = (boosterName || '').toLowerCase().trim();
   const normTarget = normalizeBoosterCode(rawTarget);
   const targetMode = (priceMode || 'direct').toLowerCase().trim();
   const vNorm = normalizeVendor(vendor);
@@ -152,31 +152,10 @@ export function findBoosterEv(
     return rLower === rawTarget || normalizeBoosterCode(rLower) === normTarget;
   };
 
-  // 1. Exact match: boosterName + priceMode + vendor
-  let match = records.find(
+  return records.find(
     (r) =>
       matchesCode(r.boosterName) &&
       (r.priceMode || 'direct').toLowerCase() === targetMode &&
       normalizeVendor(r.vendor) === vNorm
   );
-  if (match) return match;
-
-  // 2. Fallback priceMode for same vendor
-  match = records.find(
-    (r) =>
-      matchesCode(r.boosterName) &&
-      normalizeVendor(r.vendor) === vNorm
-  );
-  if (match) return match;
-
-  // 3. Fallback to canonical default aggregate vendor
-  match = records.find(
-    (r) =>
-      matchesCode(r.boosterName) &&
-      (r.priceMode || 'direct').toLowerCase() === targetMode &&
-      normalizeVendor(r.vendor) === 'all_cheapest'
-  );
-  if (match) return match;
-
-  return records.find((r) => matchesCode(r.boosterName));
 }

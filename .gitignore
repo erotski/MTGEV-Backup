@@ -14,24 +14,9 @@ incoming_zips/*.zip
 backend/audit_output/
 all_printings_json/
 
-# Pipeline-generated output (regenerated every run; authoritative copy lives on the
-# `data-sync` branch, which is Vercel's Production Branch). Committing these to `main`
-# caused a real production incident: main's copy went stale and Vercel's Git
-# integration deployed it, silently overriding fresher CLI/data-sync deploys. See
-# PROJECT_REVIEW.md DEV-27. The booster collation overlay is generated weekly on the
-# `collation-metadata` branch and fetched by the daily workflow before simulation.
-# Hand-maintained config (product_overrides.json) and non-pipeline static data
-# (precon_decks.json, booster_slots.json, scryfall_set_hierarchy.json) are NOT
-# ignored and must stay tracked.
-public/data/booster_collation_overrides.json
-public/data/sets.json
-public/data/sealed_products.json
-public/data/booster_ev.json
-public/data/arbitrage_leaderboard.json
-public/data/product_metrics.json
-public/data/single_card_prices.json
-public/data/pricing_reliability.json
-public/data/product_chase_cards.json
-public/data/pipeline_execution_logs.json
-public/data/latest_pipeline_run.json
-public/data/mtg.sqlite
+# Pipeline-generated runtime snapshots are regenerated and published to `data-sync`.
+# Keep only the source inputs required when the pipeline starts from `main`.
+public/data/*
+!public/data/precon_decks.json
+!public/data/booster_slots.json
+!public/data/product_overrides.json

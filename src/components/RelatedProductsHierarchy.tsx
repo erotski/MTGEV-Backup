@@ -3,7 +3,7 @@ import { BoosterEVRecord, ProductMetricsRecord, PriceMode, Vendor, EvBasis } fro
 import { dataService } from '../services/dataService';
 import { resolveCardPrice } from '../utils/vendorUtils';
 import { calculateEvScore, getEvScoreColorClass } from '../utils/evScore';
-import { getAllRelatedSetCodes } from '../utils/setHierarchyUtils';
+import { getAllRelatedSetCodes, getScryfallNode } from '../utils/setHierarchyUtils';
 import {
   CatalogPackProduct,
   ProductPackagingType,
@@ -160,18 +160,9 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                 if (child) {
                   total += sCount * resolveRecursivePacks(child, new Set(visited));
                 } else {
-                  // Verified 2026-09-18: zero contents.sealed entries in
-                  // public/data/sealed_products.json currently lack a resolvable
-                  // uuid — this name-guess is a defensive fallback for a future
-                  // data gap, not an actively exercised path. Surface it if it
-                  // ever fires instead of silently guessing a pack count.
                   if (typeof console !== 'undefined') {
-                    console.warn(`[RelatedProductsHierarchy] Sealed sub-item "${s.name}" has no resolvable uuid — guessing pack count from name.`);
+                    console.warn(`[RelatedProductsHierarchy] Sealed sub-item "${s.name}" has no resolvable uuid.`);
                   }
-                  const sName = lower(s.name);
-                  if (sName.includes('pack') || sName.includes('booster')) total += sCount * 1;
-                  else if (sName.includes('box')) total += sCount * 36;
-                  else total += sCount;
                 }
               }
               if (total > 0) return total;
@@ -691,7 +682,22 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isListCollapsed, setIsListCollapsed] = useState<boolean>(true);
+  const [associatedSetFilter, setAssociatedSetFilter] = useState<string>('all');
   const COLLAPSED_LIMIT = 6;
+
+  // Distinct associated set codes (root + all linked sub-sets) actually present among this
+  // set's products, so the filter only offers choices that will return results.
+  const associatedSetOptions = useMemo(() => {
+    const codesInProducts = new Set(setProducts.map((p) => String(p.setCode || '').toUpperCase()).filter(Boolean));
+    return getAllRelatedSetCodes(setCode)
+      .filter((code) => codesInProducts.has(code))
+      .map((code) => ({
+        code,
+        name: getScryfallNode(code)?.name || code,
+        count: setProducts.filter((p) => String(p.setCode || '').toUpperCase() === code).length,
+      }))
+      .sort((a, b) => (a.code === setCode.toUpperCase() ? -1 : b.code === setCode.toUpperCase() ? 1 : a.name.localeCompare(b.name)));
+  }, [setProducts, setCode]);
 
   // When a specific product is targeted via prop (e.g. from Arbitrage "Inspect Set"):
   // Select it and switch category to 'all' so it is actively visible. The list stays
@@ -713,9 +719,12 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
     }
   }, [propSelectedProductId, setProducts]);
 
-  // Filter products by search query
+  // Filter products by search query and associated (sub-)set
   const filteredProducts = useMemo(() => {
     let prods = displayedProducts;
+    if (associatedSetFilter !== 'all') {
+      prods = prods.filter((p) => String(p.setCode || '').toUpperCase() === associatedSetFilter);
+    }
     if (searchQuery.trim()) {
       const q = lower(searchQuery).trim();
       prods = prods.filter((p) =>
@@ -725,7 +734,7 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
       );
     }
     return prods;
-  }, [displayedProducts, searchQuery]);
+  }, [displayedProducts, searchQuery, associatedSetFilter]);
 
   // Smooth scroll into view when a product is targeted from props
   useEffect(() => {
@@ -917,6 +926,37 @@ export const RelatedProductsHierarchy: React.FC<RelatedProductsHierarchyProps> =
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Associated Set Filter: narrow products down to only those tied to one specific
+              sub-set (e.g. J25 Jumpstart within Foundations). Highlighted yellow when active. */}
+          {associatedSetOptions.length > 1 && (
+            <div className="relative w-full md:w-56 shrink-0">
+              <select
+                value={associatedSetFilter}
+                onChange={(e) => {
+                  setAssociatedSetFilter(e.target.value);
+                  setIsListCollapsed(true);
+                }}
+                title="Filter products to only those containing cards from a specific associated set"
+                className={`w-full appearance-none pl-8 pr-8 py-1.5 text-xs font-semibold rounded-xl border cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  associatedSetFilter !== 'all'
+                    ? 'bg-amber-100 border-amber-400 text-amber-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <option value="all">All Associated Sets</option>
+                {associatedSetOptions.map((opt) => (
+                  <option key={opt.code} value={opt.code}>
+                    {opt.name} ({opt.code}) · {opt.count}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none">
+                <Filter className={`h-3.5 w-3.5 ${associatedSetFilter !== 'all' ? 'text-amber-600' : 'text-slate-400'}`} />
+              </span>
+              <ChevronDown className="absolute inset-y-0 right-2 my-auto h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             </div>
           )}
 
