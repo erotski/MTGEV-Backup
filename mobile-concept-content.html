@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MTGEV Mobile Concept Content</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100">
+
+  <!-- ============ HEADER / NAV (Phase 1 concept) ============ -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50">
+    <div class="px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black">✦</div>
+        <div class="min-w-0">
+          <div class="text-xs sm:text-sm font-black tracking-tight text-white truncate">MTG Booster EV</div>
+          <p class="text-[10px] text-slate-400 hidden sm:block">Monte Carlo EV &amp; Products Overview</p>
+        </div>
+      </div>
+
+      <!-- Mobile: 3-line hamburger toggle. Desktop: full tab row -->
+      <button onclick="document.getElementById('mobileNav').classList.toggle('hidden')" class="sm:hidden w-9 h-9 flex flex-col items-center justify-center gap-1 rounded-lg bg-slate-800 border border-slate-700">
+        <span class="block w-5 h-0.5 bg-white rounded-full"></span>
+        <span class="block w-5 h-0.5 bg-white rounded-full"></span>
+        <span class="block w-5 h-0.5 bg-white rounded-full"></span>
+      </button>
+
+      <div class="hidden sm:flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+        <button data-tab-btn="products" onclick="showTab('products')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950">Products Overview</button>
+        <button data-tab-btn="explorer" onclick="showTab('explorer')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">Booster Explorer</button>
+        <button data-tab-btn="admin" onclick="showTab('admin')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">Admin</button>
+        <button data-tab-btn="chase" onclick="showTab('chase')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">Special Chases</button>
+      </div>
+    </div>
+
+    <!-- Mobile dropdown nav (hidden by default) -->
+    <div id="mobileNav" class="hidden sm:hidden border-t border-slate-800 bg-slate-900 px-3 py-2 space-y-1">
+      <button data-tab-btn-mobile="products" onclick="showTab('products')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-bold bg-amber-500 text-slate-950">Products Overview</button>
+      <button data-tab-btn-mobile="explorer" onclick="showTab('explorer')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-300 bg-slate-800">Booster Explorer</button>
+      <button data-tab-btn-mobile="admin" onclick="showTab('admin')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-300 bg-slate-800">Admin Portal</button>
+      <button data-tab-btn-mobile="chase" onclick="showTab('chase')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-300 bg-slate-800">Special Chases</button>
+    </div>
+  </header>
+
+  <main class="p-3 sm:p-6">
+
+  <div id="tab-products" class="space-y-4 sm:space-y-6">
+
+    <!-- ============ PICK OF THE DAY: ~1/3 the height of desktop on mobile ============ -->
+    <div class="bg-slate-900 text-white rounded-xl sm:rounded-2xl px-2.5 py-1.5 sm:p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+      <!-- decorative glow: desktop only, costs nothing to hide on mobile -->
+      <div class="hidden sm:block absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 flex items-center gap-2 sm:gap-6">
+        <!-- artwork: tiny icon on mobile, full size on desktop -->
+        <div class="shrink-0 w-6 h-6 sm:w-24 sm:h-24 rounded-md sm:rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs sm:text-3xl">📦</div>
+
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1 sm:gap-2 flex-wrap">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-px sm:px-2 sm:py-0.5 rounded-full text-[8px] sm:text-xs font-black bg-amber-500 text-slate-950">🔥 PICK</span>
+            <!-- rotation timer chip: desktop only -->
+            <span class="hidden sm:inline text-xs text-slate-400 bg-slate-800/70 px-2 py-0.5 rounded-full border border-slate-700/50">Rotates daily</span>
+          </div>
+          <h2 class="text-[11px] sm:text-xl font-black text-white truncate leading-tight">Murders at Karlov Manor Collector Booster</h2>
+          <div class="flex items-center gap-1.5 sm:gap-3 text-[9px] sm:text-sm text-slate-300 leading-tight">
+            <span>Price: <b class="text-white">$24.99</b></span>
+            <span class="text-emerald-400 font-bold">EV: $31.20</span>
+          </div>
+        </div>
+
+        <div class="text-right shrink-0">
+          <div class="text-[11px] sm:text-2xl font-black text-emerald-400">+$6.21</div>
+          <div class="text-[7px] sm:text-xs font-bold text-emerald-300">+24.9% ROI</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ GLOBAL CONTROLS: inline bar on desktop only. Mobile version lives in the sticky bottom sheet below. ============ -->
+    <div class="hidden sm:flex bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl flex-row items-center gap-3 px-6 py-3">
+      <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/80 text-xs">
+        <span class="text-[10px] font-bold text-slate-400 uppercase px-1.5 shrink-0">Basis</span>
+        <button class="px-2 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 shrink-0">Mean</button>
+        <button class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Floor</button>
+        <button class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Ceiling</button>
+      </div>
+      <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/80 text-xs">
+        <span class="text-[10px] font-bold text-slate-400 uppercase px-1.5 shrink-0">Price</span>
+        <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 shrink-0">Direct</button>
+        <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Reprint</button>
+      </div>
+      <select class="text-[11px] font-bold bg-slate-800 border border-slate-700 text-white rounded-lg px-2 py-1.5">
+        <option>All Vendors (Cheapest)</option>
+        <option>TCGplayer</option>
+        <option>Cardmarket</option>
+      </select>
+    </div>
+
+    <!-- ============ PRODUCT LIST: table on desktop, cards on mobile ============ -->
+    <div class="pb-16 sm:pb-0">
+      <div class="flex items-center justify-between mb-2 px-1">
+        <h3 class="text-xs font-black text-slate-500 uppercase tracking-wider">Products Overview</h3>
+        <span class="text-[10px] sm:text-xs text-slate-400 font-semibold">Showing 1-15 of 15</span>
+      </div>
+
+      <!-- ============ SEARCH: its own row; CATEGORY + SORT + toggle: always one row, even on mobile ============ -->
+      <div class="flex flex-col gap-2 mb-3">
+        <!-- Search field -->
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+          <input
+            type="text"
+            placeholder="Search products or sets..."
+            class="w-full pl-9 pr-3 py-2 sm:py-1.5 rounded-xl border border-slate-300 bg-white text-sm sm:text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+        </div>
+
+        <!-- Category + Sort + asc/desc toggle: one row on every screen size -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- Category filter: mirrors the real PRODUCT_OVERVIEW_CATEGORY_FILTERS list, placed left of Sort -->
+          <select class="min-w-0 flex-1 text-[11px] sm:text-[11px] font-bold bg-white border border-slate-300 text-slate-700 rounded-xl px-2 sm:px-2.5 py-2 sm:py-1.5">
+            <option>All Sealed Formats</option>
+            <option>Booster Packs</option>
+            <option>Booster Boxes</option>
+            <option>Cases</option>
+            <option>Bundles</option>
+            <option>Prerelease</option>
+            <option>Sample / Promo / Toppers</option>
+            <option>Commander Decks</option>
+            <option>Other Preconstructed Decks</option>
+            <option>Secret Lair</option>
+            <option>Special Sets &amp; Collections</option>
+            <option>Other</option>
+          </select>
+
+          <!-- Sort control: since mobile cards have no clickable column headers to sort by directly -->
+          <select class="min-w-0 flex-1 text-[11px] font-bold bg-white border border-slate-300 text-slate-700 rounded-xl px-2 sm:px-2.5 py-2 sm:py-1.5">
+            <option>Sort: ROI</option>
+            <option>Sort: Profit</option>
+            <option>Sort: Market Price</option>
+            <option>Sort: EV</option>
+          </select>
+          <button class="shrink-0 w-9 h-9 sm:w-8 sm:h-8 rounded-xl border border-slate-300 bg-white flex items-center justify-center text-slate-600 text-sm" title="Toggle ascending/descending">
+            ↓
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop/tablet: real table -->
+      <div class="hidden md:block bg-white rounded-2xl border border-slate-300 overflow-hidden shadow-sm">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100 text-slate-500 text-xs uppercase font-bold">
+            <tr>
+              <th class="text-left px-4 py-3">Product</th>
+              <th class="text-right px-4 py-3">Market Price</th>
+              <th class="text-right px-4 py-3">EV</th>
+              <th class="text-right px-4 py-3">Profit</th>
+              <th class="text-right px-4 py-3">ROI</th>
+              <th class="text-right px-4 py-3">EV Score</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="desktopRows" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobile: stacked cards instead of a cramped table -->
+      <div id="mobileCards" class="md:hidden space-y-1.5"></div>
+
+      <!-- ============ PAGINATION: identical shape to the real app's "Showing X to Y" + prev/next/page-number footer ============ -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4 px-1">
+        <span class="text-[10px] sm:text-xs text-slate-500">Showing <b>1</b> to <b>15</b> of <b>15</b></span>
+        <div class="flex items-center gap-1">
+          <button class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-400 text-xs" disabled>◄ Prev</button>
+          <button class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold">1</button>
+          <button class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-400 text-xs" disabled>Next ►</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Demo-only sample data generator so you can see how ~15 real product rows/cards feel, not just 3.
+      const DEMO_PRODUCTS = [
+        ['Bloomburrow Play Booster Box', 119.99, 134.50, 82],
+        ['Foundations Collector Booster', 14.99, 17.85, 91],
+        ['Duskmourn Bundle', 44.99, 38.20, 24],
+        ['Murders at Karlov Manor Collector Booster', 24.99, 31.20, 88],
+        ['Modern Horizons 3 Play Booster Box', 249.99, 268.40, 63],
+        ['Wilds of Eldraine Set Booster Box', 139.99, 129.75, 31],
+        ['Outlaws of Thunder Junction Bundle', 39.99, 44.10, 68],
+        ['Assassin\'s Creed Collector Booster', 17.99, 24.55, 94],
+        ['Lost Caverns of Ixalan Draft Booster Box', 109.99, 118.20, 58],
+        ['Fallout Commander Deck (Six Samurai)', 34.99, 41.75, 72],
+        ['The Big Score Play Booster Box', 129.99, 120.10, 27],
+        ['Ravnica Remastered Collector Booster', 22.99, 19.40, 18],
+        ['Bloomburrow Bundle', 44.99, 47.30, 55],
+        ['Duskmourn Collector Booster Box', 349.99, 372.60, 61],
+        ['Aetherdrift Play Booster Box', 119.99, 141.85, 79],
+      ];
+
+      function evScoreClasses(score) {
+        if (score >= 70) return 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        if (score >= 40) return 'bg-amber-50 text-amber-700 border-amber-300';
+        return 'bg-rose-50 text-rose-700 border-rose-300';
+      }
+
+      const desktopRows = document.getElementById('desktopRows');
+      const mobileCards = document.getElementById('mobileCards');
+
+      DEMO_PRODUCTS.forEach(([name, price, ev, score]) => {
+        const profit = ev - price;
+        const roiPct = (profit / price) * 100;
+        const isPositive = profit >= 0;
+        const tone = isPositive ? 'text-emerald-600' : 'text-rose-600';
+        const sign = isPositive ? '+' : '-';
+
+        desktopRows.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td class="px-4 py-3 font-semibold text-slate-800">${name}</td>
+            <td class="px-4 py-3 text-right">$${price.toFixed(2)}</td>
+            <td class="px-4 py-3 text-right ${tone} font-bold">$${ev.toFixed(2)}</td>
+            <td class="px-4 py-3 text-right ${tone}">${sign}$${Math.abs(profit).toFixed(2)}</td>
+            <td class="px-4 py-3 text-right ${tone}">${sign}${Math.abs(roiPct).toFixed(1)}%</td>
+            <td class="px-4 py-3 text-right">
+              <span class="font-mono text-xs font-bold px-1.5 py-0.5 rounded border ${evScoreClasses(score)}">${score}</span>
+            </td>
+            <td class="px-4 py-3 text-right"><button class="text-slate-400">➔</button></td>
+          </tr>
+        `);
+
+        mobileCards.insertAdjacentHTML('beforeend', `
+          <div class="flex items-stretch bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden">
+            <div class="flex-1 min-w-0 px-2 py-1.5">
+              <div class="flex items-center gap-1 min-w-0">
+                <span class="shrink-0 text-[11px]">🃏</span>
+                <span class="font-bold text-[11px] text-slate-800 truncate">${name}</span>
+                <span class="shrink-0 font-mono text-[9px] font-bold px-1 py-px rounded border ${evScoreClasses(score)}">${score}</span>
+              </div>
+              <div class="flex items-start gap-1 mt-0.5 text-[10px] leading-none whitespace-nowrap overflow-hidden">
+                <div class="text-center">
+                  <div class="text-slate-500">$${price.toFixed(2)}</div>
+                  <div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Market</div>
+                </div>
+                <span class="text-slate-300 mt-px">→</span>
+                <div class="text-center">
+                  <div class="font-bold ${tone}">$${ev.toFixed(2)}</div>
+                  <div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">EV</div>
+                </div>
+                <span class="text-slate-300 mt-px">•</span>
+                <div class="text-center">
+                  <div class="font-bold ${tone}">${sign}$${Math.abs(profit).toFixed(2)} (${sign}${Math.abs(roiPct).toFixed(1)}%)</div>
+                  <div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Profit</div>
+                </div>
+              </div>
+            </div>
+            <button class="shrink-0 basis-[10%] min-w-[2.5rem] border-l border-slate-200 bg-slate-50 active:bg-slate-100 flex items-center justify-center text-slate-400" title="View details">➔</button>
+          </div>
+        `);
+      });
+    </script>
+
+  </div>
+  <!-- /tab-products -->
+
+  <!-- ============================================================ -->
+  <!-- ============ BOOSTER EXPLORER CONCEPT (hidden by default) ============ -->
+  <!-- ============================================================ -->
+  <div id="tab-explorer" class="hidden space-y-3">
+
+    <!-- Set picker + metadata: one merged card instead of a button plus a separate floating info strip -->
+    <div class="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+      <div class="w-full flex items-center justify-between px-3 py-2.5">
+        <button class="flex items-center gap-2 min-w-0 flex-1">
+          <span class="text-base shrink-0">🃏</span>
+          <span class="font-bold text-sm text-slate-800 truncate">Bloomburrow (BLB)</span>
+        </button>
+        <a id="mainSetScryfallLink" href="https://scryfall.com/sets/blb" target="_blank" rel="noreferrer" class="shrink-0 text-[9px] font-bold text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 mr-2">Scryfall ↗</a>
+        <button class="text-slate-400 text-xs shrink-0">Change set ▾</button>
+      </div>
+      <div id="setMetaLine" class="flex items-center gap-x-2 gap-y-1 flex-wrap px-3 pb-2 text-[9px] text-slate-500 font-semibold border-t border-slate-100 pt-1.5"></div>
+
+      <!-- Related sets: indented sub-list under the main set, not a flat inline row -->
+      <div id="relatedSetsBlock" class="px-3 pb-2.5"></div>
+    </div>
+
+    <script>
+      // Demo-only: builds the set metadata line and related-sets sub-list, omitting any field that has no value
+      // (e.g. `block` is skipped entirely for blockless sets instead of showing an empty "Block:" label).
+      const SET_META = {
+        code: 'blb',
+        releaseDate: 'Aug 2, 2024',
+        block: '', // Bloomburrow has no block - intentionally left empty to demonstrate omission
+        cardCount: 261,
+        relatedSets: [
+          { code: 'blc', name: 'Bloomburrow Commander' },
+          { code: 'spg', name: 'Special Guests (BLB)' },
+        ],
+      };
+
+      const metaParts = [];
+      if (SET_META.releaseDate) metaParts.push(`📅 Released ${SET_META.releaseDate}`);
+      if (SET_META.block) metaParts.push(`📚 Block: ${SET_META.block}`);
+      if (SET_META.cardCount) metaParts.push(`🎴 ${SET_META.cardCount} cards`);
+
+      document.getElementById('setMetaLine').innerHTML = metaParts
+        .map((part) => `<span>${part}</span>`)
+        .join('<span class="text-slate-300">•</span>');
+
+      if (SET_META.relatedSets.length > 0) {
+        const rows = SET_META.relatedSets
+          .map((s) => `
+            <div class="flex items-center justify-between gap-2 py-1">
+              <span class="flex items-center gap-1.5 min-w-0 text-[10px] font-semibold text-slate-700 truncate">
+                <span class="text-slate-300">↳</span> ${s.name}
+              </span>
+              <a href="https://scryfall.com/sets/${s.code}" target="_blank" rel="noreferrer" class="shrink-0 text-[9px] font-bold text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">Scryfall ↗</a>
+            </div>
+          `)
+          .join('');
+        document.getElementById('relatedSetsBlock').innerHTML = `
+          <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider border-t border-slate-100 pt-1.5 mb-0.5">Related Sets</div>
+          <div class="pl-1 divide-y divide-slate-100">${rows}</div>
+        `;
+      }
+    </script>
+
+    <!-- Selected product summary: same compact card language as Products Overview -->
+    <div class="flex items-stretch bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden">
+      <div class="flex-1 min-w-0 px-2.5 py-2">
+        <div class="flex items-center gap-1 min-w-0">
+          <span class="font-bold text-xs text-slate-800 truncate">Bloomburrow Play Booster Box</span>
+          <span class="shrink-0 font-mono text-[9px] font-bold px-1 py-px rounded border bg-emerald-50 text-emerald-700 border-emerald-300">82</span>
+        </div>
+        <div class="flex items-start gap-1 mt-1 text-[10px] leading-none whitespace-nowrap overflow-hidden">
+          <div class="text-center"><div class="text-slate-500">$119.99</div><div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Market</div></div>
+          <span class="text-slate-300 mt-px">→</span>
+          <div class="text-center"><div class="font-bold text-emerald-600">$134.50</div><div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">EV</div></div>
+          <span class="text-slate-300 mt-px">•</span>
+          <div class="text-center"><div class="font-bold text-emerald-600">+$14.51 (+12.1%)</div><div class="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Profit</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booster stat pills: packs/cards, replacing a wide desktop stat row -->
+    <div class="grid grid-cols-3 gap-1.5">
+      <div class="bg-white rounded-lg border border-slate-300 px-2 py-1.5 text-center">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Packs</div>
+        <div class="text-xs font-black text-slate-800">30</div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-300 px-2 py-1.5 text-center">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Cards</div>
+        <div class="text-xs font-black text-slate-800">450</div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-300 px-2 py-1.5 text-center">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">EV Score</div>
+        <div class="text-xs font-black text-emerald-600">82/100</div>
+      </div>
+    </div>
+
+    <!-- EV Distribution curve: collapsed behind a toggle instead of always rendering a full-size chart -->
+    <div class="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+      <button onclick="document.getElementById('curvePanel').classList.toggle('hidden'); document.getElementById('curveArrow').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-3 py-2.5">
+        <span class="text-xs font-bold text-slate-700">📈 EV Distribution Curve</span>
+        <span id="curveArrow" class="text-slate-400 text-xs transition-transform">▾</span>
+      </button>
+      <div id="curvePanel" class="hidden px-3 pb-3">
+        <!-- Lightweight inline sparkline placeholder; the real app renders a Recharts LineChart here -->
+        <svg viewBox="0 0 300 80" class="w-full h-20">
+          <polyline fill="none" stroke="#10b981" stroke-width="2"
+            points="0,70 30,60 60,55 90,50 120,45 150,40 180,35 210,28 240,20 270,12 300,8" />
+        </svg>
+        <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+          <span>Min $98.20</span>
+          <span>Avg $134.50</span>
+          <span>Max $210.40</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product & Prize Breakdown: collapsed accordion instead of the desktop's always-expanded recursive table -->
+    <div class="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+      <button onclick="document.getElementById('breakdownPanel').classList.toggle('hidden'); document.getElementById('breakdownArrow').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-3 py-2.5">
+        <span class="text-xs font-bold text-slate-700">📦 Product &amp; Prize Breakdown</span>
+        <span id="breakdownArrow" class="text-slate-400 text-xs transition-transform">▾</span>
+      </button>
+      <div id="breakdownPanel" class="hidden px-3 pb-3 space-y-1.5 border-t border-slate-100 pt-2">
+        <!-- Each contained component as a flat compact row: name/count on the left, resolved EV on the right -->
+        <div class="flex items-center justify-between text-[10px]">
+          <span class="text-slate-700 font-semibold">30x Play Booster Pack</span>
+          <span class="font-bold text-emerald-600">$134.50</span>
+        </div>
+        <div class="flex items-center justify-between text-[10px] pl-3 text-slate-500">
+          <span>↳ 15 cards/pack · common/uncommon/rare-mythic/land/foil-wildcard slots</span>
+        </div>
+        <div class="flex items-center justify-between text-[10px] border-t border-slate-100 pt-1.5">
+          <span class="text-slate-700 font-semibold">Total resolved singles EV</span>
+          <span class="font-black text-emerald-600">$134.50</span>
+        </div>
+        <div class="flex items-center justify-between text-[10px]">
+          <span class="text-slate-700 font-semibold">Sealed market price</span>
+          <span class="font-bold text-slate-600">$119.99</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booster Slot / Collation Details: collapsed accordion instead of the desktop's full sheet-by-sheet viewer -->
+    <div class="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+      <button onclick="document.getElementById('slotPanel').classList.toggle('hidden'); document.getElementById('slotArrow').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-3 py-2.5">
+        <span class="text-xs font-bold text-slate-700">🎲 Booster Slot &amp; Collation Details</span>
+        <span id="slotArrow" class="text-slate-400 text-xs transition-transform">▾</span>
+      </button>
+      <div id="slotPanel" class="hidden px-3 pb-3 border-t border-slate-100 pt-2">
+        <!-- Variant picker for sets with multiple collation options (e.g. MOM's 24 variations) -->
+        <div class="flex gap-1.5 overflow-x-auto pb-2">
+          <span class="shrink-0 px-2 py-1 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950">Option 1 (Base)</span>
+          <span class="shrink-0 px-2 py-1 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">Option 2</span>
+          <span class="shrink-0 px-2 py-1 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">Option 3</span>
+        </div>
+        <!-- Sheet composition rows: sheet name, pick count, exact pull probability -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[10px] bg-slate-50 rounded-md px-2 py-1">
+            <span class="text-slate-700 font-semibold">Common</span>
+            <span class="text-slate-500">10 picks</span>
+            <span class="font-mono font-bold text-slate-700">66.7%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] bg-slate-50 rounded-md px-2 py-1">
+            <span class="text-slate-700 font-semibold">Uncommon</span>
+            <span class="text-slate-500">3 picks</span>
+            <span class="font-mono font-bold text-slate-700">20.0%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] bg-slate-50 rounded-md px-2 py-1">
+            <span class="text-slate-700 font-semibold">Rare/Mythic Wildcard</span>
+            <span class="text-slate-500">1 pick</span>
+            <span class="font-mono font-bold text-slate-700">6.7%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] bg-slate-50 rounded-md px-2 py-1">
+            <span class="text-slate-700 font-semibold">Foil Wildcard</span>
+            <span class="text-slate-500">1 pick</span>
+            <span class="font-mono font-bold text-slate-700">6.7%</span>
+          </div>
+        </div>
+        <button class="w-full mt-2 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-bold">🎲 Simulate a Pack Roll</button>
+      </div>
+    </div>
+
+    <!-- Chase cards: horizontal scroll strip instead of a multi-column grid -->
+    <div>
+      <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5 px-1">Top Chase Cards</h4>
+      <div class="flex gap-2 overflow-x-auto pb-1">
+        <div class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 shadow-sm p-1 text-center">
+          <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🎴</div>
+          <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Vivi Ornitier</div>
+          <div class="text-[8px] font-black text-emerald-600">$42.10</div>
+        </div>
+        <div class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 shadow-sm p-1 text-center">
+          <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🎴</div>
+          <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Up the Beanstalk</div>
+          <div class="text-[8px] font-black text-emerald-600">$18.75</div>
+        </div>
+        <div class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 shadow-sm p-1 text-center">
+          <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🎴</div>
+          <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Season of Weaving</div>
+          <div class="text-[8px] font-black text-emerald-600">$9.40</div>
+        </div>
+        <div class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 shadow-sm p-1 text-center">
+          <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🎴</div>
+          <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Ygra, Eater of All</div>
+          <div class="text-[8px] font-black text-emerald-600">$7.20</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All products in this set: filterable image grid instead of a plain list ============ -->
+    <div>
+      <div class="flex items-center justify-between mb-1.5 px-1">
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-wider">All Products in This Set</h4>
+        <span class="text-[9px] text-slate-400 font-semibold">6 products</span>
+      </div>
+
+      <!-- Search + packaging-type filter row, same one-row-on-mobile pattern as Products Overview -->
+      <div class="flex flex-col gap-1.5 mb-2">
+        <div class="relative">
+          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+          <input type="text" placeholder="Search this set's products..." class="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-[11px] text-slate-800 placeholder:text-slate-400" />
+        </div>
+        <div class="flex gap-1.5 overflow-x-auto pb-0.5">
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950">All</span>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Booster Packs</span>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Booster Boxes</span>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Bundles</span>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Cases</span>
+        </div>
+      </div>
+
+      <!-- 3-column image grid: smaller picture, name, price→EV, profit, and EV Score per card -->
+      <div class="grid grid-cols-3 gap-1.5">
+        <button class="bg-white rounded-lg border-2 border-amber-500 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">📦</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Play Booster Box</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-emerald-50 text-emerald-700 border-emerald-300">82</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$119.99 → <span class="font-bold text-emerald-600">$134.50</span></div>
+            <div class="text-[8px] font-bold text-emerald-600">+$14.51</div>
+          </div>
+        </button>
+        <button class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">🎁</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Bundle</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-amber-50 text-amber-700 border-amber-300">55</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$44.99 → <span class="font-bold text-emerald-600">$47.30</span></div>
+            <div class="text-[8px] font-bold text-emerald-600">+$2.31</div>
+          </div>
+        </button>
+        <button class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">✨</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Collector Booster</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-emerald-50 text-emerald-700 border-emerald-300">91</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$16.99 → <span class="font-bold text-emerald-600">$21.85</span></div>
+            <div class="text-[8px] font-bold text-emerald-600">+$4.86</div>
+          </div>
+        </button>
+        <button class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">📚</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Booster Case</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-rose-50 text-rose-700 border-rose-300">28</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$719.99 → <span class="font-bold text-rose-600">$698.20</span></div>
+            <div class="text-[8px] font-bold text-rose-600">-$21.79</div>
+          </div>
+        </button>
+        <button class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">🃏</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Single Booster Pack</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-emerald-50 text-emerald-700 border-emerald-300">80</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$4.99 → <span class="font-bold text-emerald-600">$5.60</span></div>
+            <div class="text-[8px] font-bold text-emerald-600">+$0.61</div>
+          </div>
+        </button>
+        <button class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden text-left">
+          <div class="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center text-base">⭐</div>
+          <div class="p-1">
+            <div class="flex items-center justify-between gap-0.5">
+              <span class="font-bold text-[9px] text-slate-800 truncate">Commander Deck</span>
+              <span class="shrink-0 font-mono text-[7px] font-bold px-1 py-px rounded border bg-emerald-50 text-emerald-700 border-emerald-300">76</span>
+            </div>
+            <div class="text-[8px] text-slate-500 mt-0.5">$59.99 → <span class="font-bold text-emerald-600">$68.40</span></div>
+            <div class="text-[8px] font-bold text-emerald-600">+$8.41</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- /tab-explorer -->
+
+  <!-- ============================================================ -->
+  <!-- ============ SPECIAL CHASES CONCEPT (hidden by default) ============ -->
+  <!-- ============================================================ -->
+  <div id="tab-chase" class="hidden space-y-3">
+
+    <!-- Curated card selector: horizontal scroll of thumbnails instead of a desktop sidebar list -->
+    <div class="flex gap-2 overflow-x-auto pb-1">
+      <button class="shrink-0 w-16 bg-slate-900 rounded-lg border-2 border-amber-500 p-1 text-center">
+        <div class="w-full h-14 rounded bg-slate-800 flex items-center justify-center text-lg">🃏</div>
+        <div class="text-[8px] font-bold text-white truncate mt-1">Power Nine</div>
+      </button>
+      <button class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 p-1 text-center">
+        <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🃏</div>
+        <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Reserved List</div>
+      </button>
+      <button class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 p-1 text-center">
+        <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🃏</div>
+        <div class="text-[8px] font-bold text-slate-700 truncate mt-1">Masterpiece</div>
+      </button>
+      <button class="shrink-0 w-16 bg-white rounded-lg border border-slate-300 p-1 text-center">
+        <div class="w-full h-14 rounded bg-slate-100 flex items-center justify-center text-lg">🃏</div>
+        <div class="text-[8px] font-bold text-slate-700 truncate mt-1">The One Ring</div>
+      </button>
+    </div>
+
+    <!-- Selected chase card detail -->
+    <div class="bg-slate-900 text-white rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+      <div class="flex items-center gap-3 p-3">
+        <div class="shrink-0 w-16 h-20 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl">🃏</div>
+        <div class="min-w-0">
+          <span class="inline-block px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-500 text-slate-950 mb-1">CURATED</span>
+          <h3 class="text-xs font-black leading-tight">The Power Nine Collection</h3>
+          <p class="text-[9px] text-slate-400 leading-tight mt-0.5">Alpha 1993 · Black Lotus &amp; friends</p>
+        </div>
+      </div>
+
+      <!-- Story: collapsed by default, long-form editorial text is expensive on mobile -->
+      <button onclick="document.getElementById('storyPanel').classList.toggle('hidden')" class="w-full text-left px-3 pb-2 text-[10px] text-amber-400 font-bold">Read the story ▾</button>
+      <div id="storyPanel" class="hidden px-3 pb-3 text-[10px] text-slate-300 leading-relaxed border-t border-slate-800 pt-2">
+        The legendary "Power Nine" represents the most powerful and broken cards ever printed, all originating from 1993's earliest core sets. Fewer than 1,100 Black Lotus copies were printed in Alpha — pristine examples are the ultimate MTG holy grail.
+      </div>
+
+      <!-- Vendor price grid: 2x2 instead of a 4-column row -->
+      <div class="grid grid-cols-2 gap-1.5 px-3 pb-3">
+        <div class="bg-slate-800/70 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-[8px] text-slate-400 uppercase font-bold">TCGplayer</div>
+          <div class="text-[11px] font-black text-emerald-400">$510,000</div>
+        </div>
+        <div class="bg-slate-800/70 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-[8px] text-slate-400 uppercase font-bold">Cardmarket</div>
+          <div class="text-[11px] font-black text-emerald-400">$440,000</div>
+        </div>
+        <div class="bg-slate-800/70 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-[8px] text-slate-400 uppercase font-bold">Card Kingdom</div>
+          <div class="text-[11px] font-black text-emerald-400">$550,000</div>
+        </div>
+        <div class="bg-slate-800/70 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-[8px] text-slate-400 uppercase font-bold">Manapool</div>
+          <div class="text-[11px] font-black text-emerald-400">$495,000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variant chips: horizontal scroll instead of a wide button row -->
+    <div>
+      <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5 px-1">Power Nine Members</h4>
+      <div class="flex gap-1.5 overflow-x-auto pb-1">
+        <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950">Black Lotus</span>
+        <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Mox Sapphire</span>
+        <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Ancestral Recall</span>
+        <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Time Walk</span>
+        <span class="shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-300 text-slate-700">Timetwister</span>
+      </div>
+    </div>
+  </div>
+  <!-- /tab-chase -->
+
+  <!-- ============================================================ -->
+  <!-- ============ ADMIN PORTAL CONCEPT (hidden by default) ============ -->
+  <!-- ============================================================ -->
+  <div id="tab-admin" class="hidden space-y-3">
+
+    <!-- Pipeline health: 2x2 stat grid instead of a wide status bar -->
+    <div class="grid grid-cols-2 gap-1.5">
+      <div class="bg-white rounded-lg border border-slate-300 px-2.5 py-2">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Last Run</div>
+        <div class="text-[11px] font-black text-emerald-600 flex items-center gap-1">✔ Success</div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-300 px-2.5 py-2">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Duration</div>
+        <div class="text-[11px] font-black text-slate-800">38m 12s</div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-300 px-2.5 py-2">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Products</div>
+        <div class="text-[11px] font-black text-slate-800">4,213</div>
+      </div>
+      <div class="bg-white rounded-lg border border-slate-300 px-2.5 py-2">
+        <div class="text-[8px] text-slate-400 uppercase font-bold">Integrity Issues</div>
+        <div class="text-[11px] font-black text-amber-600">37 warnings</div>
+      </div>
+    </div>
+
+    <!-- Admin sections: accordion instead of desktop's dense multi-tab tables -->
+    <div class="space-y-1.5">
+      <div class="bg-white rounded-lg border border-slate-300 overflow-hidden">
+        <button onclick="document.getElementById('adminIntegrity').classList.toggle('hidden')" class="w-full flex items-center justify-between px-3 py-2.5">
+          <span class="text-xs font-bold text-slate-700">🛡 Data Integrity (37)</span>
+          <span class="text-slate-400 text-xs">▾</span>
+        </button>
+        <div id="adminIntegrity" class="hidden px-3 pb-2.5 space-y-1.5 border-t border-slate-200 pt-2">
+          <div class="flex items-center justify-between text-[10px] bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
+            <span class="text-rose-700 font-semibold truncate">MH3 · Missing market price</span>
+            <span class="text-rose-500 font-black shrink-0">error</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+            <span class="text-amber-700 font-semibold truncate">BLB · Unit EV is $0.00</span>
+            <span class="text-amber-500 font-black shrink-0">warning</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-slate-300 overflow-hidden">
+        <button onclick="document.getElementById('adminLogs').classList.toggle('hidden')" class="w-full flex items-center justify-between px-3 py-2.5">
+          <span class="text-xs font-bold text-slate-700">🗒 Pipeline Logs</span>
+          <span class="text-slate-400 text-xs">▾</span>
+        </button>
+        <div id="adminLogs" class="hidden px-3 pb-2.5 space-y-1.5 border-t border-slate-200 pt-2">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-700 font-semibold">run-2026-09-20-091500</span>
+            <span class="text-emerald-600 font-black">success</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-700 font-semibold">run-2026-09-19-091200</span>
+            <span class="text-emerald-600 font-black">success</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-slate-300 overflow-hidden">
+        <button onclick="document.getElementById('adminUsers').classList.toggle('hidden')" class="w-full flex items-center justify-between px-3 py-2.5">
+          <span class="text-xs font-bold text-slate-700">👤 Admin Users</span>
+          <span class="text-slate-400 text-xs">▾</span>
+        </button>
+        <div id="adminUsers" class="hidden px-3 pb-2.5 space-y-1.5 border-t border-slate-200 pt-2">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-700 font-semibold">admin@mtgev.app</span>
+            <span class="text-slate-400">Owner</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /tab-admin -->
+
+  <script>
+    // Demo-only tab switcher: shows/hides the four concept sections and highlights the active nav button.
+    function showTab(tabName) {
+      ['products', 'explorer', 'chase', 'admin'].forEach((name) => {
+        const panel = document.getElementById('tab-' + name);
+        if (panel) panel.classList.toggle('hidden', name !== tabName);
+      });
+      document.querySelectorAll('[data-tab-btn], [data-tab-btn-mobile]').forEach((btn) => {
+        const isActive = btn.getAttribute('data-tab-btn') === tabName || btn.getAttribute('data-tab-btn-mobile') === tabName;
+        btn.classList.toggle('bg-amber-500', isActive);
+        btn.classList.toggle('text-slate-950', isActive);
+        btn.classList.toggle('text-slate-300', !isActive);
+        if (btn.hasAttribute('data-tab-btn-mobile')) btn.classList.toggle('bg-slate-800', !isActive);
+      });
+      document.getElementById('mobileNav')?.classList.add('hidden');
+    }
+  </script>
+
+  </main>
+
+  <!-- ============ MOBILE STICKY VALUATION SHEET: hidden by default, revealed via arrow ============ -->
+  <div class="sm:hidden fixed bottom-0 inset-x-0 z-50">
+
+    <div class="bg-slate-900 text-white border-t border-slate-800 shadow-2xl rounded-t-2xl">
+      <!-- Arrow toggle handle -->
+      <button onclick="document.getElementById('mobileValuationSheet').classList.toggle('hidden'); document.getElementById('sheetArrow').classList.toggle('rotate-180')" class="w-full flex items-center justify-center gap-2 py-2">
+        <span class="text-[11px] font-bold text-slate-300">Vendor &amp; Price Options</span>
+        <span id="sheetArrow" class="transition-transform text-amber-400">▲</span>
+      </button>
+
+      <!-- Revealed content -->
+      <div id="mobileValuationSheet" class="hidden px-3 pb-3 space-y-2 border-t border-slate-800 pt-2">
+        <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/80 text-xs overflow-x-auto">
+          <span class="text-[10px] font-bold text-slate-400 uppercase px-1.5 shrink-0">Basis</span>
+          <button class="px-2 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 shrink-0">Mean</button>
+          <button class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Floor</button>
+          <button class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Ceiling</button>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/80 text-xs overflow-x-auto">
+          <span class="text-[10px] font-bold text-slate-400 uppercase px-1.5 shrink-0">Price</span>
+          <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 shrink-0">Direct</button>
+          <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 shrink-0">Reprint</button>
+        </div>
+        <select class="w-full text-[11px] font-bold bg-slate-800 border border-slate-700 text-white rounded-lg px-2 py-2">
+          <option>All Vendors (Cheapest)</option>
+          <option>TCGplayer</option>
+          <option>Cardmarket</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
