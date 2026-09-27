@@ -1,0 +1,9201 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T08:41:09.662319+00:00",
+  "source": "MTGJSON AllPrintings.json BoosterSheet.fixed metadata",
+  "sourceVersions": [],
+  "sourceDates": [],
+  "setCount": 871,
+  "boosterDefinitionCount": 905,
+  "fixedSheetCount": 622,
+  "warningCount": 0,
+  "warnings": [],
+  "entries": {
+    "10E:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "2ED:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "2ED:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "2X2:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "etchedRareMythic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "rareMythicShowcase",
+        "texturedRareMythicShowcase"
+      ]
+    },
+    "2X2:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithShowcase",
+        "crypticSpires",
+        "dedicatedFoilDoubleMasters",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "2XM:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxtopper"
+      ]
+    },
+    "2XM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoilDoubleMasters",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "2XM:vip": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilBorderlessRare",
+        "foilBorderlessSecond",
+        "foilCommon",
+        "foilRare",
+        "foilSecond",
+        "foilUncommon",
+        "forest1",
+        "forest2",
+        "island1",
+        "island2",
+        "mountain1",
+        "mountain2",
+        "plains1",
+        "plains2",
+        "swamp1",
+        "swamp2"
+      ]
+    },
+    "30A:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "a30Basic",
+        "a30Common",
+        "a30Rare",
+        "a30Retro",
+        "a30RetroBasic",
+        "a30Uncommon"
+      ]
+    },
+    "3ED:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "3ED:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "4ED:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "4ED:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "5DN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "5DN:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "5ED:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "5ED:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "6ED:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "6ED:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "7ED:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "8ED:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "9ED:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "A25:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ACR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "borderlessScene",
+        "etchedRareMythic",
+        "etchedUncommon",
+        "foilBasic",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilShowcaseUncommon",
+        "foilUncommon",
+        "nonfoilExtended"
+      ]
+    },
+    "ACR:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "boosterFun",
+        "boosterFunFoil",
+        "foil",
+        "rareMythic",
+        "scene",
+        "uncommon"
+      ]
+    },
+    "AER:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In144",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AER:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "AFR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedCommanderRareMythic",
+        "extendedCoreRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilRareMythicAltArt",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "AFR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "AFR:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "AFR:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "AFR:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:theme-dungeons": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AFR:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AKH:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In129",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AKH:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "AKR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ALA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ALA:premium": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "alaraPremiumBasic",
+        "alaraPremiumCommon",
+        "alaraPremiumRareMythic",
+        "alaraPremiumUncommon"
+      ]
+    },
+    "ALA:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ALL:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "APC:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "APC:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "ARB:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ARB:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ARN:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "ATQ:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "AVR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "AVR:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BBD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "foilMythicPartner1",
+        "foilRarePartner1",
+        "foilRarePartner2",
+        "foilRarePartner3",
+        "foilRarePartner4",
+        "foilRarePartner5",
+        "foilUncommonPartner1",
+        "foilUncommonPartner2",
+        "foilUncommonPartner3",
+        "foilUncommonPartner4",
+        "foilUncommonPartner5",
+        "mythicPartner1",
+        "rareMythic",
+        "rarePartner1",
+        "rarePartner2",
+        "rarePartner3",
+        "rarePartner4",
+        "rarePartner5",
+        "uncommon",
+        "uncommonPartner1",
+        "uncommonPartner2",
+        "uncommonPartner3",
+        "uncommonPartner4",
+        "uncommonPartner5"
+      ]
+    },
+    "BBD:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "BFZ:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In144",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BFZ:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "BLB:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commanderCard",
+        "foilCommander",
+        "foilCommon",
+        "foilLand",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "showcaseRareMythic"
+      ]
+    },
+    "BLB:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "showcaseRareMythic"
+      ]
+    },
+    "BLB:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "land",
+        "rareMythicWithShowcase",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "BLB:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "BLB:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "BLB:value": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "land",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "BNG:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BNG:prerelease-conquer": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BNG:prerelease-dominate": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BNG:prerelease-lead": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BNG:prerelease-outwit": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BNG:prerelease-thrive": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BOK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "BOK:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "BRO:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "brrRetroArtifact",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "BRO:bundle-transformers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "transformers"
+      ]
+    },
+    "BRO:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "brrRetroArtifactRareMythic",
+        "brrRetroArtifactUncommon",
+        "brrSchematicRareMythic",
+        "brrSchematicUncommon",
+        "doubleRainbowSerialized",
+        "extendedCommanderJumpstart",
+        "extendedRareMythic",
+        "foilAltArt",
+        "foilBrrRetroArtifactSchematicUncommon",
+        "foilCommon",
+        "foilFullartBasic",
+        "foilRareMythic",
+        "foilShatteredGlass",
+        "foilTransformers",
+        "foilUncommon",
+        "shatteredGlass",
+        "transformers"
+      ]
+    },
+    "BRO:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythic",
+        "foilUncommonRetroArtifact",
+        "nonfoilRareMythic"
+      ]
+    },
+    "BRO:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "brrRetroArtifact",
+        "common",
+        "foil",
+        "mechBasic",
+        "rareMythicWithShowcase",
+        "uncommon"
+      ]
+    },
+    "BRO:gift-bundle-transformers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "transformers"
+      ]
+    },
+    "BRO:jumpstart": {
+      "fixedSheets": [
+        "infantry1",
+        "infantry1Foils",
+        "infantry2",
+        "infantry2Foils",
+        "powerstones1",
+        "powerstones1Foils",
+        "powerstones2",
+        "powerstones2Foils",
+        "titanic1",
+        "titanic1Foils",
+        "titanic2",
+        "titanic2Foils",
+        "unearthed1",
+        "unearthed1Foils",
+        "unearthed2",
+        "unearthed2Foils",
+        "welded1",
+        "welded1Foils",
+        "welded2",
+        "welded2Foils"
+      ],
+      "sheetNames": [
+        "infantry1",
+        "infantry1Foils",
+        "infantry2",
+        "infantry2Foils",
+        "powerstones1",
+        "powerstones1Foils",
+        "powerstones2",
+        "powerstones2Foils",
+        "rareMythicBlack",
+        "rareMythicBlue",
+        "rareMythicGreen",
+        "rareMythicRed",
+        "rareMythicWhite",
+        "titanic1",
+        "titanic1Foils",
+        "titanic2",
+        "titanic2Foils",
+        "unearthed1",
+        "unearthed1Foils",
+        "unearthed2",
+        "unearthed2Foils",
+        "welded1",
+        "welded1Foils",
+        "welded2",
+        "welded2Foils"
+      ]
+    },
+    "BRO:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "BRO:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "brrRetroArtifact",
+        "common",
+        "foilBasic",
+        "foilTransformers",
+        "foilWithShowcase",
+        "rareMythic",
+        "theList",
+        "transformers",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "CHK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "CHK:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "CHK:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basics",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "CHR:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "CLB:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedCommonUncommon",
+        "etchedRareMythic",
+        "extendedCommander",
+        "extendedRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonLegendary",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "CLB:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilShowcaseCommonUncommon",
+        "foilShowcaseRareMythic",
+        "showcaseRareMythic"
+      ]
+    },
+    "CLB:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "background",
+        "dedicatedFoil",
+        "legendaryWithShowcase",
+        "nonlegendaryCommonWithShowcase",
+        "nonlegendaryRareMythicWithShowcase",
+        "nonlegendaryUncommonWithShowcase",
+        "special"
+      ]
+    },
+    "CLB:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "CLB:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "background",
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilEtchedLegend",
+        "foilWithShowcase",
+        "legendaryWithShowcase",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "CLU:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "shockLand"
+      ]
+    },
+    "CLU:default": {
+      "fixedSheets": [
+        "azoriusSenate1",
+        "azoriusSenate2",
+        "borosLegion1",
+        "borosLegion2",
+        "cultOfRakdos1",
+        "cultOfRakdos2",
+        "golgariSwarm1",
+        "golgariSwarm2",
+        "gruulClans1",
+        "gruulClans2",
+        "houseDimir1",
+        "houseDimir2",
+        "izzetLeague1",
+        "izzetLeague2",
+        "orzhovSyndicate1",
+        "orzhovSyndicate2",
+        "selesnyaConclave1",
+        "selesnyaConclave2",
+        "simicCombine1",
+        "simicCombine2"
+      ],
+      "sheetNames": [
+        "azoriusSenate1",
+        "azoriusSenate2",
+        "borosLegion1",
+        "borosLegion2",
+        "cultOfRakdos1",
+        "cultOfRakdos2",
+        "golgariSwarm1",
+        "golgariSwarm2",
+        "gruulClans1",
+        "gruulClans2",
+        "houseDimir1",
+        "houseDimir2",
+        "izzetLeague1",
+        "izzetLeague2",
+        "orzhovSyndicate1",
+        "orzhovSyndicate2",
+        "selesnyaConclave1",
+        "selesnyaConclave2",
+        "simicCombine1",
+        "simicCombine2"
+      ]
+    },
+    "CMM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "etchedRareMythic",
+        "extendedCommander",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilExtendedCommander",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "rareMythicShowcase",
+        "texturedRareMythic"
+      ]
+    },
+    "CMM:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilCommonUncommonShowcase",
+        "foilRareMythicShowcase",
+        "rareMythicShowcase"
+      ]
+    },
+    "CMM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithShowcase",
+        "foil",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon",
+        "special"
+      ]
+    },
+    "CMM:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foil",
+        "foilBasic",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon",
+        "theList",
+        "wildcard"
+      ]
+    },
+    "CMR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedRareMythic",
+        "etchedReprint",
+        "etchedUncommon",
+        "extendedArtCommonUncommon",
+        "extendedArtRareMythic",
+        "foilCommon",
+        "foilLegendMythic",
+        "foilLegendRare",
+        "foilLegendUncommon",
+        "foilRareMythicNonlegendary",
+        "foilUncommonExtendedart"
+      ]
+    },
+    "CMR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "etchedFoil",
+        "legendary",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon",
+        "special"
+      ]
+    },
+    "CN2:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "conspiracy",
+        "conspiracyFoil",
+        "nonconspiracyCommon",
+        "nonconspiracyFoil",
+        "nonconspiracyRareMythic",
+        "nonconspiracyUncommon"
+      ]
+    },
+    "CNS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "draft",
+        "draftFoil",
+        "nondraftCommon",
+        "nondraftFoil",
+        "nondraftRareMythic",
+        "nondraftUncommon"
+      ]
+    },
+    "CON:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "CON:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "CSP:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonOrBasic",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "DBL:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foil",
+        "midDfcCommon",
+        "midDfcRareMythic",
+        "midDfcUncommon",
+        "midSfcCommon",
+        "midSfcRareMythic",
+        "midSfcUncommon",
+        "vowDfcCommon",
+        "vowDfcRareMythic",
+        "vowDfcUncommon",
+        "vowSfcCommon",
+        "vowSfcRareMythic",
+        "vowSfcUncommon"
+      ]
+    },
+    "DFT:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilFirstPlace",
+        "foilLand"
+      ]
+    },
+    "DFT:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBoosterFun",
+        "foilCommon",
+        "foilDriverSeatLand",
+        "foilRareMythic",
+        "foilRevvedUpCu",
+        "foilShowcaseCommander",
+        "foilUncommon",
+        "revvedUpCu",
+        "showcaseCommander"
+      ]
+    },
+    "DFT:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBoosterFun",
+        "foilRevvedUpCu"
+      ]
+    },
+    "DFT:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythicWithBoosterfun",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "DFT:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "DFT:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "DGM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DGM:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DIS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "DKA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfc",
+        "foil",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "DKA:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DMR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "rareMythicBorderless",
+        "rareMythicRetro"
+      ]
+    },
+    "DMR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonBorderless",
+        "commonUncommonRetro",
+        "foil",
+        "rareMythicRetro",
+        "rareMythicWithShowcase",
+        "uncommon"
+      ]
+    },
+    "DMU:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon"
+      ]
+    },
+    "DMU:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilLegendsRetold"
+      ]
+    },
+    "DMU:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedRetoldRareMythic",
+        "etchedRetoldUncommon",
+        "extendedRareMythic",
+        "foilAltBorderRareMythic",
+        "foilCommon",
+        "foilFullartLand",
+        "foilRareMythic",
+        "foilUncommon",
+        "foilUncommonShowcase",
+        "lostLegends",
+        "retoldUncommon",
+        "showcaseRareMythic",
+        "texturedFoil"
+      ]
+    },
+    "DMU:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythic",
+        "foilUncommonShowcase",
+        "nonfoilRareMythic"
+      ]
+    },
+    "DMU:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilWithShowcase",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon"
+      ]
+    },
+    "DMU:jumpstart": {
+      "fixedSheets": [
+        "arcaneMischief",
+        "arcaneMischiefFoils",
+        "beastTerritory",
+        "beastTerritoryFoils",
+        "coalitionCorps",
+        "coalitionCorpsFoils",
+        "coalitionLegion",
+        "coalitionLegionFoils",
+        "monsterTerritory",
+        "monsterTerritoryFoils",
+        "mysticMischief",
+        "mysticMischiefFoils",
+        "readyToAttack",
+        "readyToAttackFoils",
+        "readyToCharge",
+        "readyToChargeFoils",
+        "totallyMerciless",
+        "totallyMercilessFoils",
+        "totallyRuthless",
+        "totallyRuthlessFoils"
+      ],
+      "sheetNames": [
+        "arcaneMischief",
+        "arcaneMischiefFoils",
+        "beastTerritory",
+        "beastTerritoryFoils",
+        "coalitionCorps",
+        "coalitionCorpsFoils",
+        "coalitionLegion",
+        "coalitionLegionFoils",
+        "monsterTerritory",
+        "monsterTerritoryFoils",
+        "mysticMischief",
+        "mysticMischiefFoils",
+        "rareMythicBlack",
+        "rareMythicBlue",
+        "rareMythicGreen",
+        "rareMythicRed",
+        "rareMythicWhite",
+        "readyToAttack",
+        "readyToAttackFoils",
+        "readyToCharge",
+        "readyToChargeFoils",
+        "totallyMerciless",
+        "totallyMercilessFoils",
+        "totallyRuthless",
+        "totallyRuthlessFoils"
+      ]
+    },
+    "DMU:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "DMU:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "uncommonShowcase",
+        "wildcard"
+      ]
+    },
+    "DOM:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon"
+      ]
+    },
+    "DOM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "legendaryRareMythic",
+        "legendaryUncommon",
+        "nonlegendaryRareMythic",
+        "nonlegendaryUncommon"
+      ]
+    },
+    "DOM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "DOM:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DOM:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DOM:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DOM:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DOM:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DRK:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "DSK:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBasic",
+        "foilBoosterFun",
+        "foilCommon",
+        "foilRareMythic",
+        "foilShowcaseCommander",
+        "foilUncommon",
+        "showcaseCommander"
+      ]
+    },
+    "DSK:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBoosterFun",
+        "foilUncommon"
+      ]
+    },
+    "DSK:nightmare": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "borderless",
+        "moviePoster"
+      ]
+    },
+    "DSK:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "land",
+        "rareMythicWithShowcase",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "DSK:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "DSK:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "DST:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "DST:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "DTK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "DTK:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "DTK:prerelease-atarka": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "DTK:prerelease-dromoka": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "DTK:prerelease-kolaghan": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "DTK:prerelease-ojutai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "DTK:prerelease-silumgar": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "ECL:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBoosterfun",
+        "foilCommon",
+        "foilLand",
+        "foilRareMythic",
+        "foilUncommon",
+        "nonFoilBoosterfun",
+        "nonFoilEcc"
+      ]
+    },
+    "ECL:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythicBoosterfun",
+        "specialGuest",
+        "uncommonFable",
+        "wildcard"
+      ]
+    },
+    "ECL:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "ECL:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "promo"
+      ]
+    },
+    "ELD:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ELD:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "ancillary",
+        "anyShowcase",
+        "foilCommon",
+        "foilRareMythic",
+        "foilUncommon",
+        "rmExtended"
+      ]
+    },
+    "ELD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "rareMythicShowcase",
+        "uncommon"
+      ]
+    },
+    "ELD:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "ELD:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ELD:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ELD:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ELD:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ELD:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "EMA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "EMN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommonUncommon",
+        "dfcRareMythic",
+        "foil",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "EMN:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "EOE:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "celestialBasicLand",
+        "commander",
+        "foilBoosterfun",
+        "foilCommon",
+        "foilRareMythic",
+        "foilStellarSightsLand",
+        "foilUncommon",
+        "galaxyStellarSightsLand",
+        "nonFoilBoosterfun",
+        "stellarSightsLand"
+      ]
+    },
+    "EOE:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "extendedArt",
+        "foilAny"
+      ]
+    },
+    "EOE:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "EOE:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "EOE:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "EVE:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "EXO:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "FDN:beginner": {
+      "fixedSheets": [
+        "cats",
+        "elves",
+        "goblins",
+        "healing",
+        "inferno",
+        "pirates",
+        "primal",
+        "undead",
+        "vampires",
+        "wizards"
+      ],
+      "sheetNames": [
+        "cats",
+        "elves",
+        "goblins",
+        "healing",
+        "inferno",
+        "pirates",
+        "primal",
+        "undead",
+        "vampires",
+        "wizards"
+      ]
+    },
+    "FDN:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilBoosterFun",
+        "foilCommon",
+        "foilRareMythic",
+        "foilUncommon",
+        "showcaseRareMythic"
+      ]
+    },
+    "FDN:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "land",
+        "rareMythicWithShowcase",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "FDN:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "FDN:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "FEM:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "FIN:bundle-promo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "promos"
+      ]
+    },
+    "FIN:chocobo-bundle": {
+      "fixedSheets": [
+        "chocoboBasicA",
+        "chocoboBasicB"
+      ],
+      "sheetNames": [
+        "borderlessChocobo",
+        "chocoboBasicA",
+        "chocoboBasicB"
+      ]
+    },
+    "FIN:chocobo-bundle-scene": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "sceneCard"
+      ]
+    },
+    "FIN:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterfunCommonUncommon",
+        "ficFoilBoosterfunRareMythic",
+        "foilBasic",
+        "foilBoosterfunCommonUncommon",
+        "foilBoosterfunRareMythic",
+        "foilCommon",
+        "foilRareMythic",
+        "foilThroughTheAges",
+        "foilUncommon",
+        "nonFoilBoosterfunRareMythic",
+        "nonFoilThroughTheAges"
+      ]
+    },
+    "FIN:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foil",
+        "nonfoil"
+      ]
+    },
+    "FIN:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythic",
+        "throughTheAges",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "FIN:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "throughTheAges",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "FIN:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "FRF:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "FRF:prerelease-abzan": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "FRF:prerelease-jeskai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "FRF:prerelease-mardu": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "FRF:prerelease-sultai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "FRF:prerelease-temur": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "FUT:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "GPT:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "GRN:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:prerelease-boros": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "GRN:prerelease-dimir": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "GRN:prerelease-golgari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "GRN:prerelease-izzet": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "GRN:prerelease-selesnya": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "GRN:theme-boros": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:theme-dimir": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:theme-golgari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:theme-izzet": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GRN:theme-selesnya": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:prerelease-boros": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:prerelease-dimir": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:prerelease-gruul": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:prerelease-orzhov": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:prerelease-simic": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "GTC:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "HBG:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "specializeRareMythic",
+        "specializeUncommon",
+        "uncommon"
+      ]
+    },
+    "HML:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "HOB:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxTopper"
+      ]
+    },
+    "HOB:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterfun",
+        "foilBoosterfun",
+        "foilCommon",
+        "foilJourneyLand",
+        "foilRareMythic",
+        "foilUncommon",
+        "surgeHoardUncommon"
+      ]
+    },
+    "HOB:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythic",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "HOB:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "promo"
+      ]
+    },
+    "HOU:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In129",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "HOU:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "ICE:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "ICE:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "IKO:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "nongainlandCommonBaseset",
+        "rareMythicBaseset",
+        "uncommonBaseset"
+      ]
+    },
+    "IKO:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxTopper"
+      ]
+    },
+    "IKO:box-topper-jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxTopper"
+      ]
+    },
+    "IKO:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commander",
+        "commonUncommonShowcase",
+        "extendedArt",
+        "foilBasic",
+        "foilCommon",
+        "foilShowcaseAny",
+        "foilUncommon",
+        "godzilla",
+        "godzillaFoil",
+        "rareMythicFoil",
+        "rareMythicShowcase"
+      ]
+    },
+    "IKO:collector-jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commander",
+        "commonUncommonShowcase",
+        "extendedArt",
+        "foilBasic",
+        "foilCommon",
+        "foilShowcaseAny",
+        "foilUncommon",
+        "godzilla",
+        "godzillaFoil",
+        "rareMythicFoil",
+        "rareMythicShowcase"
+      ]
+    },
+    "IKO:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "commonWithShowcase",
+        "foil",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "IKO:jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "commonWithShowcase",
+        "foil",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "IKO:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "IKO:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IKO:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IKO:theme-monsters": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IKO:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IKO:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IKO:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "IMA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "INR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBasic",
+        "foilBoosterFun",
+        "foilCommon",
+        "foilRareMythic",
+        "foilShowcaseCu",
+        "foilUncommon",
+        "retroCu",
+        "showcaseCu"
+      ]
+    },
+    "INR:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommon",
+        "foil",
+        "foilBasic",
+        "rareMythicWithShowcase",
+        "retro",
+        "sfcCommon",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "INV:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "INV:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "INV:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "ISD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfc",
+        "foil",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "ISD:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "J22:jumpstart": {
+      "fixedSheets": [
+        "blink1",
+        "blink2",
+        "blink3",
+        "blink4",
+        "boneyard1",
+        "boneyard2",
+        "cats1",
+        "cats2",
+        "cats3",
+        "cats4",
+        "constellation1",
+        "constellation2",
+        "cruel1",
+        "cruel2",
+        "cruel3",
+        "cruel4",
+        "cycling1",
+        "cycling2",
+        "demons1",
+        "demons2",
+        "detective1",
+        "detective2",
+        "detective3",
+        "detective4",
+        "dragons1",
+        "dragons2",
+        "eldrazi",
+        "elves1",
+        "elves2",
+        "elves3",
+        "elves4",
+        "experimental1",
+        "experimental2",
+        "faeries1",
+        "faeries2",
+        "fangs1",
+        "fangs2",
+        "fangs3",
+        "fangs4",
+        "ferocious1",
+        "ferocious2",
+        "ferocious3",
+        "ferocious4",
+        "fiery1",
+        "fiery2",
+        "fiery3",
+        "fiery4",
+        "gigantic1",
+        "gigantic2",
+        "goToSchool1",
+        "goToSchool2",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "gross1",
+        "gross2",
+        "gross3",
+        "gross4",
+        "holy1",
+        "holy2",
+        "holy3",
+        "holy4",
+        "insects1",
+        "insects2",
+        "insects3",
+        "insects4",
+        "inventive1",
+        "inventive2",
+        "inventive3",
+        "inventive4",
+        "knights",
+        "landfall1",
+        "landfall2",
+        "law1",
+        "law2",
+        "law3",
+        "law4",
+        "merfolk1",
+        "merfolk2",
+        "merfolk3",
+        "merfolk4",
+        "morbid1",
+        "morbid2",
+        "multiHeaded1",
+        "multiHeaded2",
+        "primates",
+        "raid1",
+        "raid2",
+        "raid3",
+        "raid4",
+        "rats",
+        "scrying1",
+        "scrying2",
+        "shapeshifters",
+        "snow",
+        "speedy",
+        "spicy",
+        "spirits1",
+        "spirits2",
+        "teamwork1",
+        "teamwork2",
+        "thinkAgain1",
+        "thinkAgain2",
+        "thinkAgain3",
+        "thinkAgain4",
+        "treasure1",
+        "treasure2",
+        "treasure3",
+        "treasure4",
+        "unluckyThirteen",
+        "urzas",
+        "vehicles",
+        "wolves1",
+        "wolves2",
+        "wolves3",
+        "wolves4",
+        "zombies1",
+        "zombies2",
+        "zombies3",
+        "zombies4"
+      ],
+      "sheetNames": [
+        "blink1",
+        "blink2",
+        "blink3",
+        "blink4",
+        "boneyard1",
+        "boneyard2",
+        "cats1",
+        "cats2",
+        "cats3",
+        "cats4",
+        "constellation1",
+        "constellation2",
+        "cruel1",
+        "cruel2",
+        "cruel3",
+        "cruel4",
+        "cycling1",
+        "cycling2",
+        "demons1",
+        "demons2",
+        "detective1",
+        "detective2",
+        "detective3",
+        "detective4",
+        "dragons1",
+        "dragons2",
+        "eldrazi",
+        "elves1",
+        "elves2",
+        "elves3",
+        "elves4",
+        "experimental1",
+        "experimental2",
+        "faeries1",
+        "faeries2",
+        "fangs1",
+        "fangs2",
+        "fangs3",
+        "fangs4",
+        "ferocious1",
+        "ferocious2",
+        "ferocious3",
+        "ferocious4",
+        "fiery1",
+        "fiery2",
+        "fiery3",
+        "fiery4",
+        "gigantic1",
+        "gigantic2",
+        "goToSchool1",
+        "goToSchool2",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "gross1",
+        "gross2",
+        "gross3",
+        "gross4",
+        "holy1",
+        "holy2",
+        "holy3",
+        "holy4",
+        "insects1",
+        "insects2",
+        "insects3",
+        "insects4",
+        "inventive1",
+        "inventive2",
+        "inventive3",
+        "inventive4",
+        "knights",
+        "landfall1",
+        "landfall2",
+        "law1",
+        "law2",
+        "law3",
+        "law4",
+        "merfolk1",
+        "merfolk2",
+        "merfolk3",
+        "merfolk4",
+        "morbid1",
+        "morbid2",
+        "multiHeaded1",
+        "multiHeaded2",
+        "primates",
+        "raid1",
+        "raid2",
+        "raid3",
+        "raid4",
+        "rats",
+        "scrying1",
+        "scrying2",
+        "shapeshifters",
+        "snow",
+        "speedy",
+        "spicy",
+        "spirits1",
+        "spirits2",
+        "teamwork1",
+        "teamwork2",
+        "thinkAgain1",
+        "thinkAgain2",
+        "thinkAgain3",
+        "thinkAgain4",
+        "treasure1",
+        "treasure2",
+        "treasure3",
+        "treasure4",
+        "unluckyThirteen",
+        "urzas",
+        "vehicles",
+        "wolves1",
+        "wolves2",
+        "wolves3",
+        "wolves4",
+        "zombies1",
+        "zombies2",
+        "zombies3",
+        "zombies4"
+      ]
+    },
+    "J25:jumpstart": {
+      "fixedSheets": [
+        "angels1",
+        "angels2",
+        "armed1",
+        "armed2",
+        "armed3",
+        "armed4",
+        "beasts1",
+        "beasts2",
+        "bloody1",
+        "bloody2",
+        "bloody3",
+        "bloody4",
+        "bookworms1",
+        "bookworms2",
+        "bookworms3",
+        "bookworms4",
+        "burning",
+        "chaos",
+        "clerics1",
+        "clerics2",
+        "clerics3",
+        "clerics4",
+        "copied1",
+        "copied2",
+        "dinner",
+        "dinosaurs1",
+        "dinosaurs2",
+        "dragons1",
+        "dragons2",
+        "drowned1",
+        "drowned2",
+        "elves1",
+        "elves2",
+        "elves3",
+        "elves4",
+        "enchanted1",
+        "enchanted2",
+        "enchanted3",
+        "enchanted4",
+        "encounter1",
+        "encounter2",
+        "encounter3",
+        "encounter4",
+        "explorers1",
+        "explorers2",
+        "explorers3",
+        "explorers4",
+        "funGuys1",
+        "funGuys2",
+        "ghastly1",
+        "ghastly2",
+        "ghastly3",
+        "ghastly4",
+        "giddyap",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "graveRobbers1",
+        "graveRobbers2",
+        "graveRobbers3",
+        "graveRobbers4",
+        "healers1",
+        "healers2",
+        "healers3",
+        "healers4",
+        "heroes1",
+        "heroes2",
+        "icky1",
+        "icky2",
+        "illusions",
+        "inventive1",
+        "inventive2",
+        "inventive3",
+        "inventive4",
+        "landfall1",
+        "landfall2",
+        "landfall3",
+        "landfall4",
+        "legion1",
+        "legion2",
+        "modified",
+        "neErDoWells1",
+        "neErDoWells2",
+        "nefarious",
+        "ninjas",
+        "ofTheCoast1",
+        "ofTheCoast2",
+        "prideful",
+        "snakes",
+        "soaring1",
+        "soaring2",
+        "soaring3",
+        "soaring4",
+        "stalwart1",
+        "stalwart2",
+        "stalwart3",
+        "stalwart4",
+        "stoked1",
+        "stoked2",
+        "stoked3",
+        "stoked4",
+        "surprise1",
+        "surprise2",
+        "surprise3",
+        "surprise4",
+        "tooMany",
+        "treasures1",
+        "treasures2",
+        "vampires1",
+        "vampires2",
+        "vampires3",
+        "vampires4",
+        "warriors1",
+        "warriors2",
+        "wizards1",
+        "wizards2",
+        "zealots1",
+        "zealots2",
+        "zealots3",
+        "zealots4"
+      ],
+      "sheetNames": [
+        "angels1",
+        "angels2",
+        "armed1",
+        "armed2",
+        "armed3",
+        "armed4",
+        "beasts1",
+        "beasts2",
+        "bloody1",
+        "bloody2",
+        "bloody3",
+        "bloody4",
+        "bookworms1",
+        "bookworms2",
+        "bookworms3",
+        "bookworms4",
+        "burning",
+        "chaos",
+        "clerics1",
+        "clerics2",
+        "clerics3",
+        "clerics4",
+        "copied1",
+        "copied2",
+        "dinner",
+        "dinosaurs1",
+        "dinosaurs2",
+        "dragons1",
+        "dragons2",
+        "drowned1",
+        "drowned2",
+        "elves1",
+        "elves2",
+        "elves3",
+        "elves4",
+        "enchanted1",
+        "enchanted2",
+        "enchanted3",
+        "enchanted4",
+        "encounter1",
+        "encounter2",
+        "encounter3",
+        "encounter4",
+        "explorers1",
+        "explorers2",
+        "explorers3",
+        "explorers4",
+        "funGuys1",
+        "funGuys2",
+        "ghastly1",
+        "ghastly2",
+        "ghastly3",
+        "ghastly4",
+        "giddyap",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "graveRobbers1",
+        "graveRobbers2",
+        "graveRobbers3",
+        "graveRobbers4",
+        "healers1",
+        "healers2",
+        "healers3",
+        "healers4",
+        "heroes1",
+        "heroes2",
+        "icky1",
+        "icky2",
+        "illusions",
+        "inventive1",
+        "inventive2",
+        "inventive3",
+        "inventive4",
+        "landfall1",
+        "landfall2",
+        "landfall3",
+        "landfall4",
+        "legion1",
+        "legion2",
+        "modified",
+        "neErDoWells1",
+        "neErDoWells2",
+        "nefarious",
+        "ninjas",
+        "ofTheCoast1",
+        "ofTheCoast2",
+        "prideful",
+        "snakes",
+        "soaring1",
+        "soaring2",
+        "soaring3",
+        "soaring4",
+        "stalwart1",
+        "stalwart2",
+        "stalwart3",
+        "stalwart4",
+        "stoked1",
+        "stoked2",
+        "stoked3",
+        "stoked4",
+        "surprise1",
+        "surprise2",
+        "surprise3",
+        "surprise4",
+        "tooMany",
+        "treasures1",
+        "treasures2",
+        "vampires1",
+        "vampires2",
+        "vampires3",
+        "vampires4",
+        "warriors1",
+        "warriors2",
+        "wizards1",
+        "wizards2",
+        "zealots1",
+        "zealots2",
+        "zealots3",
+        "zealots4"
+      ]
+    },
+    "JMP:jumpstart": {
+      "fixedSheets": [
+        "aboveTheClouds1",
+        "aboveTheClouds2",
+        "aboveTheClouds3",
+        "aboveTheClouds4",
+        "angels1",
+        "angels2",
+        "archaeology1",
+        "archaeology2",
+        "archaeology3",
+        "archaeology4",
+        "basri",
+        "cats1",
+        "cats2",
+        "chandra",
+        "devilish1",
+        "devilish2",
+        "devilish3",
+        "devilish4",
+        "dinosaurs1",
+        "dinosaurs2",
+        "dinosaurs3",
+        "dinosaurs4",
+        "discarding1",
+        "discarding2",
+        "doctor1",
+        "doctor2",
+        "doctor3",
+        "doctor4",
+        "dogs1",
+        "dogs2",
+        "dragons1",
+        "dragons2",
+        "elves1",
+        "elves2",
+        "enchanted1",
+        "enchanted2",
+        "featheredFriends1",
+        "featheredFriends2",
+        "featheredFriends3",
+        "featheredFriends4",
+        "garruk",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "heavilyArmored1",
+        "heavilyArmored2",
+        "heavilyArmored3",
+        "heavilyArmored4",
+        "lands1",
+        "lands2",
+        "legion1",
+        "legion2",
+        "legion3",
+        "legion4",
+        "lightning1",
+        "lightning2",
+        "liliana",
+        "milling",
+        "minions1",
+        "minions2",
+        "minions3",
+        "minions4",
+        "minotaurs1",
+        "minotaurs2",
+        "phyrexian",
+        "pirates1",
+        "pirates2",
+        "plusOne1",
+        "plusOne2",
+        "plusOne3",
+        "plusOne4",
+        "predatory1",
+        "predatory2",
+        "predatory3",
+        "predatory4",
+        "rainbow",
+        "reanimated1",
+        "reanimated2",
+        "reanimated3",
+        "reanimated4",
+        "rogues1",
+        "rogues2",
+        "seismic",
+        "smashing1",
+        "smashing2",
+        "smashing3",
+        "smashing4",
+        "spellcasting1",
+        "spellcasting2",
+        "spellcasting3",
+        "spellcasting4",
+        "spirits1",
+        "spirits2",
+        "spooky1",
+        "spooky2",
+        "spooky3",
+        "spooky4",
+        "teferi",
+        "treeHugging1",
+        "treeHugging2",
+        "treeHugging3",
+        "treeHugging4",
+        "underTheSea1",
+        "underTheSea2",
+        "unicorns",
+        "vampires1",
+        "vampires2",
+        "vampires3",
+        "vampires4",
+        "walls",
+        "wellRead1",
+        "wellRead2",
+        "wellRead3",
+        "wellRead4",
+        "witchcraft1",
+        "witchcraft2",
+        "wizards1",
+        "wizards2",
+        "wizards3",
+        "wizards4"
+      ],
+      "sheetNames": [
+        "aboveTheClouds1",
+        "aboveTheClouds2",
+        "aboveTheClouds3",
+        "aboveTheClouds4",
+        "angels1",
+        "angels2",
+        "archaeology1",
+        "archaeology2",
+        "archaeology3",
+        "archaeology4",
+        "basri",
+        "cats1",
+        "cats2",
+        "chandra",
+        "devilish1",
+        "devilish2",
+        "devilish3",
+        "devilish4",
+        "dinosaurs1",
+        "dinosaurs2",
+        "dinosaurs3",
+        "dinosaurs4",
+        "discarding1",
+        "discarding2",
+        "doctor1",
+        "doctor2",
+        "doctor3",
+        "doctor4",
+        "dogs1",
+        "dogs2",
+        "dragons1",
+        "dragons2",
+        "elves1",
+        "elves2",
+        "enchanted1",
+        "enchanted2",
+        "featheredFriends1",
+        "featheredFriends2",
+        "featheredFriends3",
+        "featheredFriends4",
+        "garruk",
+        "goblins1",
+        "goblins2",
+        "goblins3",
+        "goblins4",
+        "heavilyArmored1",
+        "heavilyArmored2",
+        "heavilyArmored3",
+        "heavilyArmored4",
+        "lands1",
+        "lands2",
+        "legion1",
+        "legion2",
+        "legion3",
+        "legion4",
+        "lightning1",
+        "lightning2",
+        "liliana",
+        "milling",
+        "minions1",
+        "minions2",
+        "minions3",
+        "minions4",
+        "minotaurs1",
+        "minotaurs2",
+        "phyrexian",
+        "pirates1",
+        "pirates2",
+        "plusOne1",
+        "plusOne2",
+        "plusOne3",
+        "plusOne4",
+        "predatory1",
+        "predatory2",
+        "predatory3",
+        "predatory4",
+        "rainbow",
+        "reanimated1",
+        "reanimated2",
+        "reanimated3",
+        "reanimated4",
+        "rogues1",
+        "rogues2",
+        "seismic",
+        "smashing1",
+        "smashing2",
+        "smashing3",
+        "smashing4",
+        "spellcasting1",
+        "spellcasting2",
+        "spellcasting3",
+        "spellcasting4",
+        "spirits1",
+        "spirits2",
+        "spooky1",
+        "spooky2",
+        "spooky3",
+        "spooky4",
+        "teferi",
+        "treeHugging1",
+        "treeHugging2",
+        "treeHugging3",
+        "treeHugging4",
+        "underTheSea1",
+        "underTheSea2",
+        "unicorns",
+        "vampires1",
+        "vampires2",
+        "vampires3",
+        "vampires4",
+        "walls",
+        "wellRead1",
+        "wellRead2",
+        "wellRead3",
+        "wellRead4",
+        "witchcraft1",
+        "witchcraft2",
+        "wizards1",
+        "wizards2",
+        "wizards3",
+        "wizards4"
+      ]
+    },
+    "JOU:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "therosGods",
+        "uncommon"
+      ]
+    },
+    "JOU:prerelease-glory": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "JOU:prerelease-intellect": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "JOU:prerelease-pursuit": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "JOU:prerelease-tyranny": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "JOU:prerelease-war": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "JUD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "JUD:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "KHM:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basictype",
+        "nonBasictypeCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "extendedArt",
+        "foilAltFrameRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilUncommon",
+        "rareMythicShowcase",
+        "sagaThemeCommander",
+        "uncommonShowcase"
+      ]
+    },
+    "KHM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basictype",
+        "foilWithShowcase",
+        "nonBasictypeCommon",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "KHM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "KHM:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilSnowLand",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "snowLand",
+        "snowShowcaseTheme",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "KHM:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:theme-vikings": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KHM:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KLD:buyabox": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "buyaboxFoil",
+        "standardRareMythic"
+      ]
+    },
+    "KLD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In144",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KLD:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "KLR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KTK:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KTK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "KTK:prerelease-abzan": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "KTK:prerelease-jeskai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "KTK:prerelease-mardu": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "KTK:prerelease-sultai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "KTK:prerelease-temur": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "LCI:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "caveBasicLand",
+        "dfcCommonUncommon",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon"
+      ]
+    },
+    "LCI:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "topper"
+      ]
+    },
+    "LCI:box-topper-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilTopper"
+      ]
+    },
+    "LCI:bundle-promo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "jurassicWorld"
+      ]
+    },
+    "LCI:bundle-promo-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "jurassicWorld"
+      ]
+    },
+    "LCI:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "emblemJurrasicWorld",
+        "extendedCommanderRareMythic",
+        "extendedMainRareMythic",
+        "foilCommon",
+        "foilExtendedCommanderRareMythic",
+        "foilFullartLand",
+        "foilJurrasicWorld",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "foilUncommonShowcaseOrBorderless",
+        "jurrasicWorld",
+        "neonInk",
+        "showcaseRareMythic"
+      ]
+    },
+    "LCI:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilCommonUncommonShowcase",
+        "foilRareMythicShowcase",
+        "rareMythicShowcase"
+      ]
+    },
+    "LCI:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "caveFullartLand",
+        "dfcCommonUncommon",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "sfcCommon",
+        "sfcUncommonWithShowcase"
+      ]
+    },
+    "LCI:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "LCI:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "caveFullartLand",
+        "common",
+        "foilCaveFullartLand",
+        "foilWithShowcase",
+        "rareMythic",
+        "showcaseDfcCommonUncommon",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "LEA:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "LEA:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "LEB:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "LEB:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "LEG:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "LGN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "LGN:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "LRW:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "LRW:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foil",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "LTR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "LTR:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxTopper"
+      ]
+    },
+    "LTR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "borderlessScene",
+        "extendedCoreRareMythic",
+        "extendedJumpStarterRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "foilUncommonShowcase",
+        "nonfoilSolRing",
+        "rareMythicShowcase",
+        "serializedSolRing",
+        "surgeRelic",
+        "theOneRing",
+        "uncommonShowcase"
+      ]
+    },
+    "LTR:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythic",
+        "foilUncommonShowcase",
+        "nonfoilRareMythic"
+      ]
+    },
+    "LTR:collector-special": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilHildebrantPosterRm",
+        "hildebrantPosterRm",
+        "hildebrantU",
+        "sceneJumpstartRareMythic",
+        "serializedPoster",
+        "serializedTopper",
+        "showcaseCommon",
+        "showcaseRareMythic",
+        "showcaseUncommon",
+        "silverHildebrantU",
+        "silverShowcaseCommon",
+        "silverShowcaseRareMythic",
+        "silverShowcaseUncommon",
+        "surgeBoosterFunRm",
+        "surgeBoosterFunU",
+        "surgeExtendedRareMythic",
+        "surgeMapLand"
+      ]
+    },
+    "LTR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "LTR:jumpstart": {
+      "fixedSheets": [
+        "courageous1",
+        "courageous2",
+        "journey1",
+        "journey2",
+        "marauders1",
+        "marauders2",
+        "mordor1",
+        "mordor2",
+        "tricksy1",
+        "tricksy2"
+      ],
+      "sheetNames": [
+        "blackRare",
+        "blueRare",
+        "courageous1",
+        "courageous2",
+        "greenRare",
+        "journey1",
+        "journey2",
+        "marauders1",
+        "marauders2",
+        "mordor1",
+        "mordor2",
+        "redRare",
+        "tricksy1",
+        "tricksy2",
+        "whiteRare"
+      ]
+    },
+    "LTR:jumpstart-v2": {
+      "fixedSheets": [
+        "cunning1",
+        "cunning2",
+        "elven1",
+        "elven2",
+        "mortals1",
+        "mortals2",
+        "orcish1",
+        "orcish2",
+        "riders1",
+        "riders2"
+      ],
+      "sheetNames": [
+        "blackRare",
+        "blueRare",
+        "cunning1",
+        "cunning2",
+        "elven1",
+        "elven2",
+        "greenRare",
+        "mortals1",
+        "mortals2",
+        "orcish1",
+        "orcish2",
+        "redRare",
+        "riders1",
+        "riders2",
+        "whiteRare"
+      ]
+    },
+    "LTR:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "partyScenePromo",
+        "prereleasePromo"
+      ]
+    },
+    "LTR:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "M10:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M10:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M11:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M11:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M12:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M12:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M13:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M13:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M14:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M14:duelspromo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "M14:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:duelspromo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "M15:prerelease-ambition": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:prerelease-ferocity": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:prerelease-guile": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:prerelease-strength": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M15:prerelease-valor": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M19:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrCommonLand",
+        "nonlandCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M19:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrCommonLand",
+        "foil",
+        "nonlandCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M19:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "M20:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrCommonLand",
+        "nonlandCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrCommonLand",
+        "foil",
+        "nonlandCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "M20:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M20:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M21:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "nongainlandCommon",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "M21:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedArt",
+        "foilAllShowcase",
+        "foilCommonOrBasic",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilShowcaseBasic",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "M21:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "borderlessReprint",
+        "foil",
+        "nongainlandCommon",
+        "rareMythic",
+        "uncommonWithShowcase"
+      ]
+    },
+    "M21:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "MAT:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "aftermathCard",
+        "basicOrGainland",
+        "dfcCommonUncommon",
+        "dfcRareMythic",
+        "multiverseLegend",
+        "rareMythicBattle",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon",
+        "uncommonBattle"
+      ]
+    },
+    "MAT:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedRareMythic",
+        "etchedUncommon",
+        "extendedRareMythic",
+        "foilExtendedRareMythic",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilShowcaseUncommon",
+        "haloShowcaseRareMythic",
+        "haloShowcaseUncommon"
+      ]
+    },
+    "MAT:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "boosterFunFoil",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MB1:convention": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blackA",
+        "blackB",
+        "blueA",
+        "blueB",
+        "colorless",
+        "greenA",
+        "greenB",
+        "multicolor",
+        "oldFrame",
+        "playtest",
+        "rare",
+        "redA",
+        "redB",
+        "whiteA",
+        "whiteB"
+      ]
+    },
+    "MB1:convention-2021": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blackA",
+        "blackB",
+        "blueA",
+        "blueB",
+        "colorless",
+        "greenA",
+        "greenB",
+        "multicolor",
+        "oldFrame",
+        "playtest2",
+        "rare",
+        "redA",
+        "redB",
+        "whiteA",
+        "whiteB"
+      ]
+    },
+    "MB1:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blackA",
+        "blackB",
+        "blueA",
+        "blueB",
+        "colorless",
+        "foil",
+        "greenA",
+        "greenB",
+        "multicolor",
+        "oldFrame",
+        "rare",
+        "redA",
+        "redB",
+        "whiteA",
+        "whiteB"
+      ]
+    },
+    "MB2:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "alchemyAcorn",
+        "black",
+        "blue",
+        "futureSight",
+        "futureSightFoil",
+        "green",
+        "landmulticolorless",
+        "playtest",
+        "rareMythic",
+        "red",
+        "white",
+        "whiteBorder"
+      ]
+    },
+    "MBC:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "alchemyAcorn",
+        "black",
+        "blue",
+        "commander",
+        "futureSight",
+        "futureSightFoil",
+        "green",
+        "newCommander",
+        "newCommanderFoil",
+        "playtest",
+        "red",
+        "white",
+        "wildcard"
+      ]
+    },
+    "MBS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MBS:mirran": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MBS:phyrexian": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MBS:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ME1:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ME2:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ME3:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ME4:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MH1:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MH2:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterfunRareMythic",
+        "etchedBasic",
+        "etchedCommonUncommon",
+        "etchedRareMythic",
+        "extendedArtRare",
+        "foilBoosterfunCommonUncommon",
+        "foilBoosterfunRareMythic",
+        "foilCommon",
+        "foilUncommon",
+        "sketchCommonUncommon"
+      ]
+    },
+    "MH2:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonWithShowcase",
+        "foilWithShowcase",
+        "newRareMythic",
+        "newUncommon",
+        "reprintToModern"
+      ]
+    },
+    "MH2:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "MH2:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "reprintToModern",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "MH3:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilCommon",
+        "foilEldraziLand",
+        "foilRareMythic",
+        "foilRetroCu",
+        "foilShowcaseRm",
+        "foilUncommon",
+        "retroCu",
+        "showcaseCommander",
+        "showcaseCommanderFoil",
+        "showcaseRm"
+      ]
+    },
+    "MH3:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRetro",
+        "foilShowcaseRm",
+        "showcaseRm"
+      ]
+    },
+    "MH3:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilLand",
+        "foilWithShowcase",
+        "land",
+        "newRareMythic",
+        "newUncommon",
+        "reprint",
+        "specialGuest",
+        "wildcard"
+      ]
+    },
+    "MH3:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "newRareMythic",
+        "newUncommon",
+        "reprint",
+        "specialGuest",
+        "wildcard"
+      ]
+    },
+    "MH3:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "MID:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "dfcCommon",
+        "dfcRareMythic",
+        "dfcUncommon",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "MID:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedCommander",
+        "extendedRareMythic",
+        "foilAltArtRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "MID:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommonWithShowcase",
+        "dfcRareMythicWithShowcase",
+        "dfcUncommonWithShowcase",
+        "foilWithShowcase",
+        "sfcCommonWithShowcase",
+        "sfcRareMythicWithShowcase",
+        "sfcUncommonWithShowcase"
+      ]
+    },
+    "MID:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "MID:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "equinoxCommonUncommon",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon",
+        "theList",
+        "wildcard"
+      ]
+    },
+    "MID:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MID:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MID:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MID:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MID:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MID:theme-werewolves": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MIR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "MIR:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basics",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "MKM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedCommanderRareMythic",
+        "extendedMainRareMythic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilExtendedCommanderRareMythic",
+        "foilFullartBasic",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "MKM:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilCommonUncommonShowcase",
+        "foilRareMythicShowcase",
+        "rareMythicShowcase"
+      ]
+    },
+    "MKM:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "foil",
+        "foilBasic",
+        "rareMythicWithShowcase",
+        "theList",
+        "uncommonWithShowcase",
+        "wildcard"
+      ]
+    },
+    "MKM:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "MKM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus",
+        "promo"
+      ]
+    },
+    "MM2:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MM3:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MMA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "MMQ:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "MMQ:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "MMQ:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basics",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "MOM:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "dfcCommonUncommon",
+        "dfcRareMythic",
+        "multiverseLegend",
+        "rareMythicBattle",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon",
+        "uncommonBattle"
+      ]
+    },
+    "MOM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "doubleFoilPraetorSerialized",
+        "extendedArtCommanderJumpstart",
+        "foilCommon",
+        "foilFullartBasic",
+        "foilMulUncommon",
+        "foilRareMythic",
+        "foilShowcase",
+        "foilUncommon",
+        "rareMythicMulEtched",
+        "rareMythicMulHalo",
+        "rareMythicMulSerialized",
+        "rareMythicMulTraditional",
+        "showcaseWild",
+        "uncommonMulEtched",
+        "uncommonMulHalo",
+        "uncommonMulSerialized"
+      ]
+    },
+    "MOM:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythic",
+        "foilUncommonMul",
+        "nonfoilRareMythic"
+      ]
+    },
+    "MOM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "dfcCommonUncommon",
+        "dfcRareMythic",
+        "foilWithShowcaseAndMul",
+        "multiverseLegend",
+        "rareMythicBattle",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon",
+        "uncommonBattle"
+      ]
+    },
+    "MOM:jumpstart": {
+      "fixedSheets": [
+        "brood1",
+        "brood1Foils",
+        "brood2",
+        "brood2Foils",
+        "buff1",
+        "buff1Foils",
+        "buff2",
+        "buff2Foils",
+        "expendable1",
+        "expendable1Foils",
+        "expendable2",
+        "expendable2Foils",
+        "overachiever1",
+        "overachiever1Foils",
+        "overachiever2",
+        "overachiever2Foils",
+        "reinforcement1",
+        "reinforcement1Foils",
+        "reinforcement2",
+        "reinforcement2Foils"
+      ],
+      "sheetNames": [
+        "brood1",
+        "brood1Foils",
+        "brood2",
+        "brood2Foils",
+        "buff1",
+        "buff1Foils",
+        "buff2",
+        "buff2Foils",
+        "expendable1",
+        "expendable1Foils",
+        "expendable2",
+        "expendable2Foils",
+        "overachiever1",
+        "overachiever1Foils",
+        "overachiever2",
+        "overachiever2Foils",
+        "rareMythicBlack",
+        "rareMythicBlue",
+        "rareMythicGreen",
+        "rareMythicRed",
+        "rareMythicWhite",
+        "reinforcement1",
+        "reinforcement1Foils",
+        "reinforcement2",
+        "reinforcement2Foils"
+      ]
+    },
+    "MOM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo",
+        "promoTeamup",
+        "promoTeamupFoil"
+      ]
+    },
+    "MOM:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommonUncommon",
+        "foilBasic",
+        "foilEtched",
+        "momFoilWithShowcase",
+        "multiverseLegend",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon",
+        "theList",
+        "uncommonBattle",
+        "wildcard"
+      ]
+    },
+    "MOR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "MRD:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "MRD:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "MRD:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "MSH:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterfun",
+        "boosterfunCommander",
+        "foilBoosterfun",
+        "foilCUScene",
+        "foilCommon",
+        "foilCommonCommander",
+        "foilLand",
+        "foilRareMythic",
+        "foilSourceMaterial",
+        "foilUncommon",
+        "foilUncommonCommander",
+        "nonFoilSourceMaterial"
+      ]
+    },
+    "MSH:jumpstart": {
+      "fixedSheets": [
+        "agentsOfSHIELD",
+        "analyzed",
+        "animal",
+        "armed",
+        "atlantis",
+        "battalion",
+        "blink",
+        "boosted",
+        "caretakers",
+        "conniving",
+        "counterargument",
+        "doom",
+        "equipped",
+        "fantastic",
+        "fearless",
+        "geniuses",
+        "greatLakesAvengers",
+        "heroesForHire",
+        "hydra",
+        "incredible",
+        "ironMan",
+        "kangDynasty",
+        "lethal",
+        "marvelous",
+        "mastersOfEvil",
+        "mayhem",
+        "precise",
+        "pymParticles",
+        "rampaging",
+        "returned",
+        "runaways",
+        "savageLands",
+        "scarlet",
+        "soaring",
+        "speedy",
+        "spiderVerse",
+        "squadron",
+        "streetLevelVillains",
+        "tenacious",
+        "thor",
+        "thunderbolts",
+        "towering",
+        "trained",
+        "tricksters",
+        "ultron",
+        "uncanny",
+        "vehicles",
+        "wakanda",
+        "webSlinging",
+        "wild",
+        "youngAvengers"
+      ],
+      "sheetNames": [
+        "agentsOfSHIELD",
+        "analyzed",
+        "animal",
+        "armed",
+        "atlantis",
+        "battalion",
+        "blink",
+        "boosted",
+        "caretakers",
+        "conniving",
+        "counterargument",
+        "doom",
+        "equipped",
+        "fantastic",
+        "fearless",
+        "geniuses",
+        "greatLakesAvengers",
+        "heroesForHire",
+        "hydra",
+        "incredible",
+        "ironMan",
+        "kangDynasty",
+        "lethal",
+        "marvelous",
+        "mastersOfEvil",
+        "mayhem",
+        "precise",
+        "pymParticles",
+        "rampaging",
+        "returned",
+        "runaways",
+        "savageLands",
+        "scarlet",
+        "soaring",
+        "speedy",
+        "spiderVerse",
+        "squadron",
+        "streetLevelVillains",
+        "tenacious",
+        "thor",
+        "thunderbolts",
+        "towering",
+        "trained",
+        "tricksters",
+        "ultron",
+        "uncanny",
+        "vehicles",
+        "wakanda",
+        "webSlinging",
+        "wild",
+        "youngAvengers"
+      ]
+    },
+    "MSH:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythic",
+        "sourceMaterial",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "MSH:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "sourceMaterial",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "MSH:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "promo"
+      ]
+    },
+    "NEM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "NEM:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "NEO:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "dfcCommonUncommon",
+        "land",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon"
+      ]
+    },
+    "NEO:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedRareMythic",
+        "extendedCommander",
+        "extendedOrBorderlessRareMythic",
+        "foilDfcCommonUncommon",
+        "foilFullartLand",
+        "foilNinjaCommonUncommon",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilSamuraiCommonUncommon",
+        "foilSfcCommon",
+        "foilSfcUncommon",
+        "neonInk",
+        "ninjaCommonUncommon",
+        "rareMythicShowcase",
+        "samuraiCommonUncommon"
+      ]
+    },
+    "NEO:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "dfcCommonUncommon",
+        "foilWithShowcase",
+        "land",
+        "rareMythicWithShowcase",
+        "sfcCommonWithShowcase",
+        "sfcUncommonWithShowcase"
+      ]
+    },
+    "NEO:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "NEO:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicOrGainland",
+        "commonUncommonShowcase",
+        "dfcCommonUncommon",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon",
+        "theList",
+        "wildcard"
+      ]
+    },
+    "NEO:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NEO:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NEO:theme-ninjas": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NEO:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NEO:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NEO:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NPH:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "NPH:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ODY:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "ODY:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "ODY:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basics",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "OGW:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilOrMasterpiece1In144",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "OGW:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "OM1:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonusSheet",
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "ONE:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "praetor",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ONE:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "compleatFoil",
+        "extendedCommanderJumpstart",
+        "extendedRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "showcaseRareMythic"
+      ]
+    },
+    "ONE:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilCommonUncommonShowcase",
+        "foilRareMythicShowcase",
+        "nonfoilRareMythicShowcase"
+      ]
+    },
+    "ONE:compleat": {
+      "fixedSheets": [
+        "oilSlickBasics1",
+        "oilSlickBasics2"
+      ],
+      "sheetNames": [
+        "oilSlickBasics1",
+        "oilSlickBasics2",
+        "oilSlickMythic"
+      ]
+    },
+    "ONE:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "foil",
+        "prototypePraetor",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "ONE:jumpstart": {
+      "fixedSheets": [
+        "corruption1",
+        "corruption1Foils",
+        "corruption2",
+        "corruption2Foils",
+        "miteY1",
+        "miteY1Foils",
+        "miteY2",
+        "miteY2Foils",
+        "progress1",
+        "progress1Foils",
+        "progress2",
+        "progress2Foils",
+        "rebellious1",
+        "rebellious1Foils",
+        "rebellious2",
+        "rebellious2Foils",
+        "toxic1",
+        "toxic1Foils",
+        "toxic2",
+        "toxic2Foils"
+      ],
+      "sheetNames": [
+        "corruption1",
+        "corruption1Foils",
+        "corruption2",
+        "corruption2Foils",
+        "miteY1",
+        "miteY1Foils",
+        "miteY2",
+        "miteY2Foils",
+        "progress1",
+        "progress1Foils",
+        "progress2",
+        "progress2Foils",
+        "rareMythicBlack",
+        "rareMythicBlue",
+        "rareMythicGreen",
+        "rareMythicRed",
+        "rareMythicWhite",
+        "rebellious1",
+        "rebellious1Foils",
+        "rebellious2",
+        "rebellious2Foils",
+        "toxic1",
+        "toxic1Foils",
+        "toxic2",
+        "toxic2Foils"
+      ]
+    },
+    "ONE:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "ONE:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foil",
+        "foilBasic",
+        "mainRareMythic",
+        "prototypePraetor",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "ONS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "ONS:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "ONS:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "ORI:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ORI:prerelease-chandra": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "ORI:prerelease-gideon": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "ORI:prerelease-jace": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "ORI:prerelease-liliana": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "ORI:prerelease-nissa": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "OTJ:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commander",
+        "finale",
+        "foilCommander",
+        "foilCommon",
+        "foilFullartLand",
+        "foilOtpUncommon",
+        "foilRareMythic",
+        "foilUncommon",
+        "otpRareMythic",
+        "otpUncommon",
+        "showcaseRareMythic"
+      ]
+    },
+    "OTJ:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythicShowcase",
+        "foilUncommonBreakingnews",
+        "rareMythicShowcase"
+      ]
+    },
+    "OTJ:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "breakingNews",
+        "common",
+        "foil",
+        "foilLand",
+        "land",
+        "rareMythicWithShowcase",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "OTJ:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "breakingNews",
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "OTJ:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "P02:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "PCY:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "PCY:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "PIO:arena-1": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "gate",
+        "planeswalkers",
+        "rareMythic",
+        "uncommon",
+        "variety"
+      ]
+    },
+    "PIO:arena-2": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "gate",
+        "rareMythic",
+        "spells",
+        "uncommon",
+        "variety"
+      ]
+    },
+    "PIO:arena-3": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "devotion",
+        "gate",
+        "rareMythic",
+        "uncommon",
+        "variety"
+      ]
+    },
+    "PIP:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "extendedNew",
+        "extendedReprint",
+        "finale",
+        "foilExtendedNew",
+        "foilExtendedReprint",
+        "hailCaesar",
+        "land",
+        "mutantMenace",
+        "science",
+        "scrappySurvivors",
+        "showcase",
+        "standardRm",
+        "surgeExtendedNew",
+        "surgeExtendedReprint",
+        "surgeWildcard"
+      ]
+    },
+    "PIP:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilShowcaseAny",
+        "showcaseAny",
+        "showcaseRm"
+      ]
+    },
+    "PLC:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "colorShiftedCommon",
+        "colorShiftedUncommonRare",
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "PLS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "PLS:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "POR:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "PTK:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "RAV:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommonOrBasic",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "RAV:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foilBasic",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "REN:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "RIN:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "uncommon"
+      ]
+    },
+    "RIX:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RIX:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RIX:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "RNA:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:prerelease-azorius": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "RNA:prerelease-gruul": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "RNA:prerelease-orzhov": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "RNA:prerelease-rakdos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "RNA:prerelease-simic": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "uncommon"
+      ]
+    },
+    "RNA:theme-azorius": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:theme-gruul": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:theme-orzhov": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:theme-rakdos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RNA:theme-simic": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ROE:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ROE:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:prerelease-azorius": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:prerelease-golgari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:prerelease-izzet": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:prerelease-rakdos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:prerelease-selesnya": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RTR:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "RVR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "borderlessRareMythic",
+        "foilArtifactLand",
+        "foilCommon",
+        "foilRareMythic",
+        "foilRetroCommonUncommon",
+        "foilShowcaseRareMythic",
+        "foilUncommon",
+        "retroCommonUncommon",
+        "retroRareMythic",
+        "serialized"
+      ]
+    },
+    "RVR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilWithShowcase",
+        "manaSlot",
+        "rareMythicWithShowcase",
+        "retroCommonUncommon",
+        "retroRareMythic",
+        "uncommon"
+      ]
+    },
+    "S99:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "SCG:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "SCG:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "SHM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "SHM:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foil",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "SIR:arena-1": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SIR:arena-2": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SIR:arena-3": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SIR:arena-4": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SLD:baseball-signed": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "baseballingSigned"
+      ]
+    },
+    "SLD:blueprint-mk1": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blueprintMk1"
+      ]
+    },
+    "SLD:blueprint-mk2": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blueprintMk2"
+      ]
+    },
+    "SLD:bonus-a-box-of-rocks": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-a-devastation-of-dragons": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-absolute-annihilation": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-adventures-of-the-little-witch": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-aether-drifters": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-alien-auroras": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-animar-and-friends": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-arcade-racers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-avatar-the-last-airbender-a-lot-to-learn": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-avatar-the-last-airbender-everything-changed": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-avatar-the-last-airbender-my-cabbages": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-avatar-the-last-airbender-one-with-the-elements": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-avatar-the-last-airbender-the-ember-island-players": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-bad-to-the-bones": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-bitterblossom-dreams": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-brain-dead-new-earth-mentality": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-buggin-out": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-calling-all-hydra-heads": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-cats-of-chaos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-city-styles": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-city-styles-2-dressed-to-kill": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-cool-ocean-breeze": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-cosmic-chill-by-robin-eisenberg": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-death-is-temporary-metal-is-forever": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-deceptive-divination": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-diabolical-dioramas": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-draw-your-hand": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-dreaming-darkly": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-dwarf-fortress-create-new-world-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-dwarf-fortress-create-new-world-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-eldraine-wonderland": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-everything-is-on-fire": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-explosion-sounds": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-far-out-man": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-andrew-maclean": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-deathburger": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-gary-baseman": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-gene-luen-yang": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-imiri-sakabashira": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-jay-howell": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-julie-bell": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-kevin-eastman-colors": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-featuring-kevin-eastman-colors-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-featuring-kevin-eastman-inks": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-featuring-kevin-eastman-inks-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-featuring-luke-pearson": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-mitsuhiro-arita": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-peach-momoko": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-phoebe-wahl": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-featuring-stan-sakai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-featuring-stan-sakai-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "regular",
+        "slime"
+      ]
+    },
+    "SLD:bonus-frazetta-second-exhibition": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-full-sleeves-the-tattoo-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-garden-buds": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-gift-wrapped": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-goblin-and-squabblin": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-happy-yargle-day": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-hard-boiled-thrillers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-if-looks-could-kill": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-imaginary-friends": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-in-memoriam-jaya-ballard": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-inked": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-international-womens-day-2020": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-introducing-kaito-shizuki": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-just-add-milk": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-just-some-totally-normal-guys": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-kaleidoscope-killers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-kamigawa-the-manga-the-cards": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-keep-partying-hard-shred-harder-than-you-previously-thought-possible": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-legendary-flyers-not-that-kind": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-lil-giri-saves-the-day": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-lil-legends": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-lil-walkers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-liler-walkers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-lilest-walkers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-look-at-the-kitties": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-lorwyn-lightboxes": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-magic-the-baseballing": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-magiccon-the-gathering": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-maho-gakuin-seishun-hakusho": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvel-dan-hipp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvel-earths-mightiest-pets": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvel-spinner-rack-specials": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvel-true-believers-in-love": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvels-deadpool-i-fixed-it-youre-welcome-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvels-deadpool-i-fixed-it-youre-welcome-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvels-deadpool-i-fixed-it-youre-welcome-pool-party-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-marvels-hulk-smash": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-meditations-on-nature": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-monster-movie-marathon": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-monstrous-magazines": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-more-borderless-planeswalkers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-mycosynthwave": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-nature-is-adorable": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-notebook-genius": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-now-on-vhs": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-oishii-tokens": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-omens-of-chaos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-ornithological-studies": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-outlaw-anthology-vol-1-rebellious-renegades": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-outlaw-anthology-vol-2-sinister-scoundrels": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-paradise-frost": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-phyrexian-faves": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-pick-em-and-stick-em": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-pictures-of-the-floating-world": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-pixelsnowlandsjpg": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-poker-faces": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-pride-across-the-multiverse": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-prints-charming": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-prints-of-darkness": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-prismatic-nightmares": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-purrfection": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-restless-in-peace": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-roadshow-edition-burning-revelations": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-rule-the-room": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-high-class-of-87": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-brain-dead-creatures": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-brain-dead-lands": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-brain-dead-staples": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-dungeons-and-dragons-astarions-thirst": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-dungeons-and-dragons-death-is-in-the-eyes-of-the-beholder-i": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-dungeons-and-dragons-death-is-in-the-eyes-of-the-beholder-ii": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-dungeons-and-dragons-karlachs-rage": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-fallout-points-of-interest": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-fallout-special": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-fallout-vault-boy": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-final-fantasy-game-over": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-final-fantasy-grimoire": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-final-fantasy-weapons": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-flower-power": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-digital-sensation-english-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-digital-sensation-english-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-electric-entourage-english-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-electric-entourage-english-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-sakura-superstar-english-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-sakura-superstar-english-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-winter-diva-english-foil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-hatsune-miku-winter-diva-english-nonfoil": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-black-panther": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-captain-america": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-deadpool-april-pools-day": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-iron-man": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-daily-bugle-breaking-news": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-heroic-deeds": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-mana-symbiote": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-venom-unleashed-colors": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-venom-unleashed-inks": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-spider-man-villainous-plots": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-storm": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-marvels-wolverine": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-sonic-the-hedgehog-chasing-adventure": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-sonic-the-hedgehog-friends-and-foes": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-secret-lair-x-sonic-the-hedgehog-turbo-gear": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-shades-not-included": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-all-will-be-one-step-and-compleat": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-bloomburrow": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-dominaria-united-textured": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-duskmourn": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-march-of-the-machine-vol-1": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-march-of-the-machine-vol-2": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-march-of-the-machine-vol-3": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-midnight-hunt": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-monster-anatomy-101": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-murders-at-karlov-manor": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-neon-dynasty-neon-ink": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-streets-of-new-capenna-gilded": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-strixhaven": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-strixhaven-foil-drop": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-the-lost-caverns-of-ixalan": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-thrilling-tales-of-the-undead": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-showcase-zendikar-revisited": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-slay-the-day": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-so-salty": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-jen-bartel": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-junji-ito": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-kelogsloops": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-kozyndan-another-story": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-kozyndan-the-lands": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-matt-jukes": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-yoji-shinkawa": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-special-guest-yuko-shimizu": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-spongebob-squarepants-internet-sensation": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-spongebob-squarepants-lands-under-the-sea": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-spongebob-squarepants-legends-of-bikini-bottom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-ssssssnakessssss": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-tales-of-the-time-stoppers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-teenage-mutant-ninja-turtles-the-last-ronin": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-teenage-mutant-ninja-turtles-the-mighty-mutanimals": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-teenage-mutant-ninja-turtles-vhs-villains": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-teferis-time-trouble": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-thalia-beyond-the-helvault": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-90s-binder-experience": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-beauty-of-the-beasts": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-dracula-lands": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-eyes-have-it": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-fairest-drop-of-all": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-meaning-of-life-maybe": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-office-dwights-destiny": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-path-not-traveled": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-space-beyond-the-stars": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-stars-gaze-back": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-tokyo-lands": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-the-weirdest-pets-in-the-multiverse": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-theros-stargazing-vol-i-heliod": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-theros-stargazing-vol-ii-thassa": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-theros-stargazing-vol-iii-erebos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-theros-stargazing-vol-iv-purphoros": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-theros-stargazing-vol-v-nylea": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-they-grow-up-so-fast": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-time-trouble-two": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-tobys-journey-by-gary-baseman": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-tome-of-the-astral-sorceress": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-totally-spaced-out-galaxy": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-tragic-romance": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-trick-or-treat": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-twisted-toons": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-viva-las-rakdos": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-vroooooommmmmm": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-we-hope-you-like-squirrels": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-welcome-to-castle-dracula": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-welcome-to-the-fungal": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-wild-in-bloom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-witchs-familiar": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-wizards-of-the-street": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:bonus-year-of-the-rat": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "bonus"
+      ]
+    },
+    "SLD:chaos-emeralds": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "chaosEmeralds"
+      ]
+    },
+    "SLD:deceptive-districts": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "deceptiveDistricts"
+      ]
+    },
+    "SLD:dnd-50th-anniversary": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "dndAnniversary"
+      ]
+    },
+    "SLD:elusive-elves-early": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "elves"
+      ]
+    },
+    "SLD:elusive-elves-late": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "elves"
+      ]
+    },
+    "SLD:fin-elementals": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "finElementals"
+      ]
+    },
+    "SLD:spider-man": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "spidermanBonus"
+      ]
+    },
+    "SLZ:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "SNC:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "etchedRareMythicShowcase",
+        "extendedCommander",
+        "extendedRareMythic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilFullartBasic",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "gildedCommonUncommonShowcase",
+        "gildedRareMythicShowcase",
+        "rareMythicShowcase"
+      ]
+    },
+    "SNC:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilRareMythic",
+        "foilUncommonShowcase",
+        "nonfoilRareMythic"
+      ]
+    },
+    "SNC:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "uncommonWithShowcase"
+      ]
+    },
+    "SNC:prerelease-brokers": {
+      "fixedSheets": [
+        "introSet"
+      ],
+      "sheetNames": [
+        "common",
+        "introSet",
+        "land",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:prerelease-cabaretti": {
+      "fixedSheets": [
+        "introSet"
+      ],
+      "sheetNames": [
+        "common",
+        "introSet",
+        "land",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:prerelease-maestros": {
+      "fixedSheets": [
+        "introSet"
+      ],
+      "sheetNames": [
+        "common",
+        "introSet",
+        "land",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:prerelease-obscura": {
+      "fixedSheets": [
+        "introSet"
+      ],
+      "sheetNames": [
+        "common",
+        "introSet",
+        "land",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:prerelease-riveteers": {
+      "fixedSheets": [
+        "introSet"
+      ],
+      "sheetNames": [
+        "common",
+        "introSet",
+        "land",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "commonUncommonShowcase",
+        "foilBasic",
+        "foilWithShowcase",
+        "gildedFoil",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "SNC:theme-brokers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:theme-cabaretti": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:theme-maestros": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:theme-obscura": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SNC:theme-riveteers": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOI:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommonUncommon",
+        "dfcRareMythic",
+        "foil",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "SOI:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "SOK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "SOK:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "SOM:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOM:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOS:codex-bundle": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "codexArtifact"
+      ]
+    },
+    "SOS:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterfun",
+        "commander",
+        "foilBoosterfun",
+        "foilCommon",
+        "foilLand",
+        "foilRMMysticalArchive",
+        "foilRareMythic",
+        "foilUMysticalArchive",
+        "foilUncommon",
+        "nonFoilRMMysticalArchive",
+        "nonFoilUMysticalArchive"
+      ]
+    },
+    "SOS:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "mysticalArchive",
+        "nonFoilLand",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "SOS:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "mysticalArchive",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "SOS:prerelease-lorehold": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOS:prerelease-prismari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOS:prerelease-quandrix": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOS:prerelease-silverquill": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SOS:prerelease-witherbloom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SPM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBoosterfun",
+        "foilCommon",
+        "foilRareMythic",
+        "foilSourceMaterial",
+        "foilSpiderwebLand",
+        "foilUncommon",
+        "nonFoilBoosterfun",
+        "nonFoilSourceMaterial"
+      ]
+    },
+    "SPM:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythicBoosterfun",
+        "sourceMaterial",
+        "uncommonScene",
+        "wildcard"
+      ]
+    },
+    "SPM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "SS1:default": {
+      "fixedSheets": [
+        "nonfoil"
+      ],
+      "sheetNames": [
+        "foil",
+        "nonfoil"
+      ]
+    },
+    "SS2:default": {
+      "fixedSheets": [
+        "nonfoil"
+      ],
+      "sheetNames": [
+        "foil",
+        "nonfoil"
+      ]
+    },
+    "SS3:default": {
+      "fixedSheets": [
+        "nonfoil"
+      ],
+      "sheetNames": [
+        "foil",
+        "nonfoil"
+      ]
+    },
+    "STH:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "STX:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "lesson",
+        "nonlessonCommon",
+        "nonlessonRareMythic",
+        "sta",
+        "uncommon"
+      ]
+    },
+    "STX:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "etchedJpStaRareMythic",
+        "etchedJpStaUncommon",
+        "etchedStaRareMythic",
+        "etchedStaUncommon",
+        "extendedCommander",
+        "extendedOrBorderlessCore",
+        "foilAltArtWild",
+        "foilCommon",
+        "foilLesson",
+        "foilRareMythic",
+        "foilStaUncommon",
+        "foilUncommon"
+      ]
+    },
+    "STX:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilWithShowcase",
+        "lesson",
+        "nonlessonCommon",
+        "nonlessonRareMythic",
+        "sta",
+        "uncommon"
+      ]
+    },
+    "STX:jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilWithShowcase",
+        "lesson",
+        "nonlessonCommon",
+        "nonlessonRareMythic",
+        "sta",
+        "uncommon"
+      ]
+    },
+    "STX:prerelease-lorehold": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:prerelease-prismari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:prerelease-quandrix": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:prerelease-silverquill": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:prerelease-witherbloom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "prereleasePromo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilWithShowcase",
+        "lesson",
+        "rareMythic",
+        "sta",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "STX:set-jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilWithShowcase",
+        "lesson",
+        "rareMythic",
+        "sta",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "STX:theme-lorehold": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:theme-prismari": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:theme-quandrix": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:theme-silverquill": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "STX:theme-witherbloom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "SUM:default": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "TDM:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "commander",
+        "foilBasic",
+        "foilBoosterFun",
+        "foilCommon",
+        "foilDraconicCU",
+        "foilRareMythic",
+        "foilUncommon",
+        "nonFoilBasic",
+        "nonFoilDraconicCU"
+      ]
+    },
+    "TDM:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boosterFun",
+        "foilBoosterFun",
+        "foilDraconicCU"
+      ]
+    },
+    "TDM:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythicBoosterfun",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "TDM:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "specialGuest",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "TDM:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "TDM:prerelease-abzan": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TDM:prerelease-jeskai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TDM:prerelease-mardu": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TDM:prerelease-sultai": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TDM:prerelease-temur": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "ancillary",
+        "foilBasic",
+        "foilCommonOrBasic",
+        "foilRareMythic",
+        "foilShowcase",
+        "foilUncommon",
+        "rmExtended",
+        "showcase"
+      ]
+    },
+    "THB:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "THB:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THB:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:prerelease-ambition": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:prerelease-battle": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:prerelease-honor": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:prerelease-might": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "THS:prerelease-wisdom": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "promo",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLA:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBoosterfun",
+        "foilCommon",
+        "foilLand",
+        "foilRareMythic",
+        "foilSourceMaterial",
+        "foilTleCommon",
+        "foilTleRareMythic",
+        "foilTleSceneUncommon",
+        "foilUncommon",
+        "nonFoilBoosterfun",
+        "nonFoilSourceMaterial"
+      ]
+    },
+    "TLA:commander-bundle": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "fixedStaple",
+        "reprint"
+      ]
+    },
+    "TLA:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "foilLand",
+        "nonFoilLand",
+        "rareMythicBoosterfun",
+        "sourceMaterial",
+        "uncommonScene",
+        "wildcard"
+      ]
+    },
+    "TLA:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilReplacement",
+        "land",
+        "rareMythic",
+        "sourceMaterial",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "TLA:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "TLA:prerelease-aang": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLA:prerelease-azula": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLA:prerelease-katara": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLA:prerelease-toph": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLA:prerelease-zuko": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "land",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TLE:jumpstart": {
+      "fixedSheets": [
+        "aang",
+        "adaptive",
+        "adept1",
+        "adept2",
+        "airbending",
+        "alliance1",
+        "alliance2",
+        "atTheZoo",
+        "azula",
+        "badAdvice",
+        "bountyHunter1",
+        "bountyHunter2",
+        "bumi",
+        "cabbages",
+        "earthKingdom1",
+        "earthKingdom2",
+        "earthRumble1",
+        "earthRumble2",
+        "earthbending1",
+        "earthbending2",
+        "fireNation",
+        "firebending1",
+        "firebending2",
+        "freedomFighters",
+        "gliding1",
+        "gliding2",
+        "heiBai1",
+        "heiBai2",
+        "hunting1",
+        "hunting2",
+        "insurgent1",
+        "insurgent2",
+        "iroh",
+        "katara",
+        "kyoshi",
+        "learning1",
+        "learning2",
+        "lessons1",
+        "lessons2",
+        "librarian",
+        "musicians",
+        "nightmares",
+        "ozai",
+        "powerful1",
+        "powerful2",
+        "rebelling1",
+        "rebelling2",
+        "reinforced1",
+        "reinforced2",
+        "relentless1",
+        "relentless2",
+        "roku",
+        "shrines",
+        "siegeEngines",
+        "soaring1",
+        "soaring2",
+        "sparkySparky1",
+        "sparkySparky2",
+        "spirit",
+        "swordmaster",
+        "toph",
+        "underwater",
+        "warriors",
+        "wise1",
+        "wise2",
+        "zuko"
+      ],
+      "sheetNames": [
+        "aang",
+        "adaptive",
+        "adept1",
+        "adept2",
+        "airbending",
+        "alliance1",
+        "alliance2",
+        "atTheZoo",
+        "azula",
+        "badAdvice",
+        "bountyHunter1",
+        "bountyHunter2",
+        "bumi",
+        "cabbages",
+        "earthKingdom1",
+        "earthKingdom2",
+        "earthRumble1",
+        "earthRumble2",
+        "earthbending1",
+        "earthbending2",
+        "fireNation",
+        "firebending1",
+        "firebending2",
+        "freedomFighters",
+        "gliding1",
+        "gliding2",
+        "heiBai1",
+        "heiBai2",
+        "hunting1",
+        "hunting2",
+        "insurgent1",
+        "insurgent2",
+        "iroh",
+        "katara",
+        "kyoshi",
+        "learning1",
+        "learning2",
+        "lessons1",
+        "lessons2",
+        "librarian",
+        "musicians",
+        "nightmares",
+        "ozai",
+        "powerful1",
+        "powerful2",
+        "rebelling1",
+        "rebelling2",
+        "reinforced1",
+        "reinforced2",
+        "relentless1",
+        "relentless2",
+        "roku",
+        "shrines",
+        "siegeEngines",
+        "soaring1",
+        "soaring2",
+        "sparkySparky1",
+        "sparkySparky2",
+        "spirit",
+        "swordmaster",
+        "toph",
+        "underwater",
+        "warriors",
+        "wise1",
+        "wise2",
+        "zuko"
+      ]
+    },
+    "TMP:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "TMP:starter": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basics",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "TMT:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBoosterfun",
+        "foilCommon",
+        "foilLand",
+        "foilRareMythic",
+        "foilSourceMaterial",
+        "foilUncommon",
+        "nonFoilBoosterfunTmc",
+        "nonFoilCommander",
+        "nonFoilSourceMaterial",
+        "surgeFoilBoosterfunTmc",
+        "surgeFoilCommander"
+      ]
+    },
+    "TMT:pizza-bundle": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "pizza"
+      ]
+    },
+    "TMT:play": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonNoLegend",
+        "foil",
+        "foilLand",
+        "legendaryTurtle",
+        "nonFoilLand",
+        "rareMythic",
+        "sourceMaterial",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "TMT:play-arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonNoLegend",
+        "foilReplacement",
+        "land",
+        "legendaryTurtle",
+        "rareMythic",
+        "sourceMaterial",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "TMT:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "promo"
+      ]
+    },
+    "TOR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "TOR:fat-pack": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilBasic",
+        "foilCommon"
+      ]
+    },
+    "TPR:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "TSP:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rare",
+        "tsts",
+        "uncommon"
+      ]
+    },
+    "TSP:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "foil",
+        "rare",
+        "timeshifted",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "TSR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rareMythic",
+        "special",
+        "uncommon"
+      ]
+    },
+    "UDS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "UGIN:fate": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "altart",
+        "land"
+      ]
+    },
+    "UGL:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "ULG:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foilCommon",
+        "foilRare",
+        "foilUncommon",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "UMA:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "boxTopper"
+      ]
+    },
+    "UMA:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "dedicatedFoil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "UNF:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilShockland"
+      ]
+    },
+    "UNF:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foilAttraction",
+        "foilBasic",
+        "foilCommon",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilShock",
+        "foilUn-list",
+        "foilUncommon",
+        "foilUncommonShowcase",
+        "galaxyBasic",
+        "galaxyCommonUncommon",
+        "galaxyRareMythic",
+        "galaxyRareMythicShowcase",
+        "galaxyShock",
+        "galaxyUncommonShowcase"
+      ]
+    },
+    "UNF:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "attraction",
+        "basicAlt",
+        "common",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "shock",
+        "sunfSticker",
+        "uncommonWithShowcase"
+      ]
+    },
+    "UNH:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon",
+        "unhingedFoil"
+      ]
+    },
+    "USG:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "USG:tournament": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basicWithDuplicates",
+        "commonWithDuplicates",
+        "rare",
+        "uncommonWithDuplicates"
+      ]
+    },
+    "UST:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "basicFoil",
+        "common",
+        "contraption",
+        "contraptionFoil",
+        "foil",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "VIS:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "VMA:mtgo": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "foil",
+        "rareMythic",
+        "special",
+        "uncommon"
+      ]
+    },
+    "VOW:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "dfcCommon",
+        "dfcRareMythic",
+        "dfcUncommon",
+        "sfcCommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "VOW:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "draculaFoil"
+      ]
+    },
+    "VOW:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedCommander",
+        "extendedRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "foilUncommonDracula",
+        "rareMythicDracula",
+        "rareMythicShowcase",
+        "uncommonDracula"
+      ]
+    },
+    "VOW:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "dfcCommonWithShowcase",
+        "dfcRareMythicWithShowcase",
+        "dfcUncommonWithShowcase",
+        "foilWithShowcase",
+        "sfcCommonWithShowcase",
+        "sfcRareMythicWithShowcase",
+        "sfcUncommonWithShowcase"
+      ]
+    },
+    "VOW:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "VOW:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "sfcCommon",
+        "sfcUncommon",
+        "showcaseCommonUncommon",
+        "theList",
+        "wildcard"
+      ]
+    },
+    "VOW:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "VOW:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "VOW:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "VOW:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "VOW:theme-vampires": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "VOW:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WAR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "nonplaneswalkerRareMythic",
+        "nonplaneswalkerUncommon",
+        "planeswalkerRareMythic",
+        "planeswalkerUncommon"
+      ]
+    },
+    "WAR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "nonplaneswalkerRareMythic",
+        "nonplaneswalkerUncommon",
+        "planeswalkerRareMythic",
+        "planeswalkerUncommon"
+      ]
+    },
+    "WAR:jp": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "nonplaneswalkerRareMythic",
+        "nonplaneswalkerUncommon",
+        "planeswalkerRareMythic",
+        "planeswalkerUncommon"
+      ]
+    },
+    "WAR:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo",
+        "prereleasePw"
+      ]
+    },
+    "WAR:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WAR:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WAR:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WAR:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WAR:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WHO:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "blast",
+        "doctor",
+        "extendedNew",
+        "extendedReprint",
+        "finale",
+        "foilExtendedNew",
+        "foilExtendedReprint",
+        "land",
+        "master",
+        "paradox",
+        "surgeExtendedNew",
+        "surgeExtendedReprint",
+        "surgeWildcard",
+        "tardis",
+        "timey"
+      ]
+    },
+    "WHO:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "alternateFrame",
+        "alternateFrameFoil",
+        "rareMythicFrame",
+        "rareMythicFrameFoil"
+      ]
+    },
+    "WOE:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "enchantingTales",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WOE:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "altFrameFoil",
+        "enchantingTalesRareMythic",
+        "enchantingTalesUncommon",
+        "extendedArt",
+        "foilCommon",
+        "foilEnchantingTalesUncommon",
+        "foilExtendedArt",
+        "foilFullArtLand",
+        "foilRareMythic",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "WOE:collector-sample": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "altFrame",
+        "altFrameFoil",
+        "foilEnchantingTalesUncommon"
+      ]
+    },
+    "WOE:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "enchantingTales",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "uncommon"
+      ]
+    },
+    "WOE:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "WOE:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "enchantingTales",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythic",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "WTH:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rare",
+        "uncommon"
+      ]
+    },
+    "WWK:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "WWK:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "XLN:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "XLN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "XLN:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "XLN:treasure-chest": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "foil",
+        "foilBasic",
+        "promoTransformLand",
+        "rareMythic"
+      ]
+    },
+    "ZEN:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foil",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZEN:six": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNE:box-topper": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "mythic"
+      ]
+    },
+    "ZNR:arena": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "modaldfcRareMythic",
+        "modaldfcUncommon",
+        "sfcRareMythic",
+        "sfcUncommon"
+      ]
+    },
+    "ZNR:collector": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "commonUncommonShowcase",
+        "extendedRareMythic",
+        "foilBasic",
+        "foilCommon",
+        "foilCommonUncommonShowcase",
+        "foilExpedition",
+        "foilRareMythic",
+        "foilRareMythicShowcase",
+        "foilUncommon",
+        "rareMythicShowcase"
+      ]
+    },
+    "ZNR:draft": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "commonWithShowcase",
+        "dfcRareMythicWithShowcase",
+        "dfcUncommonWithShowcase",
+        "foilWithShowcase",
+        "sfcRareMythicWithShowcase",
+        "sfcUncommonWithShowcase"
+      ]
+    },
+    "ZNR:prerelease": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "prereleasePromo"
+      ]
+    },
+    "ZNR:set": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "basic",
+        "common",
+        "foilBasic",
+        "foilWithShowcase",
+        "rareMythicWithShowcase",
+        "showcaseOrDfc",
+        "theList",
+        "uncommon",
+        "wildcard"
+      ]
+    },
+    "ZNR:theme-b": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNR:theme-g": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNR:theme-party": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNR:theme-r": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNR:theme-u": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    },
+    "ZNR:theme-w": {
+      "fixedSheets": [],
+      "sheetNames": [
+        "common",
+        "rareMythic",
+        "uncommon"
+      ]
+    }
+  }
+}
